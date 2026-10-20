@@ -96,16 +96,28 @@ jobs:
       - name: Install the runner for the verification
         run: npm ci --ignore-scripts --no-audit --no-fund
 
-      - name: Build the server image
-        run: docker build -f deploy/Dockerfile --target server -t personal-os:ci .
-
-      - name: Build the worker image
-        run: docker build -f deploy/Dockerfile --target worker -t personal-os:worker-ci .
-
-      - name: Start the stack
+      # The stack needs a secret key to encrypt the agents' configuration, and
+      # compose refuses to start without one. The key is generated per run and
+      # never leaves the job.
+      #
+      # It goes into the job environment in a step of its own, because a
+      # variable written to $GITHUB_ENV is available to the steps that follow
+      # it and not to the step that writes it. Written and used in the same
+      # step, compose fails with "required variable PERSONAL_OS_SECRET_KEY is
+      # missing a value" — and so does the teardown step, which has to parse
+      # the same file to take the stack down.
+      - name: Create the deployment secret
         run: |
-          echo "PERSONAL_OS_SECRET_KEY=$(openssl rand -base64 32)" >> "$GITHUB_ENV"
-          docker compose -f deploy/compose.yaml up -d
+          key="$(openssl rand -base64 32)"
+          echo "::add-mask::$key"
+          echo "PERSONAL_OS_SECRET_KEY=$key" >> "$GITHUB_ENV"
+
+      # Compose builds the images it runs, from the same context and the same
+      # Dockerfile targets, so the stack that is tested is the stack that
+      # ships. Building them separately and tagging them differently would
+      # prove nothing about the images the containers actually start.
+      - name: Build and start the stack
+        run: docker compose -f deploy/compose.yaml up -d --build
 
       - name: Wait for the server to become healthy
         run: |
