@@ -1781,3 +1781,34 @@ satisfy, and it has an owner with the work in the queue.
 
 **What is owed:** Probe's verification of the two contract entries, request
 ids `wi-022-verify-contract` and `wi-026-verify-contract`.
+
+## The two questions with the owner, 2026-10-21 07:40
+
+Posted to `Personal OS Strategy` (request `strategy-publication-2026-10-21`).
+Both are decisions only the owner can take, and both have consequences that
+are the owner's to accept.
+
+**Question 1 — what "open source" means in practice, and when.** The
+repository exists on GitHub (`this-bytes/personal-os`) and is **private**, with
+one push from 2026-10-20 21:47. Local `main` is over a hundred commits ahead
+of it. The owner's answer was to hold the push until the reds are green, and
+one red is one code item away — so the push is close. But a push and the
+**visibility** are two decisions, and making a repository public puts a URL on
+the open internet that anyone can read. So: does the repository go public at
+that push, or is the visibility left to the owner? And if it goes public, is a
+`LICENSE` and a code-of-conduct answer needed before it does, or are
+`AGENTS.md` and `CONTRIBUTING.md` enough for a first public version?
+
+**Nothing is pushed and nothing is published without the owner's word
+either way.** The hold is the owner's, and it stands.
+
+**Question 2 — what the first public version looks like.** The panel today is
+in the language that existed before the direction, and Forge is the direction.
+WI-024 is the build item and it is queued behind the work that holds the push.
+If the push happens as soon as the tree is green, the first public version of
+the panel is the current one, not Forge. So: is that the version to publish, or
+does Forge land before the repository goes out? **The answer moves WI-024 in
+the queue, and nothing else depends on it.**
+
+**Nothing else is waiting on the owner.** Cog is implementing, Probe is
+verifying, and the last red has an owner with the work in the queue.
