@@ -24,6 +24,7 @@ import { ConversationList } from '../components/ConversationList';
 import { EmptyState, ErrorState, LoadingState } from '../components/ErrorState';
 import { Field } from '../components/Field';
 import { RoutingModeSelector } from '../components/RoutingModeSelector';
+import { WaitingList } from '../components/WaitingList';
 
 export function Conversations(): React.JSX.Element {
   const { activeWorkspaceId, activeWorkspace } = useWorkspace();
@@ -108,6 +109,13 @@ export function Conversations(): React.JSX.Element {
           New conversation
         </Button>
       </header>
+
+      {/*
+        The waiting list comes first. The conversation list is what the panel
+        is for, but the question the owner opens it with is what is waiting
+        on them, and the answer belongs above everything else.
+      */}
+      <WaitingList />
 
       {conversations.isError ? (
         <ErrorState

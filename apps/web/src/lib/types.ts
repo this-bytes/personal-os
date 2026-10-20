@@ -82,6 +82,25 @@ export interface ResourceInspection {
   issues: string[];
 }
 
+/** One thing that is waiting on the owner. */
+export interface WaitingItem {
+  /** Unique across kinds, so the list can be keyed. */
+  id: string;
+  kind: 'approval' | 'task';
+  /** What the item is. */
+  title: string;
+  /** Why it is waiting on the owner. */
+  detail: string;
+  reason: 'pending' | 'review' | 'blocked';
+  workspaceId: string;
+  /** The conversation the item came from, when there is one. */
+  conversationId: string | null;
+  /** The task the item belongs to, when it is about a task. */
+  taskId: string | null;
+  /** The agent that raised it. */
+  agentConnectionId: string | null;
+}
+
 export type {
   AgentConnectionDetail,
   Automation,

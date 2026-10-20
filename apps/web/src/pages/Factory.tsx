@@ -1,4 +1,5 @@
 import { useMemo, useState, type FormEvent } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Plus, Target } from 'lucide-react';
 import {
@@ -26,9 +27,14 @@ import { TaskBoard } from '../components/TaskBoard';
 export function Factory(): React.JSX.Element {
   const { activeWorkspaceId } = useWorkspace();
   const queryClient = useQueryClient();
+  const [searchParams] = useSearchParams();
   const [taskDialogOpen, setTaskDialogOpen] = useState(false);
   const [goalDialogOpen, setGoalDialogOpen] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
+
+  // A link from the waiting list points at one task, so the board opens that
+  // card instead of making the owner find it.
+  const focusedTaskId = searchParams.get('task');
 
   const goals = useQuery<Goal[]>({
     queryKey: ['goals', activeWorkspaceId],
@@ -175,7 +181,12 @@ export function Factory(): React.JSX.Element {
       ) : null}
 
       {taskList.length > 0 ? (
-        <TaskBoard tasks={taskList} agents={agents.data ?? []} goalTitles={goalTitles} />
+        <TaskBoard
+          tasks={taskList}
+          agents={agents.data ?? []}
+          goalTitles={goalTitles}
+          focusedTaskId={focusedTaskId ?? undefined}
+        />
       ) : null}
 
       <CreateTaskDialog

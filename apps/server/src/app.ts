@@ -31,6 +31,7 @@ import { registerResourceRoutes } from './api/resources.js';
 import { registerFactoryRoutes } from './api/factory.js';
 import { registerAutomationRoutes } from './api/automations.js';
 import { registerApprovalRoutes } from './api/approvals.js';
+import { registerWaitingRoutes } from './api/waiting.js';
 import { registerAuditRoutes } from './api/audit.js';
 import { registerEventRoutes } from './api/events.js';
 
@@ -205,6 +206,7 @@ export async function buildApp(options: BuildAppOptions = {}): Promise<FastifyIn
   registerFactoryRoutes(app);
   registerAutomationRoutes(app);
   registerApprovalRoutes(app);
+  registerWaitingRoutes(app);
   registerAuditRoutes(app);
   registerEventRoutes(app);
 

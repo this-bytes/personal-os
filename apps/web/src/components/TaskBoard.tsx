@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Check, ChevronDown, ChevronRight, ListChecks, ShieldCheck, X } from 'lucide-react';
 import { Badge, Button, Card, CardContent, Select, Textarea } from '@personal-os/ui';
@@ -21,10 +21,21 @@ interface TaskBoardProps {
   tasks: FactoryTask[];
   agents: AgentConnectionDetail[];
   goalTitles: Record<string, string>;
+  /** The task a link pointed at. It opens expanded, so the owner lands on it. */
+  focusedTaskId?: string;
 }
 
-export function TaskBoard({ tasks, agents, goalTitles }: TaskBoardProps): React.JSX.Element {
-  const [expanded, setExpanded] = useState<string | null>(null);
+export function TaskBoard({
+  tasks,
+  agents,
+  goalTitles,
+  focusedTaskId,
+}: TaskBoardProps): React.JSX.Element {
+  const [expanded, setExpanded] = useState<string | null>(focusedTaskId ?? null);
+
+  useEffect(() => {
+    if (focusedTaskId) setExpanded(focusedTaskId);
+  }, [focusedTaskId]);
 
   const grouped = (status: TaskStatus): FactoryTask[] =>
     tasks.filter((task) => task.status === status);
