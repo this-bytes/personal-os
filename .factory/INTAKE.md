@@ -676,3 +676,65 @@ of what was owed at the time:
   remote already exists — `origin` is
   `https://github.com/this-bytes/personal-os.git`, pushed 21:47 +11:00 — so
   the owner is not asked to create a repository.
+
+## The state at 2026-10-21 04:00 — the suite is red again, and the red is the specification
+
+**Probe reviewed WI-008 and the item does not meet its criteria.** Task
+`task_8bb9dbcfbeaa`, batch `batch_d6dc904088cd`. The `unknown` state is real
+and it reaches the owner correctly, but on two of the three paths an
+`unknown` outcome still becomes a retry — the one thing this item exists to
+prevent.
+
+**The suite is red at `1cafe35`, on purpose.** Probe's new tests are the
+specification of what is left, and they are committed. Chief measured the
+tree:
+
+```
+npm run test → FAIL (exit 1)
+  server:         Test Files 1 failed | 20 passed (21)   Tests 2 failed | 190 passed (192)
+  web:            Test Files 5 passed (5)                 Tests 46 passed (46)
+  worker:         Test Files 1 failed | 4 passed (5)      Tests 6 failed | 24 passed (30)
+  agent-adapters: Test Files 2 passed (2)                 Tests 16 passed (16)
+  contracts:      Test Files 4 passed (4)                 Tests 28 passed (28)
+```
+
+Eight failures, all of them the retry paths, the contract's waiting reason and
+the audit trail. Nothing else is red. Chief's rule stands: the contract is the
+truth and the code is the defect — so the tests stay, and the code moves.
+WI-008 is returned to Cog, task `task_21b395d2f98a`, batch
+`batch_44d6112553e4`.
+
+**Chief confirmed all five of Probe's defects against the tree** before
+passing them to Cog. They are in [WI-008](work/WI-008.md): the factory-task
+and automation paths test `failure` before `unknown`
+(`apps/worker/src/executor.ts:811-815`, `:1002-1006`); the reaper requeues a
+job whose item is already `unknown`; the panel gates its accept/reject
+control on `review`, so an unknown task cannot be closed by the owner at all;
+and leaving `unknown` by assigning the task to an agent writes no audit entry.
+
+### Two duplicate dispatches, cancelled
+
+Two Chief sessions in one tree dispatched WI-004 and WI-011 to Probe twice.
+Probe is the only verifier, the queue is deep, and a second worker in one
+worktree is what the runtime's own guard warns about. **Chief cancelled his
+own two tasks** — `task_4a566d42c121` (WI-004) and `task_f5b5eb99dea3`
+(WI-011). The live verifications are `task_616009728104` (WI-004) and
+`task_e2219b4e3c7a` (WI-011). One verifier, one item, one verification.
+
+### A want, not a work item — the number space has one owner
+
+`automationRunStatusSchema` (`packages/contracts/src/automation.ts:73`) gained
+`'unknown'`, and `CONTRACTS.md` publishes no automation run status at all — so
+nothing contradicts it and nothing records it either. It came out of Probe's
+WI-008 review. It is recorded here rather than as a numbered item, because
+`fff389e` gave the number space one owner and the other session proposes wants
+in this file.
+
+- **Title:** The published contract says nothing about the automation run
+  status.
+- **Owner:** Wren.
+- **Criteria:** `CONTRACTS.md` publishes the automation run status, including
+  `'unknown'` and what it means on a run; the entry says what a client must do
+  with a value it did not expect; the entry is checked against
+  `packages/contracts/src/automation.ts:73` by the reviewer.
+- **Not urgent:** nothing contradicts it, and no client depends on it today.
