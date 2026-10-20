@@ -126,6 +126,21 @@ export interface AgentMemoryResponse {
   dropped: number;
 }
 
+/**
+ * What the server says a decision did.
+ *
+ * The decision is the server's to take, and so is the account of it. The
+ * client sends the decision and reads these two: `resumed` means the turn
+ * continues in the session it was in, `closed` means it is over, and
+ * `detail` says which in words.
+ */
+export interface ApprovalDecision {
+  /** 'resumed' means the turn continues; 'closed' means it is over. */
+  outcome: 'resumed' | 'closed';
+  /** What the owner should be told, in words. */
+  detail: string;
+}
+
 export type {
   AgentConnectionDetail,
   Automation,

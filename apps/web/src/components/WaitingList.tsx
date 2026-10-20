@@ -4,7 +4,12 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Badge, Button, Card, CardContent } from '@personal-os/ui';
 import { resolvePersona, type PersonaSource } from '@personal-os/contracts';
 import { api, errorMessage } from '../lib/api';
-import type { AgentConnectionDetail, ConversationDetail, WaitingItem } from '../lib/types';
+import type {
+  AgentConnectionDetail,
+  ApprovalDecision,
+  ConversationDetail,
+  WaitingItem,
+} from '../lib/types';
 import { useWorkspace } from '../state/workspace';
 import { useServerEvents } from '../state/events';
 import { EmptyState, ErrorState, LoadingState } from './ErrorState';
@@ -56,6 +61,7 @@ export function WaitingList({ agents, conversations }: WaitingListProps): React.
   const queryClient = useQueryClient();
   const { subscribe } = useServerEvents();
   const [decisionError, setDecisionError] = useState<string | null>(null);
+  const [decisionNote, setDecisionNote] = useState<{ title: string; detail: string } | null>(null);
 
   const waiting = useQuery<WaitingItem[]>({
     queryKey: [QUERY_KEY, activeWorkspaceId],
@@ -93,22 +99,33 @@ export function WaitingList({ agents, conversations }: WaitingListProps): React.
    * The list is the one place the owner is already looking at what is being
    * asked of them, so it is where the answer is given. The decision itself is
    * the server's: this only sends it.
+   *
+   * What the decision *did* is the server's to say as well, and the account of
+   * it comes back with the decision. A turn that continued and a turn that
+   * closed are told apart in words, because the entry itself leaves the list
+   * the moment it is decided — the owner would otherwise be left holding a
+   * decision that looks the same either way, and an operation that was never
+   * performed.
    */
   const decide = useMutation({
-    mutationFn: async (input: { approvalId: string; approved: boolean }) =>
-      api.post(`/approvals/${input.approvalId}/decide`, {
+    mutationFn: async (input: { approvalId: string; approved: boolean; title: string }) =>
+      api.post<ApprovalDecision>(`/approvals/${input.approvalId}/decide`, {
         approved: input.approved,
         reason: input.approved
           ? 'Approved from the waiting list.'
           : 'Rejected from the waiting list.',
       }),
-    onSuccess: async () => {
+    onSuccess: async (result, input) => {
       setDecisionError(null);
+      setDecisionNote({ title: input.title, detail: result.detail });
       // The item has stopped waiting, so the list says so without the owner
       // reloading the page.
       await queryClient.invalidateQueries({ queryKey: [QUERY_KEY] });
     },
-    onError: (error) => setDecisionError(errorMessage(error)),
+    onError: (error) => {
+      setDecisionError(errorMessage(error));
+      setDecisionNote(null);
+    },
   });
 
   const items = waiting.data ?? [];
@@ -181,13 +198,21 @@ export function WaitingList({ agents, conversations }: WaitingListProps): React.
                     }
                     persona={personaFor(item)}
                     busy={decide.isPending}
-                    onDecide={(approvalId, approved) => decide.mutate({ approvalId, approved })}
+                    onDecide={(approvalId, approved) =>
+                      decide.mutate({ approvalId, approved, title: item.title })
+                    }
                   />
                 </li>
               ))}
             </ul>
           </CardContent>
         </Card>
+      ) : null}
+
+      {decisionNote ? (
+        <p className="px-0.5 text-[11px] leading-snug text-slate-400">
+          {decisionNote.title} — {decisionNote.detail}
+        </p>
       ) : null}
 
       {decisionError ? (
