@@ -966,16 +966,20 @@ still returned.** A panel that greets its owner with 0% reads as broken, and the
 product's first report on itself must not be a lie by omission.
 
 **What "authored by an agent" counts as.** A resource is **agent-authored** when
-its `createdBy` names an agent connection — the id of a connection in that
-workspace, and those ids carry the `agt_` form (`apps/server/src/lib/ids.ts:9-17`).
-It is **owner-authored** otherwise: the owner's user id, or the literal `owner`
-that is written when there is no user id (`apps/server/src/api/resources.ts:37`,
-`apps/server/src/modules/mcp/server.ts:368`). A resource's kind, its title, and
-who worked on it afterwards are not part of the reading. On the audit side an
-operation is **agent-performed** when the entry's `actorType` is `agent`, and the
-actor id is then the agent connection id; the published `ActorType` carries
-`human | agent | system | automation` (`packages/contracts/src/common.ts:33`),
-and the code writes `human` and `agent` only.
+its `createdBy` carries the `agt_` form — the id form of an agent connection
+(`apps/server/src/lib/ids.ts:9-17`). **The test is the id form, not a lookup**: a
+connection that has since been removed does not make the resources it authored
+owner-authored. It is **owner-authored** otherwise: the owner's user id, or the
+literal `owner` that is written when there is no user id
+(`apps/server/src/api/resources.ts:37`,
+`apps/server/src/modules/mcp/server.ts:368`). `createdBy` is one column holding
+two id spaces, so neither `'owner'` nor `'system'` is an agent. A resource's kind,
+its title, and who worked on it afterwards are not part of the reading. On the
+audit side an operation is **agent-performed** when the entry's `actorType` is
+`agent`, and the actor id is then the agent connection id; the published
+`ActorType` carries `human | agent | system | automation`
+(`packages/contracts/src/common.ts:33`), and the code writes `human` and `agent`
+only.
 
 **What the reading cannot cover.** Three things, said plainly.
 
