@@ -318,16 +318,20 @@ started its next turn, and cleared once more at 07:11.
 Both request ids are idempotent, so a retry is safe and a retry is not a
 second dispatch.
 
-| Request id                       | Item                                               | To    | Task                |
-| -------------------------------- | -------------------------------------------------- | ----- | ------------------- |
-| `wi-022-publish-waiting-reasons` | WI-022 — the published waiting list's reasons      | Wren  | `task_ed4c3132afe9` |
-| `wi-010-verify-forge-rewrite`    | WI-010 — the direction, verified                   | Probe | `task_4cc3a3b1160f` |
-| `wi-024-forge-adoption`          | WI-024 — the panel takes Forge                     | Cog   | `task_5354f76acca3` |
-| `wi-025-direction-adr`           | WI-025 — the direction answer in ADR 0007          | Wren  | `task_ce64c47ef3d9` |
-| `wi-026-waiting-kind`            | WI-026 — the waiting list's kind grows by one      | Wren  | `task_fbb0e0528036` |
-| `wi-027-unknown-turn`            | WI-027 — an unknown turn reaches the waiting list  | Cog   | `task_9425c9b2a237` |
-| `wi-028-memory-read-privacy`     | WI-028 — an agent's own memory is private to it    | Cog   | `task_99c5c5eeb7aa` |
-| `wi-029-exposure-race`           | WI-029 — the exposure test does not race the reset | Probe | `task_085e132ddaa1` |
+| Request id                       | Item                                                               | To    | Task                |
+| -------------------------------- | ------------------------------------------------------------------ | ----- | ------------------- |
+| `wi-022-publish-waiting-reasons` | WI-022 — the published waiting list's reasons                      | Wren  | `task_ed4c3132afe9` |
+| `wi-010-verify-forge-rewrite`    | WI-010 — the direction, verified                                   | Probe | `task_4cc3a3b1160f` |
+| `wi-024-forge-adoption`          | WI-024 — the panel takes Forge                                     | Cog   | `task_5354f76acca3` |
+| `wi-025-direction-adr`           | WI-025 — the direction answer in ADR 0007                          | Wren  | `task_ce64c47ef3d9` |
+| `wi-026-waiting-kind`            | WI-026 — the waiting list's kind grows by one                      | Wren  | `task_fbb0e0528036` |
+| `wi-027-unknown-turn`            | WI-027 — an unknown turn reaches the waiting list                  | Cog   | `task_9425c9b2a237` |
+| `wi-028-memory-read-privacy`     | WI-028 — an agent's own memory is private to it                    | Cog   | `task_99c5c5eeb7aa` |
+| `wi-029-exposure-race`           | WI-029 — the exposure test does not race the reset                 | Probe | `task_085e132ddaa1` |
+| `wi-030-publish-two-shapes`      | WI-030 — publish the template record and the measures route        | Wren  | `task_f31d629a27b8` |
+| `wi-017-resource-templates`      | WI-017 — a template tells an agent what a good resource looks like | Cog   | `task_d9352ee63330` |
+| `wi-020-measures-route`          | WI-020 — the product reports on itself                             | Cog   | `task_6c20e85110f9` |
+| `wi-005-ci-review-2`             | WI-005 — the two CI changes, re-reviewed                           | Probe | `task_94125a893054` |
 
 WI-025 and WI-026 are deliberately behind WI-022, which is with Wren as
 `task_ed4c3132afe9`, because the file is live and the order in it is WI-022
@@ -1593,3 +1597,119 @@ report on its own fix. The loop does not take the implementer's word for the
 work, and it does not take Chief's either: Probe verifies, Chief accepts.
 Probe's verification of the fixed tree is `task_abe3e6d5f3f9`, and it is
 asked to judge the four defects against the tree and to name what is left.
+
+## The state at 2026-10-21 07:20 — this session is back, and the group is open
+
+The local runtime stopped at 07:12 and took this session with it: the shell
+died, the session was interrupted, and the work items this session had
+dispatched were the ones that died with it. The runtime came back, and this
+session resumed at 07:20. Two things are true because of that gap, and both
+are recorded here rather than left to be discovered later.
+
+### The number space
+
+The other Chief session took WI-024 through WI-029 while this one was down,
+and it said so in this file — which is what the rule asks for: the space has
+one owner, and a session that takes it while the owner is down says so rather
+than taking it quietly. Those six numbers are that session's work and stay
+its work.
+
+**This session owns the space from WI-030 up.** WI-030 is the first number
+taken under that ownership.
+
+### The correction, about a number the other Chief session stated
+
+Its message of 06:05 said: _"WI-022 is the one red in the tree … WI-022 is the
+last thing between the tree and a green suite, and the push waits behind
+it."_
+
+**That is wrong, and the tree says so.** The tree has **seven** deliberate
+reds, which this session measured at 06:18 and the other session measured at
+06:14 — the same count, in the section above. WI-022 is one of the seven, not
+the last of them, and the other six have owners of their own: WI-026 and
+WI-027 (the missing `turn` kind), WI-012 (the memory guard), WI-028 (an
+agent's own memory is private to it), WI-007 (the panel drops the sentence the
+server produces), and WI-029 (the exposure test races the reset it
+inspects).
+
+The consequence is worth stating plainly, because the push depends on it: the
+owner's condition was _"hold the push until the reds are green"_, and **one
+red is not green**. The push waits for all seven, not for WI-022. Every one
+of the seven now has a live dispatch, so nothing is waiting on a human.
+
+### The three dispatches the other Chief session asked for
+
+WI-022 was already dispatched, and the live one is `task_f438b61f9116`
+(request `wi-022-publish-waiting-reasons`, with Wren, queued). WI-017 and
+WI-020 were not dispatched, and both of them also need a `CONTRACTS.md`
+entry — which is Wren's file by `FACTORY.md`'s ownership table, and which
+their own acceptance criteria say has to land before the feature ships.
+
+So the entries are their own item with their own owner, and the code is built
+against them. The tiebreak, said out loud: **the contract leads and the code
+follows**, the same order as WI-022 → WI-027. One file, one live item is what
+stops this becoming two items on one file.
+
+| Item                                                                                    | Owner | Dispatched          |
+| --------------------------------------------------------------------------------------- | ----- | ------------------- |
+| [WI-030](../work/WI-030.md) — publish the template record and the measures route        | Wren  | `task_f31d629a27b8` |
+| [WI-017](../work/WI-017.md) — a template tells an agent what a good resource looks like | Cog   | `task_d9352ee63330` |
+| [WI-020](../work/WI-020.md) — the product reports on itself                             | Cog   | `task_6c20e85110f9` |
+
+### A review that could not be revived, and what was done about it
+
+Probe's review of this session's two CI changes (`770888d`, `7ae6916`) died
+with the runtime. `task_455f133751ed` is stuck in status `unknown`, and
+`cancel_tasks` on it **refused** — the runtime has lost track of it and
+cannot close it.
+
+Its request id is bound to that corpse, so a retry with the same id did not
+queue work: it returned the corpse. The brief was recovered **verbatim** from
+the session's own message log (the snapshot `g000000000006`, the tool call at
+line 308; SHA-256 `c8884a3802a56c90d378cabdf3d4d000fca0d948bc3283377fb13c353655d6f`),
+so the retry that could be made carried the identical text rather than a
+rewrite of it.
+
+The live review is therefore request **`wi-005-ci-review-2`**,
+`task_94125a893054`, queued, with that identical brief. The old id and the
+dead task are recorded here, and the old task is not a second live review of
+anything: it is a corpse the runtime cannot close.
+
+### The post the group had refused for two hours
+
+The `Personal OS Factory` group took the post at 07:20 — request
+`factory-status-2026-10-21-0720`, task `task_908bcd8ccc76`, accepted. The two
+posts parked above it stay in this file, because they are the record of what
+was owed and when; the 07:20 post supersedes them and carries the number
+space, the four dispatches, the seven reds and the CI review in one place.
+
+### What this session got wrong, in its own words
+
+After the runtime stopped, this session made **two second dispatches** of items
+that already had one — WI-022 under `wi-022-publish-waiting-reasons-2`
+(`task_479fab57ee5a`) and WI-010 under a second id (`task_9c489671bc15`) — on
+the belief that the first were dead. They were not dead at that moment, so
+those were duplicates, and the other session's `77517b5` records them.
+
+The rule that should have been applied: **the request id is the record of a
+handover, not a parking place for work still to be written.** A retry carries
+the same id, so a retry is the same dispatch; a second id is a second
+dispatch, and two dispatches of one item is the failure this factory has
+spent a day cleaning up. Both were cancelled, and nothing was re-dispatched
+that was already live.
+
+### One change with no work item and no review
+
+The Tailwind 3 → 4 migration is in the **root commit** `d2f4ec6` — it predates
+this repository's history, because the root commit is the owner's snapshot of
+the project. `apps/web/package.json` carries `tailwindcss` 4.3.3 with
+`@tailwindcss/vite`, `apps/web/src/index.css` opens with `@import 'tailwindcss'`
+and a `@theme` block, and there is no `tailwind.config.js` and no
+`postcss.config.js`: the v4 CSS-first configuration, with the UI package
+declared as an explicit `@source`. `git diff d2f4ec6 HEAD -- apps/web/package.json
+apps/web/src/index.css` is empty, so the migration has not been touched since.
+
+No work item covers it and no reviewer has looked at it. The gates that
+would catch a broken migration are green — the build, the bundle gate and the
+24-of-24 e2e suite all pass on it — so this is recorded as a gap in the
+record, not as a claim of a defect.
