@@ -75,18 +75,20 @@ WORKSPACE_ID="$(json "$WORK/workspaces.json" workspaces.0.id)"
 ok "a workspace exists"
 
 # --- an agent connection ----------------------------------------------------
+# The name is a single token so that "@DeployEcho" is a resolvable mention.
 AGENT_CODE="$(curl -s -o "$WORK/agent.json" -w '%{http_code}' -b "$COOKIE" \
   -H 'content-type: application/json' \
-  -d "{\"workspaceId\":\"$WORKSPACE_ID\",\"name\":\"Deploy Echo\",\"adapterType\":\"echo\",\"config\":{\"reply\":\"the deployment works\"}}" \
+  -d "{\"workspaceId\":\"$WORKSPACE_ID\",\"name\":\"DeployEcho\",\"adapterType\":\"echo\",\"config\":{\"reply\":\"the deployment works\"}}" \
   "$BASE/api/agents")"
 [ "$AGENT_CODE" = "201" ] \
   || fail "the agent connection was not created (HTTP $AGENT_CODE): $(cat "$WORK/agent.json")"
+AGENT_ID="$(json "$WORK/agent.json" agent.id)"
 ok "an agent connection was created"
 
 # --- a conversation ---------------------------------------------------------
 CONV_CODE="$(curl -s -o "$WORK/conv.json" -w '%{http_code}' -b "$COOKIE" \
   -H 'content-type: application/json' \
-  -d "{\"workspaceId\":\"$WORKSPACE_ID\",\"title\":\"Deploy check\"}" \
+  -d "{\"workspaceId\":\"$WORKSPACE_ID\",\"title\":\"Deploy check\",\"routingMode\":\"mentions\",\"participantAgentConnectionIds\":[\"$AGENT_ID\"]}" \
   "$BASE/api/conversations")"
 [ "$CONV_CODE" = "201" ] \
   || fail "the conversation was not created (HTTP $CONV_CODE): $(cat "$WORK/conv.json")"
@@ -96,7 +98,7 @@ ok "a conversation was created"
 # --- a turn the worker answers ----------------------------------------------
 MSG_CODE="$(curl -s -o "$WORK/message.json" -w '%{http_code}' -b "$COOKIE" \
   -H 'content-type: application/json' \
-  -d '{"content":[{"type":"text","text":"@Deploy Echo hello from the deployment check"}]}' \
+  -d '{"content":[{"type":"text","text":"@DeployEcho hello from the deployment check"}]}' \
   "$BASE/api/conversations/$CONV_ID/messages")"
 [ "$MSG_CODE" = "201" ] \
   || fail "the message was not accepted (HTTP $MSG_CODE): $(cat "$WORK/message.json")"
@@ -119,11 +121,14 @@ grep -q 'agent.created' "$WORK/audit.json" || fail "the audit trail has no agent
 ok "the audit trail records the work"
 
 # --- the MCP surface --------------------------------------------------------
-curl -s -o "$WORK/mcp.txt" -X POST -H 'content-type: application/json' \
+# The MCP endpoint takes the session cookie, or a bearer owner token when one
+# is configured. The cookie always works, so it is used here.
+curl -s -o "$WORK/mcp.txt" -X POST -b "$COOKIE" \
+  -H 'content-type: application/json' \
   -H 'accept: application/json, text/event-stream' \
   -d '{"jsonrpc":"2.0","id":1,"method":"tools/list","params":{}}' \
   "$BASE/mcp"
-grep -q 'conversation.post' "$WORK/mcp.txt" || fail "MCP does not expose its tools"
+grep -q 'conversation.post' "$WORK/mcp.txt" || fail "MCP does not expose its tools: $(head -c 300 "$WORK/mcp.txt")"
 ok "the MCP endpoint exposes its tools"
 
 echo ""

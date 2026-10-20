@@ -49,11 +49,44 @@ real agent.
 ### Docker Compose
 
 ```bash
+cp deploy/.env.example deploy/.env    # then set PERSONAL_OS_SECRET_KEY
 docker compose -f deploy/compose.yaml up --build
 ```
 
 The stack serves the web client and the API on <http://localhost:4317>. The data
 directory (`./data`) holds the SQLite database, generated files and the secret key.
+
+`PERSONAL_OS_SECRET_KEY` is required: both the server and the worker read it, so
+they must always be given the same value. Generate one with
+`openssl rand -base64 32`.
+
+#### Running the stack from WSL
+
+The compose file works unchanged from a WSL distribution. The repository is
+reached through `/mnt/<drive>`, and Docker Desktop's engine does the rest.
+
+```bash
+wsl -d Ubuntu
+cd /mnt/g/code/personal-os
+
+# The credential helper that Docker Desktop installs on Windows is not on the
+# Linux PATH, and BuildKit needs it to pull the pinned Dockerfile frontend.
+mkdir -p ~/.local/bin
+ln -sf "/mnt/c/Program Files/Docker/Docker/resources/bin/docker-credential-desktop.exe" \
+  ~/.local/bin/docker-credential-desktop
+
+docker compose -f deploy/compose.yaml up -d --build
+./scripts/verify-deployment.sh
+```
+
+`scripts/verify-deployment.sh` checks a running deployment end to end: the
+client is served, the API answers, an owner signs in, an agent is registered, the
+worker answers a message, the audit trail records the work, and MCP exposes its
+tools. Pass a base URL as the first argument if it is not
+`http://127.0.0.1:4317`.
+
+The SQLite database lives in a Docker volume on the engine's own filesystem, not
+on a network share, which is what SQLite's locking requires.
 
 ## Connecting an agent
 
