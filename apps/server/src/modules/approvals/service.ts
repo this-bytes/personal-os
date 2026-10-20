@@ -126,6 +126,25 @@ export function createApprovalsService(db: Database): ApprovalsService {
       if (current.status !== 'pending') {
         throw errors.conflict(`This approval has already been ${current.status}.`);
       }
+
+      // A decision changes the outcome of the operation that asked for it. An
+      // execution that is not waiting for one cannot take it.
+      if (current.executionId) {
+        const execution = db
+          .select()
+          .from(executions)
+          .where(eq(executions.id, current.executionId))
+          .get();
+        if (!execution) {
+          throw errors.conflict('The operation this approval refers to no longer exists.');
+        }
+        if (execution.status !== 'blocked') {
+          throw errors.conflict(
+            `This operation is ${execution.status}. It is not waiting for a decision.`,
+          );
+        }
+      }
+
       db.update(approvals)
         .set({
           status: input.approved ? 'approved' : 'rejected',

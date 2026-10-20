@@ -1,6 +1,7 @@
 import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
 import { parseBody, parseQuery, requireAuth } from './helpers.js';
+import { decideApproval } from '../modules/approvals/resume.js';
 
 const listQuerySchema = z.object({
   workspaceId: z.string(),
@@ -32,34 +33,27 @@ export function registerApprovalRoutes(app: FastifyInstance): void {
   app.post('/api/approvals/:id/decide', { preHandler: requireAuth }, async (request) => {
     const { id } = request.params as { id: string };
     const body = parseBody(decideSchema, request.body);
-    const approval = app.services.approvals.decide(id, {
+
+    // The decision has to change the outcome of the operation that asked for
+    // it. An approval that changes nothing is not an approval. The decision
+    // is recorded first, and only then is the turn continued or closed.
+    const decision = decideApproval({
+      db: app.services.runtime.db,
+      queue: app.services.queue,
+      audit: app.services.audit,
+      approvals: app.services.approvals,
+      approvalId: id,
       approved: body.approved,
       reason: body.reason,
       decidedBy: request.user?.id ?? 'owner',
-    });
-
-    // The decision has to change the outcome of the operation that asked
-    // for it. An approval that changes nothing is not an approval.
-    if (approval.executionId) {
-      app.services.approvals.resolveExecution(
-        approval.executionId,
-        body.approved ? 'completed' : 'cancelled',
-        body.approved
-          ? 'The operation was authorised by the owner.'
-          : `The operation was rejected by the owner${body.reason ? `: ${body.reason}` : '.'}`,
-      );
-    }
-
-    app.services.audit.record({
-      workspaceId: approval.workspaceId,
       actorType: request.actorType ?? 'human',
-      actorId: request.user?.id ?? 'owner',
-      action: body.approved ? 'approval.granted' : 'approval.rejected',
-      targetType: 'approval',
-      targetId: approval.id,
-      metadata: { executionId: approval.executionId, reason: body.reason },
     });
 
-    return { approval };
+    return {
+      approval: decision.approval,
+      execution: decision.execution,
+      outcome: decision.outcome,
+      detail: decision.detail,
+    };
   });
 }

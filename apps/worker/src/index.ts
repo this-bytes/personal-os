@@ -77,6 +77,10 @@ async function main(): Promise<void> {
         // retried: running it again could repeat a side effect that already
         // happened. The owner decides what happens next.
         runtime.queue.hold(job.id, outcome.error ?? 'The outcome could not be confirmed.');
+      } else if (outcome.status === 'blocked') {
+        // The turn is suspended, waiting for the owner. It continues in a new
+        // turn when the decision arrives; it is not retried.
+        runtime.queue.complete(job.id);
       } else {
         runtime.queue.fail(job.id, outcome.error ?? 'The job failed.');
       }

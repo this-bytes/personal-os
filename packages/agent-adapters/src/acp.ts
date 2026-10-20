@@ -3,6 +3,7 @@ import {
   type AgentCapabilities,
   type AgentConnection,
   type AgentEvent,
+  type AgentExecutionStatus,
   type AgentTurnInput,
   type AdapterConfig,
 } from '@personal-os/contracts';
@@ -28,12 +29,18 @@ interface AcpCapabilities {
  * ACP is session oriented: the client initialises, creates a session and
  * prompts it. Streamed output arrives as `session/update` notifications.
  * Native session restoration is offered only when the agent advertises it.
+ *
+ * A session outlives a turn when the agent can restore it: the first turn
+ * creates the session, and a turn that was suspended on an approval re-enters
+ * that same session with the owner's decision as its next input.
  */
 export class AcpAdapter implements AgentAdapter {
   readonly type = 'acp' as const;
 
   private readonly config: Extract<AdapterConfig, { adapterType: 'acp' }>;
   private readonly ctx: AdapterContext;
+  /** The session each execution is in, so the worker can persist it. */
+  private readonly sessions = new Map<string, string>();
 
   constructor(config: Extract<AdapterConfig, { adapterType: 'acp' }>, ctx: AdapterContext) {
     this.config = config;
@@ -113,9 +120,10 @@ export class AcpAdapter implements AgentAdapter {
         30_000,
       );
 
-      const session = (await client.request('session/new', {}, 30_000)) as AcpSession;
-      const sessionId = session?.sessionId;
-      if (!sessionId) throw new Error('ACP agent did not return a session id.');
+      const sessionId = input.externalSessionId
+        ? await this.loadSession(client, input.externalSessionId)
+        : await this.newSession(client);
+      this.sessions.set(executionId, sessionId);
 
       const promptPromise = client.request(
         'session/prompt',
@@ -192,6 +200,75 @@ export class AcpAdapter implements AgentAdapter {
       offRequest();
       client.close();
     }
+  }
+
+  /**
+   * Restore a native session, when the agent supports it.
+   *
+   * The agent is asked to load the session it was given, and the id it
+   * answers with is the session the next prompt belongs to. A turn that was
+   * suspended on an approval re-enters that session, so the agent keeps the
+   * conversation it was in.
+   */
+  async resumeSession(_connection: AgentConnection, externalSessionId: string): Promise<string> {
+    const client = this.spawn();
+    try {
+      await client.request(
+        'initialize',
+        {
+          protocolVersion: PROTOCOL_VERSION,
+          clientCapabilities: this.config.clientCapabilities,
+        },
+        30_000,
+      );
+      return await this.loadSession(client, externalSessionId);
+    } finally {
+      client.close();
+    }
+  }
+
+  /**
+   * What this adapter knows about an execution it ran.
+   *
+   * The session is the execution's external reference: it is what a later
+   * decision needs in order to resume the turn.
+   */
+  async getStatus(executionId: string): Promise<AgentExecutionStatus> {
+    const sessionId = this.sessions.get(executionId);
+    return {
+      executionId,
+      status: sessionId ? 'running' : 'queued',
+      ...(sessionId ? { externalRef: sessionId } : {}),
+    };
+  }
+
+  /** Create a session and return its id. */
+  private async newSession(client: JsonRpcStdioClient): Promise<string> {
+    const session = (await client.request('session/new', {}, 30_000)) as AcpSession;
+    const sessionId = session?.sessionId;
+    if (!sessionId) throw new Error('ACP agent did not return a session id.');
+    return sessionId;
+  }
+
+  /** Restore a session and return the id it was restored under. */
+  private async loadSession(
+    client: JsonRpcStdioClient,
+    externalSessionId: string,
+  ): Promise<string> {
+    const session = (await client.request(
+      'session/load',
+      {
+        sessionId: externalSessionId,
+        cwd: this.config.cwd,
+        mcpServers: [],
+      },
+      30_000,
+    )) as AcpSession;
+    const sessionId = session?.sessionId;
+    if (!sessionId) {
+      throw new Error('ACP agent did not return a session id when loading the session.');
+    }
+    return sessionId;
   }
 
   private spawn(): JsonRpcStdioClient {

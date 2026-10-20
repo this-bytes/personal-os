@@ -54,8 +54,12 @@ export interface ExecutionOutcome {
    * the deadline passed while the agent was still working, so its side effect
    * may already have happened. It is neither a success nor a failure, and it
    * is never run again on our own.
+   *
+   * `blocked` means the work is suspended, not over: the agent is waiting for
+   * the owner to decide something. The turn continues in a new turn when the
+   * decision arrives, and it is never retried on its own.
    */
-  status: 'completed' | 'failed' | 'cancelled' | 'unknown';
+  status: 'completed' | 'failed' | 'cancelled' | 'unknown' | 'blocked';
   error?: string;
 }
 
@@ -120,6 +124,15 @@ interface ChatTurnPayload {
   parentMessageId: string;
   correlationId: string;
   depth: number;
+  /**
+   * Set when this turn continues a turn that was suspended on an approval.
+   * The decision is the next input, and the session is the one the suspended
+   * turn was in.
+   */
+  resume?: {
+    decision: string;
+    externalSessionId: string;
+  };
 }
 
 async function executeChatTurn(context: ExecutorContext, job: QueueJob): Promise<ExecutionOutcome> {
@@ -202,7 +215,6 @@ async function executeChatTurn(context: ExecutorContext, job: QueueJob): Promise
         .join('\n')
     : '';
 
-  const messageId = newId('msg');
   const now = new Date().toISOString();
   const origin: MessageOrigin = {
     kind: 'agent',
@@ -211,34 +223,17 @@ async function executeChatTurn(context: ExecutorContext, job: QueueJob): Promise
     depth: payload.depth,
   };
 
-  db.insert(messages)
-    .values({
-      id: messageId,
-      conversationId: payload.conversationId,
-      senderId: participant?.id ?? payload.agentConnectionId,
-      targetParticipantIds: [],
-      replyToId: payload.parentMessageId,
-      kind: 'text',
-      content: [],
-      status: 'streaming',
-      correlationId: payload.correlationId,
-      origin,
-      executionId: payload.executionId,
-      createdAt: now,
-    })
-    .run();
+  // A turn that was suspended on an approval already has its reply. The
+  // resumed turn continues that message rather than starting another one.
+  const existing =
+    payload.resume === undefined
+      ? undefined
+      : db.select().from(messages).where(eq(messages.executionId, payload.executionId)).get();
+  const messageId = existing?.id ?? newId('msg');
 
-  db.update(executions)
-    .set({ status: 'running', startedAt: now })
-    .where(eq(executions.id, payload.executionId))
-    .run();
-
-  // Publish the reply while it is still empty, so a client learns about the
-  // in-flight message immediately rather than when it completes.
-  events.publish(
-    {
-      type: 'message.created',
-      message: {
+  if (!existing) {
+    db.insert(messages)
+      .values({
         id: messageId,
         conversationId: payload.conversationId,
         senderId: participant?.id ?? payload.agentConnectionId,
@@ -251,10 +246,41 @@ async function executeChatTurn(context: ExecutorContext, job: QueueJob): Promise
         origin,
         executionId: payload.executionId,
         createdAt: now,
+      })
+      .run();
+
+    // Publish the reply while it is still empty, so a client learns about the
+    // in-flight message immediately rather than when it completes.
+    events.publish(
+      {
+        type: 'message.created',
+        message: {
+          id: messageId,
+          conversationId: payload.conversationId,
+          senderId: participant?.id ?? payload.agentConnectionId,
+          targetParticipantIds: [],
+          replyToId: payload.parentMessageId,
+          kind: 'text',
+          content: [],
+          status: 'streaming',
+          correlationId: payload.correlationId,
+          origin,
+          executionId: payload.executionId,
+          createdAt: now,
+        },
       },
-    },
-    { workspaceId: conversation.workspaceId, conversationId: payload.conversationId },
-  );
+      { workspaceId: conversation.workspaceId, conversationId: payload.conversationId },
+    );
+  }
+
+  db.update(executions)
+    .set({ status: 'running', startedAt: sql`coalesce(${executions.startedAt}, ${now})` })
+    .where(eq(executions.id, payload.executionId))
+    .run();
+
+  // The decision is the next input of the resumed turn, and the session is
+  // the one the suspended turn was in.
+  const turnMessage = payload.resume?.decision ?? parentText;
 
   const controller = new AbortController();
   const adapterConfig = await loadAdapterConfig(context, payload.agentConnectionId);
@@ -267,9 +293,17 @@ async function executeChatTurn(context: ExecutorContext, job: QueueJob): Promise
     controller.abort();
   }, timeoutSeconds * 1000);
 
-  let accumulated = '';
+  // The reply of a resumed turn continues the reply of the suspended turn,
+  // so what came before it is still part of it.
+  let accumulated = existing
+    ? (existing.content as ContentPart[])
+        .filter((part): part is Extract<ContentPart, { type: 'text' }> => part.type === 'text')
+        .map((part) => part.text)
+        .join('')
+    : '';
   let failure: string | undefined;
   let adapter: AgentAdapter | null = null;
+  let suspended = false;
 
   try {
     adapter = runtime.registry.create(adapterConfig, {
@@ -281,16 +315,38 @@ async function executeChatTurn(context: ExecutorContext, job: QueueJob): Promise
       },
     });
 
+    // The session is restored before the turn continues in it. A session that
+    // cannot be restored is not a failure of the turn: the turn closes, and
+    // the owner's decision is already recorded.
+    let externalSessionId = payload.resume?.externalSessionId;
+    if (externalSessionId) {
+      const extras = adapter as {
+        resumeSession?: (connection: AgentConnection, sessionId: string) => Promise<string>;
+      };
+      const restored = await extras.resumeSession?.(
+        {
+          id: connection.id,
+          name: connection.name,
+          adapterType: connection.adapterType as AgentConnection['adapterType'],
+          configRef: connection.configRef,
+          enabled: connection.enabled,
+        },
+        externalSessionId,
+      );
+      if (restored) externalSessionId = restored;
+    }
+
     const turn: AgentTurnInput = {
       conversationId: payload.conversationId,
-      message: parentText,
+      message: turnMessage,
       context: contextText,
       executionId: payload.executionId,
       signal: controller.signal,
+      ...(externalSessionId ? { externalSessionId } : {}),
     };
 
     for await (const event of adapter.send(turn)) {
-      await handleAgentEvent(context, event, {
+      const handled = await handleAgentEvent(context, event, {
         messageId,
         conversationId: payload.conversationId,
         workspaceId: conversation.workspaceId,
@@ -300,21 +356,46 @@ async function executeChatTurn(context: ExecutorContext, job: QueueJob): Promise
           accumulated += text;
         },
       });
+      // The agent is waiting for the owner. The turn stops here and continues
+      // in a new turn when the decision arrives.
+      if (handled === 'suspended') {
+        suspended = true;
+        break;
+      }
     }
 
-    // An external orchestrator keeps its own task identifier. Personal OS
-    // stores the reference instead of mirroring the work.
+    // An external orchestrator keeps its own task identifier, and a session
+    // the adapter can restore is the execution's external reference. Personal
+    // OS stores the reference instead of mirroring the work.
     const externalRef = await readExternalTaskId(adapter, payload.agentConnectionId);
     if (externalRef) {
       db.update(executions)
         .set({ externalRef })
         .where(eq(executions.id, payload.executionId))
         .run();
+    } else {
+      const sessionRef = await readExternalSessionId(adapter, payload.executionId);
+      if (sessionRef) {
+        db.update(executions)
+          .set({ externalRef: sessionRef })
+          .where(eq(executions.id, payload.executionId))
+          .run();
+      }
     }
   } catch (error) {
     failure = error instanceof Error ? error.message : String(error);
   } finally {
     clearTimeout(timeout);
+  }
+
+  if (suspended) {
+    // The turn is not over. The reply stays unfinished and the execution
+    // stays blocked until the owner decides.
+    db.update(executions)
+      .set({ status: 'blocked', error: null })
+      .where(eq(executions.id, payload.executionId))
+      .run();
+    return { status: 'blocked' };
   }
 
   // The deadline passed: the agent may already have had its side effect, so
@@ -441,11 +522,17 @@ interface EventContext {
   onText: (text: string) => void;
 }
 
+/**
+ * Handle one event from the agent.
+ *
+ * Returns `suspended` when the agent is waiting for the owner: the turn stops
+ * there and continues in a new turn when the decision arrives.
+ */
 async function handleAgentEvent(
   context: ExecutorContext,
   event: AgentEvent,
   eventContext: EventContext,
-): Promise<void> {
+): Promise<'handled' | 'suspended'> {
   const { db, events } = context.runtime;
 
   if (event.type === 'message.delta') {
@@ -493,6 +580,19 @@ async function handleAgentEvent(
       .set({ status: 'blocked' })
       .where(eq(executions.id, eventContext.executionId))
       .run();
+
+    events.publish(
+      {
+        type: 'execution.event',
+        conversationId: eventContext.conversationId,
+        executionId: eventContext.executionId,
+        event,
+      },
+      { workspaceId: eventContext.workspaceId, conversationId: eventContext.conversationId },
+    );
+
+    // The agent is waiting for the owner. The turn stops here.
+    return 'suspended';
   }
 
   events.publish(
@@ -504,6 +604,8 @@ async function handleAgentEvent(
     },
     { workspaceId: eventContext.workspaceId, conversationId: eventContext.conversationId },
   );
+
+  return 'handled';
 }
 
 interface FactoryPayload {
@@ -995,6 +1097,26 @@ async function loadAdapterConfig(
 function adapterTimeout(config: AdapterConfig): number {
   const value = (config as { timeoutSeconds?: number }).timeoutSeconds;
   return typeof value === 'number' && value > 0 ? value : 600;
+}
+
+/**
+ * Read the session an adapter is in, when it can restore one.
+ *
+ * The session is the execution's external reference: it is what a decision
+ * needs in order to continue the turn instead of closing it. An adapter that
+ * has no session to offer simply has none.
+ */
+async function readExternalSessionId(
+  adapter: AgentAdapter,
+  executionId: string,
+): Promise<string | undefined> {
+  if (typeof adapter.getStatus !== 'function') return undefined;
+  try {
+    const status = await adapter.getStatus(executionId);
+    return status?.externalRef;
+  } catch {
+    return undefined;
+  }
 }
 
 /**
