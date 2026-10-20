@@ -782,16 +782,14 @@ is something to check. The `unknown` state itself is defined in
 use of it, and the two are not two definitions. A turn is not an approval and
 not a task, so it is not spelled as either.
 
-**The server does not produce a turn yet.** The kind is published ahead of its
-implementation, because the contract leads and the code follows: the
-implementation is WI-027, and the shape above is what it has to reach. A
-published member the server never sends is the drift this factory has just
-spent a day closing — `CONTRACTS.md:544` publishes `executionOwner:
-'external'` and nothing ever writes it — so this entry says plainly that the
-member is not implemented yet rather than publishing it as though it were.
-Until WI-027 lands, the route returns `approval` and `task` only, and the kinds
-the code emits today are `approval` and `task`
-(`apps/server/src/api/waiting.ts:8`).
+This entry is the contract for **WI-027**, and the code implements it — as of
+`c9bb0bc`. A turn on the list is an execution whose outcome could not be
+confirmed and that belongs to no task, and `listUnknownTurns`
+(`apps/server/src/modules/conversations/service.ts`) is what lists them; the
+route draws them as `turn:<execution id>`, in the band of the work whose
+outcome could not be confirmed. A turn that a pending approval already
+accounts for is not drawn again beside that approval, the way a task that a
+pending approval already accounts for is not.
 
 **The order of the list is over reasons, not kinds.** A turn carries the reason
 its outcome earned, so an unknown turn sorts where an unknown task sorts. The
