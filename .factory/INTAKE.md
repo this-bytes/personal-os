@@ -1057,3 +1057,130 @@ The post says, in short:
 
 **Nothing in the post dispatches anything.** It names no agent, so no bot is
 woken by it, and no work item is opened by it.
+
+## The state at 2026-10-21 06:30 — the guard has cleared, and the tree has six reds
+
+The runtime guard that refused every dispatch from this session has cleared.
+WI-022 is with Wren (`task_ed4c3132afe9`) and WI-010 is with Probe
+(`task_4cc3a3b1160f`). Nothing is dispatched twice: this session has two live
+dispatches and the peer session has its own.
+
+The tree was measured first-hand at `ed850d6`, not read out of a commit
+message:
+
+```
+npm --prefix apps/server run test  → exit 1 — 6 failed | 203 passed (209)
+  unknown-outcome.test.ts        2  — the waiting list's missing 'unknown' reason
+                                       (WI-022) and its missing 'turn' kind
+  agent-memory.test.ts           3  — the memory guard
+  ownerPasswordExposure.test.ts  1  — "still replaces the credential"
+```
+
+### The sixth red is a race, and it is a real one
+
+The password exposure test **passes on its own** — `npx vitest run
+src/__tests__/ownerPasswordExposure.test.ts` → 5 passed, 14.38s — and fails
+only when the whole suite runs. The cause is in the file: the test holds an
+exclusive lock on the database while it reads the reset process's command
+line, and the reset's own busy timeout is ten seconds. On Windows the command
+line is read by spawning PowerShell, so when the machine is busy the read can
+outlast the reset's timeout, the reset exits non-zero, and
+`expect(resetExit).toBe(0)` fails.
+
+A test that fails only when the machine is busy proves nothing, and it is the
+one red in this list that is not a specification of a defect. It is a race
+between the test and the process it inspects. It is Probe's file, it is
+WI-002's verification work, and it needs a small item of its own.
+
+### The memory guard does not need a new work item, and the reason matters
+
+The peer session raised the memory-guard breach in the group on the grounds
+that two leads writing work item files in one tree is the collision repaired
+in `a719f8e`. The finding is real, but it splits in two, and only one half is
+a breach.
+
+**Two of the three are WI-012's own defect.** WI-012 is "An agent has a
+memory of its own", owner Cog, implemented in `e764e6a`, and it is sitting at
+`verify` with Probe's verification owed and queued (`task_533f34c6d269`). The
+published contract says the memory "follows the agent across every
+conversation it takes part in — available to that agent's turns in every
+conversation, **and to no other agent's turns**" (`CONTRACTS.md:450-455`).
+The red tests prove that `resource.update` does not call the guard, so an
+agent can write into another agent's memory and take it over. That is the
+item's implementation not enforcing the item's own contract — so WI-012 goes
+back to `implement` with Probe's finding, and **no new number is needed**.
+
+**The third is a question, not a breach**, and the test says so itself:
+
+> This one is a question, not a breach: `resource.get` is published as "Read a
+> resource" with no promise about who owns it, so the contract does not say an
+> agent may not read one. The rule the code states for writes — an agent
+> touches only its own memory — has no read-side counterpart, and this test
+> pins the stricter reading until the owner says which one holds.
+
+So there are two entries in the contract, and they disagree: the memory entry
+says an agent's memory is not available to another agent's turns, and the
+resource-read entry promises no ownership at all. Which reading holds is the
+owner's, because it decides what an agent can see of another agent. It is
+with the owner as a question, not with the factory as a defect.
+
+### The wants, for the session that owns the numbers
+
+The number space belongs to the session that owns it. These are recorded here
+for that session to number, and they are not dispatched from this session.
+
+**Want 1 — the waiting list's kind grows by one, so an unknown turn reaches
+the owner.**
+
+- **Title:** An agent turn whose outcome cannot be confirmed reaches the
+  owner.
+- **Owner:** Cog for the server, Wren for the published kind — which is two
+  items, not one, because one work item has one owner.
+- **Criteria:** the waiting list returns an item for an agent turn that ran
+  out of time, with the reason the contract publishes; the published
+  `WaitingKind` grows by that kind, with a migration note saying what a client
+  that matched on two kinds must now do; the item is closed by the owner and
+  only by the owner, the way an unknown task is; and nothing that draws an
+  approval or a task changes its shape.
+- **Blocked on:** the owner. `WaitingKind` is published as `'approval' |
+'task'`, and growing a published type is the one change the owner
+  reserved.
+
+**Want 2 — the memory guard is called on update, not only on create.**
+
+- **Title:** The memory guard holds on update, the way it holds on create.
+- **Owner:** Cog.
+- **Criteria:** the guard the create path uses is called on the update path
+  too; an agent that names another agent's `agentConnectionId` in an update
+  is refused the way it is refused on create; the refusal is the same refusal,
+  not a second shape of it; and the write-side test that pins this stays in
+  the suite, green.
+- **Note:** this is WI-012 returning to `implement`, not a new item. Listed
+  here so it is not lost, and so the number is not spent on it twice.
+
+**Want 3 — the password exposure test does not race the reset it inspects.**
+
+- **Title:** The password exposure test does not race the reset process.
+- **Owner:** Probe.
+- **Criteria:** the test passes when the suite runs and when it runs alone,
+  which means the command line is read without holding the reset past its
+  timeout — the lock is released as soon as the read succeeds, or the reset
+  is given a timeout that matches the read; the test still proves the
+  exposure, so the assertion that the password is visible in the host's
+  process list does not go away with the race; and the test still proves the
+  recovery path works, so the assertion that the credential is replaced stays.
+
+### The two questions this leaves for the owner
+
+Both are the owner's, both are one choice, and both are on the path to a green
+tree.
+
+1. **The waiting list's kind.** Does the published kind grow by one, so that
+   an agent turn whose outcome cannot be confirmed reaches the owner? The
+   contract already promises that an unknown item reaches the owner as
+   something to check and that only the owner can close it; today that promise
+   is met for tasks and broken for turns, and a broken turn can never be
+   closed at all.
+2. **The memory read side.** May an agent read another agent's memory? The
+   memory entry says one thing and the resource-read entry says nothing, and
+   the code enforces the write side only.
