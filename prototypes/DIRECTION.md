@@ -258,6 +258,41 @@ material that re-hues rather than replaces. **What it saves:** a 195-line
 palette rewrite, a new serif token, and a light/dark inversion across the
 whole panel.
 
+## What the decision surface still needs
+
+The direction is a layout. Three things the owner's role depends on are not
+part of it, and none of them has an item yet, so they are named here while the
+briefs are still unwritten.
+
+**The decision needs its context in the room where the decision is taken.**
+Under this direction the decisions live on the Map's rail and the execution
+trace is the Work room's companion. That splits a decision from the evidence
+for it: the owner would leave the landing screen to learn what the agent did,
+in order to decide on the landing screen. The rail's mitigation only holds if
+the evidence is on the rail too. So the trace item must carry two scopes — the
+conversation's companion in the Work room, **and** the decision's context
+where the control is: what the agent did, what it produced, what it cost, in
+the drawer the control opens. The data is already in the contracts
+(`tool.started`, `tool.completed`, `artifact.created`, `execution.status`, and
+spend as an abstract counter), so both scopes are surfaces over what the
+product already records.
+
+**The waiting list has a way in and no way out.** The published vocabulary
+carries `approval.requested` and `task.updated`; it carries no
+`approval.decided`, and the decide route publishes nothing. So every way of
+*needing* the owner pushes into the list, and no way of *not* needing the owner
+pushes out of it. A decided approval leaves the row only when something else
+publishes, or the safety-net refetch catches it. For the one surface the owner
+judges the product by, "nothing is waiting on me" has to be true now, not
+eventually. This is C-16, and it is the owner's nod, because it is a contract
+change.
+
+**The second half of the authority is still missing.** Reversibility: the undo,
+over a substrate the product already keeps. It has no item — W3 numbers it and
+defers it for capacity. A decision the owner cannot take back is a decision
+taken under duress, and with one owner there is nobody else to absorb the
+mistake.
+
 ## What this document does not do
 
 It does not build anything, and it does not change the panel's behaviour. It

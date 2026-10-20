@@ -570,6 +570,8 @@ something that leads to it. Each names where it was seen.
 | C-20 | The product does not report on itself — Q6's two measures are not computed and not shown, and no work item covers them                                                                                                                                                                                                                         | the strategy decisions, Q6; `apps/server/src/db/schema.ts`, `apps/server/src/modules/mcp/server.ts` — `resources.createdBy` already separates an agent's authorship from the owner's, and `auditLog` records the actor of every action — **the source claim was corrected 2026-10-21, on Probe's WI-011 review: `createdBy` is hardcoded `'system'` for automations and tasks, and twelve of the thirty-four mutating routes write no audit entry at all** |
 | C-21 | The panel can decide but not take back — there is no undo, revert or rollback in the server or the web client, and with one owner there is no second operator to absorb a bad action                                                                                                                                                           | `apps/server/src/db/schema.ts` — `resources.revision`, `automations.revision` and `auditLog` are the substrate, so an undo is a surface over data the product already keeps                                                                                                                                                                                                                                                                                |
 
+| C-22 | The waiting list has a way in and no way out — the published vocabulary carries `approval.requested` and `task.updated` but no `approval.decided`, and `POST /api/approvals/:id/decide` publishes nothing, so a decided approval leaves the list only when something else publishes or the safety-net refetch catches it | `packages/contracts/src/agent.ts`, `apps/server/src/api/approvals.ts`, `apps/web/src/components/WaitingList.tsx` — C-16 asks for the same event from the outside-decision angle; the gap is the absence of a push-out channel at all |
+
 ## The order
 
 The four items the MiniMax Bot brief produced are all owned by Cog, and Cog
@@ -2672,3 +2674,25 @@ when Probe's queue has room.
 **Every number this session has taken, in one place.** WI-030, WI-031,
 WI-032, WI-033, WI-034, WI-035, WI-036, WI-037, WI-038. The other Chief
 session's are WI-024 through WI-029.
+
+## The measures cannot publish numbers the audit trail knows are wrong — 2026-10-21
+
+WI-020 is dispatched and in flight, and it sits ahead of WI-033 and WI-034.
+That is fine for the route: a read-only route that returns the numbers is
+published work, and the owner approved it. It is not fine for the band — the
+surface the owner looks at. The inputs are known to be wrong today:
+`createdBy` is hardcoded `'system'` for automations and tasks, twelve of the
+thirty-four mutating routes write no audit entry, and every entry written
+records a success whether the action succeeded or not. A band that renders
+those as "the share of features authored by agents" is the product's first
+report on itself, and it would be false.
+
+So the rule, in the family of the one that already travels with the direction
+(_no ratio whose denominator is zero_): **no number whose inputs are known to
+be wrong.** The route lands. The band ships with the counts it can defend —
+features authored in-instance by an agent, from a table that records the real
+author — and the ratio and the second measure wait for WI-033 and WI-034.
+
+This is a scoping change to a dispatched item, not a reordering: the item
+lands, and what it shows is bounded by what the data can carry. Nobody has
+said the band may publish a number the audit trail does not support.
