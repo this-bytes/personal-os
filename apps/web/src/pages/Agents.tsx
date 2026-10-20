@@ -3,7 +3,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { KeyRound, Pencil, Plus, RefreshCw, ShieldCheck, Trash2 } from 'lucide-react';
 import { Badge, Button, Card, CardContent, Switch } from '@personal-os/ui';
 import type { AgentCapabilities, AdapterType } from '@personal-os/contracts';
-import { adapterTypeLabels } from '@personal-os/contracts';
+import { adapterTypeLabels, resolvePersona } from '@personal-os/contracts';
 import { api, errorMessage } from '../lib/api';
 import type { AgentConnectionDetail, SecretSummary } from '../lib/types';
 import { useWorkspace } from '../state/workspace';
@@ -11,6 +11,7 @@ import { EmptyState, ErrorState, LoadingState } from '../components/ErrorState';
 import { StatusBadge } from '../components/StatusBadge';
 import { AgentConnectionForm, type AgentFormInput } from '../components/AgentConnectionForm';
 import { AgentTokenPanel } from '../components/AgentTokenPanel';
+import { PersonaBadge } from '../components/PersonaBadge';
 import { ToolGrantPanel } from '../components/ToolGrantPanel';
 
 const CAPABILITY_LABELS: Array<{ key: keyof AgentCapabilities; label: string }> = [
@@ -68,6 +69,7 @@ export function Agents(): React.JSX.Element {
         adapterType: input.adapterType,
         config: input.config ?? {},
         ...(input.secrets ? { secrets: input.secrets } : {}),
+        ...(input.persona ? { persona: input.persona } : {}),
       }),
     onSuccess: async () => {
       setActionError(null);
@@ -84,6 +86,9 @@ export function Agents(): React.JSX.Element {
         ...(input.enabled === undefined ? {} : { enabled: input.enabled }),
         ...(input.config === null ? {} : { config: input.config }),
         ...(input.secrets ? { secrets: input.secrets } : {}),
+        // `null` clears the persona: the agent has one only if the owner
+        // gave it one.
+        persona: input.persona,
       }),
     onSuccess: async () => {
       setActionError(null);
@@ -173,97 +178,105 @@ export function Agents(): React.JSX.Element {
       ) : null}
 
       <div className="grid gap-3 sm:grid-cols-2">
-        {list.map((agent) => (
-          <Card key={agent.id}>
-            <CardContent className="p-3">
-              <div className="flex items-start justify-between gap-2">
-                <div className="min-w-0">
-                  <div className="flex flex-wrap items-center gap-1.5">
-                    <span className="truncate text-sm font-semibold text-slate-100">
-                      {agent.name}
-                    </span>
-                    <StatusBadge status={agent.status} />
-                    {!agent.enabled ? <Badge variant="warning">disabled</Badge> : null}
+        {list.map((agent) => {
+          // The persona in force for this connection, and where it came
+          // from. A conversation may override it; the card shows the base.
+          const persona = resolvePersona({ base: agent.persona });
+          return (
+            <Card key={agent.id}>
+              <CardContent className="p-3">
+                <div className="flex items-start justify-between gap-2">
+                  <div className="min-w-0">
+                    <div className="flex flex-wrap items-center gap-1.5">
+                      <span className="truncate text-sm font-semibold text-slate-100">
+                        {agent.name}
+                      </span>
+                      <StatusBadge status={agent.status} />
+                      {!agent.enabled ? <Badge variant="warning">disabled</Badge> : null}
+                    </div>
+                    <p className="mt-0.5 text-[11px] text-slate-500">
+                      {adapterTypeLabels[agent.adapterType as AdapterType] ?? agent.adapterType}
+                    </p>
+                    <div className="mt-1">
+                      <PersonaBadge role={persona.persona?.role} source={persona.source} />
+                    </div>
                   </div>
-                  <p className="mt-0.5 text-[11px] text-slate-500">
-                    {adapterTypeLabels[agent.adapterType as AdapterType] ?? agent.adapterType}
-                  </p>
+                  <Switch
+                    checked={agent.enabled}
+                    aria-label={`Enable ${agent.name}`}
+                    onCheckedChange={(enabled) => setEnabled.mutate({ id: agent.id, enabled })}
+                  />
                 </div>
-                <Switch
-                  checked={agent.enabled}
-                  aria-label={`Enable ${agent.name}`}
-                  onCheckedChange={(enabled) => setEnabled.mutate({ id: agent.id, enabled })}
-                />
-              </div>
 
-              <div className="mt-2.5 flex flex-wrap gap-1">
-                {agent.capabilities ? (
-                  CAPABILITY_LABELS.filter(
-                    (capability) => agent.capabilities?.[capability.key],
-                  ).map((capability) => (
-                    <Badge key={capability.key} variant="info">
-                      {capability.label}
-                    </Badge>
-                  ))
-                ) : (
-                  <Badge variant="outline">capabilities unknown</Badge>
-                )}
-              </div>
+                <div className="mt-2.5 flex flex-wrap gap-1">
+                  {agent.capabilities ? (
+                    CAPABILITY_LABELS.filter(
+                      (capability) => agent.capabilities?.[capability.key],
+                    ).map((capability) => (
+                      <Badge key={capability.key} variant="info">
+                        {capability.label}
+                      </Badge>
+                    ))
+                  ) : (
+                    <Badge variant="outline">capabilities unknown</Badge>
+                  )}
+                </div>
 
-              {agent.lastError ? (
-                <p className="mt-2 rounded border border-red-900/60 bg-red-950/30 px-2 py-1.5 text-[11px] text-red-300">
-                  {agent.lastError}
-                </p>
-              ) : null}
+                {agent.lastError ? (
+                  <p className="mt-2 rounded border border-red-900/60 bg-red-950/30 px-2 py-1.5 text-[11px] text-red-300">
+                    {agent.lastError}
+                  </p>
+                ) : null}
 
-              <div className="mt-2.5 flex flex-wrap items-center gap-1.5 border-t border-slate-800 pt-2.5">
-                <Button
-                  variant="secondary"
-                  size="sm"
-                  disabled={probe.isPending}
-                  onClick={() => probe.mutate(agent.id)}
-                >
-                  <RefreshCw className="h-3.5 w-3.5" />
-                  Probe
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => {
-                    setEditing(agent);
-                    setFormOpen(true);
-                  }}
-                >
-                  <Pencil className="h-3.5 w-3.5" />
-                  Edit
-                </Button>
-                <Button variant="ghost" size="sm" onClick={() => setTokenAgent(agent)}>
-                  <KeyRound className="h-3.5 w-3.5" />
-                  Tokens
-                </Button>
-                <Button variant="ghost" size="sm" onClick={() => setGrantAgent(agent)}>
-                  <ShieldCheck className="h-3.5 w-3.5" />
-                  Tools
-                  <span className="text-[10px] text-slate-500">{agent.toolGrants.length}</span>
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="ml-auto h-8 w-8"
-                  aria-label={`Remove ${agent.name}`}
-                  disabled={remove.isPending}
-                  onClick={() => {
-                    if (window.confirm(`Remove the connection "${agent.name}"?`)) {
-                      remove.mutate(agent.id);
-                    }
-                  }}
-                >
-                  <Trash2 className="h-3.5 w-3.5" />
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        ))}
+                <div className="mt-2.5 flex flex-wrap items-center gap-1.5 border-t border-slate-800 pt-2.5">
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    disabled={probe.isPending}
+                    onClick={() => probe.mutate(agent.id)}
+                  >
+                    <RefreshCw className="h-3.5 w-3.5" />
+                    Probe
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => {
+                      setEditing(agent);
+                      setFormOpen(true);
+                    }}
+                  >
+                    <Pencil className="h-3.5 w-3.5" />
+                    Edit
+                  </Button>
+                  <Button variant="ghost" size="sm" onClick={() => setTokenAgent(agent)}>
+                    <KeyRound className="h-3.5 w-3.5" />
+                    Tokens
+                  </Button>
+                  <Button variant="ghost" size="sm" onClick={() => setGrantAgent(agent)}>
+                    <ShieldCheck className="h-3.5 w-3.5" />
+                    Tools
+                    <span className="text-[10px] text-slate-500">{agent.toolGrants.length}</span>
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="ml-auto h-8 w-8"
+                    aria-label={`Remove ${agent.name}`}
+                    disabled={remove.isPending}
+                    onClick={() => {
+                      if (window.confirm(`Remove the connection "${agent.name}"?`)) {
+                        remove.mutate(agent.id);
+                      }
+                    }}
+                  >
+                    <Trash2 className="h-3.5 w-3.5" />
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          );
+        })}
       </div>
 
       {(secrets.data ?? []).length > 0 ? (

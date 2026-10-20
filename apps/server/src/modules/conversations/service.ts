@@ -5,6 +5,7 @@ import {
   type Conversation,
   type Message,
   type Participant,
+  type Persona,
   type RoutingMode,
 } from '@personal-os/contracts';
 import type { Database } from '../../db/client.js';
@@ -77,7 +78,21 @@ export interface ConversationsService {
   remove(id: string): void;
   addParticipant(
     conversationId: string,
-    input: { type: 'human' | 'agent'; agentConnectionId?: string; displayName: string },
+    input: {
+      type: 'human' | 'agent';
+      agentConnectionId?: string;
+      displayName: string;
+      /** A persona that replaces the connection's base for this conversation. */
+      personaOverride?: Persona;
+    },
+  ): Participant;
+  updateParticipant(
+    conversationId: string,
+    participantId: string,
+    patch: {
+      /** A persona that replaces the connection's base. `null` clears it. */
+      personaOverride?: Persona | null;
+    },
   ): Participant;
   removeParticipant(conversationId: string, participantId: string): void;
   listMessages(conversationId: string, options?: { limit?: number; before?: string }): Message[];
@@ -138,6 +153,7 @@ export function createConversationsService(
         type: row.type as Participant['type'],
         agentConnectionId: row.agentConnectionId ?? undefined,
         displayName: row.displayName,
+        personaOverride: row.personaOverride ?? undefined,
       }));
   }
 
@@ -280,6 +296,7 @@ export function createConversationsService(
         type: input.type,
         agentConnectionId: input.agentConnectionId ?? null,
         displayName: input.displayName.trim(),
+        personaOverride: input.personaOverride ?? null,
         joinedAt: new Date().toISOString(),
       };
       db.insert(participants).values(row).run();
@@ -289,6 +306,37 @@ export function createConversationsService(
         type: input.type,
         agentConnectionId: row.agentConnectionId ?? undefined,
         displayName: row.displayName,
+        personaOverride: row.personaOverride ?? undefined,
+      };
+    },
+
+    updateParticipant(conversationId, participantId, patch): Participant {
+      const row = db
+        .select()
+        .from(participants)
+        .where(
+          and(eq(participants.conversationId, conversationId), eq(participants.id, participantId)),
+        )
+        .get();
+      if (!row) throw errors.notFound('Participant');
+
+      if (patch.personaOverride !== undefined) {
+        db.update(participants)
+          .set({ personaOverride: patch.personaOverride })
+          .where(eq(participants.id, participantId))
+          .run();
+      }
+
+      const override =
+        patch.personaOverride !== undefined ? patch.personaOverride : row.personaOverride;
+
+      return {
+        id: row.id,
+        conversationId: row.conversationId,
+        type: row.type as Participant['type'],
+        agentConnectionId: row.agentConnectionId ?? undefined,
+        displayName: row.displayName,
+        personaOverride: override ?? undefined,
       };
     },
 

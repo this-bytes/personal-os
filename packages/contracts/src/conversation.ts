@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { idSchema, isoDateSchema } from './common.js';
+import { personaSchema } from './agent.js';
 
 /**
  * Routing mode controls *routing*, never agent intelligence.
@@ -30,6 +31,11 @@ export const participantSchema = z.object({
   type: participantTypeSchema,
   agentConnectionId: idSchema.optional(),
   displayName: z.string().min(1).max(200),
+  /**
+   * A persona that replaces the connection's base for this conversation
+   * only. It names the agent it applies to through `agentConnectionId`.
+   */
+  personaOverride: personaSchema.optional(),
 });
 export type Participant = z.infer<typeof participantSchema>;
 

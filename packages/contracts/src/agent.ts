@@ -18,6 +18,79 @@ export const adapterTypeLabels: Record<AdapterType, string> = {
   echo: 'Built-in echo (local test)',
 };
 
+/**
+ * What an agent is, and how it should behave.
+ *
+ * The connection sets the base persona; a conversation may override it for
+ * one participant. Both fields are optional, so a connection written before
+ * this existed stays valid and resolves to the runtime's own default.
+ */
+export const personaSchema = z.object({
+  /** One line, shown to the owner. */
+  role: z.string().min(1).max(200).optional(),
+  /** Standing instructions, shown to the agent. */
+  instructions: z.string().max(8_000).optional(),
+});
+export type Persona = z.infer<typeof personaSchema>;
+
+/**
+ * Where the persona in force came from. The panel names it, so an overridden
+ * value is never displayed as if it were the base.
+ */
+export const personaSourceSchema = z.enum(['conversation', 'connection', 'default']);
+export type PersonaSource = z.infer<typeof personaSourceSchema>;
+
+/** How the source is named in the panel. */
+export const personaSourceLabels: Record<PersonaSource, string> = {
+  conversation: 'conversation',
+  connection: 'connection',
+  default: 'default',
+};
+
+export interface ResolvedPersona {
+  /** The persona in force. Absent when the runtime's own default framing is used. */
+  persona?: Persona;
+  /** Where the persona in force came from. */
+  source: PersonaSource;
+}
+
+/** A persona that says nothing is no persona at all. */
+function cleanPersona(persona: Persona | null | undefined): Persona | undefined {
+  if (!persona) return undefined;
+  const role = persona.role?.trim();
+  const instructions = persona.instructions?.trim();
+  const cleaned: Persona = {};
+  if (role && role.length > 0) cleaned.role = role;
+  if (instructions && instructions.length > 0) cleaned.instructions = instructions;
+  return Object.keys(cleaned).length > 0 ? cleaned : undefined;
+}
+
+/**
+ * Resolve the persona in force: most specific first, whole entity.
+ *
+ * An override that sets a role or instructions *is* the persona — the
+ * connection's base is not consulted, and is never merged field by field. A
+ * half-overridden persona is a stranger. With neither, the agent runs with
+ * its runtime's own default framing.
+ *
+ * One resolver, one truth: the server, the worker and the web client all
+ * call this, so they cannot disagree about which persona is in force.
+ */
+export function resolvePersona(input: {
+  /** The participant's override, for this conversation only. */
+  override?: Persona | null;
+  /** The connection's base persona. */
+  base?: Persona | null;
+}): ResolvedPersona {
+  const override = cleanPersona(input.override);
+  if (override) return { persona: override, source: 'conversation' };
+
+  const base = cleanPersona(input.base);
+  if (base) return { persona: base, source: 'connection' };
+
+  return { source: 'default' };
+}
+
 export const agentConnectionSchema = z.object({
   id: idSchema,
   name: z.string().min(1).max(200),
@@ -25,6 +98,8 @@ export const agentConnectionSchema = z.object({
   /** Opaque reference to a server-held configuration record. Never inlined. */
   configRef: idSchema,
   enabled: z.boolean(),
+  /** The base persona. A conversation may override it for one participant. */
+  persona: personaSchema.optional(),
 });
 export type AgentConnection = z.infer<typeof agentConnectionSchema>;
 

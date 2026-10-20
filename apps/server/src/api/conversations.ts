@@ -1,6 +1,6 @@
 import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
-import { routingModeSchema } from '@personal-os/contracts';
+import { personaSchema, routingModeSchema } from '@personal-os/contracts';
 import { audit, parseBody, parseQuery, requireAuth } from './helpers.js';
 
 const listQuerySchema = z.object({
@@ -31,6 +31,13 @@ const participantSchema = z.object({
   type: z.enum(['human', 'agent']),
   agentConnectionId: z.string().optional(),
   displayName: z.string().min(1).max(200),
+  /** A persona that replaces the connection's base for this conversation. */
+  personaOverride: personaSchema.optional(),
+});
+
+const participantPatchSchema = z.object({
+  /** A persona that replaces the connection's base. `null` clears it. */
+  personaOverride: personaSchema.nullable().optional(),
 });
 
 const postMessageSchema = z.object({
@@ -145,6 +152,22 @@ export function registerConversationRoutes(app: FastifyInstance): void {
       return reply
         .code(201)
         .send({ participant: app.services.conversations.addParticipant(id, body) });
+    },
+  );
+
+  app.patch(
+    '/api/conversations/:id/participants/:participantId',
+    { preHandler: requireAuth },
+    async (request) => {
+      const { id, participantId } = request.params as { id: string; participantId: string };
+      const body = parseBody(participantPatchSchema, request.body ?? {});
+      const participant = app.services.conversations.updateParticipant(id, participantId, body);
+      audit(request, 'conversation.participant.updated', {
+        type: 'conversation',
+        id,
+        workspaceId: app.services.conversations.get(id).workspaceId,
+      });
+      return { participant };
     },
   );
 

@@ -4,6 +4,7 @@ import {
   dashboardSpecSchema,
   dataSourceSpecSchema,
   parseAdapterConfig,
+  resolvePersona,
   type AdapterConfig,
   type AgentAdapter,
   type AgentConnection,
@@ -12,6 +13,7 @@ import {
   type ContentPart,
   type MessageOrigin,
   type Participant,
+  type Persona,
 } from '@personal-os/contracts';
 import {
   agentConnections,
@@ -99,6 +101,23 @@ function recordUnknownOutcome(
     result: 'unknown',
     metadata: { reason: input.reason, ...(input.metadata ?? {}) },
   });
+}
+
+/**
+ * Frame the turn with the persona in force.
+ *
+ * The persona frames the turn and nothing else. It sits at the head of the
+ * context the turn already carries, so the owner never retypes it, and it
+ * never replaces or duplicates the external runtime's own harness or
+ * instruction file.
+ */
+export function frameWithPersona(context: string, persona: Persona | undefined): string {
+  if (!persona) return context;
+  const lines: string[] = [];
+  if (persona.role) lines.push(`Role: ${persona.role}`);
+  if (persona.instructions) lines.push(persona.instructions);
+  if (lines.length === 0) return context;
+  return `Persona in force for this conversation:\n${lines.join('\n')}\n\n${context}`;
 }
 
 export async function executeJob(
@@ -215,6 +234,13 @@ async function executeChatTurn(context: ExecutorContext, job: QueueJob): Promise
         .join('\n')
     : '';
 
+  // The persona in force: the conversation's override for this agent if the
+  // owner set one, otherwise the connection's base.
+  const persona = resolvePersona({
+    override: participant?.personaOverride,
+    base: connection.persona,
+  });
+
   const now = new Date().toISOString();
   const origin: MessageOrigin = {
     kind: 'agent',
@@ -330,6 +356,7 @@ async function executeChatTurn(context: ExecutorContext, job: QueueJob): Promise
           adapterType: connection.adapterType as AgentConnection['adapterType'],
           configRef: connection.configRef,
           enabled: connection.enabled,
+          persona: connection.persona ?? undefined,
         },
         externalSessionId,
       );
@@ -339,7 +366,7 @@ async function executeChatTurn(context: ExecutorContext, job: QueueJob): Promise
     const turn: AgentTurnInput = {
       conversationId: payload.conversationId,
       message: turnMessage,
-      context: contextText,
+      context: frameWithPersona(contextText, persona.persona),
       executionId: payload.executionId,
       signal: controller.signal,
       ...(externalSessionId ? { externalSessionId } : {}),

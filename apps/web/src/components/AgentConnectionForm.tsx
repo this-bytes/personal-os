@@ -1,5 +1,5 @@
 import { useMemo, useState, type FormEvent } from 'react';
-import type { AdapterType } from '@personal-os/contracts';
+import type { AdapterType, Persona } from '@personal-os/contracts';
 import { adapterTypeLabels } from '@personal-os/contracts';
 import {
   Button,
@@ -23,6 +23,8 @@ export interface AgentFormInput {
   config: Record<string, unknown> | null;
   secrets: Record<string, string> | null;
   enabled?: boolean;
+  /** The base persona of this agent. `null` means it has none. */
+  persona: Persona | null;
 }
 
 interface AgentConnectionFormProps {
@@ -36,6 +38,8 @@ interface AgentConnectionFormProps {
 
 interface FormState {
   name: string;
+  role: string;
+  personaInstructions: string;
   adapterType: AdapterType;
   command: string;
   args: string;
@@ -70,6 +74,8 @@ interface FormState {
 
 const EMPTY: FormState = {
   name: '',
+  role: '',
+  personaInstructions: '',
   adapterType: 'echo',
   command: '',
   args: '',
@@ -233,7 +239,17 @@ export function AgentConnectionForm({
   };
 
   const reset = (): void => {
-    setForm(agent ? { ...EMPTY, name: agent.name, adapterType: agent.adapterType } : EMPTY);
+    setForm(
+      agent
+        ? {
+            ...EMPTY,
+            name: agent.name,
+            adapterType: agent.adapterType,
+            role: agent.persona?.role ?? '',
+            personaInstructions: agent.persona?.instructions ?? '',
+          }
+        : EMPTY,
+    );
     setReplaceConfig(false);
     setLocalError(null);
   };
@@ -244,6 +260,16 @@ export function AgentConnectionForm({
 
     if (!form.name.trim()) {
       setLocalError('A connection needs a name.');
+      return;
+    }
+
+    if (form.role.trim().length > 200) {
+      setLocalError('The role is one line of up to 200 characters.');
+      return;
+    }
+
+    if (form.personaInstructions.trim().length > 8_000) {
+      setLocalError('The standing instructions are limited to 8,000 characters.');
       return;
     }
 
@@ -278,11 +304,24 @@ export function AgentConnectionForm({
       secrets['authToken'] = form.authToken.trim();
     }
 
+    // The persona is optional in both directions: no role and no
+    // instructions means the agent has no persona of its own.
+    const role = form.role.trim();
+    const instructions = form.personaInstructions.trim();
+    const persona: Persona | null =
+      role.length > 0 || instructions.length > 0
+        ? {
+            ...(role.length > 0 ? { role } : {}),
+            ...(instructions.length > 0 ? { instructions } : {}),
+          }
+        : null;
+
     onSubmit({
       name: form.name.trim(),
       adapterType: form.adapterType,
       config,
       secrets: Object.keys(secrets).length > 0 ? secrets : null,
+      persona,
       ...(isEdit ? { enabled: agent?.enabled ?? true } : {}),
     });
   };
@@ -330,6 +369,44 @@ export function AgentConnectionForm({
                 ))}
               </Select>
             </Field>
+          </div>
+
+          <div className="space-y-4 rounded-md border border-slate-800 bg-slate-950/40 p-3">
+            <p className="text-[11px] font-medium uppercase tracking-wide text-slate-500">
+              Persona
+            </p>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <Field
+                label="Role"
+                htmlFor="agent-persona-role"
+                hint="One line, shown to you. Up to 200 characters."
+              >
+                <Input
+                  id="agent-persona-role"
+                  maxLength={200}
+                  value={form.role}
+                  onChange={(event) => set('role', event.target.value)}
+                  placeholder="Research assistant"
+                />
+              </Field>
+            </div>
+            <Field
+              label="Standing instructions"
+              htmlFor="agent-persona-instructions"
+              hint="Shown to the agent at the head of its turn. Up to 8,000 characters."
+            >
+              <Textarea
+                id="agent-persona-instructions"
+                maxLength={8_000}
+                value={form.personaInstructions}
+                onChange={(event) => set('personaInstructions', event.target.value)}
+                placeholder="Answer with sources. Say so when you do not know."
+              />
+            </Field>
+            <p className="text-[11px] leading-snug text-slate-500">
+              The persona is what this agent is. A conversation can replace it for one participant,
+              and the panel always shows which one is in force.
+            </p>
           </div>
 
           {isEdit ? (

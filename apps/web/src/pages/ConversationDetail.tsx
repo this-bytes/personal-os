@@ -3,7 +3,8 @@ import { Link, useNavigate, useParams } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { AlertTriangle, ArrowLeft, Ban, Check, Info, Pause, Play, Trash2 } from 'lucide-react';
 import { Badge, Button, Card, CardContent, CardHeader, CardTitle, Select } from '@personal-os/ui';
-import type { RoutingMode } from '@personal-os/contracts';
+import type { Participant, Persona, RoutingMode } from '@personal-os/contracts';
+import { resolvePersona } from '@personal-os/contracts';
 import { api, errorMessage } from '../lib/api';
 import type {
   AgentConnectionDetail,
@@ -19,6 +20,8 @@ import { ChatMessageList, type StreamingEntry } from '../components/ChatMessageL
 import { Composer } from '../components/Composer';
 import { EmptyState, ErrorState, LoadingState } from '../components/ErrorState';
 import { ParticipantManager } from '../components/ParticipantManager';
+import { PersonaBadge } from '../components/PersonaBadge';
+import { PersonaOverrideDialog } from '../components/PersonaOverrideDialog';
 import { RoutingModeSelector } from '../components/RoutingModeSelector';
 
 export function ConversationDetail(): React.JSX.Element {
@@ -36,6 +39,7 @@ export function ConversationDetail(): React.JSX.Element {
   const [streaming, setStreaming] = useState<StreamingEntry[]>([]);
   const [executionNames, setExecutionNames] = useState<Record<string, string>>({});
   const [actionError, setActionError] = useState<string | null>(null);
+  const [personaParticipant, setPersonaParticipant] = useState<Participant | null>(null);
 
   const conversation = useQuery<ConversationDetail>({
     queryKey: ['conversation', conversationId],
@@ -170,6 +174,21 @@ export function ConversationDetail(): React.JSX.Element {
     onError: (error) => setActionError(errorMessage(error)),
   });
 
+  const updateParticipant = useMutation({
+    mutationFn: async (input: { participantId: string; personaOverride: Persona | null }) =>
+      api.patch(`/conversations/${conversationId}/participants/${input.participantId}`, {
+        // `null` clears the override: the connection's base is in force
+        // again.
+        personaOverride: input.personaOverride,
+      }),
+    onSuccess: async () => {
+      setActionError(null);
+      setPersonaParticipant(null);
+      await invalidate();
+    },
+    onError: (error) => setActionError(errorMessage(error)),
+  });
+
   const removeConversation = useMutation({
     mutationFn: async () => api.delete(`/conversations/${conversationId}`),
     onSuccess: async () => {
@@ -203,6 +222,24 @@ export function ConversationDetail(): React.JSX.Element {
     (participant) => participant.id === current.coordinatorId,
   );
 
+  // The persona in force for every agent participant, and where it came
+  // from. The conversation's override wins over the connection's base, and
+  // the panel says which one is in force.
+  const personas = agentParticipants.map((participant) => ({
+    participant,
+    resolved: resolvePersona({
+      override: participant.personaOverride,
+      base: participant.agentConnectionId
+        ? agentById.get(participant.agentConnectionId)?.persona
+        : undefined,
+    }),
+  }));
+
+  const basePersonaOf = (participant: Participant | null): Persona | undefined =>
+    participant?.agentConnectionId
+      ? agentById.get(participant.agentConnectionId)?.persona
+      : undefined;
+
   const dispatchNames = (routingNotice?.dispatches ?? []).map(
     (dispatch) => agentById.get(dispatch.agentConnectionId)?.name ?? dispatch.agentConnectionId,
   );
@@ -223,6 +260,12 @@ export function ConversationDetail(): React.JSX.Element {
             <Badge variant="outline">{current.routingMode}</Badge>
             {current.paused ? <Badge variant="warning">paused</Badge> : null}
             {coordinator ? <span>coordinator: {coordinator.displayName}</span> : null}
+            {personas.map(({ participant, resolved }) => (
+              <span key={participant.id} className="inline-flex items-center gap-1.5">
+                <span className="text-slate-400">{participant.displayName}</span>
+                <PersonaBadge role={resolved.persona?.role} source={resolved.source} />
+              </span>
+            ))}
           </div>
         </div>
 
@@ -251,6 +294,24 @@ export function ConversationDetail(): React.JSX.Element {
           </Button>
         </div>
       </header>
+
+      <PersonaOverrideDialog
+        key={personaParticipant?.id ?? 'none'}
+        participant={personaParticipant}
+        base={basePersonaOf(personaParticipant)}
+        busy={updateParticipant.isPending}
+        error={updateParticipant.isError ? errorMessage(updateParticipant.error) : null}
+        onOpenChange={(open) => {
+          if (!open) setPersonaParticipant(null);
+        }}
+        onSubmit={(personaOverride) => {
+          if (!personaParticipant) return;
+          updateParticipant.mutate({
+            participantId: personaParticipant.id,
+            personaOverride,
+          });
+        }}
+      />
 
       {actionError ? <ErrorState title="The change was not applied" message={actionError} /> : null}
 
@@ -396,6 +457,46 @@ export function ConversationDetail(): React.JSX.Element {
                 onAdd={(input) => addParticipant.mutate(input)}
                 onRemove={(participantId) => removeParticipant.mutate(participantId)}
               />
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="pb-1">
+              <CardTitle>Personas</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-2 pt-1">
+              {personas.length === 0 ? (
+                <p className="text-[11px] text-slate-500">
+                  No agent participates yet, so no persona is in force.
+                </p>
+              ) : null}
+              {personas.map(({ participant, resolved }) => (
+                <div
+                  key={participant.id}
+                  className="rounded-md border border-slate-800 bg-slate-950/40 px-2.5 py-2"
+                >
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="min-w-0 truncate text-xs text-slate-200">
+                      {participant.displayName}
+                    </span>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setPersonaParticipant(participant)}
+                    >
+                      Persona
+                    </Button>
+                  </div>
+                  <div className="mt-0.5">
+                    <PersonaBadge role={resolved.persona?.role} source={resolved.source} />
+                  </div>
+                  {resolved.persona?.instructions ? (
+                    <p className="mt-1 line-clamp-3 text-[11px] leading-snug text-slate-400">
+                      {resolved.persona.instructions}
+                    </p>
+                  ) : null}
+                </div>
+              ))}
             </CardContent>
           </Card>
 

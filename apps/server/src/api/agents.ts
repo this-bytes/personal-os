@@ -1,6 +1,6 @@
 import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
-import { adapterTypeSchema, toolGrantListSchema } from '@personal-os/contracts';
+import { adapterTypeSchema, personaSchema, toolGrantListSchema } from '@personal-os/contracts';
 import { audit, parseBody, parseQuery, requireAuth } from './helpers.js';
 
 const listQuerySchema = z.object({ workspaceId: z.string() });
@@ -13,6 +13,8 @@ const createSchema = z.object({
   secrets: z.record(z.string()).optional(),
   /** The MCP tools this connection may call. Omitted means the default set. */
   toolGrants: toolGrantListSchema.optional(),
+  /** The base persona: the role and the standing instructions of this agent. */
+  persona: personaSchema.optional(),
 });
 
 const updateSchema = z.object({
@@ -22,6 +24,8 @@ const updateSchema = z.object({
   secrets: z.record(z.string()).optional(),
   /** The MCP tools this connection may call. */
   toolGrants: toolGrantListSchema.optional(),
+  /** The base persona. `null` clears it. */
+  persona: personaSchema.nullable().optional(),
 });
 
 export function registerAgentRoutes(app: FastifyInstance): void {

@@ -8,6 +8,7 @@ import type {
   ExecutionStatus,
   McpToolName,
   MessageOrigin,
+  Persona,
 } from '@personal-os/contracts';
 
 /**
@@ -84,6 +85,12 @@ export const agentConnections = sqliteTable(
      * agent tool set; an explicit list narrows or widens it.
      */
     toolGrants: text('tool_grants', { mode: 'json' }).$type<McpToolName[] | null>(),
+    /**
+     * The base persona: the role and the standing instructions of this
+     * agent. `null` means the agent runs with its runtime's own default
+     * framing.
+     */
+    persona: text('persona', { mode: 'json' }).$type<Persona | null>(),
     enabled: integer('enabled', { mode: 'boolean' }).notNull().default(true),
     capabilities: text('capabilities', { mode: 'json' }).$type<AgentCapabilities | null>(),
     status: text('status').$type<AgentConnectionStatus>().notNull().default('unknown'),
@@ -170,6 +177,11 @@ export const participants = sqliteTable(
     type: text('type').notNull(),
     agentConnectionId: text('agent_connection_id'),
     displayName: text('display_name').notNull(),
+    /**
+     * A persona that replaces the connection's base for this conversation
+     * only. `null` means the connection's base is in force.
+     */
+    personaOverride: text('persona_override', { mode: 'json' }).$type<Persona | null>(),
     joinedAt: text('joined_at').notNull(),
   },
   (table) => [index('participants_conversation_idx').on(table.conversationId)],

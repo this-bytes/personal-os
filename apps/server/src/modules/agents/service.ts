@@ -9,6 +9,7 @@ import {
   type AgentConnectionDetail,
   type AgentConnectionStatus,
   type McpToolName,
+  type Persona,
 } from '@personal-os/contracts';
 import type { AdapterRegistry } from '@personal-os/agent-adapters';
 import type { Database } from '../../db/client.js';
@@ -36,6 +37,11 @@ export interface CreateConnectionInput {
    * agent tool set.
    */
   toolGrants?: McpToolName[];
+  /**
+   * The base persona: the role and the standing instructions of this agent.
+   * Omitted means the agent runs with its runtime's own default framing.
+   */
+  persona?: Persona;
 }
 
 export interface AgentService {
@@ -50,6 +56,8 @@ export interface AgentService {
       config?: Record<string, unknown>;
       secrets?: Record<string, string>;
       toolGrants?: McpToolName[];
+      /** The base persona. `null` clears it. */
+      persona?: Persona | null;
     },
   ): AgentConnectionDetail;
   remove(id: string): void;
@@ -84,6 +92,7 @@ export function createAgentService(options: AgentServiceOptions): AgentService {
     adapterType: row.adapterType as AdapterType,
     configRef: row.configRef,
     enabled: row.enabled,
+    persona: row.persona ?? undefined,
     workspaceId: row.workspaceId,
     toolGrants: row.toolGrants ?? [...defaultAgentToolGrants],
     capabilities: row.capabilities,
@@ -207,6 +216,7 @@ export function createAgentService(options: AgentServiceOptions): AgentService {
           adapterType: input.adapterType,
           configRef,
           toolGrants: input.toolGrants ?? null,
+          persona: input.persona ?? null,
           enabled: true,
           capabilities: null,
           status: 'unknown',
@@ -228,6 +238,7 @@ export function createAgentService(options: AgentServiceOptions): AgentService {
       if (patch.name !== undefined) updates.name = patch.name.trim();
       if (patch.enabled !== undefined) updates.enabled = patch.enabled;
       if (patch.toolGrants !== undefined) updates.toolGrants = patch.toolGrants;
+      if (patch.persona !== undefined) updates.persona = patch.persona;
 
       if (patch.config !== undefined || patch.secrets !== undefined) {
         const existing = readConfigPayload(current.configRef);
