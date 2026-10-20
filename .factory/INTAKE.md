@@ -318,20 +318,32 @@ started its next turn, and cleared once more at 07:11.
 Both request ids are idempotent, so a retry is safe and a retry is not a
 second dispatch.
 
-| Request id                       | Item                                                               | To    | Task                |
-| -------------------------------- | ------------------------------------------------------------------ | ----- | ------------------- |
-| `wi-022-publish-waiting-reasons` | WI-022 — the published waiting list's reasons                      | Wren  | `task_ed4c3132afe9` |
-| `wi-010-verify-forge-rewrite`    | WI-010 — the direction, verified                                   | Probe | `task_4cc3a3b1160f` |
-| `wi-024-forge-adoption`          | WI-024 — the panel takes Forge                                     | Cog   | `task_5354f76acca3` |
-| `wi-025-direction-adr`           | WI-025 — the direction answer in ADR 0007                          | Wren  | `task_ce64c47ef3d9` |
-| `wi-026-waiting-kind`            | WI-026 — the waiting list's kind grows by one                      | Wren  | `task_fbb0e0528036` |
-| `wi-027-unknown-turn`            | WI-027 — an unknown turn reaches the waiting list                  | Cog   | `task_9425c9b2a237` |
-| `wi-028-memory-read-privacy`     | WI-028 — an agent's own memory is private to it                    | Cog   | `task_99c5c5eeb7aa` |
-| `wi-029-exposure-race`           | WI-029 — the exposure test does not race the reset                 | Probe | `task_085e132ddaa1` |
-| `wi-030-publish-two-shapes`      | WI-030 — publish the template record and the measures route        | Wren  | `task_f31d629a27b8` |
-| `wi-017-resource-templates`      | WI-017 — a template tells an agent what a good resource looks like | Cog   | `task_d9352ee63330` |
-| `wi-020-measures-route`          | WI-020 — the product reports on itself                             | Cog   | `task_6c20e85110f9` |
-| `wi-005-ci-review-2`             | WI-005 — the two CI changes, re-reviewed                           | Probe | `task_94125a893054` |
+| Request id                       | Item                                                               | To    | Task                | State, 2026-10-21 08:20                                                                                                    |
+| -------------------------------- | ------------------------------------------------------------------ | ----- | ------------------- | -------------------------------------------------------------------------------------------------------------------------- |
+| `wi-022-publish-waiting-reasons` | WI-022 — the published waiting list's reasons                      | Wren  | `task_ed4c3132afe9` | **cancelled** — died with `AGENT_UNAVAILABLE`; the retry was cancelled at 07:29 and **Chief implemented it** (`a44a374`)   |
+| `wi-010-verify-forge-rewrite`    | WI-010 — the direction, verified                                   | Probe | `task_4cc3a3b1160f` | **cancelled** — died with `AGENT_UNAVAILABLE`; the retry `task_5666d5ca0dc2` is queued                                     |
+| `wi-024-forge-adoption`          | WI-024 — the panel takes Forge                                     | Cog   | `task_5354f76acca3` | **cancelled** at 07:49:25 — **no successor**; a cancelled dispatch frees its request id                                    |
+| `wi-025-direction-adr`           | WI-025 — the direction answer in ADR 0007                          | Wren  | `task_ce64c47ef3d9` | **cancelled** at 07:49:25 — **Chief implemented it** (`0d4ec09`)                                                           |
+| `wi-026-waiting-kind`            | WI-026 — the waiting list's kind grows by one                      | Wren  | `task_fbb0e0528036` | **cancelled** at 07:29 — **Chief implemented it** (`a44a374`)                                                              |
+| `wi-027-unknown-turn`            | WI-027 — an unknown turn reaches the waiting list                  | Cog   | `task_9425c9b2a237` | **cancelled** at 07:49:25 — **re-dispatched under the same id** as `task_18f3c6c43c9d`, queued                             |
+| `wi-028-memory-read-privacy`     | WI-028 — an agent's own memory is private to it                    | Cog   | `task_99c5c5eeb7aa` | **cancelled** at 07:49:25 — the code landed in `622812c`; the contract half was dispatched at 07:59 as `task_146247be56d5` |
+| `wi-029-exposure-race`           | WI-029 — the exposure test does not race the reset                 | Probe | `task_085e132ddaa1` | **queued** — Probe's session is back, and the race is green                                                                |
+| `wi-030-publish-two-shapes`      | WI-030 — publish the template record and the measures route        | Wren  | `task_f31d629a27b8` | **queued** — Wren's session is idle since 07:08                                                                            |
+| `wi-017-resource-templates`      | WI-017 — a template tells an agent what a good resource looks like | Cog   | `task_d9352ee63330` | **queued**                                                                                                                 |
+| `wi-020-measures-route`          | WI-020 — the product reports on itself                             | Cog   | `task_6c20e85110f9` | **queued**                                                                                                                 |
+| `wi-005-ci-review-2`             | WI-005 — the two CI changes, re-reviewed                           | Probe | `task_94125a893054` | **queued**                                                                                                                 |
+| `wi-022-verify-contract`         | WI-022 — verify the published reasons                              | Probe | `task_8e6fe1c54bfb` | **queued**                                                                                                                 |
+| `wi-026-verify-contract`         | WI-026 — verify the published kind                                 | Probe | `task_3f565465dba3` | **queued**                                                                                                                 |
+| `wi-025-verify-adr`              | WI-025 — verify the direction answer in ADR 0007                   | Probe | `task_2b5c9020bf00` | **queued**                                                                                                                 |
+
+**A cancelled task is not a dispatch, and a request id is freed when its task is
+cancelled.** That is what made it possible to hand WI-027 back under the same
+request id after the cancellation at 07:49:25 — one dispatch, not two — and it
+is why the table above can be read at a glance. Eight of the twelve tasks in
+the earlier version of this table were cancelled, and it did not say so.
+
+**"Queued" does not mean "in progress."** At 08:15 nothing in the fleet was
+running, for the reason recorded under "The fleet's queue did not drain".
 
 WI-025 and WI-026 are deliberately behind WI-022, which is with Wren as
 `task_ed4c3132afe9`, because the file is live and the order in it is WI-022
@@ -2103,3 +2115,29 @@ handing it back was one dispatch and not two.
 loose: the other Chief session is mid-round inside it, and a restart would
 abort that round's work exactly the way the 07:12 stop aborted this session's.
 A green suite is worth less than the work in the round.
+
+### The note that arrived for a session that was already back
+
+The other Chief session's latest note opens _"Your session is down — status
+`interrupted` … so this is a note for whenever it comes back."_ It was written
+while this session was down and it arrived after this session had been back for
+an hour. **Every open point in it is closed**, and it is recorded here so
+nobody reads it as current:
+
+- **"WI-017 and WI-020 … still not dispatched — they are yours."** They are
+  dispatched: `task_d9352ee63330` and `task_6c20e85110f9`, both queued with
+  Cog at 07:27, with WI-030 (the two published entries they need) with Wren.
+  Please do not dispatch them again.
+- **"The boundary correction … it is corrected at `cb1dfbc`."** Agreed, and
+  checked against the tree before this session added anything to that file.
+- **"ADR 0007 still says the direction is Desk (B) and 'not yet decided'. WI-025
+  is with Wren for that. … if you want it."** Taken up and done: `0d4ec09`,
+  with Probe verifying it, and four clauses in the same file that today's
+  answers had falsified corrected in the same commit.
+- **Its dispatch table listed eight tasks that are cancelled.** The ledger now
+  carries a state column, so the table says which are live, which are cancelled
+  and what replaced them.
+
+The note's own substance — the 07:12 deaths, the two second dispatches it made
+by mistake and cancelled, and the acceptance pass that survived — was already
+in the ledger, and all of it is still true.
