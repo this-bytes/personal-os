@@ -28,6 +28,8 @@ export interface RoutingMessage {
   origin: {
     kind: 'human' | 'agent' | 'system' | 'automation';
     actorId: string;
+    /** The agent connection that produced the message, when it came from one. */
+    agentConnectionId?: string;
     depth: number;
   };
 }
@@ -56,7 +58,8 @@ export type RoutingBlockReason =
   | 'duration_limit'
   | 'spend_limit'
   | 'depth_limit'
-  | 'no_active_agent';
+  | 'no_active_agent'
+  | 'not_coordinator';
 
 export interface RoutingDecision {
   /** Agent connection ids that should receive a turn. */
@@ -155,12 +158,40 @@ export function planRouting(input: RoutingInput): RoutingDecision {
 
     case 'coordinator': {
       const coordinator = participants.find((p) => p.id === conversation.coordinatorId);
-      const coordinatorConnection = coordinator?.agentConnectionId;
+      const coordinatorConnection =
+        coordinator?.agentConnectionId && enabledConnectionIds.has(coordinator.agentConnectionId)
+          ? coordinator.agentConnectionId
+          : undefined;
 
       if (isAgentMessage) {
         // Only the coordinator may delegate, and delegation is explicit.
         if (mentioned.length > 0) {
-          return { targets: unique(mentioned), reason: 'Delegated by the coordinator.' };
+          if (
+            coordinatorConnection &&
+            senderIsCoordinator(
+              message,
+              participants,
+              conversation.coordinatorId,
+              coordinatorConnection,
+            )
+          ) {
+            return { targets: unique(mentioned), reason: 'Delegated by the coordinator.' };
+          }
+          if (!coordinatorConnection) {
+            return {
+              targets: [],
+              reason: 'This conversation has no active coordinator.',
+              blocked: 'no_active_agent',
+            };
+          }
+          return {
+            targets: [],
+            reason:
+              `Only the coordinator may delegate in coordinator mode. ` +
+              `${senderName(message, participants)} is not the coordinator, ` +
+              `so no participant was woken.`,
+            blocked: 'not_coordinator',
+          };
         }
         return {
           targets: [],
@@ -169,7 +200,7 @@ export function planRouting(input: RoutingInput): RoutingDecision {
         };
       }
 
-      if (coordinatorConnection && enabledConnectionIds.has(coordinatorConnection)) {
+      if (coordinatorConnection) {
         return {
           targets: [coordinatorConnection],
           reason: 'Routed to the conversation coordinator.',
@@ -246,4 +277,46 @@ export function deriveChainState(
 
 function unique(values: string[]): string[] {
   return [...new Set(values)];
+}
+
+/**
+ * Is the agent that spoke the coordinator of this conversation?
+ *
+ * A message may name its sender as a participant id (the usual case) or as
+ * an agent connection id (when the agent posts through a capability), and
+ * the two may be recorded in different places. All of them identify the same
+ * agent, so all of them are accepted — and anything that does not identify
+ * the coordinator is not a delegation the coordinator made.
+ */
+function senderIsCoordinator(
+  message: RoutingMessage,
+  participants: RoutingParticipant[],
+  coordinatorParticipantId: string | undefined,
+  coordinatorConnectionId: string,
+): boolean {
+  const coordinatorIds = new Set<string>([coordinatorConnectionId]);
+  if (coordinatorParticipantId) coordinatorIds.add(coordinatorParticipantId);
+
+  const claimed = [message.senderId, message.origin.actorId, message.origin.agentConnectionId];
+  if (claimed.some((id) => typeof id === 'string' && coordinatorIds.has(id))) return true;
+
+  // The sender may be recorded by participant id while the coordinator is
+  // known by connection id, or the other way round.
+  return participants.some(
+    (participant) =>
+      claimed.includes(participant.id) &&
+      participant.agentConnectionId !== undefined &&
+      coordinatorIds.has(participant.agentConnectionId),
+  );
+}
+
+/** The name of the participant that sent a message, for the reason string. */
+function senderName(message: RoutingMessage, participants: RoutingParticipant[]): string {
+  const sender =
+    participants.find((p) => p.id === message.senderId) ??
+    participants.find((p) => p.id === message.origin.actorId) ??
+    (message.origin.agentConnectionId
+      ? participants.find((p) => p.agentConnectionId === message.origin.agentConnectionId)
+      : undefined);
+  return sender?.displayName ?? message.senderId;
 }

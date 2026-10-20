@@ -139,6 +139,20 @@ describe('coordinator mode', () => {
       message: { senderId: 'p_cto', text: '@Codex implement this', origin: agentOrigin },
     });
     expect(decision.targets).toEqual(['agt_codex']);
+    expect(decision.reason).toBe('Delegated by the coordinator.');
+  });
+
+  it('still recognises the coordinator when the message names it by connection id', () => {
+    const decision = plan({
+      conversation: coordinatorConversation,
+      message: {
+        senderId: 'p_cto',
+        text: '@Codex implement this',
+        origin: { kind: 'agent', actorId: 'agt_cto', agentConnectionId: 'agt_cto', depth: 1 },
+      },
+    });
+    expect(decision.targets).toEqual(['agt_codex']);
+    expect(decision.reason).toBe('Delegated by the coordinator.');
   });
 
   it('does not let a non-coordinator agent wake the coordinator', () => {
@@ -151,6 +165,32 @@ describe('coordinator mode', () => {
       },
     });
     expect(decision.targets).toEqual([]);
+  });
+
+  it('does not let a non-coordinator agent delegate to another participant', () => {
+    const decision = plan({
+      conversation: coordinatorConversation,
+      message: {
+        senderId: 'p_codex',
+        text: '@Hermes CTO please take this',
+        origin: { kind: 'agent', actorId: 'p_codex', depth: 2 },
+      },
+    });
+    expect(decision.targets).toEqual([]);
+    expect(decision.blocked).toBe('not_coordinator');
+  });
+
+  it('does not blame the coordinator for a delegation it never made', () => {
+    const decision = plan({
+      conversation: coordinatorConversation,
+      message: {
+        senderId: 'p_codex',
+        text: '@Hermes CTO please take this',
+        origin: { kind: 'agent', actorId: 'p_codex', depth: 2 },
+      },
+    });
+    expect(decision.reason).not.toContain('Delegated by the coordinator');
+    expect(decision.reason).toContain('Codex');
   });
 });
 
