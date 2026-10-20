@@ -375,6 +375,51 @@ Chief accepted has no reviewer in it — and the cost model inside it is the
 number the biggest item in the queue is sized from, so it is worth one
 verifier slot to check.
 
+## The owner's decisions, 2026-10-21 07:07
+
+Two questions, both answered, both one choice.
+
+| #   | Question                                                                                                                   | Answer                                                                          |
+| --- | -------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------- |
+| 1   | Does the published waiting-list kind grow by one, so an agent turn whose outcome could not be confirmed reaches the owner? | **Yes.**                                                                        |
+| 2   | May an agent read another agent's own memory?                                                                              | **No** — an agent's own memory is private to it, on reads as well as on writes. |
+
+**The first answer releases three items, and the numbers are named here.** The
+owner approved a published type growing, so there is a contract to publish, an
+implementation to write against it, and a second obligation that the same
+ruling settled:
+
+| Number | Item                                     | Owner | What it is                                                                                                               |
+| ------ | ---------------------------------------- | ----- | ------------------------------------------------------------------------------------------------------------------------ |
+| WI-026 | The waiting list's kind grows by one     | Wren  | The published kind, the migration note, and the entry that says the code does not implement it yet.                      |
+| WI-027 | An unknown turn reaches the waiting list | Cog   | The implementation, built against the published shape, and the one-line correction that says which commit implements it. |
+| WI-028 | An agent's own memory is private to it   | Cog   | The read-side guard, and the two contract entries that stop disagreeing.                                                 |
+
+The contract leads and the code follows — that is the house order, and it is
+why WI-026 says outright that the code does not implement the kind yet. A
+published member the product never produces is a drift of the kind this
+factory has spent a day closing: `CONTRACTS.md:544` publishes
+`executionOwner: 'external' | 'human'` and nothing ever writes `'external'`.
+
+**What the second answer settles that was not a defect.** The read side of the
+memory rule was never a defect report. The test that pins it says so itself:
+_"This one is a question, not a breach… this test pins the stricter reading
+until the owner says which one holds."_ The owner has now said, and the test
+was the specification all along — it stays in the suite and it goes green.
+
+**What the two answers do not change.** The push is still held until the tree
+is green, and the tree is not green yet: WI-022 (the reason) and WI-026 (the
+kind) are the waiting list's published shape, WI-012 is the memory guard's
+write side, WI-027 and WI-028 are the two the answers released, and the
+password exposure test races the reset it inspects. None of that needs a
+decision from anybody else now.
+
+**The number space, once more.** These three numbers were taken by this
+session because the owner's answer is new information the number-owning session
+has not read yet, and an item that is released and not numbered is an item
+that waits. They are named here, in the file a session reads before it opens
+anything.
+
 ## Candidates
 
 Gaps Chief found in the repository. These are **not** wants. They are
