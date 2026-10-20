@@ -221,11 +221,11 @@ The owner answered the three questions Chief put to them. The first answer
 overrides a recommendation the factory made, and that is the owner's call to
 make.
 
-| #   | Question                                                             | Answer                                                      |
-| --- | -------------------------------------------------------------------- | ----------------------------------------------------------- |
-| 1   | Which visual direction does the panel take?                          | **D — Forge.** Not the recommended **B — Desk**.           |
-| 2   | Do you approve the three published shapes (WI-017, WI-020, WI-022)? | **Approve all three.**                                      |
-| 3   | Push the local commits to origin now, or hold?                       | **Hold the push until the reds are green.**                |
+| #   | Question                                                            | Answer                                           |
+| --- | ------------------------------------------------------------------- | ------------------------------------------------ |
+| 1   | Which visual direction does the panel take?                         | **D — Forge.** Not the recommended **B — Desk**. |
+| 2   | Do you approve the three published shapes (WI-017, WI-020, WI-022)? | **Approve all three.**                           |
+| 3   | Push the local commits to origin now, or hold?                      | **Hold the push until the reds are green.**      |
 
 **The direction is Forge, and it is the owner's, not the factory's.** The
 recommendation in `prototypes/DIRECTION.md` argued for Desk, and Chief
@@ -236,7 +236,7 @@ they are recorded here so that nobody has to re-derive them:
 
 - **Forge is coherent with Q2 in its settled form, and the recommendation
   already settled it.** "The factory board, the agent list and the automation
-  runs do *not* go in the orientation room. They are what needs the owner's
+  runs do _not_ go in the orientation room. They are what needs the owner's
   authority, so they belong in the execution room, next to the conversation,
   where a decision can be taken. The orientation room keeps the map and
   nothing else." The objection that Forge's orientation room is the project
@@ -250,7 +250,7 @@ they are recorded here so that nobody has to re-derive them:
   not exist yet.
 - **The decision control is still not blocked by the direction.** That was true
   for Desk and it is true for Forge: the inbox is already a component, and a
-  layout change re-lays-out the list's *layout*, not the control inside it.
+  layout change re-lays-out the list's _layout_, not the control inside it.
   What changes with Forge is larger than Desk's three bands — the landing
   page is the decision list, and in Forge the decision list belongs in the
   execution room, so the front door moves out of the root into a room. That is
@@ -287,7 +287,7 @@ itself is recorded in [WI-010](../work/WI-010.md).
   boundary is the settled one, so the orientation room keeps the map and
   nothing else while the factory board, the agent list and the automation runs
   go to the execution room; the decision control is not rebuilt by the
-  direction, and the landing page's *layout* is what changes; the landing page
+  direction, and the landing page's _layout_ is what changes; the landing page
   ends up in the execution room, because it is the decision list; and the
   document is written where the next agent will find it.
 - **Not urgent:** the control ships first and is not blocked, so the owner's
@@ -1000,3 +1000,60 @@ context for deciding, not a way out of deciding.
 **Superseded.** The 04:30 post is overtaken by the 05:10 post: ten of the
 eleven deliberate reds are now green, the fixes for WI-008 and WI-009 landed,
 and the one red left is a published-type change that is the owner's to make.
+
+### The status post that is owed, request id `factory-status-2026-10-21`
+
+This one is owed to the _other_ Chief session, which asked for it and could
+not send it: the `Personal OS Factory` group refused every chat-side call it
+made for two hours. It was tried here five times, and the refusal was
+different from theirs — not _"This Bot is replying in multiple chats"_ but
+_"The group is mid-discussion; post again once this round finishes"_. Both
+doors are shut, by two different guards, and the message is the same, so it
+is recorded here and sent when the round ends.
+
+The post says, in short:
+
+- **The pipeline now proves what it claims.** A clean worktree at `dc1ecc0` —
+  fresh `npm ci --ignore-scripts`, nothing built, a fresh Docker volume —
+  measured thirteen gates with twelve passing: typecheck 0, format:check 0,
+  build 0, verify:bundle 0 (first paint 499.02 kB over 6 chunks, 5/5 vendor),
+  actionlint 0, the three guard refusals each exiting 2, the container stack
+  up and healthy, and the worker check passing all ten of its assertions.
+  `scripts/smoke.ts` and `scripts/verify-build.ts` exit 0 as well.
+- **The guard checks are recorded against the exit code they are supposed to
+  produce.** The guard refuses with 2, and 2 is the pass. An earlier run of
+  that script treated any non-zero exit as a failure, which is how a refusal
+  became a red gate — the same class of mistake as a check that cannot fail.
+- **Three defects were found by running the gates where nothing was lying
+  around, and all three are fixed.** The container job wrote its secret to
+  `$GITHUB_ENV` and used it in the same step, where it is not visible, so
+  compose would have died before the stack started; the same job built both
+  images under tags nothing runs and then let compose build them again; and
+  the bundle gate's loud failure was an early exit that broke the gate's own
+  tests. A fourth, the fresh-checkout property that CI never exercised, was
+  found by the reviewer and is fixed too.
+- **The tree is red on purpose, and one of the two fixes has no work item.**
+  `af00a4e` says so in its own commit message: the tests are red against the
+  code as it stands, because they are the proof of the defect. Three of them
+  are the memory guard — an agent that names somebody else's agent in a
+  memory it _creates_ is refused, but the guard is not called on
+  `resource.update`, so an agent can write into another agent's memory and
+  take it over, which is what `CONTRACTS.md` forbids. The rest are the
+  waiting list's missing `unknown` reason, which WI-022 covers. **The
+  memory-guard breach has no work item**, and none is opened here: two leads
+  writing work item files in one tree is the collision repaired in `a719f8e`,
+  and the lead who wrote the red test is the one who knows what it meant.
+- **One decision for the lead.** A red `main` is a red pipeline. Vitest's
+  `it.fails` is built for this: the test stays red against the code, and it
+  fails the suite when it starts passing, which is the forcing function for
+  the fix landing. It turns known failures into pinned promises. It is the
+  lead's call, not mine, because the red is deliberate and deliberate is not
+  mine to undo.
+- **Still open for the owner:** there is no remote configured, so the GitHub
+  Actions pipeline has still never run. The workflows are actionlint-clean and
+  the whole container job was run locally against real Docker, but the first
+  push is where "CI runs the product" stops being a claim with strong local
+  evidence and becomes a fact.
+
+**Nothing in the post dispatches anything.** It names no agent, so no bot is
+woken by it, and no work item is opened by it.
