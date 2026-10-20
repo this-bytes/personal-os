@@ -2489,3 +2489,102 @@ session's run is not a green full suite. A check that cannot fail is worse
 than no check; a check that fails for the wrong reason is nearly as bad, and
 it is the reason this is written down rather than quietly re-run until it
 passed.
+
+## The seven wants, triaged — 2026-10-21 09:25
+
+The wants the direction produced at 08:20 were handed over for triage, and
+the lead does the triage: **merge them, refuse them, or resize them.** The
+tree is green as of `f1c29e7`, so this is a queue decision and not a rescue.
+
+**No number is taken here, and the reason is in the record.** The number space
+has one owner, and it is not this session: WI-030 and WI-031 were taken at
+08:34 and 08:54, after the numbers this session took at 07:11 (WI-024 to
+WI-029), and the numbering has been continuous and collision-free since. A
+number is a claim, and two claims in one tree have already collided twice. So
+this session records the verdicts, the titles, the owners and the criteria,
+and the session that owns the numbers creates the files.
+
+| Want | Verdict           | Where it goes                 | Why                                                                                                          |
+| ---- | ----------------- | ----------------------------- | ------------------------------------------------------------------------------------------------------------ |
+| W1   | accepted, resized | a new item, Cog               | It is the change behind the product's own report. **After W2** — the contract leads.                         |
+| W2   | accepted          | a new item, Wren              | The published shape for W1. **Before W1.**                                                                   |
+| W3   | **deferred**      | a new item, Cog, behind Forge | The furthest from the owner's stated priority and the largest of the seven. It is C-21, scoped to resources. |
+| W4   | **folded**        | [WI-007](../work/WI-007.md)   | WI-007's title is "Deciding an approval resumes the turn when the adapter can" — it is this want.            |
+| W5   | accepted          | a new item, Wren              | The record the gate compares against. **Before W7.**                                                         |
+| W6   | accepted          | a new item, Wren              | Small and independent of all of them.                                                                        |
+| W7   | accepted          | a new item, **Chief**         | The gate. **After W5.**                                                                                      |
+
+**W1 and W2 are one change and one published shape, and they matter most.**
+WI-020 publishes the route that counts what the product did, and the numbers
+behind it are wrong: `createdBy` is hardcoded `'system'` for automations and
+tasks, twelve of the thirty-four mutating routes write no audit entry, and
+every entry records success regardless. So the product's first report on
+itself — the owner's Q6 — is a lie by omission, and W1 with W2 is what makes
+it something else.
+
+**W4 is folded, and the fold is not a disposal.** WI-007 is the same subject
+under a different name, and it is with Cog now with its fix landed. The fold
+is recorded in WI-007's file, so the item carries its own scope.
+
+**W3 is deferred, and the reason is capacity, not judgement.** It is the
+largest of the seven and the furthest from what the owner said matters:
+interaction, and "what needs me" on the landing page. A restore route for a
+resource is neither. It becomes a numbered item so it is not lost, and it
+starts after Forge.
+
+**W5 and W7 are funded by the owner's own answer, and W5 before W7.** The owner
+answered at 08:54 that the borrow rule becomes a check, not a claim. A gate
+that compares against nothing catches nothing, so the record lands first. The
+owner's "private for now — no LICENSE yet" was about **this repository's own**
+licence and a code of conduct, not about the licences of what it depends on, so
+it defers neither.
+
+**W6 is the cheapest item in the set and the most overdue.** `PRODUCT.md:280`
+still says the direction that would fix the accent is "Desk (B), it is
+recommended rather than decided". The owner said their word at 06:01, and
+[WI-025](../work/WI-025.md) put it in ADR 0007. The product record is the last
+place still telling the old story.
+
+### The order, with capacity
+
+One implementer. One item at a time. The order is not a preference, it is the
+only thing that can happen — so it is written down, with what does not start
+yet and why.
+
+**In flight, and not to be reordered.** WI-031 (the owner's route to close an
+unknown turn — released at 08:54, dispatched, and it closes WI-027's last
+criterion), WI-017 (the template set — the owner's answer that all six kinds
+get a template in the first set), WI-020 (the measures route), WI-007's fix,
+and WI-028's contract half. **Cancelling a dispatched item to move another up
+is what strands work**, and the factory has been burned by it twice today, so
+nothing in this queue is cancelled to make room.
+
+**Next, and the owner's word says it.** [WI-024](../work/WI-024.md), Forge —
+the panel's adoption of the direction the owner chose, and the next visible
+change after the push. It is dispatched to Cog by this session on 2026-10-21.
+The three items above it are already dispatched and queued, and one implementer
+means they land first; the owner's word is about what the panel looks like
+next, not about which queue a card sits in. If the owner wants Forge ahead of
+them, that is one word, and it is a lead decision to reverse.
+
+**Then the seven wants, in the order the table gives:** W2 before W1, W5
+before W7, W6 on its own because it is small, and W3 last.
+
+**What does not start yet, and why.** W3, because it is the furthest from the
+owner's stated priority and the largest of the seven. The verification queue,
+because **one verifier is the factory's real gate**: six items sit at `verify`
+and every one of them waits on Probe, so acceptance — not implementation — is
+now the bottleneck. That is a fact about capacity, and the fix is Probe's
+queue, not a rule change.
+
+### The owner's product question that is still open
+
+[WI-008](../work/WI-008.md) cannot close on an unanswered question, and the
+question is the owner's: **should a turn whose outcome could not be confirmed
+keep dispatching work?** `planAndDispatch`
+(`apps/server/src/modules/conversations/dispatch.ts:85-103`) never reads
+`message.status`, so an unknown turn keeps asking for more work while the
+owner is looking at it on the waiting list and nobody can confirm the first
+turn's outcome. Chief's recommendation is **no** — an unknown outcome waits for
+the owner, which is what "check this" means — but it changes what the product
+does with spend and it is the owner's call, not the factory's.
