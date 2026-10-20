@@ -1232,3 +1232,56 @@ It says, in short:
 
 It names no agent, so no bot is woken by it, and no work item is opened by
 it.
+
+### The five dispatches that were already made, and the one that was not
+
+The other Chief session asked for five dispatches and could not make them:
+its minimax-bot calls were refused for two hours by _"This tool call cannot
+be assigned to an active reply"_ and _"This Bot is replying in multiple
+chats"_. It asked this session to make them, with the request ids
+`contract-batch-wi-008-007-006-012` and `wi-013-contract-entries`, so that
+its own retry would dedupe instead of doubling.
+
+**Four of the five dispatches already exist, and one of them would have
+doubled a completed job.** The records are in the work items; this is the
+ledger that says what to do with the request ids.
+
+| Request id                             | State                                                                                 | The task                                                                                                                                                                                                           |
+| -------------------------------------- | ------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `contract-batch-wi-008-007-006-012`    | **already delivered** — 2026-10-20 22:45, batch `batch_f2cbfe51f60a`                  | WI-008 `task_2dfea737351c`, WI-007 `task_d5112d619012`, WI-006 `task_ec5c279c31f0`, WI-012 `task_8a2d2d460f49` — all four dispatched to Cog in one batch                                                           |
+| `wi-013-contract-entries`              | **never used**                                                                        | WI-013's dispatch was `wi-013-return-stale-entries` — task `task_7ab8e07844b1`, batch `batch_7251327602b0`, **done**. Dispatching WI-013 to Wren under a fresh id would have put a second Wren on a completed item |
+| `wi-012-memory-guard-round-2026-10-21` | **dispatched by this session** — task `task_b4841a46f17a`, batch `batch_768e998bd11d` | WI-012's guard round: the three red specifications from `af00a4e`                                                                                                                                                  |
+
+**So: do not retry `contract-batch-wi-008-007-006-012`** — a retry with
+that id is a no-op or a conflict, never a second set of Cog tasks, which is
+the protection the request id was chosen for. **Do not dispatch WI-013 to
+Wren.** Wren's work is in the tree, uncommitted, and the item is the lead's
+to accept or return.
+
+**What was actually outstanding, and where each piece stands.**
+
+- **WI-012 — dispatched.** The guard round is the only piece of the five
+  with implementation work that had never been dispatched. The
+  implementation landed in `e764e6a`; the ownership rule is enforced on
+  `resource.create` and absent from `resource.update`, so one agent can
+  write into another's memory and take it over, which `CONTRACTS.md:452-455`
+  forbids. The three red tests committed in `af00a4e` are the specification.
+  The brief is in the dispatch message and in WI-012.md.
+- **WI-006 — verified, and the lead's to accept.** Probe's report is in:
+  task `task_f916868a86b5`, batch `batch_d6134c0c366d`. The criterion holds,
+  the panel's source-naming was untested and is now pinned by six tests in
+  `461d186`, and there are two observations.
+- **WI-007 — at verify, verification dispatched** — task `task_9ecab9f1ad31`,
+  batch `batch_a4dac4c18c7d`.
+- **WI-008 — the implementation landed** in `f0f8661`, and the two reds that
+  remain are the contract's, not the code's: the published `WaitingReason`
+  type, which is WI-022 and is with Wren, and an unknown _turn_, which the
+  data model cannot express at all — a new published kind, and therefore the
+  owner's.
+- **WI-022 — already dispatched to Wren**, task `task_ed4c3132afe9`.
+
+**One rule that came out of this.** A dispatch request id is a promise that
+a body of work was handed to a bot once. It is not a parking place for work
+that is still to be written. When a request id has already been delivered,
+the item's ledger says what the state is, and the next actor is whoever the
+item names — not whoever is free.
