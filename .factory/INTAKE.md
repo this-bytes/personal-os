@@ -318,7 +318,7 @@ started its next turn, and cleared once more at 07:11.
 Both request ids are idempotent, so a retry is safe and a retry is not a
 second dispatch.
 
-| Request id                                     | Item                                                               | To     | Task                | State, 2026-10-21 11:05                                                                                                                                                                                                                          |
+| Request id                                     | Item                                                               | To     | Task                | State, 2026-10-21 11:05, and this session's 09:56 +11:00                                                                                                                                                                                         |
 | ---------------------------------------------- | ------------------------------------------------------------------ | ------ | ------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | `wi-022-publish-waiting-reasons`               | WI-022 — the published waiting list's reasons                      | Wren   | `task_ed4c3132afe9` | **cancelled** — died with `AGENT_UNAVAILABLE`; the retry was cancelled at 07:29 and **Chief implemented it** (`a44a374`)                                                                                                                         |
 | `wi-010-verify-forge-rewrite`                  | WI-010 — the direction, verified                                   | Probe  | `task_4cc3a3b1160f` | **cancelled** — died with `AGENT_UNAVAILABLE`; the retry `task_5666d5ca0dc2` is **done**                                                                                                                                                         |
@@ -346,11 +346,15 @@ second dispatch.
 | `wi-027-verify-fixed-tree-2026-10-21`          | WI-027 — the turn on the waiting list, verified                    | Probe  | `task_6a9a1179734c` | **queued**                                                                                                                                                                                                                                       |
 | `wi-021-verify-fixed-tree-2026-10-21`          | WI-021 — the refusal, verified                                     | Probe  | `task_479859728e18` | **queued** — the verification that has to read WI-009's updated tests and say what they now hold                                                                                                                                                 |
 | `wi-017-template-record-successor-2026-10-21`  | WI-017 — the template record, built against the published shape    | Cog    | `task_4b5a7d412c11` | **queued** — **the live dispatch on WI-017**; it merges the two cancelled briefs and adds the Chief's rulings                                                                                                                                    |
-| `wi-020-measures-successor-2026-10-21`         | WI-020 — the two measures, built against the published route       | Cog    | `task_7fca497d2514` | **queued** — **the live dispatch on WI-020**; same merge, same rulings                                                                                                                                                                           |
+| `wi-020-measures-successor-2026-10-21`         | WI-020 — the two measures, built against the published route       | Cog    | `task_7fca497d2514` | **cancelled** at 09:56 +11:00 by Chief — still queued, so nothing was lost; its brief was merged into the third dispatch, which carries the band ruling. **The live dispatch on WI-020 is `wi-020-measures-route-r3-2026-10-21`**                |
 | `wi-025-adr-record-pass-2026-10-21`            | WI-025 — the ADR's record pass, with Wren                          | Wren   | `task_c3e1f0b6d558` | **queued** — a pointer, a figure, and one thing not to touch                                                                                                                                                                                     |
 | `wi-030-verify-published-shapes-2026-10-21`    | WI-030 — the two published shapes, verified                        | Probe  | `task_dc2aeef86acb` | **queued** — **upstream of two builds**; the dispatch asks for the queue to be reordered if it can be                                                                                                                                            |
 | `wi-036-licence-record-2026-10-21`             | WI-036 — the dependency licences, read from the repositories       | Wren   | `task_2c5159aab413` | **queued** — **the live dispatch on WI-036**; the record that WI-038's gate compares against                                                                                                                                                     |
 | `wi-037-product-record-forge-2026-10-21`       | WI-037 — the product record says Desk (B); the owner chose Forge   | Wren   | `task_4947c89ca7fe` | **queued** — **the live dispatch on WI-037**; the overdue truthfulness fix                                                                                                                                                                       |
+| `wi-020-measures-route-r3-2026-10-21`          | WI-020 — the two measures, with the band ruling                    | Cog    | `task_86010eeeb561` | **queued** — **the live dispatch on WI-020**; it carries the band ruling — the band ships only the counts it can defend, and no ratio, until WI-033 and WI-034 land                                                                              |
+| `wi-039-evidence-contract-2026-10-21`          | WI-039 — publish the evidence a decision is taken against          | Wren   | `task_dd95fe7df207` | **queued** — **the live dispatch on WI-039**; the contract half of the gap Vision found in the decision control, and it goes before WI-040                                                                                                       |
+| `wi-041-readme-licence-2026-10-21`             | WI-041 — the README tells the truth about the licence              | Wren   | `task_644f23312ebc` | **queued** — **the live dispatch on WI-041**; the owner's "the licence is deliberately undecided" answer, in one sentence                                                                                                                        |
+| `wi-043-manifest-licence-verify-2026-10-21`    | WI-043 — the manifest no longer claims a licence                   | Probe  | `task_9b1b44c1025f` | **queued** — Chief's one-line removal of `"license": "MIT"`, and Probe's verification of it                                                                                                                                                      |
 
 **A cancelled task is not a dispatch — but a cancelled dispatch does not free its
 request id.** That second half was wrong here, and it is corrected now rather
@@ -2851,3 +2855,142 @@ rule that one file carries one live item is the repository's rule, and the
 owner's own sessions sit in the same checkout as four bots and two Chief
 sessions. That is the contention the red in `ownerPasswordExposure.test.ts`
 came from, and it is the reason a contended gate run is not evidence.
+
+## Chief's tick — 2026-10-21 09:56 +11:00
+
+**The times in this entry are the machine's clock (+11:00).** The entries above
+carry labels that run about two hours ahead of it, and they are left as they
+are. A reader comparing "10:57" with "09:56" is comparing two clocks, not two
+events.
+
+### The tree is green, measured first-hand
+
+| Gate                    | Result                                                                                                               |
+| ----------------------- | -------------------------------------------------------------------------------------------------------------------- |
+| `npm run typecheck`     | exit 0                                                                                                               |
+| `npm run format:check`  | exit 0 — "All matched files use Prettier code style!"                                                                |
+| `npm run test`          | exit 0 — server 211 passed (21 files), web 52, worker 31, agent-adapters 16, contracts 28; **338 tests, 0 failures** |
+| `npm run test:e2e`      | exit 0 — **25 passed** (48.1s)                                                                                       |
+| `npm run smoke`         | exit 0 — "All smoke checks passed."                                                                                  |
+| `npm run verify:bundle` | exit 0 — every chunk within 300 kB, the first paint carries no page chunk                                            |
+| `npm run verify:build`  | exit 0 — "The compiled server boots and serves requests."                                                            |
+
+**`main` is 16 commits ahead of `origin/main` and 0 behind.** The first green
+tree was pushed at 08:56 under the owner's word, and that word is spent. **The
+next push needs the owner's word again**, and the tree it would carry is the
+one measured above.
+
+### The band ruling, now in the file and in the brief
+
+The rule the other session recorded earlier today — _no number whose inputs are
+known to be wrong_ — is now **in WI-020's acceptance criteria and in the brief
+of the live dispatch**. The band ships the counts it can defend: the first
+measure's counts, with the count of resources that record no author beside
+them; the second measure **named as not yet countable**; and **no ratio, for
+either measure**. The route still returns WI-030's published shape, so the
+contract is not changed by the ruling and the build is not gated on a judgement
+that is the owner's to make. The ratios, and the second number, appear when
+WI-033 and WI-034 land.
+
+**The re-dispatch cost the queue nothing.** The creation timestamps say
+WI-020's predecessor was created at `…099771`, one second after WI-017's
+successor at `…099473`, and both sit behind WI-024 (07:49) and WI-031's
+implementation (08:54). So WI-020 was fourth in Cog's lane before the ruling
+and it is fourth after it. What the third request id bought is a brief that
+cannot be read as a brief to build the old band.
+
+### Five items, and one record corrected
+
+| Item   | Owner | What it is                                                                                     | Dispatched                                                         |
+| ------ | ----- | ---------------------------------------------------------------------------------------------- | ------------------------------------------------------------------ |
+| WI-039 | Wren  | Publish the evidence a decision is taken against — what it did, what it produced, what it cost | `task_dd95fe7df207`, queued                                        |
+| WI-040 | Cog   | The decision control shows that evidence, in a drawer where the control opens                  | **not dispatched** — waits for WI-039, and Cog's lane is four deep |
+| WI-041 | Wren  | The README tells the truth about the licence — one honest sentence                             | `task_644f23312ebc`, queued                                        |
+| WI-042 | Wren  | The product record's closed questions say they are closed — §7, §9, §10                        | **not dispatched** — WI-037 is live on `PRODUCT.md`                |
+| WI-043 | Chief | The manifest does not claim a licence — `"license": "MIT"` removed                             | `task_9b1b44c1025f` to Probe, queued                               |
+
+**Two of the five are not dispatched, and their files say why.** A dispatch that
+cannot be delivered is not a dispatch, and neither of these can be: WI-040
+waits for WI-039's entry, and WI-042 waits for WI-037, because one file
+carries one live item. They are numbered so they are not lost.
+
+**WI-039 and WI-040 are the gap Vision found.** The owner decides on two buttons
+and a title: the needs-you rail's approval row carries **Approve / Reject**
+(`apps/web/src/components/WaitingList.tsx:272-284`) and nothing that says what
+the agent did, what it produced, or what it cost. The evidence exists in the
+database — the execution the approval points at
+(`apps/server/src/modules/approvals/service.ts:12`), its events
+(`apps/server/src/db/schema.ts:241`), and its own row
+(`apps/server/src/db/schema.ts:227-231`) — and it is published nowhere: there
+is no executions route file, and `GET /api/approvals/:id` returns the approval
+only.
+
+**WI-041 and WI-043 are the same false claim in two files.** The owner answered
+on 2026-10-21 that the repository is private for now, that there is no LICENSE
+file at this push, and that the licence is **deliberately undecided**. The
+README said `MIT` (`README.md:251-253`) and the root manifest said
+`"license": "MIT"`. The manifest is Chief's file, so Chief removed the field —
+removing it rather than setting `UNLICENSED`, because `UNLICENSED` is a claim
+too, and the licence is undecided — and **Probe verifies it**, because the lead
+never accepts its own work. The README is Wren's file, so it is WI-041.
+
+**One record defect is fixed.** [WI-011](../work/WI-011.md) cited
+`prototypes/DIRECTION.md` as the source of the twelve comparators. That file
+was rewritten for Forge and no longer holds them; the source is
+[`docs/strategy.md`](../docs/strategy.md), which the file now cites.
+
+### The fleet is not assigning, and the evidence is better than it was
+
+**Four dispatches were accepted at 09:56, in one chat and one round, and nine
+minutes later nothing had started.** Sampled: Cog's WI-017
+(`task_4b5a7d412c11`, created 09:41), Wren's WI-037 (`task_4947c89ca7fe`,
+created 09:54) and Probe's WI-030 (`task_dc2aeef86acb`, created 08:42) — all
+three still `queued`.
+
+**The guard is not the blocker.** It refused the other session's group post at
+11:05 on its clock, and it refused tool calls while the Chief bot was in two
+chats; but this session's dispatches were **accepted** in a single-chat round.
+So the thing that holds assignment is not the refusal.
+
+**An idle chat with a queued task is not being assigned, and that is the part
+that matters.** The dispatcher's rule is to take the first queued task whose
+bot's chat is free. Wren's and Probe's chats are **idle** in the session list
+(`mvs_dff627414f0e47fbbdf7501b11dfdd06`, `mvs_f1f513955649480dbfb09fae820cf59f`
+and `mvs_db6a5624d51842cd8a029fc062c60503` all idle or finished), and their
+tasks are still queued. So the reading that now fits is not _the guard holds the
+assignment_ — it is **the dispatcher's scan is not running**.
+
+**Two facts in the same direction.** The local runtime stopped and restarted:
+the other Chief session's session carries _"This session was interrupted because
+the previous local runtime stopped"_ (`mvs_30c09202cd384ee8865fb509b595a7bb`),
+and its goal-verifier child died at 09:35 with
+`GOAL_VERIFIER_CAPABILITY_VIOLATION`. A dispatcher whose scan loop did not come
+back with the runtime would behave exactly like this: tasks queued, chats
+free, nothing assigned.
+
+**The remedy is outside the repository, and Chief cannot reach it from here.** A
+runtime restart is the host's action, and this chat is hosted by the runtime
+that would be restarted. The other Chief session can close its crashed
+goal-verifier child, which may be what is holding the assignment. Chief did not
+message a bot to ask whether it is alive: a message is another item in a queue
+that is not draining, and it would compete with the real work rather than
+replace it. **This is the one thing the owner may have to do, and it is the
+factory's whole throughput.**
+
+### The owner's three questions, in the strategy room
+
+The other Chief session holds two of the owner's questions — whether an
+unconfirmed turn keeps dispatching work, and where Forge sits in the queue —
+and this session does not ask them a second time. These three are here:
+
+1. **The push.** The tree is green and `main` is 16 commits ahead. The owner's
+   word was spent on the first green tree; the next one waits for the next word.
+2. **The waiting list's way out.** `approval.decided` — one event published by
+   the decide route, so a decided approval leaves the list at once. It is a
+   published-contract change, so it is the owner's (C-16, C-22). The
+   recommendation is **yes**.
+3. **Reversibility.** Is it a product principle that the owner's decisions are
+   reversible? The recommendation is **yes** — with one owner there is no second
+   operator to absorb a bad action. WI-035 carries the work, and it is deferred
+   behind Forge on capacity, so the answer changes the queue rather than the
+   code.

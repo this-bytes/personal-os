@@ -4,7 +4,6 @@
   "private": true,
   "type": "module",
   "description": "Personal OS — agent-native control panel and personal software factory.",
-  "license": "MIT",
   "engines": {
     "node": ">=22.13.0"
   },
