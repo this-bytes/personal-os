@@ -2,12 +2,16 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { eq } from 'drizzle-orm';
 import {
   agentConnections,
+  automations,
+  automationRuns,
   conversations,
   createDatabase,
   executions,
   messages,
   participants,
+  queueJobs,
   runMigrations,
+  tasks,
   type DatabaseHandle,
 } from '@personal-os/server/db';
 import {
@@ -18,7 +22,7 @@ import {
   type Runtime,
 } from '@personal-os/server/runtime';
 import type { AgentAdapter, AgentEvent, AgentTurnInput } from '@personal-os/contracts';
-import { executeJob, type ExecutorContext } from '../executor.js';
+import { executeJob, type ExecutionOutcome, type ExecutorContext } from '../executor.js';
 
 /**
  * A turn whose outcome could not be confirmed.
@@ -284,4 +288,263 @@ describe('a turn that ran out of time', () => {
     const execution = handle.db.select().from(executions).where(eq(executions.id, 'exe_1')).get();
     expect(execution?.status).toBe('failed');
   });
+});
+
+/**
+ * A job whose outcome is unknown is held, not requeued.
+ *
+ * The published contract says an unknown item is never retried
+ * automatically, and the retry is the dangerous part: running the work a
+ * second time could repeat a side effect that already happened. So the
+ * outcome the executor hands back has to be `unknown` — that is the word the
+ * worker turns into a hold instead of a requeue.
+ *
+ * The dispatch below is the worker's own rule, copied from
+ * `apps/worker/src/index.ts`, so that the test observes what the queue is
+ * actually told rather than what the executor meant.
+ */
+function dispatchAsTheWorkerDoes(queue: Queue, outcome: ExecutionOutcome, jobId: string): void {
+  if (outcome.status === 'completed' || outcome.status === 'cancelled') {
+    queue.complete(jobId);
+  } else if (outcome.status === 'unknown') {
+    queue.hold(jobId, outcome.error ?? 'The outcome could not be confirmed.');
+  } else {
+    queue.fail(jobId, outcome.error ?? 'The job failed.');
+  }
+}
+
+/** A task whose agent is still working when the deadline passes. */
+function seedTask(): void {
+  handle.db
+    .insert(tasks)
+    .values({
+      id: 'tsk_1',
+      workspaceId: 'wsp_1',
+      goalId: null,
+      title: 'A task that runs for too long',
+      description: '',
+      assigneeId: 'agt_1',
+      executionOwner: 'personal-os',
+      status: 'active',
+      revision: 1,
+      acceptanceCriteria: [],
+      evidenceResourceIds: [],
+      externalRef: null,
+      createdAt: NOW,
+      updatedAt: NOW,
+    })
+    .run();
+
+  handle.db
+    .insert(executions)
+    .values({
+      id: 'exe_task',
+      workspaceId: 'wsp_1',
+      conversationId: null,
+      taskId: 'tsk_1',
+      externalRef: null,
+      agentConnectionId: 'agt_1',
+      executionOwner: 'personal-os',
+      status: 'queued',
+      error: null,
+      spendUnits: 0,
+      startedAt: null,
+      finishedAt: null,
+      createdAt: NOW,
+    })
+    .run();
+}
+
+/** An automation whose action is still running when the deadline passes. */
+function seedAutomation(): void {
+  handle.db
+    .insert(automations)
+    .values({
+      id: 'aut_1',
+      workspaceId: 'wsp_1',
+      title: 'An automation that runs for too long',
+      trigger: { type: 'manual' },
+      action: {
+        type: 'agent.prompt',
+        agentConnectionId: 'agt_1',
+        prompt: 'do the thing',
+        method: 'GET',
+      },
+      revision: 1,
+      enabled: false,
+      lastRunAt: null,
+      nextRunAt: null,
+      createdAt: NOW,
+      updatedAt: NOW,
+    })
+    .run();
+}
+
+/** The row the queue holds for a job. */
+function jobRow(id: string) {
+  return handle.db.select().from(queueJobs).where(eq(queueJobs.id, id)).get();
+}
+
+describe('a job whose outcome is unknown', () => {
+  it('is held, and never run again, when a turn runs out of time', async () => {
+    const enqueued = runtime.queue.enqueue({
+      workspaceId: 'wsp_1',
+      type: 'chat.turn',
+      payload: {
+        conversationId: 'cnv_1',
+        parentMessageId: 'msg_parent',
+        agentConnectionId: 'agt_1',
+        executionId: 'exe_1',
+        correlationId: 'cor_1',
+        depth: 1,
+      },
+    });
+    const job = runtime.queue.claimNext('worker_1');
+    expect(job?.id).toBe(enqueued.id);
+
+    const outcome = await executeJob(context, job!);
+    dispatchAsTheWorkerDoes(runtime.queue, outcome, job!.id);
+
+    // The job is finished and it is not scheduled to run again.
+    expect(jobRow(enqueued.id)?.status, 'the job was not held').toBe('unknown');
+    expect(runtime.queue.claimNext('worker_2'), 'the held job was offered again').toBeNull();
+  });
+
+  it('is not run again when the worker dies before it holds the job', async () => {
+    const enqueued = runtime.queue.enqueue({
+      workspaceId: 'wsp_1',
+      type: 'chat.turn',
+      payload: {
+        conversationId: 'cnv_1',
+        parentMessageId: 'msg_parent',
+        agentConnectionId: 'agt_1',
+        executionId: 'exe_1',
+        correlationId: 'cor_1',
+        depth: 1,
+      },
+    });
+    const job = runtime.queue.claimNext('worker_1');
+
+    // The turn has started and the outcome could not be confirmed: the
+    // message and the execution are recorded as unknown.
+    const outcome = await executeJob(context, job!);
+    expect(outcome.status).toBe('unknown');
+    const reply = handle.db.select().from(messages).where(eq(messages.executionId, 'exe_1')).get();
+    expect(reply?.status).toBe('unknown');
+
+    // The worker dies here. It never got as far as holding the job, so the
+    // job is still 'running' with a lease that will go stale.
+    handle.db
+      .update(queueJobs)
+      .set({ lockedAt: '2000-01-01T00:00:00.000Z' })
+      .where(eq(queueJobs.id, enqueued.id))
+      .run();
+
+    // The next worker reaps the stale lease and takes the job again.
+    runtime.queue.reapStaleJobs();
+
+    expect(
+      runtime.queue.claimNext('worker_2'),
+      'the job was picked up again: an unknown outcome was retried',
+    ).toBeNull();
+  });
+
+  it('is unknown, not failed, when a factory task runs out of time', async () => {
+    seedTask();
+
+    const enqueued = runtime.queue.enqueue({
+      workspaceId: 'wsp_1',
+      type: 'factory.execute',
+      payload: { taskId: 'tsk_1', executionId: 'exe_task', agentConnectionId: 'agt_1' },
+    });
+    const job = runtime.queue.claimNext('worker_1');
+
+    const outcome = await executeJob(context, job!);
+
+    // The task is recorded as unknown in the database, but the outcome the
+    // worker acts on is the one that decides whether the job is retried.
+    expect(handle.db.select().from(tasks).where(eq(tasks.id, 'tsk_1')).get()?.status).toBe(
+      'unknown',
+    );
+    expect(outcome.status, 'the outcome was reported as a failure, not as unknown').toBe('unknown');
+  });
+
+  it('is held, not requeued, when a factory task runs out of time', async () => {
+    seedTask();
+
+    const enqueued = runtime.queue.enqueue({
+      workspaceId: 'wsp_1',
+      type: 'factory.execute',
+      payload: { taskId: 'tsk_1', executionId: 'exe_task', agentConnectionId: 'agt_1' },
+    });
+    const job = runtime.queue.claimNext('worker_1');
+
+    const outcome = await executeJob(context, job!);
+    dispatchAsTheWorkerDoes(runtime.queue, outcome, job!.id);
+
+    // The job is finished, and it is not scheduled to run again.
+    expect(jobRow(enqueued.id)?.status, 'the job was not held').toBe('unknown');
+  });
+
+  it('is never run again when a factory task runs out of time', async () => {
+    seedTask();
+
+    const enqueued = runtime.queue.enqueue({
+      workspaceId: 'wsp_1',
+      type: 'factory.execute',
+      payload: { taskId: 'tsk_1', executionId: 'exe_task', agentConnectionId: 'agt_1' },
+    });
+    const job = runtime.queue.claimNext('worker_1');
+
+    const outcome = await executeJob(context, job!);
+    dispatchAsTheWorkerDoes(runtime.queue, outcome, job!.id);
+
+    // When the retry window has passed, there is nothing left to pick up.
+    await new Promise((resolve) => setTimeout(resolve, 5_200));
+    expect(
+      runtime.queue.claimNext('worker_2'),
+      'the job was picked up again: an unknown outcome was retried',
+    ).toBeNull();
+  }, 20_000);
+
+  it('is unknown, not failed, when an automation run runs out of time', async () => {
+    seedAutomation();
+
+    const enqueued = runtime.queue.enqueue({
+      workspaceId: 'wsp_1',
+      type: 'automation.run',
+      payload: { automationId: 'aut_1' },
+    });
+    const job = runtime.queue.claimNext('worker_1');
+
+    const outcome = await executeJob(context, job!);
+
+    const run = handle.db
+      .select()
+      .from(automationRuns)
+      .where(eq(automationRuns.automationId, 'aut_1'))
+      .get();
+    expect(run?.status, 'the run was not recorded as unknown').toBe('unknown');
+    expect(outcome.status, 'the outcome was reported as a failure, not as unknown').toBe('unknown');
+  });
+
+  it('is never run again when an automation run runs out of time', async () => {
+    seedAutomation();
+
+    const enqueued = runtime.queue.enqueue({
+      workspaceId: 'wsp_1',
+      type: 'automation.run',
+      payload: { automationId: 'aut_1' },
+    });
+    const job = runtime.queue.claimNext('worker_1');
+
+    const outcome = await executeJob(context, job!);
+    dispatchAsTheWorkerDoes(runtime.queue, outcome, job!.id);
+
+    await new Promise((resolve) => setTimeout(resolve, 5_200));
+    expect(
+      runtime.queue.claimNext('worker_2'),
+      'the job was picked up again: an unknown outcome was retried',
+    ).toBeNull();
+  }, 20_000);
 });

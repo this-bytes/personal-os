@@ -5,7 +5,7 @@ import path from 'node:path';
 import { eq } from 'drizzle-orm';
 import type { FastifyInstance } from 'fastify';
 import { buildApp } from '../app.js';
-import { loadConfig } from '../config.js';
+import { findRepoRoot, loadConfig } from '../config.js';
 import { executions, queueJobs } from '../db/schema.js';
 import type { WaitingItem } from '../api/waiting.js';
 
@@ -203,5 +203,52 @@ describe('an outcome that could not be confirmed', () => {
     // The work did not run, and that is known. It is not a failure and it is
     // not an unknown.
     expect(executionStatus('exe_rejected')).toBe('cancelled');
+  });
+
+  it('reaches the owner through a reason the contract has published', async () => {
+    // The waiting list's reason is part of the published route. A client
+    // written against the contract has to be able to handle every reason the
+    // route can return, so the published enum and the route have to agree.
+    const contract = fs.readFileSync(path.join(findRepoRoot(), 'CONTRACTS.md'), 'utf8');
+    const published = /type WaitingReason = ([^;]+);/.exec(contract);
+    expect(published, 'CONTRACTS.md no longer publishes WaitingReason').not.toBeNull();
+    const reasons = (published?.[1] ?? '')
+      .split('|')
+      .map((value) => value.trim().replace(/'/g, ''));
+
+    const id = await createTask('A task we cannot confirm', 'unknown');
+    const items = await waiting();
+    const item = items.find((entry) => entry.taskId === id);
+
+    expect(item?.reason).toBe('unknown');
+    expect(
+      reasons,
+      'the waiting list returns a reason the published contract does not include',
+    ).toContain(item?.reason);
+  });
+
+  it('leaves the audit trail when the owner hands it to an agent again', async () => {
+    const id = await createTask('Hand me to an agent', 'unknown');
+
+    const assigned = await app.inject({
+      method: 'POST',
+      url: `/api/tasks/${id}/assign`,
+      headers: { cookie: sessionCookie },
+      payload: { agentConnectionId: 'agt_1' },
+    });
+    expect(assigned.statusCode).toBe(200);
+
+    // The task left the unknown state, and every transition out of it is
+    // written to the audit trail as the answer to the question the worker
+    // could not answer.
+    const entries = app.services.audit.list(workspaceId, 200);
+    const resolved = entries.find(
+      (entry) => entry.targetId === id && entry.action === 'task.outcome.resolved',
+    );
+
+    expect(
+      resolved,
+      'the task left the unknown state without being written to the audit trail',
+    ).toBeDefined();
   });
 });
