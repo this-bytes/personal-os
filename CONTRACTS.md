@@ -854,6 +854,106 @@ The list is scoped to one workspace, and `workspaceId` is required. The route
 is read-only, returns only what the owner can see, and requires the same
 authentication as every other route.
 
+### The approval evidence
+
+`GET /api/approvals/:id/evidence` returns the evidence a decision is taken
+against. The owner decides on two buttons and a title; this is what the buttons
+are about.
+
+```ts
+interface ApprovalEvidence {
+  approvalId: string;
+  workspaceId: string;
+  execution: ExecutionEvidence | null;
+}
+
+interface ExecutionEvidence {
+  id: string;
+  status: ExecutionStatus;
+  error: string | null;
+  spendUnits: number;
+  startedAt: string | null;
+  finishedAt: string | null;
+  toolCalls: ToolCallEvidence[];
+  artifacts: ArtifactEvidence[];
+}
+
+interface ToolCallEvidence {
+  toolName: string;
+  startedAt: string;
+  completedAt: string | null;
+  outcome: 'completed' | 'unfinished';
+}
+
+interface ArtifactEvidence {
+  title: string | null;
+  resourceId: string | null;
+  createdAt: string;
+}
+```
+
+**What the agent did** is `toolCalls`: the tool calls of that execution and how
+each ended. The calls are the execution's `tool.started` events and the
+`tool.completed` events that answer them
+(`packages/contracts/src/agent.ts:180`, `:186`). A call that answered has
+`outcome: 'completed'` and a `completedAt`; a call that did not has
+`outcome: 'unfinished'` and a `completedAt` of `null`. The events name the tool
+and not the call, so a call is answered by the next completion for that tool.
+**The published vocabulary has no failure event for a tool call**, so the events
+do not say why a call did not finish, and this entry does not claim a reason.
+
+**What it produced** is `artifacts`: the execution's `artifact.created` events
+(`packages/contracts/src/agent.ts:199`), each with the title it was given and
+the resource it made, when it was given either.
+
+**What it cost** is `spendUnits` and `status`. `status` is the execution's own
+status, published in [Adapter events](#adapter-events). `error` carries the
+reason the execution stopped, and only then: a cancellation carries `null`,
+because a cancellation is a decision and not a fault
+(`apps/server/src/modules/approvals/service.ts:160-169`).
+
+**The spend units are recorded, and today they are zero.** A spend unit is an
+abstract cost counter, not currency (`packages/contracts/src/common.ts:58`). The
+execution is created with `spendUnits: 0`
+(`apps/server/src/modules/conversations/dispatch.ts:146`) and nothing writes the
+column afterwards — the turn count the router uses to enforce a spend limit is
+computed in memory and never stored
+(`apps/server/src/modules/conversations/routing.ts:279-284`). A client that shows
+the cost shows `0`, and that is a true statement about what is recorded rather
+than a measure of what the work was worth.
+
+**The evidence is the execution and the execution's events.** An approval points
+at the execution that raised it (`approval.executionId`,
+`apps/server/src/modules/approvals/service.ts:12`), and the tool calls and the
+artifacts are that execution's events, read from the event log. **No new storage
+is introduced** — the approval, the execution and its events all exist already.
+This is the execution's record. The factory's task evidence — results,
+artifacts, tests and observations, recorded against a task — is a different
+record, and this read does not carry it.
+
+**An approval with no execution shows no execution.** `executionId` can be null,
+and the execution it names can be gone
+(`apps/server/src/modules/approvals/resume.ts:63-85`). Both show
+`execution: null`, and with it no tool calls, no artifacts and no cost: there
+was nothing to show, not an empty run. The decide route already answers the
+same way, and its `detail` says which of the two it was.
+
+**The read is read-only, it answers for one approval, and it takes the same
+authentication as every other route** — a session cookie or the owner token, and
+never an agent token, which is MCP-only.
+
+**The code does not implement this yet.** The read this entry publishes is not in
+the tree: there is no route for it, and `GET /api/approvals/:id` answers with
+the approval alone (`apps/server/src/api/approvals.ts:28-31`). This entry is the
+contract for **WI-039**, and the drawer that reads it is WI-040's; the route
+that answers it is written against this entry.
+
+**Migration.** There was nothing before this read, so there is nothing to
+migrate. A client written against the published surface before this change had
+no evidence to fetch, so no promise it was given is now broken. The read is
+additive — no existing route changes its shape, no record is reclassified, and a
+client that does not call it is unaffected.
+
 ---
 
 ## Contract 6 — Automations
@@ -965,6 +1065,7 @@ is not left deleting the database.
 | `POST`             | `/api/automations/:id/enable` · `/disable`           | Toggle scheduling.                                                                      |
 | `GET`              | `/api/approvals`                                     | List approval requests.                                                                 |
 | `GET`              | `/api/approvals/:id`                                 | Read an approval request.                                                               |
+| `GET`              | `/api/approvals/:id/evidence`                        | The evidence a decision is taken against. See [the entry](#the-approval-evidence).      |
 | `POST`             | `/api/approvals/:id/decide`                          | Approve or reject a sensitive operation.                                                |
 | `GET`              | `/api/waiting`                                       | Everything waiting on the owner, in one list. See below.                                |
 | `GET`              | `/api/audit`                                         | Read the audit trail.                                                                   |
