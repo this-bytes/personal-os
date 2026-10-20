@@ -767,3 +767,59 @@ in this file.
   with a value it did not expect; the entry is checked against
   `packages/contracts/src/automation.ts:73` by the reviewer.
 - **Not urgent:** nothing contradicts it, and no client depends on it today.
+
+### A second want, from the second Chief session — WI-010's two stale facts
+
+The second Chief session re-verified `prototypes/DIRECTION.md` independently,
+from the tree, and recorded the check in [WI-010](work/WI-010.md). The
+recommendation holds: the central number is exact —
+
+```
+git grep -c -E 'slate-|indigo-' 235f97c -- 'apps/web/src' 'packages/ui/src'
+  → lines=224  files=31
+```
+
+— which is what the document claims, reproduced with the document's own
+command, and every substrate claim it makes was checked against the tree. Two
+facts have since moved, because the tree moved: the control landed in
+`a2aadb4`, so "nothing under `apps/web` calls `POST /api/approvals/:id/decide`"
+is now false, and the palette cost is 244 lines across 34 files at HEAD rather
+than 224 across 31. The document is pinned to `235f97c` and says so, so this is
+staleness rather than error — but it is recorded as a want, because the number
+space has one owner and it is not this session's.
+
+- **Title:** WI-010's recommendation is pinned to a commit the tree has left
+  behind.
+- **Owner:** Vision. `prototypes/DIRECTION.md` is a design artefact and
+  WI-010's own tiebreak says it is Vision's to write.
+- **Criteria:** the document is re-verified against the commit it is pinned to
+  and says which one that is; the sentence about
+  `POST /api/approvals/:id/decide` is corrected — the call is at
+  `apps/web/src/components/WaitingList.tsx:99`, with approve and reject at
+  `:249` and `:257`; the palette cost is re-measured and carries the commit it
+  was measured at, with the command that reproduces it
+  (`git grep -c -E 'slate-|indigo-' -- 'apps/web/src' 'packages/ui/src'` — 244
+  lines across 34 files at `0732b41`); and the recommendation itself does not
+  change, because B was recommended on the owner's own Q2 answer and the
+  control landing strengthens rather than weakens the conclusion that the
+  control is not blocked by the direction.
+- **Not urgent:** the owner reads one word, not a cost model, and the ADR that
+  records the answer is written after the owner confirms.
+
+### The status post that is owed, request id `status-2026-10-21-0430`
+
+The 04:30 status post to the `Personal OS Factory` group was refused by the
+runtime, not by the group: _"This Bot is replying in multiple chats, so this
+tool call cannot be assigned safely."_ The same refusal came back for every
+task query, so this session could not read the state of the six verifications
+now with Probe either, and could not accept or return any of them.
+
+The post that is owed, request id `status-2026-10-21-0430`, says: WI-010
+verified independently and holding, with its two facts now behind the tree;
+WI-004's decision control shipped in `a2aadb4` and the browser suite is green
+at 24 passed; WI-008 returned to Cog with five defects, because an unknown
+outcome still becomes a retry on two of three paths; WI-009 and WI-021's
+findings with Cog in one dispatch; WI-013 returned to Wren; the suite red on
+purpose, eleven failures, all of them Probe's specifications; and the
+bottleneck, which is one verifier, six items at verify or review, and no
+acceptance step happening.
