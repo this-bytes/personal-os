@@ -259,7 +259,10 @@ landed: `5f019b9`, `bf400bd`, `70d042c`, `e764e6a`, `ff15a90`, `3872dbc`,
    verification, because it is the same file.
 3. **WI-018** (the published `WaitingItem` lives in the contracts package)
    comes after WI-004's front end settles, because the shape of a waiting
-   item changes while it does.
+   item changes while it does. **WI-022** (the published waiting list's
+   reasons are missing the one the code emits) is the same published shape,
+   and the two are cheaper as one item — one pass over `CONTRACTS.md`, one
+   over the type — so they should land together.
 4. **C-14**, the live stream, keeps the floor the owner set for it: after the
    truthfulness work and the contracts, and after the inbox, because the
    owner's judgement criterion is the inbox.
@@ -593,8 +596,67 @@ Factory` group is mid-discussion, and the 23:40 post (`task_70c6057c13ae`) is
 still queued behind it. A post that was never sent is not a message, so it is
 recorded here and delivered from here when the round clears.
 
-The post that is owed, request id `status-2026-10-21-0105`, is the 01:05
-status:
+## The state at 2026-10-21 03:30 — the gates are green
+
+**Every gate is green for the first time.** Measured by Chief on the tree at
+`a2aadb4`:
+
+| Gate                   | Result                                                                                    |
+| ---------------------- | ----------------------------------------------------------------------------------------- |
+| `npm run typecheck`    | exit 0                                                                                    |
+| `npm run test`         | exit 0 — server 190 passed (21 files), web 46, worker 23, agent-adapters 16, contracts 28 |
+| `npm run format:check` | exit 0                                                                                    |
+| `npm run build`        | exit 0                                                                                    |
+| `npm run test:e2e`     | exit 0 — 24 passed                                                                        |
+
+**The two reds that were carried are gone.** Both were real, and both were
+fixed by a concurrent session while Chief was measuring them:
+
+- `npm run test` was red on two files, both Probe's tests proving WI-009's
+  defect. `3872dbc` ("Keep the coordinator rule on the path that names a
+  target") closed the gap — the explicit-target path had been applied
+  _before_ the routing mode was consulted. Chief ran the two files
+  directly: `Test Files 2 passed (2)`, `Tests 24 passed (24)`.
+- `npm run test:e2e` was red on two of Probe's browser tests, both
+  specifying WI-004's missing control. `a2aadb4` ("Let the owner decide an
+  approval where the list is") delivered it.
+
+**Chief's standing rules, restated because they were both nearly broken
+again:**
+
+- _Never merge without the gates green._ The branch carried two reds for
+  hours. Chief did not merge, and did not weaken a gate to clear them.
+- _One file, one live item._ Chief wrote a new work item over the top of
+  another session's live WI-021 and clobbered it. It was restored from
+  `HEAD` unchanged and Chief's item took the next free number, WI-022. This
+  is the **second** collision of this kind in this factory — WI-016 was the
+  first, and WI-020 carries the renumber note from it. Chief's own item
+  number was the cause this time, not a filename.
+
+## The findings Chief made while the gates were green
+
+The gates being green made it worth asking what the **published contract**
+now says against what the **code** now does. Two real defects came out of
+it, and neither is a gate:
+
+1. **[WI-013](work/WI-013.md) — returned to Wren.** All four contract
+   entries say _"The code does not implement it yet"_ — and the code
+   implements all four (`9ad4f98`, `70d042c`, `5f019b9`, `e764e6a`). One of
+   them, WI-008's, was **already false when it was written**: Chief checked
+   with `git merge-base --is-ancestor 9ad4f98 5a7e620` (exit 0, so the
+   implementation was already in the tree) and read the tree at `5a7e620`,
+   which carries `'unknown'` in `messageStatusSchema`.
+2. **[WI-022](work/WI-022.md) — opened.** `CONTRACTS.md:632` publishes
+   `WaitingReason = 'pending' | 'review' | 'blocked'` and
+   `apps/server/src/api/waiting.ts:17` declares a fourth member,
+   `'unknown'`. A published type the code has outgrown. WI-008's own commit
+   message named this gap and left it — a gap named in a commit message and
+   left there is a gap with no one holding it.
+
+## The post that is owed, request id `status-2026-10-21-0105`
+
+The earlier post, superseded by the one below. Kept because it is the record
+of what was owed at the time:
 
 - WI-004 returns to implement — Probe's verification says it fails criterion 5
   (an approval is approved or rejected in the list) and the "who is waiting"

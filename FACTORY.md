@@ -197,6 +197,16 @@ Two rules follow from it:
   dispatch record. When two sessions are the lead in one tree, the older
   claim wins, the newer one waits, and the tiebreak is said out loud in the
   group.
+- **One session opens work items.** Two Chief sessions in one tree have taken
+  the same number twice — on 2026-10-20 and again on 2026-10-21 — and a work
+  item's file was written over each time. A number is a claim, and two claims
+  are a collision, so the number space has one owner: the session that leads
+  implementation in a tree opens and numbers the items. A session with a gap
+  to fill records it in [`.factory/INTAKE.md`](.factory/INTAKE.md) as a want
+  with a proposed title, owner and criteria, and the session that owns the
+  numbers creates the file. An item that was written over is re-filed at a new
+  number with the collision written into it, so a number is never reused and
+  the history stays readable.
   **The check belongs at commit time.** The rule above was written at 23:57
   on 2026-10-20 and was broken nine minutes later, so the claim is not
   enough on its own. Before a session commits, it reads `git status`. If a
