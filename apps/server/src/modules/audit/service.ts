@@ -12,7 +12,11 @@ export interface AuditEntry {
   action: string;
   targetType: string | null;
   targetId: string | null;
-  result: 'success' | 'failure';
+  /**
+   * What the action produced. `unknown` means the work started and the
+   * outcome could not be confirmed — neither a success nor a failure.
+   */
+  result: 'success' | 'failure' | 'unknown';
   metadata: unknown;
   createdAt: string;
 }
@@ -25,7 +29,7 @@ export interface AuditService {
     action: string;
     targetType?: string | null;
     targetId?: string | null;
-    result?: 'success' | 'failure';
+    result?: 'success' | 'failure' | 'unknown';
     metadata?: unknown;
   }): AuditEntry;
   list(workspaceId: string, limit?: number): AuditEntry[];
@@ -46,7 +50,7 @@ export function createAuditService(db: Database): AuditService {
     action: row.action,
     targetType: row.targetType,
     targetId: row.targetId,
-    result: row.result as 'success' | 'failure',
+    result: row.result as 'success' | 'failure' | 'unknown',
     metadata: row.metadata,
     createdAt: row.createdAt,
   });

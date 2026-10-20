@@ -91,7 +91,7 @@ export interface WaitingItem {
   title: string;
   /** Why it is waiting on the owner. */
   detail: string;
-  reason: 'pending' | 'review' | 'blocked';
+  reason: 'pending' | 'review' | 'blocked' | 'unknown';
   workspaceId: string;
   /** The conversation the item came from, when there is one. */
   conversationId: string | null;

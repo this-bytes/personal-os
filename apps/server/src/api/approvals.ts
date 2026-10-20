@@ -43,7 +43,7 @@ export function registerApprovalRoutes(app: FastifyInstance): void {
     if (approval.executionId) {
       app.services.approvals.resolveExecution(
         approval.executionId,
-        body.approved ? 'completed' : 'failed',
+        body.approved ? 'completed' : 'cancelled',
         body.approved
           ? 'The operation was authorised by the owner.'
           : `The operation was rejected by the owner${body.reason ? `: ${body.reason}` : '.'}`,

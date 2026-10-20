@@ -10,7 +10,12 @@ export interface QueueJob {
   workspaceId: string;
   type: JobType;
   payload: Record<string, unknown>;
-  status: 'queued' | 'running' | 'done' | 'failed' | 'cancelled';
+  /**
+   * `unknown` means the work started and the outcome could not be confirmed.
+   * Such a job is never run again: running it a second time could repeat a
+   * side effect that already happened.
+   */
+  status: 'queued' | 'running' | 'done' | 'failed' | 'cancelled' | 'unknown';
   priority: number;
   attempts: number;
   maxAttempts: number;
@@ -164,6 +169,28 @@ export class Queue {
         lockedAt: null,
         lockedBy: null,
         updatedAt: now,
+      })
+      .where(eq(queueJobs.id, jobId))
+      .run();
+  }
+
+  /**
+   * Hold a job whose outcome could not be confirmed.
+   *
+   * The job is finished, but it is never requeued and never retried. The
+   * work may already have had its side effect, so running it again is the one
+   * thing that must not happen on its own. The owner decides what happens
+   * next.
+   */
+  hold(jobId: string, error: string): void {
+    this.db
+      .update(queueJobs)
+      .set({
+        status: 'unknown',
+        lastError: error,
+        lockedAt: null,
+        lockedBy: null,
+        updatedAt: new Date().toISOString(),
       })
       .where(eq(queueJobs.id, jobId))
       .run();

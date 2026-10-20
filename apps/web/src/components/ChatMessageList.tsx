@@ -1,4 +1,4 @@
-import { AlertTriangle, Bot, FileText, Loader2, User } from 'lucide-react';
+import { AlertTriangle, Bot, FileText, HelpCircle, Loader2, User } from 'lucide-react';
 import { Badge, cn } from '@personal-os/ui';
 import type { Message, Participant } from '@personal-os/contracts';
 import type { AgentConnectionDetail } from '../lib/types';
@@ -115,6 +115,12 @@ export function ChatMessageList({
                 <Badge variant="danger">
                   <AlertTriangle className="h-2.5 w-2.5" />
                   failed
+                </Badge>
+              ) : null}
+              {message.status === 'unknown' ? (
+                <Badge variant="warning">
+                  <HelpCircle className="h-2.5 w-2.5" />
+                  outcome unknown
                 </Badge>
               ) : null}
               {message.replyToId ? <span className="text-[10px] text-slate-600">reply</span> : null}

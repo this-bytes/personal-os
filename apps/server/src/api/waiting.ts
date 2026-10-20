@@ -7,8 +7,14 @@ const waitingQuerySchema = z.object({ workspaceId: z.string() });
 /** What kind of thing is waiting on the owner. */
 export type WaitingKind = 'approval' | 'task';
 
-/** Why the item is on the list. */
-export type WaitingReason = 'pending' | 'review' | 'blocked';
+/**
+ * Why the item is on the list.
+ *
+ * `unknown` is its own reason: the work started and the outcome could not be
+ * confirmed. It is not a failure to fix and not a decision to make — it is
+ * something to check.
+ */
+export type WaitingReason = 'pending' | 'review' | 'blocked' | 'unknown';
 
 /** One thing that is waiting on the owner. */
 export interface WaitingItem {
@@ -35,11 +41,12 @@ export interface WaitingItem {
  * The list is assembled on the server so the browser asks for one thing
  * instead of three and joins the answers itself. A pending approval is an
  * agent stopped mid-turn; a task in review is waiting for an acceptance
- * decision; a blocked task is waiting for the owner to unblock it.
+ * decision; a blocked task is waiting for the owner to unblock it; a task
+ * whose outcome is unknown is waiting for the owner to check it.
  *
  * The order is the order of urgency: an agent that cannot continue comes
- * first, then the work waiting for an acceptance decision, then the work
- * that is stuck.
+ * first, then the work whose outcome could not be confirmed, then the work
+ * waiting for an acceptance decision, then the work that is stuck.
  */
 export function registerWaitingRoutes(app: FastifyInstance): void {
   app.get('/api/waiting', { preHandler: requireAuth }, async (request) => {
@@ -73,7 +80,8 @@ function listWaiting(app: FastifyInstance, workspaceId: string): WaitingItem[] {
 
   const tasks: WaitingItem[] = app.services.factory.listTasks(workspaceId).flatMap((task) => {
     if (coveredByAnApproval.has(task.id)) return [];
-    if (task.status !== 'review' && task.status !== 'blocked') return [];
+    if (task.status !== 'review' && task.status !== 'blocked' && task.status !== 'unknown')
+      return [];
     const reason: WaitingReason = task.status;
     return [
       {
@@ -83,7 +91,9 @@ function listWaiting(app: FastifyInstance, workspaceId: string): WaitingItem[] {
         detail:
           reason === 'review'
             ? 'An agent reported this as done. It is not accepted until you say so.'
-            : 'This task is blocked and cannot move until you unblock it.',
+            : reason === 'blocked'
+              ? 'This task is blocked and cannot move until you unblock it.'
+              : 'This task started and we cannot confirm how it ended. Check whether it ran before you try it again.',
         reason,
         workspaceId: task.workspaceId,
         conversationId: null,
@@ -93,8 +103,9 @@ function listWaiting(app: FastifyInstance, workspaceId: string): WaitingItem[] {
     ];
   });
 
+  const unknown = tasks.filter((task) => task.reason === 'unknown');
   const review = tasks.filter((task) => task.reason === 'review');
   const blocked = tasks.filter((task) => task.reason === 'blocked');
 
-  return [...approvals, ...review, ...blocked];
+  return [...approvals, ...unknown, ...review, ...blocked];
 }

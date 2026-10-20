@@ -77,7 +77,12 @@ export function registerFactoryRoutes(app: FastifyInstance): void {
   app.patch('/api/tasks/:id', { preHandler: requireAuth }, async (request) => {
     const { id } = request.params as { id: string };
     const body = parseBody(updateTaskSchema, request.body);
-    return { task: app.services.factory.updateTask(id, body) };
+    return {
+      task: app.services.factory.updateTask(id, {
+        ...body,
+        actorId: request.user?.id ?? 'owner',
+      }),
+    };
   });
 
   app.post('/api/tasks/:id/assign', { preHandler: requireAuth }, async (request) => {

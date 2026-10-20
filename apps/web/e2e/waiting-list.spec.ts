@@ -301,4 +301,37 @@ test.describe('what is waiting on the owner', () => {
       `the entry does not say which agent is waiting. It says: "${text}"`,
     ).toBe(true);
   });
+
+  test('an item whose outcome is unknown asks the owner to check it', async ({ page }) => {
+    await signIn(page);
+    const workspaceId = await firstWorkspaceId(page);
+
+    // Only the worker can put a task into the unknown state, so the row is
+    // put in front of the client the way the server would send it.
+    await serveWaitingList(page, [
+      {
+        id: 'task:tsk_unknown',
+        kind: 'task',
+        title: 'Waiting list unknown outcome',
+        detail:
+          'This task started and we cannot confirm how it ended. Check whether it ran before you try it again.',
+        reason: 'unknown',
+        workspaceId,
+        conversationId: null,
+        taskId: 'tsk_unknown',
+        agentConnectionId: 'agt_unknown',
+      },
+    ]);
+
+    await page.goto('/conversations');
+
+    const row = page.getByRole('listitem').filter({ hasText: 'Waiting list unknown outcome' });
+    await expect(row).toBeVisible();
+
+    // It asks the owner to check it. It must not read as a failure that may
+    // simply be tried again.
+    await expect(row.getByText('Check this')).toBeVisible();
+    await expect(row.getByText('Blocked')).toHaveCount(0);
+    await expect(row.getByText('In review')).toHaveCount(0);
+  });
 });

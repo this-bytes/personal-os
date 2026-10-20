@@ -12,6 +12,7 @@ import { evidence, executions, goals, tasks } from '../../db/schema.js';
 import { errors } from '../../lib/errors.js';
 import { newId } from '../../lib/ids.js';
 import type { EventsService } from '../events/service.js';
+import type { AuditService } from '../audit/service.js';
 import type { Queue } from '../../queue/client.js';
 
 export interface FactoryService {
@@ -59,6 +60,11 @@ export interface FactoryService {
        * the meantime is rejected instead of being overwritten.
        */
       expectedRevision?: number;
+      /**
+       * Who made the change. Recorded in the audit trail when the task
+       * leaves the unknown state.
+       */
+      actorId?: string;
     },
   ): FactoryTask;
   /** Hand a task to an agent; the worker performs the work. */
@@ -83,6 +89,8 @@ export interface FactoryServiceOptions {
   db: Database;
   events: EventsService;
   queue: Queue;
+  /** The audit trail. A task leaving the unknown state is written to it. */
+  audit: AuditService;
 }
 
 /**
@@ -91,7 +99,7 @@ export interface FactoryServiceOptions {
  * performs it is disconnected.
  */
 export function createFactoryService(options: FactoryServiceOptions): FactoryService {
-  const { db, events, queue } = options;
+  const { db, events, queue, audit } = options;
 
   const toGoal = (row: typeof goals.$inferSelect): Goal => ({
     id: row.id,
@@ -260,6 +268,22 @@ export function createFactoryService(options: FactoryServiceOptions): FactorySer
         })
         .where(eq(tasks.id, id))
         .run();
+
+      // Leaving the unknown state is the owner's answer to the question the
+      // worker could not answer, so it is written to the audit trail.
+      if (row.status === 'unknown' && patch.status !== undefined && patch.status !== 'unknown') {
+        audit.record({
+          workspaceId: row.workspaceId,
+          actorType: 'human',
+          actorId: patch.actorId ?? 'owner',
+          action: 'task.outcome.resolved',
+          targetType: 'task',
+          targetId: id,
+          result: 'success',
+          metadata: { from: 'unknown', to: patch.status },
+        });
+      }
+
       return service.getTask(id);
     },
 
@@ -361,6 +385,21 @@ export function createFactoryService(options: FactoryServiceOptions): FactorySer
           : `Acceptance rejected${input.reason ? `: ${input.reason}` : '.'}.`,
         payload: { satisfied: input.satisfied, acceptedBy: input.acceptedBy },
       });
+
+      // An acceptance is also how the owner answers a task whose outcome
+      // could not be confirmed.
+      if (task.status === 'unknown') {
+        audit.record({
+          workspaceId: task.workspaceId,
+          actorType: 'human',
+          actorId: input.acceptedBy,
+          action: 'task.outcome.resolved',
+          targetType: 'task',
+          targetId: taskId,
+          result: 'success',
+          metadata: { from: 'unknown', to: status },
+        });
+      }
 
       const updated = service.getTask(taskId);
       events.publish({ type: 'task.updated', task: updated }, { workspaceId: task.workspaceId });

@@ -1,6 +1,7 @@
 import { createDatabase, type DatabaseHandle } from '../db/client.js';
 import { runMigrations } from '../db/migrate.js';
 import { EventsService } from '../modules/events/service.js';
+import { createAuditService } from '../modules/audit/service.js';
 import { Queue } from '../queue/client.js';
 import { createFactoryService } from '../modules/factory/service.js';
 import { createResourcesService } from '../modules/resources/service.js';
@@ -29,7 +30,12 @@ export function createTestStack(): TestStack {
   const handle = createTestDatabase();
   const events = new EventsService(handle.db);
   const queue = new Queue(handle.db);
-  const factory = createFactoryService({ db: handle.db, events, queue });
+  const factory = createFactoryService({
+    db: handle.db,
+    events,
+    queue,
+    audit: createAuditService(handle.db),
+  });
   const resources = createResourcesService({
     db: handle.db,
     events,

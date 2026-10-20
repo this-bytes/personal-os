@@ -24,8 +24,9 @@ const QUERY_KEY = 'waiting';
  * What is waiting on the owner.
  *
  * One list, in one request: a pending approval, a task waiting for an
- * acceptance decision and a blocked task are the same question asked in
- * three places, and the owner should not have to go and look for them.
+ * acceptance decision, a blocked task and a task whose outcome is unknown are
+ * the same question asked in four places, and the owner should not have to go
+ * and look for them.
  */
 export function WaitingList(): React.JSX.Element {
   const { activeWorkspaceId } = useWorkspace();
@@ -133,13 +134,23 @@ function targetFor(item: WaitingItem): string {
   return item.taskId ? `/factory?task=${item.taskId}` : '/factory';
 }
 
-/** What the item is, in the owner's words. */
+/**
+ * What the item is, in the owner's words.
+ *
+ * An unknown outcome is not a failure to fix and not a decision to make. It
+ * is something to check, and it is labelled that way so the owner does not
+ * read it as a task that failed and may simply be repeated.
+ */
 function labelFor(item: WaitingItem): string {
   if (item.kind === 'approval') return 'Approval';
-  return item.reason === 'review' ? 'In review' : 'Blocked';
+  if (item.reason === 'review') return 'In review';
+  if (item.reason === 'unknown') return 'Check this';
+  return 'Blocked';
 }
 
 function variantFor(item: WaitingItem): 'warning' | 'info' | 'danger' {
   if (item.kind === 'approval') return 'warning';
-  return item.reason === 'review' ? 'info' : 'danger';
+  if (item.reason === 'review') return 'info';
+  if (item.reason === 'unknown') return 'warning';
+  return 'danger';
 }

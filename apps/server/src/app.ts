@@ -17,7 +17,6 @@ import { createResourcesService } from './modules/resources/service.js';
 import { createFactoryService } from './modules/factory/service.js';
 import { createAutomationsService } from './modules/automations/service.js';
 import { createCapabilitiesService } from './modules/capabilities/service.js';
-import { createAuditService } from './modules/audit/service.js';
 import { createApprovalsService } from './modules/approvals/service.js';
 import { EventsService } from './modules/events/service.js';
 import { handleMcpRequest } from './modules/mcp/server.js';
@@ -73,7 +72,12 @@ export async function buildApp(options: BuildAppOptions = {}): Promise<FastifyIn
     queue,
     agentDisplayName: (connectionId) => agents.get(connectionId).name,
   });
-  const factory = createFactoryService({ db: runtime.db, events, queue });
+  const factory = createFactoryService({
+    db: runtime.db,
+    events,
+    queue,
+    audit: runtime.audit,
+  });
   const resources = createResourcesService({
     db: runtime.db,
     events,
@@ -90,7 +94,7 @@ export async function buildApp(options: BuildAppOptions = {}): Promise<FastifyIn
     resources,
     automations,
   });
-  const audit = createAuditService(runtime.db);
+  const audit = runtime.audit;
   const approvals = createApprovalsService(runtime.db);
 
   const services: AppServices = {

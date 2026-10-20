@@ -49,8 +49,52 @@ export interface ExecutorContext {
 }
 
 export interface ExecutionOutcome {
-  status: 'completed' | 'failed' | 'cancelled';
+  /**
+   * `unknown` means the work started and the outcome could not be confirmed:
+   * the deadline passed while the agent was still working, so its side effect
+   * may already have happened. It is neither a success nor a failure, and it
+   * is never run again on our own.
+   */
+  status: 'completed' | 'failed' | 'cancelled' | 'unknown';
   error?: string;
+}
+
+/**
+ * How one agent turn ended.
+ *
+ * `failed` means the turn was refused or broke before it could do anything.
+ * `unknown` means the turn started and we cannot confirm how it ended.
+ */
+type TurnOutcome = 'completed' | 'failed' | 'unknown';
+
+/**
+ * Write a transition into `unknown` to the audit trail.
+ *
+ * The owner has to be able to find these: an outcome we cannot confirm is
+ * not a failure to retry, it is a question to answer.
+ */
+function recordUnknownOutcome(
+  runtime: Runtime,
+  input: {
+    workspaceId: string;
+    agentConnectionId: string;
+    action: string;
+    targetType: string;
+    targetId: string;
+    reason: string;
+    metadata?: Record<string, unknown>;
+  },
+): void {
+  runtime.audit.record({
+    workspaceId: input.workspaceId,
+    actorType: 'agent',
+    actorId: input.agentConnectionId,
+    action: input.action,
+    targetType: input.targetType,
+    targetId: input.targetId,
+    result: 'unknown',
+    metadata: { reason: input.reason, ...(input.metadata ?? {}) },
+  });
 }
 
 export async function executeJob(
@@ -215,7 +259,13 @@ async function executeChatTurn(context: ExecutorContext, job: QueueJob): Promise
   const controller = new AbortController();
   const adapterConfig = await loadAdapterConfig(context, payload.agentConnectionId);
   const timeoutSeconds = adapterTimeout(adapterConfig);
-  const timeout = setTimeout(() => controller.abort(), timeoutSeconds * 1000);
+  // The deadline is the one moment where we stop waiting for an agent that
+  // may already be doing something. Past it we cannot confirm the outcome.
+  let timedOut = false;
+  const timeout = setTimeout(() => {
+    timedOut = true;
+    controller.abort();
+  }, timeoutSeconds * 1000);
 
   let accumulated = '';
   let failure: string | undefined;
@@ -267,26 +317,49 @@ async function executeChatTurn(context: ExecutorContext, job: QueueJob): Promise
     clearTimeout(timeout);
   }
 
-  const failed = failure !== undefined;
+  // The deadline passed: the agent may already have had its side effect, so
+  // the honest answer is that we do not know how it ended.
+  const outcome: TurnOutcome = timedOut
+    ? 'unknown'
+    : failure !== undefined
+      ? 'failed'
+      : 'completed';
+  const failed = outcome === 'failed';
+  const unknown = outcome === 'unknown';
+  const explanation = unknown
+    ? `The agent did not finish within ${timeoutSeconds}s. It was stopped, and it may already have had its side effect.`
+    : failure;
   const finalContent: ContentPart[] =
     accumulated.length > 0 ? [{ type: 'text', text: accumulated }] : [];
 
   db.update(messages)
     .set({
       content: finalContent,
-      status: failed ? 'failed' : 'complete',
+      status: unknown ? 'unknown' : failed ? 'failed' : 'complete',
     })
     .where(eq(messages.id, messageId))
     .run();
 
   db.update(executions)
     .set({
-      status: failed ? 'failed' : 'completed',
-      error: failure ?? null,
+      status: unknown ? 'unknown' : failed ? 'failed' : 'completed',
+      error: explanation ?? null,
       finishedAt: new Date().toISOString(),
     })
     .where(eq(executions.id, payload.executionId))
     .run();
+
+  if (unknown) {
+    recordUnknownOutcome(runtime, {
+      workspaceId: conversation.workspaceId,
+      agentConnectionId: payload.agentConnectionId,
+      action: 'execution.outcome.unknown',
+      targetType: 'execution',
+      targetId: payload.executionId,
+      reason: explanation ?? 'The outcome could not be confirmed.',
+      metadata: { messageId, conversationId: payload.conversationId, timeoutSeconds },
+    });
+  }
 
   const updated = db.select().from(messages).where(eq(messages.id, messageId)).get();
   if (updated) {
@@ -352,7 +425,11 @@ async function executeChatTurn(context: ExecutorContext, job: QueueJob): Promise
     });
   }
 
-  return failed ? { status: 'failed', error: failure } : { status: 'completed' };
+  return failed
+    ? { status: 'failed', error: failure }
+    : unknown
+      ? { status: 'unknown', error: explanation }
+      : { status: 'completed' };
 }
 
 interface EventContext {
@@ -468,7 +545,12 @@ async function executeFactoryTask(
 
   const controller = new AbortController();
   const adapterConfig = await loadAdapterConfig(context, payload.agentConnectionId);
-  const timeout = setTimeout(() => controller.abort(), adapterTimeout(adapterConfig) * 1000);
+  const timeoutSeconds = adapterTimeout(adapterConfig);
+  let timedOut = false;
+  const timeout = setTimeout(() => {
+    timedOut = true;
+    controller.abort();
+  }, timeoutSeconds * 1000);
 
   try {
     const adapter = runtime.registry.create(adapterConfig, {
@@ -492,6 +574,18 @@ async function executeFactoryTask(
     clearTimeout(timeout);
   }
 
+  // The task's agent was already running, so a turn that ran out of time may
+  // have had its side effect. The task is unknown, not broken.
+  const outcome: TurnOutcome = timedOut
+    ? 'unknown'
+    : failure !== undefined
+      ? 'failed'
+      : 'completed';
+  const unknown = outcome === 'unknown';
+  const explanation = unknown
+    ? `The agent did not finish within ${timeoutSeconds}s. It was stopped, and it may already have had its side effect.`
+    : failure;
+
   db.insert(evidence)
     .values({
       id: newId('evd'),
@@ -499,27 +593,44 @@ async function executeFactoryTask(
       taskId: task.id,
       executionId: payload.executionId,
       kind: 'observation',
-      summary: output.trim().slice(0, 4_000) || failure || 'The agent produced no output.',
-      payload: { output: output.slice(0, 20_000), error: failure ?? null },
+      summary: output.trim().slice(0, 4_000) || explanation || 'The agent produced no output.',
+      payload: { output: output.slice(0, 20_000), error: explanation ?? null },
       createdAt: new Date().toISOString(),
     })
     .run();
 
   db.update(executions)
     .set({
-      status: failure ? 'failed' : 'completed',
-      error: failure ?? null,
+      status: unknown ? 'unknown' : failure ? 'failed' : 'completed',
+      error: explanation ?? null,
       finishedAt: new Date().toISOString(),
     })
     .where(eq(executions.id, payload.executionId))
     .run();
 
   // The agent reporting completion is not acceptance. The task moves to
-  // review, where a human decides whether the criteria are satisfied.
+  // review, where a human decides whether the criteria are satisfied. A
+  // task whose outcome is unknown is neither finished nor broken: the owner
+  // checks it.
   db.update(tasks)
-    .set({ status: failure ? 'blocked' : 'review', updatedAt: new Date().toISOString() })
+    .set({
+      status: unknown ? 'unknown' : failure ? 'blocked' : 'review',
+      updatedAt: new Date().toISOString(),
+    })
     .where(eq(tasks.id, task.id))
     .run();
+
+  if (unknown) {
+    recordUnknownOutcome(runtime, {
+      workspaceId: task.workspaceId,
+      agentConnectionId: payload.agentConnectionId,
+      action: 'task.outcome.unknown',
+      targetType: 'task',
+      targetId: task.id,
+      reason: explanation ?? 'The outcome could not be confirmed.',
+      metadata: { executionId: payload.executionId, timeoutSeconds },
+    });
+  }
 
   const updated = db.select().from(tasks).where(eq(tasks.id, task.id)).get();
   if (updated) {
@@ -545,7 +656,11 @@ async function executeFactoryTask(
     );
   }
 
-  return failure ? { status: 'failed', error: failure } : { status: 'completed' };
+  return failure
+    ? { status: 'failed', error: failure }
+    : unknown
+      ? { status: 'unknown', error: explanation }
+      : { status: 'completed' };
 }
 
 interface AutomationPayload {
@@ -579,6 +694,8 @@ async function executeAutomation(
   const runId = newId('run');
   let output: unknown = null;
   let failure: string | undefined;
+  let timedOut = false;
+  let timeoutSeconds = 0;
 
   // An automation that was started by an event produces its own events at
   // the next depth, which is what bounds the chain.
@@ -599,7 +716,11 @@ async function executeAutomation(
       let text = '';
       const controller = new AbortController();
       const automationConfig = await loadAdapterConfig(context, action.agentConnectionId);
-      const timeout = setTimeout(() => controller.abort(), adapterTimeout(automationConfig) * 1000);
+      timeoutSeconds = adapterTimeout(automationConfig);
+      const timeout = setTimeout(() => {
+        timedOut = true;
+        controller.abort();
+      }, timeoutSeconds * 1000);
       try {
         for await (const event of adapter.send({
           conversationId: '',
@@ -665,16 +786,28 @@ async function executeAutomation(
     failure = error instanceof Error ? error.message : String(error);
   }
 
+  // The automation's action had already started, so a run that ran out of
+  // time may have had its side effect. The run is unknown, not failed.
+  const outcome: TurnOutcome = timedOut
+    ? 'unknown'
+    : failure !== undefined
+      ? 'failed'
+      : 'completed';
+  const unknown = outcome === 'unknown';
+  const explanation = unknown
+    ? `The action did not finish within ${timeoutSeconds}s. It was stopped, and it may already have had its side effect.`
+    : failure;
+
   const finishedAt = new Date().toISOString();
   db.insert(automationRuns)
     .values({
       id: runId,
       automationId: automation.id,
-      status: failure ? 'failed' : 'completed',
+      status: unknown ? 'unknown' : failure ? 'failed' : 'completed',
       startedAt,
       finishedAt,
       output: output as never,
-      error: failure ?? null,
+      error: explanation ?? null,
     })
     .run();
 
@@ -683,23 +816,42 @@ async function executeAutomation(
     .where(eq(automations.id, automation.id))
     .run();
 
+  if (unknown) {
+    recordUnknownOutcome(runtime, {
+      workspaceId: automation.workspaceId,
+      agentConnectionId:
+        automation.action.type === 'agent.prompt'
+          ? (automation.action.agentConnectionId ?? automation.id)
+          : automation.id,
+      action: 'automation.outcome.unknown',
+      targetType: 'automation',
+      targetId: automation.id,
+      reason: explanation ?? 'The outcome could not be confirmed.',
+      metadata: { runId, timeoutSeconds },
+    });
+  }
+
   runtime.events.publish(
     {
       type: 'automation.run',
       run: {
         id: runId,
         automationId: automation.id,
-        status: failure ? 'failed' : 'completed',
+        status: unknown ? 'unknown' : failure ? 'failed' : 'completed',
         startedAt,
         finishedAt,
         output: output ?? null,
-        error: failure ?? null,
+        error: explanation ?? null,
       },
     },
     { workspaceId: automation.workspaceId, depth },
   );
 
-  return failure ? { status: 'failed', error: failure } : { status: 'completed' };
+  return failure
+    ? { status: 'failed', error: failure }
+    : unknown
+      ? { status: 'unknown', error: explanation }
+      : { status: 'completed' };
 }
 
 /**
@@ -733,6 +885,13 @@ function renderPrompt(
   });
 }
 
+/**
+ * Record a turn that never started.
+ *
+ * This is used when the work cannot begin at all — the connection is gone,
+ * it is switched off, or the task is no longer there. Nothing ran, so the
+ * outcome is known: it failed.
+ */
 function fail(context: ExecutorContext, executionId: string, message: string): ExecutionOutcome {
   context.runtime.db
     .update(executions)

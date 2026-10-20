@@ -70,7 +70,7 @@ export const automationSchema = z.object({
 });
 export type Automation = z.infer<typeof automationSchema>;
 
-export const automationRunStatusSchema = z.enum(['running', 'completed', 'failed']);
+export const automationRunStatusSchema = z.enum(['running', 'completed', 'failed', 'unknown']);
 export type AutomationRunStatus = z.infer<typeof automationRunStatusSchema>;
 
 export const automationRunSchema = z.object({

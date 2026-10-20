@@ -1,6 +1,14 @@
 import { useEffect, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Check, ChevronDown, ChevronRight, ListChecks, ShieldCheck, X } from 'lucide-react';
+import {
+  Check,
+  ChevronDown,
+  ChevronRight,
+  HelpCircle,
+  ListChecks,
+  ShieldCheck,
+  X,
+} from 'lucide-react';
 import { Badge, Button, Card, CardContent, Select, Textarea } from '@personal-os/ui';
 import type { FactoryTask, TaskStatus } from '@personal-os/contracts';
 import { api, errorMessage } from '../lib/api';
@@ -39,7 +47,9 @@ export function TaskBoard({
 
   const grouped = (status: TaskStatus): FactoryTask[] =>
     tasks.filter((task) => task.status === status);
-  const other = tasks.filter((task) => task.status === 'blocked' || task.status === 'cancelled');
+  const other = tasks.filter(
+    (task) => task.status === 'blocked' || task.status === 'cancelled' || task.status === 'unknown',
+  );
 
   return (
     <div className="space-y-3">
@@ -80,7 +90,8 @@ export function TaskBoard({
       {other.length > 0 ? (
         <section className="space-y-2">
           <h3 className="text-xs font-semibold uppercase tracking-wide text-slate-400">
-            Blocked and cancelled <span className="ml-1.5 text-slate-600">{other.length}</span>
+            Blocked, cancelled and unknown{' '}
+            <span className="ml-1.5 text-slate-600">{other.length}</span>
           </h3>
           <div className="grid gap-2 md:grid-cols-2 xl:grid-cols-4">
             {other.map((task) => (
@@ -191,6 +202,12 @@ function TaskCard({
             </Badge>
           ) : null}
           {task.status === 'review' ? <Badge variant="warning">awaiting acceptance</Badge> : null}
+          {task.status === 'unknown' ? (
+            <Badge variant="warning">
+              <HelpCircle className="h-2.5 w-2.5" />
+              outcome unknown
+            </Badge>
+          ) : null}
         </div>
 
         {expanded ? (

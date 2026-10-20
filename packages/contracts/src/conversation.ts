@@ -53,7 +53,7 @@ export const messageOriginSchema = z.object({
 });
 export type MessageOrigin = z.infer<typeof messageOriginSchema>;
 
-export const messageStatusSchema = z.enum(['streaming', 'complete', 'failed']);
+export const messageStatusSchema = z.enum(['streaming', 'complete', 'failed', 'unknown']);
 export type MessageStatus = z.infer<typeof messageStatusSchema>;
 
 export const messageKindSchema = z.enum(['text', 'system', 'artifact', 'activity']);

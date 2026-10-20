@@ -37,8 +37,18 @@ export interface ApprovalsService {
     requestedBy?: string;
   }): Approval;
   decide(id: string, input: { approved: boolean; reason?: string; decidedBy: string }): Approval;
-  /** Close the execution that was waiting for the decision. */
-  resolveExecution(executionId: string, status: 'completed' | 'failed', detail: string): void;
+  /**
+   * Close the execution that was waiting for the decision.
+   *
+   * A rejected operation was stopped, so it is `cancelled` — the outcome is
+   * known, because the work did not run. It is not a failure of the work and
+   * it is not an unknown.
+   */
+  resolveExecution(
+    executionId: string,
+    status: 'completed' | 'failed' | 'cancelled' | 'unknown',
+    detail: string,
+  ): void;
 }
 
 /**
@@ -132,7 +142,10 @@ export function createApprovalsService(db: Database): ApprovalsService {
       db.update(executions)
         .set({
           status,
-          error: status === 'failed' ? detail : null,
+          // The error column carries the reason only when there is an error.
+          // A cancellation is a decision, and an unknown carries its own
+          // explanation of what could not be confirmed.
+          error: status === 'failed' || status === 'unknown' ? detail : null,
           finishedAt: new Date().toISOString(),
         })
         .where(eq(executions.id, executionId))

@@ -5,6 +5,7 @@ import { runMigrations } from './db/migrate.js';
 import { secretConfigs } from './db/schema.js';
 import { decryptSecret } from './lib/crypto.js';
 import { EventsService } from './modules/events/service.js';
+import { createAuditService, type AuditService } from './modules/audit/service.js';
 import { Queue } from './queue/client.js';
 import type { AppConfig } from './config.js';
 
@@ -15,6 +16,11 @@ export interface Runtime {
   registry: AdapterRegistry;
   events: EventsService;
   queue: Queue;
+  /**
+   * The audit trail. The worker writes to it too: an outcome that could not
+   * be confirmed is recorded where the owner can read it.
+   */
+  audit: AuditService;
   /** Resolve a server-held secret. Returns undefined for unknown refs. */
   resolveSecret(ref: string): Promise<string | undefined>;
   close(): void;
@@ -23,6 +29,8 @@ export interface Runtime {
 export { Queue } from './queue/client.js';
 export type { QueueJob, JobType, EnqueueOptions } from './queue/client.js';
 export { EventsService } from './modules/events/service.js';
+export { createAuditService } from './modules/audit/service.js';
+export type { AuditService, AuditEntry } from './modules/audit/service.js';
 export { createAuthService } from './modules/auth/service.js';
 export type { AuthenticatedUser } from './modules/auth/service.js';
 export { planAndDispatch } from './modules/conversations/dispatch.js';
@@ -53,6 +61,7 @@ export function createRuntime(config: AppConfig): Runtime {
   const registry = createDefaultRegistry();
   const events = new EventsService(handle.db);
   const queue = new Queue(handle.db);
+  const audit = createAuditService(handle.db);
 
   return {
     config,
@@ -61,6 +70,7 @@ export function createRuntime(config: AppConfig): Runtime {
     registry,
     events,
     queue,
+    audit,
     async resolveSecret(ref: string): Promise<string | undefined> {
       const row = handle.db.select().from(secretConfigs).where(eq(secretConfigs.id, ref)).get();
       if (!row) return undefined;

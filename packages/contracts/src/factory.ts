@@ -29,6 +29,7 @@ export const taskStatusSchema = z.enum([
   'review',
   'done',
   'cancelled',
+  'unknown',
 ]);
 export type TaskStatus = z.infer<typeof taskStatusSchema>;
 
