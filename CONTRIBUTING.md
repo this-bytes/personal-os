@@ -102,6 +102,14 @@ It writes to the deployment, so it creates the owner if there is none and it
 always adds an agent and a conversation. Against a deployment that is not
 yours, pass `--allow-remote` to say that you mean it.
 
+To check the container stack itself — build both images, start it, serve the
+client, run the worker, and tear it down again — run the whole thing in one
+command. It needs Docker:
+
+```powershell
+./scripts/verify-compose.ps1
+```
+
 ## How a change gets reviewed
 
 Personal OS is reviewed by a small team of bots with separate, non-overlapping

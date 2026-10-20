@@ -90,7 +90,10 @@ verify:stack` signs in, registers an agent, posts a message to it and waits
   further request for it could ever succeed.
 - **A portable Compose verification.** `scripts/verify-compose.ps1` resolved
   the repository from an absolute path that only existed on one machine. It
-  now resolves from its own location, so it runs in any checkout.
+  now resolves from its own location, so it runs in any checkout. It also
+  checks what the documentation always said it checked: the worker in the
+  stack executes the product's core loop, and a page that is not the web
+  client fails the run instead of printing a warning.
 - **The CodeQL workflow now runs at all.** It passed `language` to the CodeQL
   action, whose input is `languages`; the action rejects an input it does not
   know, so the workflow would have failed the first time anybody pushed. The
