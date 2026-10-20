@@ -139,7 +139,10 @@ jobs:
       # A workflow that does not parse, or that hands an action an input it
       # does not accept, fails only once somebody pushes — and the CodeQL
       # workflow failed exactly that way until this check existed.
+      #
+      # The version is pinned rather than tracking `latest`, so the lint
+      # cannot change under you and the image can be trusted by digest.
       - name: Check the workflow definitions
-        uses: docker://rhysd/actionlint:latest
+        uses: docker://rhysd/actionlint:1.7.12
         with:
           args: -color
