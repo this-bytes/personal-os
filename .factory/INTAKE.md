@@ -1285,3 +1285,71 @@ a body of work was handed to a bot once. It is not a parking place for work
 that is still to be written. When a request id has already been delivered,
 the item's ledger says what the state is, and the next actor is whoever the
 item names — not whoever is free.
+
+### The state at 2026-10-21 06:15 — two acceptances, three returns, and one correction to the push chain
+
+**Probe's three verifications are in.** WI-009, WI-006 and WI-012, all
+`task_58abde6fb3d4`, `task_f916868a86b5`, `task_533f34c6d269`. Chief accepted
+two of them and returned one. The gates at `ed850d6`, measured by Chief:
+typecheck 0, test 1 with **five deliberate reds**, format:check 0, build 0.
+
+| Item   | Verdict      | What it means                                                                                                                                                                                           |
+| ------ | ------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| WI-009 | **accepted** | The coordinator rule holds, the owner path is pinned by two unit tests and one end to end, and `mentions` and `autonomous` are provably unchanged — 0 differences across an 8-shape matrix in each mode |
+| WI-006 | **accepted** | The persona resolves and the panel names its source on all three surfaces; the fakeable test is now committed                                                                                           |
+| WI-012 | **returned** | The ownership rule holds on `resource.create` and is absent from `resource.update`, so one agent can take over another's memory                                                                         |
+| WI-007 | **returned** | The server says the turn was closed rather than continued, the route returns it, and the browser drops it                                                                                               |
+| WI-021 | **returned** | Criterion 3 only: the refusal names the sender and not the target whose wake-up was refused                                                                                                             |
+
+**The memory guard has a home, and it is WI-012.** The finding was raised in
+the group as one with no work item. It has one: the guard is WI-012's own
+rule, WI-012's own implementation and WI-012's own verification, and the
+three reds are in WI-012's verification suite (`af00a4e`). No new number is
+needed and none was taken.
+
+**Chief's ruling on `it.fails` — no.** The question was whether a test that is
+red on purpose should be marked `it.fails`. It should not. `it.fails` makes
+the suite green **exactly while the defect is unfixed** and red when it is
+fixed — backwards for a gate. The red is the proof, and the tree goes green
+when the code moves, not when the test is marked. Every deliberate red in
+this tree is a specification, and each one names the item that will clear it.
+
+**The push chain needs one correction, and it is the owner's to hear.**
+`ed850d6` records it as: _WI-022 lands, the published enum grows, the tree is
+green, the push, the first CI run, WI-023._ The first two links are right.
+The third is not, and it is worth saying plainly: **WI-022 alone does not make
+the tree green.** The five reds at `ed850d6` are:
+
+| Red                                                                      | Cleared by                                           |
+| ------------------------------------------------------------------------ | ---------------------------------------------------- |
+| `reaches the owner through a reason the contract has published`          | **WI-022** — with the owner's nod, already with Wren |
+| `does not let an agent write into another agent's memory by updating it` | **WI-012** — returned to Cog                         |
+| `does not let an agent take over another agent's memory`                 | **WI-012**                                           |
+| `does not let an agent read another agent's memory`                      | **WI-012**                                           |
+| `reaches the owner when it is a turn, not only when it is a task`        | **WI-008** — and it is blocked on the owner, below   |
+
+So the tree goes green when **WI-022 and WI-012 have landed and the turn's
+unknown outcome has a published `WaitingKind` to live on** — three items, not
+one. The order is unchanged and the chain is still short; the first link is
+just three items wide rather than one.
+
+**One word the owner owes, and it is a published type.** `WaitingKind` is
+published as `'approval' | 'task'` (`apps/server/src/api/waiting.ts:8`), so
+**a turn whose outcome cannot be confirmed cannot be on the waiting list until
+that type grows** — and nothing can close it either, because the only server
+writes to a message status are `closeReply` and `resolveExecution`, and
+neither touches an unknown item. The contract says the owner sees an unknown
+item as _"check this"_ (`CONTRACTS.md:115-116`) and that only the owner can
+close it (`:127`).
+
+This is not one of the three published shapes the owner approved at 06:01,
+and Chief did not fold a published-type change into an approved item on his
+own authority. **The question: may the published `WaitingKind` grow by one
+member, `'turn'`?** One word, yes or no.
+
+**And one product question the same review raised.** `planAndDispatch`
+(`apps/server/src/modules/conversations/dispatch.ts:85-103`) never reads
+`message.status`, so the partial reply of a turn whose outcome could not be
+confirmed still routes work onward. Chief's recommendation is no — the same
+rule that makes an unknown outcome a state rather than a failure says it
+should stop until the owner looks — but it is the owner's call.
