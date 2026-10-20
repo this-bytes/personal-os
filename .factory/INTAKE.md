@@ -547,3 +547,32 @@ who has the least context for it.
 pending. Chief has a recommendation and a reason for it; the choice between
 four built prototypes is a product decision, and the owner's rule is that the
 queue moves when the owner says so.
+
+## Owed, 2026-10-21 01:08
+
+The status post for this round was **refused twice** — the `Personal OS
+Factory` group is mid-discussion, and the 23:40 post (`task_70c6057c13ae`) is
+still queued behind it. A post that was never sent is not a message, so it is
+recorded here and delivered from here when the round clears.
+
+The post that is owed, request id `status-2026-10-21-0105`, is the 01:05
+status:
+
+- WI-004 returns to implement — Probe's verification says it fails criterion 5
+  (an approval is approved or rejected in the list) and the "who is waiting"
+  half of criterion 1. Dispatched to Cog, `task_4bafb60edd39`.
+- WI-009 implemented and committed (`6e7d347`), with Probe for verification,
+  `task_1c40cabe1df4`. WI-008 implemented and committed (`9ad4f98`), with
+  Probe for verification, `task_8bb9dbcfbeaa`.
+- WI-013's four published contract entries are landed (`5a7e620`). WI-002 and
+  WI-014 are accepted.
+- The gates, measured on the tree with everything landed: `npm run typecheck`
+  exit 0; `npm run test` 160 passed (160) in 17 files, plus 46, 11, 13, 13;
+  `npm run format:check` exit 0. The one red gate left is `npm run test:e2e`,
+  on exactly two tests Probe wrote on purpose to specify WI-004's missing
+  control.
+- Two corrections: Wren's WI-013 work was landed path-limited as `5a7e620`
+  because a bare commit in this tree sweeps other people's work; and the
+  remote already exists — `origin` is
+  `https://github.com/this-bytes/personal-os.git`, pushed 21:47 +11:00 — so
+  the owner is not asked to create a repository.
