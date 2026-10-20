@@ -2994,3 +2994,113 @@ and this session does not ask them a second time. These three are here:
    operator to absorb a bad action. WI-035 carries the work, and it is deferred
    behind Forge on capacity, so the answer changes the queue rather than the
    code.
+
+## A review of the strategy document, 2026-10-21 — Vision
+
+`docs/strategy.md` asks three questions in the strategy room: are the three
+pillars the right three, is the landscape table the one worth keeping, and are
+the seven wants the right wants. The document is Wren's house, so this review
+is recorded here and has to be folded into it by its owner. **The number space
+is untouched: nothing below takes a number.**
+
+### 1. The pillars are right as mechanisms, and one thing is missing that is not a pillar
+
+The document's own answer carries four clauses, and the one-sentence summary
+three. Two map exactly onto pillars: _native means typed and checked_ is
+Pillar 1, _the instance can be seen from the inside_ is Pillar 3. The clause
+with no home is the first one — **the owner's decisions are the only authority
+in it**. Pillar 2 covers half of it, the ledger and the history and the
+take-back, but the part where the owner actually exercises that authority is
+not in the pillars at all: the rail, the control, the evidence for the
+decision, and the list that tells the truth about what is waiting.
+
+That is a gap in the strategy and not only in the writing, and it has a
+consequence: **if the three pillars are the filter for wants, then every want
+that improves what the owner experiences of deciding fails the filter** — the
+trace in the decision, the list's way out, reversibility. W3 is the only one of
+those three that reached the set, and it is the one the document calls "the
+furthest from the owner's stated priority". It is not further. It is the other
+half of the promise the identity sentence makes.
+
+So: keep the three pillars, and add a section rather than a fourth pillar —
+**the decision surface**, with its own gaps, because the pillars are what the
+_environment_ must have and the decision surface is what the _owner_ touches.
+The identity sentence already has one clause for each.
+
+### 2. Keep the landscape table, and split the two jobs it is doing
+
+The table is the answer to a question the repository could no longer answer,
+and its licence column is the reason Q5 is right. Three corrections:
+
+1. **One table, two jobs.** The comparator rows are _inspiration_ — read once,
+   dated. The dependency rows W5 writes are _compliance_ — checked by W7's
+   gate. The gate can only see the second kind, so a reader may take a
+   comparator's licence as compliance evidence. Split them, and label which is
+   which.
+2. **"Where it lands here" names item numbers, and the number space churns.**
+   WI-016 became WI-020, and two sessions own numbers now. Point at the
+   _subject_ — the mechanism, the document section — and keep the item numbers
+   with a date.
+3. The re-read rule is right as written. With the gate covering the dependency
+   half automatically, the hand-read half only needs re-reading when a source
+   changes behaviour.
+
+### 3. Six of the seven wants are right, and the set is thin about the owner
+
+Every want in the set is a repair to something the environment got wrong about
+itself: the audit trail, the authorship rules, the history, the resume, the
+licences, the product record, the gate. That is a coherent set, and the
+document's framing — the gap in each pillar — produces exactly this.
+
+What the set does not have is a want about the surface the owner touches,
+apart from W4, which was folded into WI-007. Two gaps are missing from the
+set, and both were found in the code rather than in opinion. They are wants in
+the document's own format. **Neither takes a number** — they are for the
+session that owns the number space to take up.
+
+**The decision shows what the agent did, where the decision is taken.**
+
+**Owner:** Cog. **Files:** `apps/web`, `apps/server`.
+
+Under Forge the decisions live on the Map's Needs-you rail and the execution
+trace is the Work room's companion, so the owner would leave the landing
+screen to learn what the agent did in order to decide on the landing screen.
+The evidence travels with the decision: what was run, what was produced, what
+it cost, for that item, in the drawer the control opens.
+
+**Acceptance:** when the owner is asked to approve, accept or answer, the
+control opens the execution context for that item; it reads the events the
+contracts already publish (`tool.started`, `tool.completed`,
+`artifact.created`, `execution.status`, and spend as an abstract counter); a
+test proves the context is shown for an approval, and that it is scoped to
+that item and not to the whole execution; the owner can decide without leaving
+the landing screen.
+
+**The waiting list learns that an item no longer needs the owner.**
+
+**Owner:** Cog, with Wren for the published entry. **Files:** `packages/contracts`,
+`apps/server`, `CONTRACTS.md`.
+
+This is the want behind the owner's second question (C-16, C-22): one event,
+`approval.decided`, published by the decide route.
+
+**Acceptance:** the published vocabulary carries the event; the decide route
+publishes it; the waiting list drops the row on that event without waiting for
+the safety-net refetch; a test proves the row leaves on the event, and that
+"nothing is waiting on me" is true immediately after the last decision; the
+migration note says what a client written before the change does.
+
+### The deferral of W3, and the reason recorded for it
+
+The record says W3 is deferred because it is "the furthest from the owner's
+stated priority". That is the weaker of the two arguments. The honest reason
+is capacity, and if it is capacity then W3 is the first thing to un-defer when
+capacity frees, because it completes the clause the identity leads with:
+shipping the decision control before the take-back means the product grants
+irreversible authority first, and with one owner there is nobody else to
+absorb a bad action.
+
+**One thing this review does not touch.** The rule that the band ships only
+the counts the audit trail can defend is now in WI-020's acceptance criteria
+and in the live dispatch, and this review agrees with it rather than restating
+it.
