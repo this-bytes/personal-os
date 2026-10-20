@@ -162,6 +162,53 @@ Before you open one:
 
 Fill in the pull request template. It is short on purpose.
 
+## Branches and the remote
+
+Work happens on a branch, never on `main`, and the branch is pushed. `main` is
+the integration branch: it is where reviewed, green work lands.
+
+```bash
+git switch -c feat/my-change
+# …work, test…
+git push -u origin feat/my-change
+```
+
+CI runs on every branch push, so a pushed branch is a gated branch. A pull
+request runs it again against the merge result, which is the run that matters.
+
+Merge with a fast-forward and never force-push. A force-push replaces what is
+on the remote with what is in your repository, so it takes every commit that
+landed since with it — including other people's.
+
+The repository has two git hooks, in [`.githooks/`](.githooks/). They run when
+`core.hooksPath` points at them:
+
+```bash
+git config core.hooksPath .githooks
+```
+
+- **pre-commit** warns when a file is staged and has changed again since it
+  was staged — the shape of two people editing one file.
+- **pre-push** refuses a push that is not a fast-forward, and checks that the
+  files in the push are formatted.
+
+Both are warnings about _other people's_ work as much as your own, so they are
+worth reading rather than skipping.
+
+## Working on it with an agent
+
+The bots that build this repository work in worktrees — one per work item —
+so two agents never share a working tree. To take one for yourself:
+
+```bash
+npx tsx scripts/work-item.ts new WI-017 forge-panel
+```
+
+That creates the branch `wi/017-forge-panel` and a worktree beside the
+repository, installs the dependencies and builds the packages the gates need.
+`npx tsx scripts/work-item.ts list` shows the worktrees and their work items;
+`remove` takes one away.
+
 ## Commits and history
 
 Write commit messages that explain why. The diff already says what changed.

@@ -1,0 +1,54 @@
+#!/bin/sh
+#
+# Warn when a commit is about to carry somebody else's work.
+#
+# FACTORY.md's rule is "one file, one live item": a bot that needs a file
+# another bot is working on asks Chief, it does not take it. The rule was
+# broken nine minutes after it was written, because the claim on a file was
+# not enough on its own — so the check belongs at commit time, where it can
+# be acted on.
+#
+# This is that check. A file that is staged and also changed since it was
+# staged is a file two hands are on. The commit takes the staged version and
+# leaves the other edit behind, so the edit is not lost — but it is now in
+# somebody else's commit, and the commit message will not mention it.
+#
+# It is a warning rather than a block, because the same shape appears in a
+# single agent's own work: stage a file, keep editing it, and commit it
+# later. That is legitimate. A warning that fires on it teaches the agent to
+# ignore it, so the warning names the files and lets the agent decide.
+#
+# Set `core.hooksPath` to make this run:
+#
+#   git config core.hooksPath .githooks
+#
+set -f
+
+staged=$(git diff --cached --name-only)
+unstaged=$(git diff --name-only)
+
+if [ -z "$staged" ] || [ -z "$unstaged" ]; then
+  exit 0
+fi
+
+both=""
+
+for file in $staged; do
+  for other in $unstaged; do
+    if [ "$file" = "$other" ]; then
+      both="$both $file"
+    fi
+  done
+done
+
+if [ -n "$both" ]; then
+  printf 'WARNING: these files are staged and have changed again since they were staged:\n'
+  for file in $both; do
+    printf '  %s\n' "$file"
+  done
+  printf 'The commit takes the staged version and leaves the other edit uncommitted.\n'
+  printf 'If the other edit is not yours, stage only your own hunks and leave the rest alone.\n'
+  printf 'See FACTORY.md, "The check belongs at commit time".\n'
+fi
+
+exit 0

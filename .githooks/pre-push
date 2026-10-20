@@ -1,0 +1,146 @@
+#!/bin/sh
+#
+# The gate in front of a push.
+#
+# Two things go wrong when several agents push to one repository, and neither
+# is visible until the damage is done.
+#
+# **A push that rewrites what is already on the remote.** An agent whose push
+# is refused — because another agent landed a commit first — reaches for
+# `--force`, and takes every commit that landed since with it. That is how a
+# day of work disappears. This hook refuses any push that is not a
+# fast-forward, and says what to do instead.
+#
+# **A push that carries another agent's unformatted files.** The repository's
+# format gate covers every file in the tree, so in a shared checkout one
+# agent's unformatted file blocks everybody's push, and the agent who did not
+# write it cannot tell whose mistake it is. This hook checks only the files
+# in the push, so a push is stopped by its own mistakes and not by anybody
+# else's.
+#
+# The escape hatch is `PERSONAL_OS_ALLOW_FORCE=1`, for the rare case where a
+# rewrite is genuinely intended and the owner has said so.
+#
+# Set `core.hooksPath` to make this run:
+#
+#   git config core.hooksPath .githooks
+#
+set -f
+
+remote_name="$1"
+remote_url="$2"
+
+zero="0000000000000000000000000000000000000000"
+
+# The refs being pushed arrive on stdin, one per line:
+#
+#   <local ref> <local sha> <remote ref> <remote sha>
+#
+updates=$(cat)
+
+if [ -z "$updates" ]; then
+  exit 0
+fi
+
+failed=0
+changed=""
+
+# Split the updates into positional parameters so the loop can read them.
+#
+# A `while read` loop fed by a pipe runs in a subshell, and an `exit` inside
+# it would end the subshell rather than the hook — so the push would carry on
+# after the hook had said it was blocked.
+old_ifs="$IFS"
+IFS='
+'
+set -- $updates
+IFS="$old_ifs"
+
+for update in "$@"; do
+  set -- $update
+  local_ref="$1"
+  local_sha="$2"
+  remote_ref="$3"
+  remote_sha="$4"
+
+  if [ "$remote_sha" = "$zero" ]; then
+    # A branch that does not exist on the remote yet. Nothing is being
+    # rewritten, so the only check that applies is the format gate.
+    base=$(git merge-base "$local_sha" origin/main 2>/dev/null)
+    if [ -z "$base" ]; then
+      base="$local_sha^"
+    fi
+  else
+    if ! git cat-file -e "$remote_sha^{commit}" 2>/dev/null; then
+      printf 'PUSH BLOCKED: %s is at %s on %s, and that commit is not in this checkout.\n' \
+        "$remote_ref" "$remote_sha" "$remote_name"
+      printf 'Fetch it before pushing: git fetch %s %s\n' "$remote_name" "$remote_ref"
+      failed=1
+      continue
+    fi
+
+    if ! git merge-base --is-ancestor "$remote_sha" "$local_sha" 2>/dev/null; then
+      if [ "${PERSONAL_OS_ALLOW_FORCE:-}" = "1" ]; then
+        printf 'WARNING: %s is being rewritten. PERSONAL_OS_ALLOW_FORCE=1 was set.\n' "$remote_ref"
+        base="$remote_sha"
+      else
+        printf 'PUSH BLOCKED: %s is at %s on %s, which is not an ancestor of %s.\n' \
+          "$remote_ref" "$remote_sha" "$remote_name" "$local_sha"
+        printf 'This push rewrites history, and a rewrite takes every commit that landed since with it.\n'
+        printf 'Merge the remote branch into yours, run the gates again, and push the result:\n'
+        printf '  git fetch %s && git merge %s/%s\n' \
+          "$remote_name" "$remote_name" "${remote_ref#refs/heads/}"
+        printf 'If the rewrite is intended and the owner has approved it, set PERSONAL_OS_ALLOW_FORCE=1.\n'
+        failed=1
+        continue
+      fi
+    else
+      base="$remote_sha"
+    fi
+  fi
+
+  if [ -n "$base" ]; then
+    changed="$changed
+$(git diff --name-only "$base..$local_sha" 2>/dev/null)"
+  fi
+done
+
+if [ "$failed" != "0" ]; then
+  exit 1
+fi
+
+# ---------------------------------------------------------------------------
+# The format gate, applied to the files in this push and nothing else.
+# ---------------------------------------------------------------------------
+
+prettier="node_modules/.bin/prettier"
+
+if [ ! -x "$prettier" ] && [ ! -x "$prettier.cmd" ]; then
+  printf 'Note: the dependencies are not installed here, so the format gate did not run.\n'
+  exit 0
+fi
+
+files=$(printf '%s\n' "$changed" | sed '/^$/d' | sort -u | grep -E '\.(ts|tsx|js|json|md|css)$')
+
+if [ -z "$files" ]; then
+  exit 0
+fi
+
+existing=""
+for file in $files; do
+  if [ -f "$file" ]; then
+    existing="$existing $file"
+  fi
+done
+
+if [ -z "$existing" ]; then
+  exit 0
+fi
+
+if ! "$prettier" --check $existing; then
+  printf 'PUSH BLOCKED: the files in this push are not formatted.\n'
+  printf 'Run "npm run format" and commit the result.\n'
+  exit 1
+fi
+
+exit 0

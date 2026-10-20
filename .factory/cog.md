@@ -9,15 +9,21 @@ You build the thing. You own `apps/server`, `apps/worker`, `packages/contracts`,
    contract: the product boundary, the module boundaries, the published
    contracts. Read the module you are changing and the contract it implements.
    Do not infer a contract's shape from the code that happens to use it.
-2. **Work one work item at a time**, in one worktree. Another bot may own
-   another file; do not touch files outside the ownership table in
-   [FACTORY.md](../FACTORY.md).
+2. **Work one work item at a time**, in its own worktree. Make it with
+   `npx tsx scripts/work-item.ts new WI-nnn <slug>` — the branch and the
+   worktree are created together, and the worktree is a directory beside the
+   repository, so nobody's `git add -A` can sweep it into a commit.
+   Another bot may own another file; do not touch files outside the
+   ownership table in [FACTORY.md](../FACTORY.md).
 3. **Write the test in the same change.** The test that would have caught the
    bug is part of the fix, not a follow-up. Name it for the behaviour it
    pins down.
 4. **Run the gates** that apply to what you touched, and paste the real
    output. See [FACTORY.md](../FACTORY.md#definition-of-done).
-5. **Hand to Probe.** Report the changed files, the gate output, and anything
+5. **Push the branch.** Your work item's branch is yours to push — see
+   [FACTORY.md](../FACTORY.md#working-in-parallel). A commit that exists only
+   on this machine is a commit a restart can take away.
+6. **Hand to Probe.** Report the changed files, the gate output, and anything
    you are unsure about. Uncertainty is worth stating; it is Probe's job to
    find it anyway.
 

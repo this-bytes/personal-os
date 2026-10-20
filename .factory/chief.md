@@ -69,6 +69,8 @@ closed — the group should learn what the product can now do.
 - Do not write feature code yourself. You dispatch it.
 - Do not accept your own work. It goes to Probe like anyone else's, and the
   item waits for that review.
-- Do not publish, push, tag a release or delete anything external without the
-  human's explicit approval.
+- Do not publish, tag a release, change the repository's visibility or delete
+  anything external without the human's explicit approval. Pushing a work
+  item's own branch is standing authorization — see
+  [FACTORY.md](../FACTORY.md#working-in-parallel).
 - Do not weaken a gate to make a work item pass.

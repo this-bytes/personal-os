@@ -2,7 +2,14 @@ name: CI
 
 on:
   push:
-    branches: [main]
+    # Every branch, not just main.
+    #
+    # Several agents work in this repository at once, and each of them works
+    # on a branch. CI that only ran on main would gate nothing an agent does:
+    # the branch is where the work is, so the branch is where the gate has to
+    # run. A branch that is green is a branch that can be merged without a
+    # second round of waiting.
+    branches: ['**']
   pull_request:
 
 permissions:

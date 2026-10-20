@@ -63,6 +63,60 @@ FACTORY.md, .factory/**     Chief
 
 A bot that needs a file owned by someone else asks Chief. It does not take it.
 
+## Working in parallel
+
+Several bots work in this repository at once, and the work is not
+sequential. The rules below are what make that safe. None of them is a
+preference: each one exists because the alternative was tried and it cost
+something.
+
+**A work item gets a branch and a worktree.**
+
+```bash
+npx tsx scripts/work-item.ts new WI-017 forge-panel
+```
+
+The branch is `wi/017-forge-panel`, and the worktree is a directory beside
+the repository. Work is written there — never in the main checkout, never
+on `main`. `main` is the integration branch: it is where green work lands,
+not where work is written.
+
+**Push the branch.** Standing authorization: a bot may push its own work
+item's branch to `origin` without asking anyone. Work that exists only in
+one machine's working tree is work that a restart, a crash or a mistaken
+`git checkout` can take away, and a push that nobody was there to approve is
+a push that never happens. CI runs on every branch push, so a pushed branch
+is a gated branch.
+
+**Land it on `main` yourself, while `main` has not moved.** If the gates are
+green and `origin/main` is still where your branch started, `main` can be
+fast-forwarded onto your branch:
+
+```bash
+git fetch origin
+git merge --ff-only origin/main    # in your worktree, if main moved
+git switch main
+git merge --ff-only wi/017-forge-panel
+git push origin main
+```
+
+**If `main` has moved, the merge is Chief's.** Two bots' work is about to
+become one work, and somebody has to say how. That is the tiebreak rule,
+and the tiebreak is said out loud. This is the one place the workflow puts
+the owner back in the loop, and it is a decision about two pieces of work
+rather than a rubber stamp on a push.
+
+**Never force-push.** A force-push replaces what is on the remote with what
+is in the local repository, so it takes every commit that another bot landed
+since with it. The pre-push hook refuses any push that is not a
+fast-forward, and says what to do instead. The only way past it is
+`PERSONAL_OS_ALLOW_FORCE=1`, which means somebody meant it.
+
+**A commit carries only your own work.** Read `git status` before you
+commit. A file that is staged and has changed again since it was staged is
+a file two hands are on; the pre-commit hook names those files, and the
+staged version is what lands.
+
 ## The loop
 
 ```
@@ -188,7 +242,11 @@ Two rules follow from it:
 - **Never commit secrets.** `secret_configs` values, tokens and the data
   directory stay out of git. `.gitignore` already covers the data directory.
 - **One worktree per work item.** Two bots in one worktree corrupt each
-  other's state.
+  other's state. Make the worktree with
+  `npx tsx scripts/work-item.ts new WI-nnn <slug>`, which creates the branch
+  and the worktree together. The worktree is a directory beside the
+  repository and never inside it, so `git add -A` in the main checkout
+  cannot sweep another agent's working tree into a commit.
 - **One file, one live item.** Two Chief sessions in one tree have already
   collided: on 2026-10-20 a workflow change in WI-005 landed on top of
   another session's edit to the worker image tag. Before a session edits a
@@ -245,7 +303,16 @@ Two rules follow from it:
   directories and one-off scripts are deleted before you report, and
   `git status --short` shows only the files your work item touched.
 - **No autonomous action on an external system** without explicit human
-  approval — publishing a release, pushing to a remote, deleting a branch.
+  approval — publishing a release, changing the repository's visibility, or
+  deleting a branch.
+- **Push your own branch; ask before anything else.** An agent may push the
+  branch of the work item it is working on without asking, and may
+  fast-forward `main` onto that branch when the gates are green and `main`
+  has not moved since the branch was created. Everything else external is
+  the human's decision. A push that rewrites what is already on the remote
+  is refused by the hook in [`.githooks/`](../.githooks/), because it takes
+  every commit that landed since with it, and that is not a thing good
+  intentions can prevent.
 
 ## Reporting
 

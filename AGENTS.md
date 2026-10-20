@@ -153,6 +153,60 @@ been read as a broken file. Recognise them before you go looking for a defect.
 3. Guard it with `requireAuth` unless it is explicitly public.
 4. Update the route table in [CONTRACTS.md](CONTRACTS.md).
 
+## Git workflow
+
+Several agents work in this repository at once, so a change's journey through
+git is part of the contract. The reasoning is in
+[FACTORY.md](FACTORY.md#working-in-parallel); this is the short version.
+
+**Work on a branch, in a worktree.** A work item gets both, together:
+
+```bash
+npx tsx scripts/work-item.ts new WI-017 forge-panel
+```
+
+That creates the branch `wi/017-forge-panel` and a worktree beside the
+repository. Write your work there — not in the main checkout, not on `main`.
+`main` is where green work lands, not where work is written.
+
+**Push your own branch.** No approval needed; it is yours:
+
+```bash
+git push -u origin HEAD
+```
+
+CI runs on every branch push, so a pushed branch is a gated branch.
+
+**Land it yourself while `main` has not moved.** With the gates green, and
+`origin/main` still where your branch started:
+
+```bash
+git fetch origin
+git switch main
+git merge --ff-only wi/017-forge-panel
+git push origin main
+```
+
+If `origin/main` has moved, you are integrating with another agent's work.
+Stop and say so. That merge is Chief's to make and the tiebreak gets said
+out loud.
+
+**Never force-push.** The pre-push hook refuses any push that is not a
+fast-forward, because a rewrite takes every commit that landed since with
+it.
+
+**Commit only your own work.** Read `git status` before you commit. A file
+that is staged and has changed again since it was staged is a file two hands
+are on; the pre-commit hook names those files so you can stage only your own
+hunks.
+
+The hooks are in [`.githooks/`](.githooks/) and run when `core.hooksPath`
+points at them:
+
+```bash
+git config core.hooksPath .githooks
+```
+
 ## Style
 
 - TypeScript, strict mode. No `any` without a comment explaining why.
