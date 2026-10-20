@@ -104,6 +104,27 @@ flight, and one implementer means one item at a time. Sizing a brief is
 therefore not just writing the items — it is saying which one starts first
 and what does not start yet. `FACTORY.md` now carries that as a rule.
 
+**The tree is the other constraint, and it is not mine to fix.** As of
+2026-10-20 22:20 the working tree is red, and every red line belongs to
+another item: `scripts/verify-bundle-size.ts` has two type errors at lines
+190 and 195 (WI-005's verifier work, in flight), and `scripts/smoke.ts` plus
+`ownerPasswordRecovery.test.ts` carry uncommitted changes from WI-002 and
+WI-005. `npm run format:check` is green; `npm run typecheck` is not.
+
+So the order of landing, before anything new starts:
+
+1. Probe lands `apps/server/src/__tests__/ownerPasswordRecovery.test.ts` —
+   it is Probe's file and it is untracked, and WI-002 cannot be accepted
+   while its verification is not in the repository.
+2. WI-005's two verification scripts land clean, so `typecheck` is green
+   again.
+3. WI-002 closes, and only then does WI-009 start.
+
+WI-009 is the first new item to run, because it is the only one of the four
+that crosses no published boundary. The other three stop at the owner's
+approval of a contract change, and that is the factory behaving correctly
+rather than stalling.
+
 ## What was not translated
 
 The MiniMax Bot plugin is a reference implementation, not a feature to copy.
