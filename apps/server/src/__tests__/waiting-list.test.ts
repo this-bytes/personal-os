@@ -70,6 +70,52 @@ function publishedEnums(): Record<string, string[]> {
   return { WaitingKind: list(kinds!), WaitingReason: list(reasons!) };
 }
 
+/**
+ * The urgency order, as CONTRACTS.md publishes it.
+ *
+ * The waiting list's entry publishes the order the code assembles the list in,
+ * as four bands, and says that it is that order. This reads the bands out of
+ * the published paragraph so the contract and the route are compared against
+ * each other instead of the contract being read on its own: a change to the
+ * code's order without a change to the contract fails the comparison below,
+ * and so does a change to the contract that the route does not follow.
+ */
+const PUBLISHED_BANDS: { phrase: string; reason: string }[] = [
+  { phrase: 'an agent that cannot continue', reason: 'pending' },
+  { phrase: 'the work whose outcome could not be confirmed', reason: 'unknown' },
+  { phrase: 'the work waiting for an acceptance decision', reason: 'review' },
+  { phrase: 'the work that is stuck', reason: 'blocked' },
+];
+
+function publishedUrgencyOrder(): string[] {
+  const text = fs.readFileSync(path.join(repoRoot, 'CONTRACTS.md'), 'utf8');
+
+  const start = text.indexOf('### The waiting list');
+  expect(start, 'CONTRACTS.md no longer publishes the waiting list').toBeGreaterThan(-1);
+  const end = text.indexOf('\n## ', start + 1);
+  const section = text.slice(start, end === -1 ? undefined : end);
+
+  const paragraph = section
+    .split(/\n\s*\n/)
+    .find((block) => block.includes('The order is the order of urgency'));
+  expect(
+    paragraph,
+    'CONTRACTS.md no longer publishes the order of the waiting list',
+  ).not.toBeUndefined();
+
+  // The published paragraph is wrapped, so the phrases are matched on the
+  // flattened text: what the contract says, not how the lines fall.
+  const flat = paragraph!.replace(/\s+/g, ' ');
+  const found = PUBLISHED_BANDS.map((band) => ({ band, at: flat.indexOf(band.phrase) }));
+  for (const { band, at } of found) {
+    expect(
+      at,
+      `CONTRACTS.md no longer says "${band.phrase}" in the waiting list's order`,
+    ).toBeGreaterThan(-1);
+  }
+  return found.sort((a, b) => a.at - b.at).map((entry) => entry.band.reason);
+}
+
 async function createTask(title: string, status?: string): Promise<string> {
   const created = await app.inject({
     method: 'POST',
@@ -80,13 +126,20 @@ async function createTask(title: string, status?: string): Promise<string> {
   const id = created.json().task.id as string;
 
   if (status) {
-    const moved = await app.inject({
-      method: 'PATCH',
-      url: `/api/tasks/${id}`,
-      headers: { cookie: sessionCookie },
-      payload: { status },
-    });
-    expect(moved.statusCode).toBe(200);
+    if (status === 'unknown') {
+      // Only the worker puts a task into the unknown state — the owner's route
+      // refuses it — so the service is used, the way unknown-outcome.test.ts
+      // does it.
+      app.services.factory.updateTask(id, { status: status as never });
+    } else {
+      const moved = await app.inject({
+        method: 'PATCH',
+        url: `/api/tasks/${id}`,
+        headers: { cookie: sessionCookie },
+        payload: { status },
+      });
+      expect(moved.statusCode).toBe(200);
+    }
   }
 
   return id;
@@ -287,18 +340,55 @@ describe('the shape of the list', () => {
     expect(new Set(ids).size, `the list has a duplicate: ${ids.join(', ')}`).toBe(ids.length);
   });
 
-  it('orders the list by urgency: stopped agents, then decisions, then stuck work', async () => {
+  it('orders the list by urgency: stopped agents, then the work to check, then decisions, then stuck work', async () => {
     const blocked = await createTask('Stuck', 'blocked');
     const review = await createTask('Waiting', 'review');
     app.services.approvals.request({ workspaceId, summary: 'A decision is wanted' });
 
     const items = await waiting();
-    const rank: Record<string, number> = { pending: 0, review: 1, blocked: 2 };
+    // The four bands the contract publishes, in the order it publishes them.
+    // `unknown` is in here: a band that is not in the map would rank as
+    // undefined and the comparison would be meaningless rather than failing.
+    const rank: Record<string, number> = { pending: 0, unknown: 1, review: 2, blocked: 3 };
     const reasons = items.map((item) => item.reason);
 
     // The order is the urgency order, exactly.
     expect(reasons).toEqual([...reasons].sort((a, b) => rank[a]! - rank[b]!));
     expect(items[0]?.reason).toBe('pending');
+    expect(items.findIndex((item) => item.taskId === review)).toBeLessThan(
+      items.findIndex((item) => item.taskId === blocked),
+    );
+  });
+
+  it('orders the list the way CONTRACTS.md publishes the urgency order', async () => {
+    // The contract publishes the order and says the code assembles the list in
+    // that order. The two are compared here, so neither can move alone.
+    const unknown = await createTask('Cannot confirm this one', 'unknown');
+    const review = await createTask('Waiting for a decision', 'review');
+    const blocked = await createTask('Stuck on something', 'blocked');
+    app.services.approvals.request({ workspaceId, summary: 'A decision is wanted' });
+
+    const published = publishedUrgencyOrder();
+    expect(published, 'the published order must name the four bands').toEqual([
+      'pending',
+      'unknown',
+      'review',
+      'blocked',
+    ]);
+
+    const items = await waiting();
+    const reasons = items.map((item) => item.reason);
+    // The bands the route returned, in the order it returned them first.
+    const distinct: string[] = reasons.filter((reason, index) => reasons.indexOf(reason) === index);
+
+    expect(distinct, 'the route returned bands the contract does not publish').toEqual(
+      published.filter((reason) => distinct.includes(reason)),
+    );
+    // The band that could not be confirmed comes before the decision, and the
+    // decision before the work that is stuck.
+    expect(items.findIndex((item) => item.taskId === unknown)).toBeLessThan(
+      items.findIndex((item) => item.taskId === review),
+    );
     expect(items.findIndex((item) => item.taskId === review)).toBeLessThan(
       items.findIndex((item) => item.taskId === blocked),
     );
