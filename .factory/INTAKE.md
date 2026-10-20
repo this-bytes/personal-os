@@ -721,6 +721,35 @@ own two tasks** — `task_4a566d42c121` (WI-004) and `task_f5b5eb99dea3`
 (WI-011). The live verifications are `task_616009728104` (WI-004) and
 `task_e2219b4e3c7a` (WI-011). One verifier, one item, one verification.
 
+### The routing file went red too — `a7e39e9`
+
+While the factory waited, Probe committed `a7e39e9`: two test files, +211
+lines, no source change, and three of the tests are red. They split across two
+items — one is WI-009's (the sender is resolved by believing the message) and
+two are WI-021's (a named target is dropped before the rule ever sees it).
+The file is claimed by WI-009, which is older, so WI-021 waits and the two
+findings go to Cog in one dispatch. The details are in
+[WI-009](work/WI-009.md).
+
+### The gates at `0732b41`
+
+```
+npm run typecheck    → exit 0
+npm run test         → exit 1
+  server:          Test Files 3 failed | 18 passed (21)   Tests 5 failed | 199 passed (204)
+  web:             Test Files 5 passed (5)                 Tests 46 passed (46)
+  worker:          Test Files 1 failed | 4 passed (5)      Tests 6 failed | 24 passed (30)
+  agent-adapters:  Test Files 2 passed (2)                 Tests 16 passed (16)
+  contracts:       Test Files 4 passed (4)                 Tests 28 passed (28)
+npm run format:check → exit 0 — All matched files use Prettier code style!
+npm run build       → exit 0 — ✓ built in 3.28s
+npm run test:e2e    → exit 0 — 24 passed (46.8s)
+```
+
+Eleven reds, all of them Probe's specifications: eight for WI-008, three for
+WI-009 and WI-021. Nothing else is red, and the browser suite is green — so
+the e2e gate, which was the one holding the owner's top want, is now satisfied.
+
 ### A want, not a work item — the number space has one owner
 
 `automationRunStatusSchema` (`packages/contracts/src/automation.ts:73`) gained
