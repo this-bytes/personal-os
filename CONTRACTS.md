@@ -541,7 +541,16 @@ override an agent's persona, and a persona is per conversation; memory that chan
 when the conversation changed would not be the agent's memory. An agent-scoped
 memory is keyed by `agentConnectionId`, so it follows the agent across every
 conversation it takes part in — available to that agent's turns in every
-conversation, and to no other agent's turns.
+conversation, and to no other agent's turns, **reads included**.
+
+**An agent touches only its own memory, on the way in and on the way out.** The
+rule is one rule: an agent creates, reads and updates an agent-scoped memory only
+when that memory names that agent, and it cannot hand the memory to another agent
+on the way through — a memory that already belongs to another agent stays that
+agent's. The other three scopes are shared by design and are not touched by this
+rule, and neither is any resource that is not an agent-scoped memory. The owner is
+outside this rule: the owner's own API takes an owner session, and the owner reads
+what it owns.
 
 The agent's memories are in the turn context, within a budget of 6,000 characters,
 pinned first and then most recent, so an agent's memory cannot crowd out the
@@ -555,10 +564,24 @@ and `listAgentMemories` at
 `apps/server/src/modules/resources/agent-memory.ts:29` is what puts the agent's
 memories in the turn context.
 
+**The read side is WI-028, and the code implements it — as of `622812c`.** The
+owner's ruling of 2026-10-21 at 07:07 was that an agent's own memory is private
+to it, on reads as well as on writes, and the sentence above now says so. The rule
+is one call — `assertOwnMemory` at
+`apps/server/src/modules/mcp/server.ts:147`, with `memoryOwner` at `:113` — and it
+answers the same way for the three resource tools: `resource.create` at `:361`,
+`resource.update` at `:422` and `resource.get` at `:392`. A memory's owner is
+`memoryOwner`'s answer, and an agent that is not that owner is refused with
+`forbidden` and the message "An agent may only reach its own memory."
+
 **Migration.** Nothing is reclassified. The three existing scopes keep their
 meaning, no memory is reclassified, and the `agent` scope applies only to memories
 written after this change — we cannot know which of the existing workspace-scoped
-memories were "really" the agent's.
+memories were "really" the agent's. The read side changes no record either: a
+memory written before this change keeps the owner it was written with, and an
+agent that could read another agent's agent-scoped memory before this change is
+now refused it. A client that read another agent's memory has to handle that
+refusal; a client that reads its own memory, or a shared one, is unaffected.
 
 ### MCP exposure
 
@@ -575,7 +598,7 @@ external agents can discover and operate them.
 | `task.update`            | Update a factory task.                                  |
 | `task.get`               | Read a task with its evidence.                          |
 | `resource.create`        | Create a resource, optionally from a template.          |
-| `resource.get`           | Read a resource.                                        |
+| `resource.get`           | Read a resource. Not another agent's own memory.        |
 | `resource.update`        | Update a resource with optimistic concurrency.          |
 | `resource.template.list` | List the templates published for one resource kind.     |
 | `automation.create`      | Create an automation.                                   |
@@ -589,9 +612,28 @@ token sees every tool; an agent token sees only the tools that connection was
 granted. **An ungranted tool is not registered at all**, so it does not appear in the
 `tools/list` response and the MCP server cannot route a call to it.
 
+**Who owns a resource is settled before it is handed over.** `resource.get`
+carries the same rule the writes already carried: an agent-scoped memory is
+available to that agent's turns in every conversation, and to no other agent's
+turns, reads included. The rule is stated once, in
+[The agent memory scope](#the-agent-memory-scope), and it is one rule for the
+three resource tools — `resource.create`, `resource.update` and `resource.get` — so
+reading a resource is not a way around it. A read that names another agent's
+agent-scoped memory is refused with `forbidden` and the message "An agent may
+only reach its own memory." The owner's own access is not touched by any of this.
+
 An agent token is **MCP-only**. It is accepted by `/mcp` and rejected by the owner's
 HTTP API, including `/api/auth/owner-token`. The owner HTTP API requires a human
 session or the static owner token.
+
+**Migration.** Nothing is reclassified and no record is rewritten. A client that
+called `resource.get` expecting any resource it could name now has to handle a
+refusal: an agent's call that names another agent's agent-scoped memory comes
+back `forbidden`, with the message "An agent may only reach its own memory." The
+owner's own calls are unaffected, and so are an agent's calls for its own memory,
+for the three shared scopes, and for every resource that is not an agent-scoped
+memory. The refusal is the one the writes already return, so a client that already
+handles `forbidden` on `resource.create` and `resource.update` needs nothing new.
 
 ### Data-source guard rails
 
