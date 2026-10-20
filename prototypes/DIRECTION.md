@@ -1,12 +1,11 @@
 # Direction — a recommendation, not a decision
 
 **Written by:** Vision, for [WI-010](../.factory/work/WI-010.md).
-**Written against:** commit `c734a99`, plus a working tree that is not clean. The
-panel's landing page exists as uncommitted work — `apps/web/src/components/WaitingList.tsx`
-is new and untracked, `apps/web/src/pages/Conversations.tsx` is modified and
-uncommitted, and `apps/server/src/api/waiting.ts` is new and untracked. Every
-statement below about "the landing page" describes those files, not a released
-build.
+**Written against:** commit `235f97c` (2026-10-21), clean working tree.
+**Re-verified:** 2026-10-21 against `235f97c`. The recommendation was first
+written against `c734a99` and a dirty tree; the tree has moved since. What
+changed is recorded in "Re-verification" at the end. The recommendation itself
+did not move.
 **Status:** a recommendation. It is not a decision until the owner answers the
 question at the end. The ADR that records the answer is `docs/decisions/0007-*.md`,
 which is Wren's, and it is written after the owner confirms.
@@ -76,9 +75,10 @@ completed without the owner touching code. That is a band, not a dashboard, and
 it sits in the same place the owner already looks.
 
 **It is the cheapest of the four, and cheapest is a real argument here.** One
-implementer, four items already queued behind a red tree. B is closest to the
-existing stack, which means the direction decision costs the factory the least
-of the four options it has.
+implementer, with eight items ahead of it — WI-003, WI-004, WI-006, WI-007,
+WI-012, WI-016, WI-017, WI-018 — and two more already in verify. B is closest
+to the existing stack, which means the direction decision costs the factory the
+least of the four options it has.
 
 ## Why not A — Deck
 
@@ -151,6 +151,20 @@ landing route. No data model, no contract, no server behaviour changes — the
 list is derived on the server and does not depend on how it looks. The
 component survives; its appearance does not.
 
+That landing page is committed now (`45c2e54`) rather than uncommitted work, and
+WI-004 was returned to `implement` on 2026-10-21 because its front end does not
+yet satisfy its own criterion: it links out to the conversation for an
+approval, while the criterion says an approval is approved or rejected *where
+the list is*, and nothing under `apps/web` calls
+`POST /api/approvals/:id/decide`. The panel can list an approval and cannot
+decide one.
+
+**The decision control is not blocked by the direction.** The inbox is already a
+component, so the control can be built now in the current language and the
+adoption then wraps the finished control in Desk's first band. What the
+adoption re-lays-out is the *layout* of the list, not the control inside it —
+so the owner's top want does not wait on this recommendation.
+
 **Reworked: the theme layer.** `apps/web/src/index.css` carries the whole
 current language in one `@theme` block — a cool slate scale, an indigo accent,
 a mono font token — and a dark base (`bg-slate-950 text-slate-100`) on the
@@ -160,14 +174,17 @@ is already declared, so a dark variant can stay available; B is a light base,
 not the deletion of dark. B also pairs a serif for headings, and there is no
 serif token today — one new token.
 
-**Reworked: the classes that name the old palette.** 195 lines across 32 files
-mention `slate-` or `indigo-` directly. 29 of them are in `packages/ui` —
-`primitives.tsx`, `card.tsx`, `button.tsx`, `input.tsx` — and the other 166 are
-in app code, the heaviest being `TaskBoard.tsx` (19), `Settings.tsx` (19),
+**Reworked: the classes that name the old palette.** 224 lines across 31 files
+mention `slate-` or `indigo-` directly — 195 across 27 files in `apps/web/src`
+(29 of them in `index.css` itself), and 29 across 4 files in `packages/ui`
+(`primitives.tsx` 11, `card.tsx` 7, `button.tsx` 7, `input.tsx` 4). The
+heaviest app files are `TaskBoard.tsx` (19), `Settings.tsx` (19),
 `ChatMessageList.tsx` (15), `AppShell.tsx` (14), `Login.tsx` (11) and
-`ConversationDetail.tsx` (11). This is the real cost of a direction change and
-it is not a small one: it is one theme edit, one pass over the shared
-primitives, and a pass over the app's own components.
+`ConversationDetail.tsx` (11). Reproduce it with
+`git grep -c -E 'slate-|indigo-' -- 'apps/web/src' 'packages/ui/src'`.
+This is the real cost of a direction change and it is not a small one: it is
+one theme edit, one pass over the shared primitives, and a pass over the app's
+own components.
 
 **Reworked: the two screens that carry the product.** The landing page becomes
 B's three bands — what needs me, what is running, what exists — with the
@@ -224,6 +241,34 @@ product already keeps, not a new data model.
 Authority without reversibility is not authority. With one owner there is no
 second operator to absorb a bad action, so the cost of a mistake lands
 entirely on the person the product is for.
+
+## Re-verification — 2026-10-21
+
+Re-checked against `235f97c` with a clean tree, because this was first written
+against `c734a99` and a dirty tree. Four things moved. The recommendation did
+not.
+
+1. **The landing page is committed, and it is still moving.** `45c2e54` landed
+   WI-004's front end; `5c74e8b` returned WI-004 to `implement` because the
+   front end does not yet satisfy its own criterion. This changes WI-004's
+   size, not this recommendation, and it is why the cost section now says
+   explicitly that the decision control is not blocked by the direction.
+2. **The palette cost did not move.** The same 224 lines in the same 31 files.
+   The count in the cost section was corrected for *scope* — the two figures
+   were being mixed — and is now stated with the command that reproduces it,
+   rather than for change.
+3. **The queue got deeper.** One implementer now has eight items ahead of it
+   and two in verify, against four and a red tree when this was written. That
+   strengthens the "cheapest" argument rather than weakening it.
+4. **An outcome that cannot be confirmed is now its own state.** `9ad4f98`
+   landed WI-008's `unknown`. It strengthens the case for a decision list
+   rather than weakening it: an item whose outcome the system cannot confirm
+   is exactly an item the owner has to look at, and a direction built around
+   watching a live event stream would have shown it as a line in a log
+   instead of an entry in a list.
+
+One thing this re-verification cannot do is claim the tree is unchanged. It
+is not, and the numbers that moved have been moved.
 
 ## What this recommendation does not do
 
