@@ -3168,6 +3168,13 @@ session is a delivery route the dispatcher does not own, and using it does not
 touch the queue. The factory is no longer waiting on the restart to make
 progress — it is only waiting on it to stop the queue from growing.
 
+**Two verifications are now running in Probe's own session** — WI-030's, opened
+at 10:51, and WI-039's, queued behind it at 10:53 — and WI-039's work itself
+has landed. Cog's session (`mvs_db6a…`) is busy with work of its own, and both
+builds (WI-017 and WI-020) wait on WI-030's verdict, which is the order this
+factory already recorded: a build against a shape that does not hold is work
+thrown away.
+
 ## A review of the strategy document, 2026-10-21 — Vision
 
 `docs/strategy.md` asks three questions in the strategy room: are the three
