@@ -127,6 +127,16 @@ Acceptance criteria are written so that _someone else_ could check them
 without reading the diff. "The revision guard rejects a stale update" is a
 criterion. "the code is cleaner" is not.
 
+**A brief is not a plan until it has an order and a capacity.** When a brief
+arrives with several items in it, Chief does not only write the items — Chief
+says which one starts first, what does not start yet, and why. The reason is
+usually capacity, and it is a fact about the factory rather than a preference:
+one implementer means one item at a time, and an item that is already in
+flight owns the tree until it lands. Sizing that stops to name which
+implementer is free is not sizing. The order is recorded in
+[`.factory/INTAKE.md`](.factory/INTAKE.md) so the next agent does not
+re-derive it.
+
 ## Where a want comes from
 
 A want reaches the factory in the owner's words — in chat, in the group, or
