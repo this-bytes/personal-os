@@ -300,9 +300,22 @@ an item that depends on another goes after it.
   record of what is open. The record that said four questions where there
   were six was a plain error, and it is corrected. The item is in review:
   the product record and ADR 0007 landed, and Probe's verification is owed.
-  The verification dispatch was attempted at 03:25 and refused by the
-  runtime's task-assignment gate; request id `wi-011-probe-review-2026-10-21`,
-  so the retry is idempotent rather than a second worker.
+  The verification dispatch was refused twice by the runtime's
+  task-assignment gate and was **delivered on the retry at 03:40** — task
+  `task_e2219b4e3c7a`, batch `batch_4a96612a2eaa`, request id
+  `wi-011-probe-review-2026-10-21`, so the retry was idempotent rather than
+  a second worker.
+- **WI-004's verification is dispatched to Probe, 03:42** — request
+  `wi-004-probe-reverify-2026-10-21`. The item is in review with the
+  implementation landed in `a2aadb4`, and both of Probe's two failing
+  criteria now have implementations: the control, and the agent on the entry
+  (the client renders the agent by name or by id, and the server sends
+  `agentConnectionId`). This verification is the one that unblocks the
+  `npm run test:e2e` gate, which was red only because of this item. The
+  dispatch is recorded here and not in the item's own file, because the other
+  Chief session is the lead on that file; the rule that a claim is the item's
+  dispatch record is honoured by this note, and it is said out loud in the
+  group.
 
 **The two decisions that had no work item behind them, 2026-10-20 23:55.** C-19
 and C-20 are not candidates. They are the unfunded halves of decisions the
