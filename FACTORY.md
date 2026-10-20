@@ -162,6 +162,17 @@ Two rules follow from it:
   directory stay out of git. `.gitignore` already covers the data directory.
 - **One worktree per work item.** Two bots in one worktree corrupt each
   other's state.
+- **Never accept your own work, whoever wrote it.** A work item that Chief
+  wrote, Chief implemented and Chief accepted has no reviewer in it, and the
+  item is not closed no matter how green the gates are. Chief's own output
+  goes to Probe like everyone else's, and the acceptance waits for Probe's
+  review. This applies to Chief's own writing in `.factory/`, the root
+  manifest, CI and the workflows, which is exactly the code most likely to
+  be accepted on a summary because Chief wrote both the code and the gate
+  that checks it.
+- **Say the tiebreak out loud.** When two roles want the same file, Chief
+  decides — and says so in the group, with the reasoning. A tiebreak that
+  was made silently is a rule that was broken silently.
 - **Stay inside the work item.** A fix you find along the way belongs to its
   own work item. Note it and raise it; do not fold it into the change in
   front of you. A reviewer cannot separate the two, and the next reader
