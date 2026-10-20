@@ -3142,6 +3142,32 @@ evidence says it is safe.** The queue is persisted — two tasks created before
 this morning's stop are still readable with their state intact — the tree is
 green, and nothing in the factory's own hands moves the queue.
 
+### The third road works — and the factory can be driven from a session
+
+**WI-039 landed.** `6406291` — "Publish the evidence a decision is taken against"
+— `CONTRACTS.md` only, committed 10:48:53. It was written by Wren, in Wren's
+own session, from the turn Chief opened there. **The dispatcher's copy of that
+task is still `queued`.**
+
+**So the third road is the one that works.** `dispatch_tasks` queues.
+`message_bot` queues. A turn opened in the bot's own session **runs**. The
+nudge to Wren's session at 10:31:56 put that session into `started` at 10:32:08,
+and the work landed sixteen minutes later.
+
+**Two cancellations, both to keep one delivery per item.** The queued task
+`task_dc2aeef86acb` (WI-030's verification) was cancelled and the work was
+handed to Probe through the same working route; and `task_dd95fe7df207`
+(WI-039's queued dispatch) was cancelled once the work had landed, so that no
+second worker writes `CONTRACTS.md`. WI-039's verification is dispatched
+(`wi-039-verify-evidence-entry-2026-10-21`, `task_e486def935b8`) and queued —
+it will be handed over the same way when a bot session is free.
+
+**What this changes about the remedy.** The owner's restart is still the fix for
+the dispatcher. It is no longer the only way work moves: a turn in a bot's
+session is a delivery route the dispatcher does not own, and using it does not
+touch the queue. The factory is no longer waiting on the restart to make
+progress — it is only waiting on it to stop the queue from growing.
+
 ## A review of the strategy document, 2026-10-21 — Vision
 
 `docs/strategy.md` asks three questions in the strategy room: are the three
