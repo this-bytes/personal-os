@@ -115,6 +115,13 @@ check. A path where something began and the outcome cannot be confirmed is
 timeout. The owner sees an `unknown` item as **"check this"**, never as **"fix
 this"**.
 
+**A second `unknown`, on a connection.** `AgentConnectionStatus` carries
+`unknown` too (`packages/contracts/src/agent.ts:52-58`), and it means something
+else: a connection whose state was never checked, which is how a new connection
+starts. This `unknown` is about an outcome that cannot be confirmed; that one
+is about a state that was never looked at. They are different things that
+happen to share a word, and the field they appear on says which is which.
+
 **An `unknown` item is never retried automatically.** There is no reaper, no
 redispatch and no reconciliation pass. An unknown outcome is a question for the
 owner, and only the owner can close it. Every transition into and out of
