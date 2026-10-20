@@ -130,13 +130,6 @@ export function planRouting(input: RoutingInput): RoutingDecision {
 
   const explicit = (input.explicitTargets ?? []).filter((id) => enabledConnectionIds.has(id));
 
-  if (explicit.length > 0) {
-    return {
-      targets: unique(explicit),
-      reason: 'Explicitly selected participants.',
-    };
-  }
-
   const mentioned = resolveMentions(message.text, participants)
     .map((participant) => participant.agentConnectionId)
     .filter((id): id is string => typeof id === 'string' && enabledConnectionIds.has(id));
@@ -145,6 +138,11 @@ export function planRouting(input: RoutingInput): RoutingDecision {
 
   switch (conversation.routingMode) {
     case 'mentions': {
+      // A named target is as good as a mention: the sender picked somebody
+      // explicitly.
+      if (explicit.length > 0) {
+        return { targets: unique(explicit), reason: 'Explicitly selected participants.' };
+      }
       if (mentioned.length > 0) {
         return { targets: unique(mentioned), reason: 'Mentioned participants.' };
       }
@@ -164,8 +162,13 @@ export function planRouting(input: RoutingInput): RoutingDecision {
           : undefined;
 
       if (isAgentMessage) {
-        // Only the coordinator may delegate, and delegation is explicit.
-        if (mentioned.length > 0) {
+        // Only the coordinator may delegate, and delegation is explicit. A
+        // delegation can be spelled two ways — the participant named, or the
+        // participant mentioned — and the rule is about who delegates, not
+        // about how the delegate is spelled.
+        const delegated = explicit.length > 0 ? explicit : mentioned;
+
+        if (delegated.length > 0) {
           if (
             coordinatorConnection &&
             senderIsCoordinator(
@@ -175,7 +178,7 @@ export function planRouting(input: RoutingInput): RoutingDecision {
               coordinatorConnection,
             )
           ) {
-            return { targets: unique(mentioned), reason: 'Delegated by the coordinator.' };
+            return { targets: unique(delegated), reason: 'Delegated by the coordinator.' };
           }
           if (!coordinatorConnection) {
             return {
@@ -193,6 +196,7 @@ export function planRouting(input: RoutingInput): RoutingDecision {
             blocked: 'not_coordinator',
           };
         }
+
         return {
           targets: [],
           reason:
@@ -200,10 +204,17 @@ export function planRouting(input: RoutingInput): RoutingDecision {
         };
       }
 
+      // The owner speaks to the coordinator, and the coordinator hands the
+      // turn over. A participant the owner named is reached the same way a
+      // mentioned one is: through the coordinator.
       if (coordinatorConnection) {
         return {
           targets: [coordinatorConnection],
-          reason: 'Routed to the conversation coordinator.',
+          reason:
+            explicit.length > 0
+              ? 'Routed to the conversation coordinator. In coordinator mode the coordinator ' +
+                'hands the turn over, so the named participants were not woken directly.'
+              : 'Routed to the conversation coordinator.',
         };
       }
       return {
@@ -214,6 +225,9 @@ export function planRouting(input: RoutingInput): RoutingDecision {
     }
 
     case 'autonomous': {
+      if (explicit.length > 0) {
+        return { targets: unique(explicit), reason: 'Explicitly selected participants.' };
+      }
       if (isAgentMessage) {
         // Agents may act inside their granted scope, but they never wake
         // every other participant by speaking.
