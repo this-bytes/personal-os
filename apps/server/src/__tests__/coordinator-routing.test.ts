@@ -33,6 +33,8 @@ let workspaceId = '';
 let conversationId = '';
 let coordinatorConnectionId = '';
 let otherConnectionId = '';
+let coordinatorParticipantId = '';
+let otherParticipantId = '';
 let coordinatorToken = '';
 let otherToken = '';
 
@@ -55,14 +57,20 @@ async function mcp(
 }
 
 /** The result of a tool call, out of the JSON-RPC envelope. */
-function toolResult(body: string): { dispatches: unknown[]; routing: { reason: string } } {
+function toolResult(body: string): {
+  dispatches: unknown[];
+  routing: { reason: string; blocked?: string };
+} {
   const data = /data:\s*(\{.*\})/s.exec(body)?.[1];
   if (!data) throw new Error(`no tool result in the response:\n${body}`);
   const envelope = JSON.parse(data) as {
     result?: { content?: { type: string; text?: string }[] };
   };
   const text = envelope.result?.content?.[0]?.text ?? '{}';
-  return JSON.parse(text) as { dispatches: unknown[]; routing: { reason: string } };
+  return JSON.parse(text) as {
+    dispatches: unknown[];
+    routing: { reason: string; blocked?: string };
+  };
 }
 
 async function createAgent(name: string): Promise<{ id: string; token: string }> {
@@ -146,6 +154,13 @@ beforeAll(async () => {
     .conversation.participants.find(
       (p: { agentConnectionId?: string }) => p.agentConnectionId === coordinator.id,
     );
+  const otherParticipant = conversation
+    .json()
+    .conversation.participants.find(
+      (p: { agentConnectionId?: string }) => p.agentConnectionId === other.id,
+    );
+  coordinatorParticipantId = coordinatorParticipant.id as string;
+  otherParticipantId = otherParticipant.id as string;
 
   await app.inject({
     method: 'PATCH',
@@ -201,5 +216,55 @@ describe('coordinator mode, from the agent side', () => {
       `a non-coordinator routed a turn anyway: ${result.routing.reason}`,
     ).toEqual([]);
     expect(result.routing.reason).not.toContain('Delegated by the coordinator');
+  });
+});
+
+/**
+ * Naming a target, in the units the published API asks for.
+ *
+ * `CONTRACTS.md` publishes `targetParticipantIds: ID[]` beside `senderId: ID`,
+ * and the worker's `senderId` is a participant id. So a participant id is what
+ * a target is, at every surface an agent can reach: the MCP tool's parameter
+ * is called `targetParticipantIds`, and the message column is called the same.
+ *
+ * The routing engine compares the names it is given against the agent
+ * *connection* ids. If the two are not the same thing, then the path that
+ * names a target does not fire for the ids the API asks for, and the rule
+ * that was put on it never runs.
+ */
+describe('coordinator mode, naming a target the way the API asks', () => {
+  it('lets the coordinator delegate by naming a participant', async () => {
+    const body = await mcp(coordinatorToken, 'tools/call', {
+      name: 'conversation.post',
+      arguments: {
+        conversationId,
+        text: 'take this',
+        targetParticipantIds: [otherParticipantId],
+      },
+    });
+    const result = toolResult(body);
+
+    expect(
+      result.dispatches.length,
+      `the coordinator named a target and nobody was woken: ${result.routing.reason}`,
+    ).toBeGreaterThan(0);
+  });
+
+  it('refuses a non-coordinator that names a target, and says which rule refused it', async () => {
+    const body = await mcp(otherToken, 'tools/call', {
+      name: 'conversation.post',
+      arguments: {
+        conversationId,
+        text: 'take this',
+        targetParticipantIds: [coordinatorParticipantId],
+      },
+    });
+    const result = toolResult(body);
+
+    expect(result.dispatches).toEqual([]);
+    expect(
+      result.routing.blocked,
+      `the refusal did not say that a non-coordinator tried to delegate: ${result.routing.reason}`,
+    ).toBe('not_coordinator');
   });
 });

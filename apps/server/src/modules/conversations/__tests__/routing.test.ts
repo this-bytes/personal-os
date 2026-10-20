@@ -112,6 +112,25 @@ describe('mentions mode', () => {
     });
     expect(decision.targets).toEqual([]);
   });
+
+  it('still wakes a participant that an agent named explicitly', () => {
+    // The coordinator rule must not leak into this mode. Naming a target is
+    // as good as a mention here, whoever named it.
+    const decision = plan({
+      message: { senderId: 'p_cto', text: 'take this', origin: agentOrigin },
+      explicitTargets: ['agt_codex'],
+    });
+    expect(decision.targets).toEqual(['agt_codex']);
+    expect(decision.reason).toBe('Explicitly selected participants.');
+  });
+
+  it('still wakes only the participant the owner named', () => {
+    const decision = plan({
+      message: { senderId: 'p_human', text: 'take this', origin: humanOrigin },
+      explicitTargets: ['agt_codex'],
+    });
+    expect(decision.targets).toEqual(['agt_codex']);
+  });
 });
 
 describe('coordinator mode', () => {
@@ -229,6 +248,112 @@ describe('coordinator mode', () => {
     expect(decision.targets).toEqual([]);
     expect(decision.reason).toContain('no active coordinator');
   });
+
+  it('tells a missing coordinator apart from a refused delegation', () => {
+    // The coordinator participant is gone. Nothing delegated, because there is
+    // nobody to delegate — which is not the same thing as a participant being
+    // refused the right to delegate.
+    const missing = plan({
+      conversation: coordinatorConversation,
+      participants: [participants[0]!, participants[2]!],
+      message: {
+        senderId: 'p_codex',
+        text: '@Codex please take this',
+        origin: { kind: 'agent', actorId: 'p_codex', depth: 2 },
+      },
+    });
+
+    expect(missing.blocked).toBe('no_active_agent');
+    expect(missing.blocked).not.toBe('not_coordinator');
+    expect(missing.reason).not.toContain('may delegate');
+  });
+
+  it('tells a refused delegation apart from a missing coordinator', () => {
+    // The coordinator is here. A participant that is not it tried to delegate,
+    // and it was refused.
+    const refused = plan({
+      conversation: coordinatorConversation,
+      message: {
+        senderId: 'p_codex',
+        text: '@Codex please take this',
+        origin: { kind: 'agent', actorId: 'p_codex', depth: 2 },
+      },
+    });
+
+    expect(refused.blocked).toBe('not_coordinator');
+    expect(refused.blocked).not.toBe('no_active_agent');
+    expect(refused.reason).toContain('may delegate');
+  });
+
+  it('does not treat a sender it cannot identify as the coordinator', () => {
+    // Nothing in this message names the coordinator: not the sender, not the
+    // origin, not a connection. A sender that cannot be positively identified
+    // is not a delegation the coordinator made.
+    const decision = plan({
+      conversation: coordinatorConversation,
+      message: {
+        senderId: 'p_stranger',
+        text: '@Codex please take this',
+        origin: { kind: 'agent', actorId: 'p_stranger', depth: 2 },
+      },
+    });
+
+    expect(decision.targets).toEqual([]);
+    expect(decision.blocked).toBe('not_coordinator');
+  });
+
+  it('does not believe a message that names the coordinator while its sender is somebody else', () => {
+    // The message claims the coordinator's connection id in its origin while
+    // its sender is a different participant. The connection id is one of the
+    // shapes a sender is named by, so this one has to be checked: the rule
+    // must resolve the sender, not believe whatever the message claims.
+    const decision = plan({
+      conversation: coordinatorConversation,
+      message: {
+        senderId: 'p_codex',
+        text: '@Codex please take this',
+        origin: { kind: 'agent', actorId: 'p_codex', agentConnectionId: 'agt_cto', depth: 2 },
+      },
+    });
+
+    expect(decision.targets).toEqual([]);
+    expect(decision.blocked).toBe('not_coordinator');
+  });
+
+  it('routes the owner to the coordinator even when the owner names a participant', () => {
+    // The behaviour `3872dbc` changed and that no test pinned: in coordinator
+    // mode the owner's own message reaches the coordinator even when it names
+    // a participant, the same thing that already happened with a mention.
+    // The mode has one promise — a designated agent receives the request and
+    // delegates it — and the rule is about who delegates, not about how the
+    // delegate is spelled.
+    const decision = plan({
+      conversation: coordinatorConversation,
+      message: {
+        senderId: 'p_human',
+        text: '@Codex please take this',
+        origin: humanOrigin,
+      },
+      explicitTargets: ['agt_codex'],
+    });
+
+    expect(decision.targets).toEqual(['agt_cto']);
+    expect(decision.reason).toContain('coordinator');
+    expect(decision.reason).toContain('not woken directly');
+  });
+
+  it('lets the owner name a participant and still reach the coordinator', () => {
+    // The same request, spelled the other way: the owner names the target
+    // instead of mentioning it, and the mode must not change its answer
+    // because the owner spelled it differently.
+    const decision = plan({
+      conversation: coordinatorConversation,
+      message: { senderId: 'p_human', text: 'please take this', origin: humanOrigin },
+      explicitTargets: ['agt_codex'],
+    });
+
+    expect(decision.targets).toEqual(['agt_cto']);
+  });
 });
 
 describe('autonomous mode', () => {
@@ -251,6 +376,25 @@ describe('autonomous mode', () => {
       message: { senderId: 'p_cto', text: 'still working', origin: agentOrigin },
     });
     expect(decision.targets).toEqual([]);
+  });
+
+  it('still wakes a participant that an agent named explicitly', () => {
+    // The coordinator rule must not leak into this mode either.
+    const decision = plan({
+      conversation: autonomousConversation,
+      message: { senderId: 'p_cto', text: 'take this', origin: agentOrigin },
+      explicitTargets: ['agt_codex'],
+    });
+    expect(decision.targets).toEqual(['agt_codex']);
+    expect(decision.reason).toBe('Explicitly selected participants.');
+  });
+
+  it('still gives a human request the full scope when nobody is named', () => {
+    const decision = plan({
+      conversation: autonomousConversation,
+      message: { senderId: 'p_human', text: 'keep the homelab healthy', origin: humanOrigin },
+    });
+    expect(decision.targets.sort()).toEqual(['agt_codex', 'agt_cto']);
   });
 });
 
