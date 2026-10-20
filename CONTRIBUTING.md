@@ -29,30 +29,36 @@ network share will not work.
 
 `npm ci` can fail with `gyp ERR! find VS … Could not find any Visual Studio
 installation to use`. That is npm, not this project: `better-sqlite3` declares
-`"gypfile": false` and ships a prebuilt binary for every platform, but npm
-does not record that marker in the lockfile, so it decides to compile the
-package from source. The compile is unnecessary.
+`"gypfile": false` and ships a prebuilt binary for every platform it supports,
+but npm reads that marker from the lockfile, and the lockfile does not carry
+it — so npm decides to compile the package from source. The compile is
+unnecessary, and it is the only thing that fails.
 
 Either install the **Desktop development with C++** workload from the Visual
-Studio Build Tools, or skip the build step, which loses nothing because the
-prebuilt binary is already in the package:
+Studio Build Tools, or skip the install scripts, which loses nothing:
 
 ```bash
 npm ci --ignore-scripts
 npm run build
 ```
 
-Linux and macOS are unaffected — their toolchains are present, and the
-compile simply succeeds.
+The package tarball already contains the prebuilt binary — a `prebuilds/`
+directory with one `.node` file per platform — and `better-sqlite3` loads that
+directly, so nothing has to be compiled. The only install script in the
+dependency tree is `esbuild`'s, and it only validates the platform binary that
+`esbuild`'s own platform package already ships. Skipping it changes nothing
+the build needs.
 
-There is no way to fix this in the lockfile. The package declares
-`"gypfile": false` so that npm will not compile it, but npm does not carry
-that marker into `package-lock.json`, and it drops the marker again if you
-add it by hand — the next `npm install` rewrites the lockfile without it. The
-package is at the latest version and ships a prebuilt binary for every
-platform, so there is nothing to upgrade to either. The flag above is the
-fix, and it is safe here because nothing in the dependency tree needs its
-install script to run.
+Linux and macOS are not affected by the failure, because the toolchain is
+usually there. The compile still runs on them, and it is just as unnecessary.
+
+You can also add `"gypfile": false` to the `better-sqlite3` entry in
+`package-lock.json` by hand, and `npm ci` will honour it and skip the compile.
+It is not a durable fix: the next `npm install` rewrites the lockfile without
+the marker. `--ignore-scripts` is the workaround that holds.
+
+There is no upgrade either — 13.0.3 is the latest release, and it ships the
+same prebuilt binaries.
 
 Run the three processes separately while developing:
 
@@ -78,7 +84,7 @@ npm run test                  # unit and integration tests
 npm run format:check          # prettier
 npm run build                 # every workspace builds
 npx tsx scripts/smoke.ts      # end-to-end, against a throwaway database
-npm run test:e2e              # browser tests (needs the build first)
+npm run test:e2e              # browser tests
 npx tsx scripts/verify-build.ts
 npm run verify:bundle         # the client bundle is within its budget
 ```
@@ -88,9 +94,11 @@ or the worker, the browser tests and the bundle budget if you touched the web
 client, and the build check if you changed how the compiled output is
 produced.
 
-The first two build the two library packages on the way, so they work on a
-fresh checkout without a separate build step. `npm run build` is still worth
-running before the browser tests, because they drive the built client.
+The first two build the three workspaces they depend on — `contracts`,
+`agent-adapters` and `server` — so they work on a fresh checkout without a
+separate build step. The last two read the build output, so `npm run build`
+has to have run before them. `npm run test:e2e` builds the client itself
+before it drives it.
 
 `npm run test:e2e` needs a browser once: `npx playwright install chromium`.
 

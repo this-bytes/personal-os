@@ -457,6 +457,10 @@ interface WaitingItem {
 }
 ```
 
+`id` is the kind and the underlying id, joined by a colon — `approval:apr_1`,
+`task:tsk_1` — so one list can be keyed without the client having to pair the
+id with the kind.
+
 **One thing is one entry.** A pending approval that belongs to a task _is_ that
 task waiting on the owner, so the task does not appear a second time beside it.
 The owner would otherwise see the same thing twice and have no way to tell
@@ -465,8 +469,9 @@ which one to act on.
 The order is the order of urgency: an agent that cannot continue comes first,
 then the work waiting for an acceptance decision, then the work that is stuck.
 
-The route is read-only, returns only what the owner can see, and requires the
-same authentication as every other route.
+The list is scoped to one workspace, and `workspaceId` is required. The route
+is read-only, returns only what the owner can see, and requires the same
+authentication as every other route.
 
 ---
 
@@ -533,44 +538,49 @@ node apps/server/dist/index.js --reset-password "<new password>"
 It is not an HTTP route, because it is the recovery path for an owner who
 cannot authenticate. Every session is revoked when it runs.
 
-| Method             | Path                                       | Purpose                                                                                 |
-| ------------------ | ------------------------------------------ | --------------------------------------------------------------------------------------- |
-| `GET`              | `/api/health`                              | Liveness and setup state.                                                               |
-| `GET`              | `/api/auth/status`                         | Whether setup is still required.                                                        |
-| `POST`             | `/api/auth/setup`                          | Create the owner account. Once per instance.                                            |
-| `POST`             | `/api/auth/login`                          | Start a session.                                                                        |
-| `POST`             | `/api/auth/logout`                         | End the session.                                                                        |
-| `GET`              | `/api/auth/me`                             | The current owner.                                                                      |
-| `GET/POST`         | `/api/workspaces`                          | List and create workspaces.                                                             |
-| `PATCH`            | `/api/workspaces/:id`                      | Update a workspace.                                                                     |
-| `GET/POST`         | `/api/agents`                              | List and create agent connections.                                                      |
-| `GET/PATCH/DELETE` | `/api/agents/:id`                          | Read, update, remove a connection. `PATCH` accepts `toolGrants`.                        |
-| `POST`             | `/api/agents/:id/probe`                    | Re-run capability discovery.                                                            |
-| `GET/POST`         | `/api/agents/:id/tokens`                   | Issue and list MCP tokens.                                                              |
-| `DELETE`           | `/api/agents/:id/tokens/:tokenId`          | Revoke an MCP token.                                                                    |
-| `GET/POST`         | `/api/conversations`                       | List and create conversations.                                                          |
-| `GET/PATCH/DELETE` | `/api/conversations/:id`                   | Read, update, remove a conversation.                                                    |
-| `GET/POST`         | `/api/conversations/:id/messages`          | Read and post messages.                                                                 |
-| `POST/DELETE`      | `/api/conversations/:id/participants`      | Manage participants.                                                                    |
-| `GET/POST`         | `/api/resources`                           | List and create resources.                                                              |
-| `GET/PATCH`        | `/api/resources/:id`                       | Read and update a resource.                                                             |
-| `POST`             | `/api/resources/:id/publish`               | Publish a resource.                                                                     |
-| `POST`             | `/api/resources/:id/execute`               | Execute a resource.                                                                     |
-| `GET`              | `/api/resources/:id/inspect`               | Validate without changing.                                                              |
-| `GET/POST`         | `/api/goals`                               | List and create goals.                                                                  |
-| `GET/POST`         | `/api/tasks`                               | List and create tasks.                                                                  |
-| `GET/PATCH`        | `/api/tasks/:id`                           | Read and update a task. `PATCH` cannot set `done`; it also enforces `expectedRevision`. |
-| `POST`             | `/api/tasks/:id/assign`                    | Assign a task to an agent.                                                              |
-| `POST`             | `/api/tasks/:id/accept`                    | Record an acceptance decision.                                                          |
-| `GET/POST`         | `/api/automations`                         | List and create automations.                                                            |
-| `PATCH/DELETE`     | `/api/automations/:id`                     | Update and remove an automation.                                                        |
-| `POST`             | `/api/automations/:id/enable` · `/disable` | Toggle scheduling.                                                                      |
-| `GET`              | `/api/approvals`                           | List approval requests.                                                                 |
-| `POST`             | `/api/approvals/:id/decide`                | Approve or reject a sensitive operation.                                                |
-| `GET`              | `/api/waiting`                             | Everything waiting on the owner, in one list. See below.                                |
-| `GET`              | `/api/audit`                               | Read the audit trail.                                                                   |
-| `GET`              | `/api/events`                              | Server-sent event stream.                                                               |
-| `ANY`              | `/mcp`                                     | MCP streamable HTTP endpoint.                                                           |
+| Method             | Path                                                 | Purpose                                                                                 |
+| ------------------ | ---------------------------------------------------- | --------------------------------------------------------------------------------------- |
+| `GET`              | `/api/health`                                        | Liveness and setup state.                                                               |
+| `GET`              | `/api/auth/status`                                   | Whether setup is still required.                                                        |
+| `POST`             | `/api/auth/setup`                                    | Create the owner account. Once per instance.                                            |
+| `POST`             | `/api/auth/login`                                    | Start a session.                                                                        |
+| `POST`             | `/api/auth/logout`                                   | End the session.                                                                        |
+| `GET`              | `/api/auth/me`                                       | The current owner.                                                                      |
+| `POST`             | `/api/auth/owner-token`                              | Return the configured owner token. Owner only — an agent token is refused.              |
+| `GET/POST`         | `/api/workspaces`                                    | List and create workspaces.                                                             |
+| `GET/PATCH`        | `/api/workspaces/:id`                                | Read and update a workspace.                                                            |
+| `GET/POST`         | `/api/agents`                                        | List and create agent connections.                                                      |
+| `GET/PATCH/DELETE` | `/api/agents/:id`                                    | Read, update, remove a connection. `PATCH` accepts `toolGrants`.                        |
+| `POST`             | `/api/agents/:id/probe`                              | Re-run capability discovery.                                                            |
+| `GET/POST`         | `/api/agents/:id/tokens`                             | Issue and list MCP tokens.                                                              |
+| `DELETE`           | `/api/agents/:id/tokens/:tokenId`                    | Revoke an MCP token.                                                                    |
+| `GET`              | `/api/secrets`                                       | List the secret configurations. Metadata only — a value never leaves the server.        |
+| `GET/POST`         | `/api/conversations`                                 | List and create conversations.                                                          |
+| `GET/PATCH/DELETE` | `/api/conversations/:id`                             | Read, update, remove a conversation.                                                    |
+| `GET/POST`         | `/api/conversations/:id/messages`                    | Read and post messages.                                                                 |
+| `POST`             | `/api/conversations/:id/participants`                | Add a participant.                                                                      |
+| `DELETE`           | `/api/conversations/:id/participants/:participantId` | Remove a participant.                                                                   |
+| `GET/POST`         | `/api/resources`                                     | List and create resources.                                                              |
+| `GET/PATCH`        | `/api/resources/:id`                                 | Read and update a resource.                                                             |
+| `POST`             | `/api/resources/:id/publish`                         | Publish a resource.                                                                     |
+| `POST`             | `/api/resources/:id/execute`                         | Execute a resource.                                                                     |
+| `GET`              | `/api/resources/:id/inspect`                         | Validate without changing.                                                              |
+| `GET/POST`         | `/api/goals`                                         | List and create goals.                                                                  |
+| `GET`              | `/api/goals/:id`                                     | Read a goal.                                                                            |
+| `GET/POST`         | `/api/tasks`                                         | List and create tasks.                                                                  |
+| `GET/PATCH`        | `/api/tasks/:id`                                     | Read and update a task. `PATCH` cannot set `done`; it also enforces `expectedRevision`. |
+| `POST`             | `/api/tasks/:id/assign`                              | Assign a task to an agent.                                                              |
+| `POST`             | `/api/tasks/:id/accept`                              | Record an acceptance decision.                                                          |
+| `GET/POST`         | `/api/automations`                                   | List and create automations.                                                            |
+| `GET/PATCH/DELETE` | `/api/automations/:id`                               | Read, update and remove an automation.                                                  |
+| `POST`             | `/api/automations/:id/enable` · `/disable`           | Toggle scheduling.                                                                      |
+| `GET`              | `/api/approvals`                                     | List approval requests.                                                                 |
+| `GET`              | `/api/approvals/:id`                                 | Read an approval request.                                                               |
+| `POST`             | `/api/approvals/:id/decide`                          | Approve or reject a sensitive operation.                                                |
+| `GET`              | `/api/waiting`                                       | Everything waiting on the owner, in one list. See below.                                |
+| `GET`              | `/api/audit`                                         | Read the audit trail.                                                                   |
+| `GET`              | `/api/events`                                        | Server-sent event stream.                                                               |
+| `ANY`              | `/mcp`                                               | MCP streamable HTTP endpoint.                                                           |
 
 ### Error envelope
 

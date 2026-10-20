@@ -145,18 +145,30 @@ change that matters, so run it before you commit rather than after.
 
 ## Before you say you are done
 
-The gates below work on their own, on a fresh checkout. You do not have to
-build first.
+Most of the gates below work on their own, on a fresh checkout. `npm run
+typecheck` and `npm run test` build the workspaces they need on the way, and
+`npm run test:e2e` builds the client before it drives it. Two of them read the
+build output and need `npm run build` to have run first: `npm run
+verify:bundle` fails with "The client has not been built" and `npx tsx
+scripts/verify-build.ts` fails with "Cannot find module …/apps/server/dist/index.js"
+on a checkout that has never been built.
 
 - `npm run typecheck` passes.
 - `npm run test` passes.
 - `npm run format:check` passes.
+- `npm run build` passes if you touched the web client, the server or the
+  worker.
 - `npx tsx scripts/smoke.ts` passes if you touched the server or the worker.
 - `npm run test:e2e` passes if you touched the web client.
 - `npm run verify:bundle` passes if you touched the web client or the build.
-- `npm run build` passes if you touched the web client.
+- `npx tsx scripts/verify-build.ts` passes if you changed how the compiled
+  output is produced.
 - `npm run verify:stack` passes if you touched how a deployment runs, or the
   worker. It proves a running instance executes an agent, which a health
-  check cannot.
+  check cannot. It needs a deployment that is already running, and it takes
+  the base URL as an argument: `npm run verify:stack -- http://127.0.0.1:4317`.
+  It writes to that deployment — it creates the owner if there is none, and it
+  always adds an agent and a conversation. Against a deployment that is not
+  yours, pass `--allow-remote`.
 - The documentation matches the code. If you changed a contract, `CONTRACTS.md`
   changed with it.
