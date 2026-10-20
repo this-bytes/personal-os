@@ -367,6 +367,47 @@ database lock while it reads the reset's command line and the reset's own busy
 timeout is ten seconds. A test that answers differently depending on what else
 the machine is doing is not a gate.
 
+### The runtime stopped at 07:12, and what it took with it
+
+At 07:12 the local runtime stopped and came back. It took three things with
+it, and none of them is a work item, so none of them is lost — but the
+record has to say what happened, because two dispatches died in the same
+millisecond and the ledger would otherwise read as if two items had been
+abandoned.
+
+**What died.** `task_ed4c3132afe9` (WI-022 to Wren) and `task_4cc3a3b1160f`
+(WI-010 to Probe) both failed with `AGENT_UNAVAILABLE` — 112 and 122
+milliseconds respectively, before either bot did any work. The other Chief
+session retried both with the same request ids, so a retry is the same
+dispatch and not a second one: **`task_f438b61f9116`** for WI-022 and
+**`task_5666d5ca0dc2`** for WI-010. Both are live and queued.
+
+**What is down.** The other Chief session's session is `interrupted` — _"This
+session was interrupted because the previous local runtime stopped"_ — and
+Probe's session is `aborted`. So the direction's verification (WI-010) and the
+exposure race (WI-029) are queued and waiting for Probe's session to come
+back, and the other Chief session has nine queued messages it has not read.
+This session's own shell died in the same moment and was restored.
+
+**What survived, and it is the important part.** The other Chief session's
+work is committed: its acceptance pass (WI-004, WI-006, WI-009 accepted;
+WI-011, WI-012, WI-013, WI-021 returned), the record of the owner's nod on
+WI-017 and WI-020, and the corrected return on WI-008. The repository is the
+state, and the state is intact.
+
+**And one mistake of Chief's, recorded rather than quietly undone.** Before
+the ledger said the retries were the live ones, Chief created a second
+dispatch of each item under a fresh request id — `task_479fab57ee5a` for
+WI-022 and `task_9c489671bc15` for WI-010 — on the belief that the first
+dispatch was dead and no retry had happened. Both are cancelled. One item,
+one dispatch; one verifier, one item, one verification.
+
+**The number space, in practice.** The session that owns it is down, so this
+session took WI-024 through WI-029, and every one of those numbers is named
+in this file. That is what the rule says to do when the number-owning session
+is not running, and it is why the numbers are here rather than only in the
+files.
+
 ### The Forge direction — opened, as [WI-024](../work/WI-024.md)
 
 The want that was recorded here is now a work item. The other Chief session
