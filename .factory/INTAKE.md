@@ -215,6 +215,93 @@ mandatory routing safeguard that only one owner is responsible for
 coordinating a particular delegation, so the code violates a published
 contract and the item is dispatchable with no owner answer in the way.
 
+## The owner's decisions, 2026-10-21 06:01
+
+The owner answered the three questions Chief put to them. The first answer
+overrides a recommendation the factory made, and that is the owner's call to
+make.
+
+| #   | Question                                                             | Answer                                                      |
+| --- | -------------------------------------------------------------------- | ----------------------------------------------------------- |
+| 1   | Which visual direction does the panel take?                          | **D — Forge.** Not the recommended **B — Desk**.           |
+| 2   | Do you approve the three published shapes (WI-017, WI-020, WI-022)? | **Approve all three.**                                      |
+| 3   | Push the local commits to origin now, or hold?                       | **Hold the push until the reds are green.**                |
+
+**The direction is Forge, and it is the owner's, not the factory's.** The
+recommendation in `prototypes/DIRECTION.md` argued for Desk, and Chief
+concurred with it: the owner's own Q2 answer is that the human decides, and
+Desk is the only direction whose home screen is that decision list. The owner
+chose the direction that recommendation rejected. Three things follow, and
+they are recorded here so that nobody has to re-derive them:
+
+- **Forge is coherent with Q2 in its settled form, and the recommendation
+  already settled it.** "The factory board, the agent list and the automation
+  runs do *not* go in the orientation room. They are what needs the owner's
+  authority, so they belong in the execution room, next to the conversation,
+  where a decision can be taken. The orientation room keeps the map and
+  nothing else." The objection that Forge's orientation room is the project
+  dashboard the stated scope rules out does not survive that settlement — the
+  settled Forge is not the version that was on the table.
+- **The cost objection survives, and answering it is the factory's job.**
+  Forge is the most expensive of the four: two rooms, two densities, a new
+  component and a dashboard screen, for the one implementer who already has
+  items ahead of it. Nobody has costed Forge. Its cost model, and the order
+  the work lands in, belong to the item that builds it — and that item does
+  not exist yet.
+- **The decision control is still not blocked by the direction.** That was true
+  for Desk and it is true for Forge: the inbox is already a component, and a
+  layout change re-lays-out the list's *layout*, not the control inside it.
+  What changes with Forge is larger than Desk's three bands — the landing
+  page is the decision list, and in Forge the decision list belongs in the
+  execution room, so the front door moves out of the root into a room. That is
+  the direction item's work, not the control's.
+
+**The three published shapes are approved**, so WI-017 (a template concept in
+the resource model), WI-020 (the read-only route publishing the product's two
+measures of itself) and WI-022 (the published waiting-list shape) leave the
+queue. WI-022 is the one red in the tree: `CONTRACTS.md` publishes
+`WaitingReason` as `'pending' | 'review' | 'blocked'` while the code emits
+`'unknown'`, and Probe's test pins the drift on purpose rather than let it be
+forgotten.
+
+**The push is held until the reds are green**, and the chain is now explicit
+and short: WI-022 lands → the published enum includes `'unknown'` → the tree
+is green → the push → CI runs on GitHub for the first time → WI-023 (CI
+proving the owner-token path) can run. No decision is owed by anybody else
+for any of it.
+
+### A want, not a work item — the Forge direction
+
+The Forge item will be numbered by the session that owns the number space.
+Chief is recording the want here rather than opening a file, and the decision
+itself is recorded in [WI-010](../work/WI-010.md).
+
+- **Title:** The panel takes Forge — an orientation room and an execution
+  room.
+- **Owner:** Cog, with the direction's own terms. Two rooms, two densities, a
+  new component, and the front door moving out of the root into the execution
+  room.
+- **Criteria:** the cost of adopting Forge now is stated concretely — which
+  parts of the existing app are affected, what in WI-004's landing page is
+  preserved, and what is reworked, as a list and not as "low effort"; the
+  boundary is the settled one, so the orientation room keeps the map and
+  nothing else while the factory board, the agent list and the automation runs
+  go to the execution room; the decision control is not rebuilt by the
+  direction, and the landing page's *layout* is what changes; the landing page
+  ends up in the execution room, because it is the decision list; and the
+  document is written where the next agent will find it.
+- **Not urgent:** the control ships first and is not blocked, so the owner's
+  top want does not wait for this.
+
+**Two things this section does not decide, and says so out loud.** The
+direction's own cost model is in `prototypes/DIRECTION.md`, rewritten for D
+after the owner's answer. That rewrite is Chief's own writing, so it goes to
+Probe before WI-010 is accepted, on the rule that a work item Chief wrote and
+Chief accepted has no reviewer in it — and the cost model inside it is the
+number the biggest item in the queue will be sized from, so it is worth one
+verifier slot to check. And the build item is the session that owns the
+number space's to open; the want above is what it is sized from.
+
 ## Candidates
 
 Gaps Chief found in the repository. These are **not** wants. They are
