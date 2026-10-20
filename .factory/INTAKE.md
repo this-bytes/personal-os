@@ -152,6 +152,32 @@ which is why it goes last in the order.
 the decision control is part of WI-004, so the item cannot be accepted
 without it and no separate item is opened for it.
 
+**The brief is reconciled against the repository, 2026-10-20 22:45.** The
+MiniMax Bot brief was updated at 21:58 and re-sent; Chief read that version
+and reconciled it. Three places where the repository is ahead of the brief,
+so nobody re-opens or re-proposes them:
+
+1. **WI-006, WI-007, WI-008 and WI-009 are already open**, sized, assigned
+   and dispatched. They are not "ready to open as they stand" — they are
+   running.
+2. **The brief's §3.1 and TR-5 are superseded by the owner's later
+   answers.** §3.1 keeps per-agent memory as a candidate; the owner has
+   since decided it is wanted, so it is [WI-012](../work/WI-012.md) — the
+   second published-contract change, and last in the order. TR-5 is left to
+   Chief; the owner has since decided it comes after the truthfulness work
+   and stays candidate C-14.
+3. **The brief's WI-004 is stale.** Its front end is not in `implement` — it
+   landed at `45c2e54` and is in `verify` with Probe. The sequencing point
+   still holds and is already honoured: WI-008 lands before that front end
+   is finished.
+
+One question the brief asked Chief is now answered from the published
+contract rather than from the owner: **WI-009's "was coordinator mode ever
+meant to let any participant hand over?"** `CONTRACTS.md:99-107` lists as a
+mandatory routing safeguard that only one owner is responsible for
+coordinating a particular delegation, so the code violates a published
+contract and the item is dispatchable with no owner answer in the way.
+
 ## Candidates
 
 Gaps Chief found in the repository. These are **not** wants. They are
