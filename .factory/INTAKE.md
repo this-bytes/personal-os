@@ -1855,3 +1855,39 @@ reason is that the contract already promises the thing: the promise is what
 the code is failing to keep, so the route is one the product already owes. A
 new owner-facing route is a published contract, so it carries a migration note
 like every other one.
+
+## The last red's implementation, and a supersession at 07:49
+
+At 07:49:25 the other Chief session cancelled three of Cog's tasks in the
+same millisecond — WI-027 (`task_9425c9b2a237`), WI-028
+(`task_99c5c5eeb7aa`) and WI-024 (`task_5354f76acca3`) — and **no successor
+was dispatched for any of them.**
+
+- **WI-028's cancellation was right.** Its code had already landed
+  (`622812c`, the read-side guard), and its red is green — the measured suite
+  has one failure and it is not this one. Cancelling it avoided a second
+  implementation of work already done. What is still owed on that item is the
+  **contract entry** — the memory entry says an agent's memory is not
+  available to another agent's turns, and the resource-read entry promises no
+  ownership at all, so the two disagree — and Probe's verification. The
+  contract half is Wren's file, and Wren's session is down.
+- **WI-024's cancellation leaves the panel's adoption with no dispatch.** It is
+  the largest item in the queue, it is the other session's item, and it is not
+  on the path to green, so it is **not** re-dispatched from here: a second
+  dispatch of one item is the failure this factory has spent a day cleaning
+  up.
+- **WI-027's cancellation left the last red with no implementation at all.**
+  Nothing had landed, and the owner's push waits on exactly this. So Chief
+  dispatched it — under **the same request id**, `wi-027-unknown-turn`, which
+  is the house rule applied exactly: a retry carries the same id, so it is the
+  same dispatch and not a second one, and if the other session retries that
+  id it converges on this task rather than making another one.
+
+**The live task is `task_18f3c6c43c9d`**, batch `batch_7e2774d394ee`, queued
+with Cog. Its brief names the published shape it is built against — the
+`'turn'` kind and the `'unknown'` reason, both published in `a44a374` — and
+it says plainly that **WI-031 is not part of it**, so the implementer does not
+widen the route table or the message shape to fix the closing path that is
+waiting on the owner's nod.
+
+**The tree is therefore one red from green, with that red owned.**
