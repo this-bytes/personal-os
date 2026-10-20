@@ -50,6 +50,40 @@ W-2 is the reason the scope names interaction rather than coordination. The
 talk to agents, not the panel showing a project dashboard. Anything that
 serves the coordination view for its own sake is out of scope.
 
+## The strategy decisions, 2026-10-20
+
+Grilled with the owner on 2026-10-20 using Matt Pocock's `grill-me` protocol.
+The owner agreed with the recommended answers to Q1, Q2, Q3, Q4 and Q6, and
+corrected Q5. This section is the source of truth for the decisions;
+[WI-011](../work/WI-011.md) copies them into the product record.
+
+| #   | Decision                                                                                     | The answer                                                                                                     |
+| --- | -------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------- |
+| Q1  | Which ground the product is built on                                                         | An environment agents operate and extend — not a chat home; the factory is a part of it, not the whole of it    |
+| Q2  | Does the human ever operate software, or only decide                                         | Only decide: direct, approve, accept. Agents do everything else. Connecting a new agent is a trust decision    |
+| Q3  | What "native" means for an agent-created feature                                             | A typed, validated resource in our own contracts, authored through templates                                   |
+| Q4  | Which two things "everyday productivity" means                                               | Tasks/work and documents. Not email, not calendar                                                              |
+| Q5  | What "borrow without depending" means in practice                                            | **Corrected by the owner:** *"i want to use these as inspriation and then implement into our codebase against our spec"* |
+| Q6  | What number proves "sustainable and agent-developed"                                         | The share of features authored by agents in-instance, and the share of operations done without the owner touching code; both shown in the panel |
+
+**Q5 in the doctrine.** The owner's answer is now a rule in
+[FACTORY.md](../FACTORY.md): *Borrow the idea, not the dependency.* Another
+project is inspiration — we read it, take the approach, and build the feature
+inside this repository against our own contracts and data model. We do not
+vendor a codebase in, and we do not add a runtime dependency to get a feature.
+
+One boundary rides on it, and it is not settled yet: an **interface** is
+conformed to, never reimplemented. Personal OS is a client of ACP, A2A, MCP
+and the OpenAI-compatible API shape. "Our spec" means our domain model, not
+our dialect of someone else's protocol. That reading is in the doctrine, and it
+is being put to the owner in the next grilling round.
+
+**What the decisions unblock.** The landing page becomes an inbox of things
+needing authority rather than a directory of screens; the visual direction
+([WI-010](../work/WI-010.md)) is judged against the human's role rather than
+taste; agent-created features are native resources; and the product reports on
+itself with the two measures.
+
 ## Candidates
 
 Gaps Chief found in the repository. These are **not** wants. They are

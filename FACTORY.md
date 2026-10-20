@@ -166,6 +166,16 @@ Two rules follow from it:
 - **Never change a published contract silently.** A contract change is a
   product decision. It needs a migration plan, an update to
   [CONTRACTS.md](CONTRACTS.md), and usually an ADR in `docs/decisions/`.
+- **Borrow the idea, not the dependency.** Another project that solves part of
+  what we need is _inspiration_: read it, take the approach, and build the
+  feature inside this repository against our own contracts, schemas and data
+  model. We do not add a runtime dependency on another product to get a
+  feature, and we do not vendor a codebase in to stand in for our own. Every
+  feature we ship is ours — our validation, our audit trail, our tests. This is
+  the owner's rule, set 2026-10-20. One boundary rides on it: an _interface_ is
+  conformed to, never reimplemented. Personal OS is a client of ACP, A2A, MCP
+  and the OpenAI-compatible API shape, and never a fork of one. "Our spec"
+  means our domain model — not our dialect of someone else's protocol.
 - **Never merge without the gates green.** Probe's report is the evidence.
   Chief does not accept on a summary.
 - **Never commit secrets.** `secret_configs` values, tokens and the data
