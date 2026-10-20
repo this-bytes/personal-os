@@ -30,14 +30,25 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Build
-        run: npm run build
-
+      # The typecheck and the tests come before the build, deliberately.
+      #
+      # Both build the packages they need first, so they work on a checkout
+      # where nothing has been built. That is the state a contributor is in
+      # when they clone the repository and run the documented command, and it
+      # is the state the gates broke in once already: the packages resolved
+      # through their own dist/, and a fresh clone could not typecheck at all.
+      #
+      # With the build first, CI would never notice that breaking again — the
+      # dist/ directories would already be there and the gates would pass
+      # without the thing that makes them pass ever being tested.
       - name: Typecheck
         run: npm run typecheck
 
       - name: Unit and integration tests
         run: npm run test
+
+      - name: Build
+        run: npm run build
 
       - name: Formatting
         run: npm run format:check
