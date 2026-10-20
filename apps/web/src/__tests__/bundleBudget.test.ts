@@ -35,6 +35,8 @@ afterEach(() => {
 });
 
 interface Fixture {
+  /** The root of the throwaway build. */
+  root: string;
   /** A chunk file of a given size, in bytes. */
   chunk(name: string, bytes: number): void;
   /** An asset directory with no chunk in it. */
@@ -64,6 +66,7 @@ function fixture(): Fixture {
   };
 
   return {
+    root,
     chunk: write,
     emptyAssets() {
       fs.mkdirSync(assetsDir, { recursive: true });
@@ -122,8 +125,11 @@ describe('the bundle budget gate', () => {
   it('fails when a chunk is over the limit', () => {
     const build = fixture();
     build.chunk('index-abcdefgh.js', 400_000);
+    build.chunk('vendor-react-abcdefgh.js', 10_000);
     build.html(['index-abcdefgh.js']);
-    build.config([]);
+    // A vendor chunk that is declared and emitted, so the vendor rule is
+    // satisfied and the limit is the only thing left to fail.
+    build.config(['vendor-react']);
 
     const result = build.run();
 
@@ -134,14 +140,47 @@ describe('the bundle budget gate', () => {
   it('fails when a page chunk is part of the first paint', () => {
     const build = fixture();
     build.chunk('index-abcdefgh.js', 10_000);
+    build.chunk('vendor-react-abcdefgh.js', 10_000);
     build.chunk('Agents-abcdefgh.js', 20_000);
     build.html(['index-abcdefgh.js', 'Agents-abcdefgh.js']);
-    build.config([]);
+    build.config(['vendor-react']);
 
     const result = build.run();
 
     expect(result.status).toBe(1);
     expect(result.stderr).toContain('part of the first paint');
+  });
+
+  it('fails when the vendor chunks are declared in a shape the gate cannot read', () => {
+    const build = fixture();
+    build.chunk('index-abcdefgh.js', 150_000);
+    build.html(['index-abcdefgh.js']);
+    // The declaration changed shape. The gate cannot see the vendor chunks
+    // any more, so it has to say so rather than quietly check nothing.
+    fs.writeFileSync(
+      path.join(build.root, 'vite.config.ts'),
+      `const VENDOR_CHUNKS = [{ name: 'vendor-react', pattern: /react/ }];\n`,
+    );
+
+    const result = build.run();
+
+    expect(result.status).toBe(1);
+    expect(result.stderr).toContain('no vendor chunks could be read');
+  });
+
+  it('fails when no vendor chunk can be read from the config', () => {
+    const build = fixture();
+    build.chunk('index-abcdefgh.js', 150_000);
+    build.html(['index-abcdefgh.js']);
+    // The config declares nothing the script can read: either the vendor
+    // split was undone or the declaration changed shape. The rule that
+    // catches this must fail rather than pass without checking anything.
+    build.config([]);
+
+    const result = build.run();
+
+    expect(result.status).toBe(1);
+    expect(result.stderr).toContain('no vendor chunks could be read');
   });
 
   it('fails when a declared vendor chunk is never emitted', () => {
@@ -173,7 +212,7 @@ describe('the bundle budget gate', () => {
       'vendor-part4-abcdefgh.js',
       'vendor-part5-abcdefgh.js',
     ]);
-    build.config([]);
+    build.config(['vendor-part0']);
 
     const result = build.run();
 

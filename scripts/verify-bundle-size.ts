@@ -95,29 +95,48 @@ function captured(match: RegExpMatchArray): string | null {
 }
 
 /**
- * The chunk names the vite config declares.
+ * The chunk names the vite config declares, and what is wrong with them.
  *
  * Read from the config source rather than duplicated here, so the check
  * follows the map when it changes instead of quietly checking a stale copy.
  */
-function declaredVendorChunks(): string[] {
+interface VendorDeclaration {
+  /** The declared chunk names. */
+  names: string[];
+  /**
+   * Why the declaration could not be read, when it could not be read.
+   *
+   * `null` when it was read.
+   */
+  problem: string | null;
+}
+
+function readVendorDeclaration(): VendorDeclaration {
   const source = fs.readFileSync(viteConfigPath, 'utf8');
   const names = [...source.matchAll(/\['([a-z0-9-]+)',\s*\//g)]
     .map((match) => captured(match))
     .filter((name): name is string => name !== null);
 
-  // If the pattern stops matching — the config changed shape — the list
-  // comes back empty, and an empty list makes the "declared but never
-  // emitted" rule pass without checking anything. A check that silently
-  // stops checking is worse than no check, so this fails instead.
+  // If the pattern stops matching — the config changed shape, or the vendor
+  // split was undone — the list comes back empty, and an empty list makes the
+  // "declared but never emitted" rule pass without checking anything. A check
+  // that silently stops checking is worse than no check, so this is a failure
+  // of its own.
+  //
+  // It is reported with the other problems rather than on its own, so one
+  // unreadable declaration does not hide the rest of the report: the other
+  // rules still have something to say about this build.
   if (names.length === 0) {
-    fail(
-      `No vendor chunks could be read from ${viteConfigPath}. The declaration ` +
-        'format has changed, so the vendor chunk rules are not being checked.',
-    );
+    return {
+      names: [],
+      problem:
+        `no vendor chunks could be read from ${viteConfigPath}. The declaration ` +
+        'format has changed, or the vendor split has been undone, so the vendor ' +
+        'chunk rules are not being checked.',
+    };
   }
 
-  return [...new Set(names)];
+  return { names: [...new Set(names)], problem: null };
 }
 
 /**
@@ -168,7 +187,8 @@ function main(): void {
   );
   const firstPaintPageChunks = firstPaint.filter((name) => PAGE_CHUNK.test(name));
 
-  const declared = declaredVendorChunks();
+  const declaration = readVendorDeclaration();
+  const declared = declaration.names;
   const emittedVendorChunks = chunks
     .map((chunk) => chunk.name)
     .filter((name) => name.startsWith('vendor-'));
@@ -195,6 +215,10 @@ function main(): void {
   process.stdout.write(`Vendor chunks declared:    ${declared.length}\n`);
 
   const problems: string[] = [];
+
+  if (declaration.problem) {
+    problems.push(declaration.problem);
+  }
 
   if (oversized.length > 0) {
     for (const chunk of oversized) {
