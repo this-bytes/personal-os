@@ -1812,3 +1812,46 @@ the queue, and nothing else depends on it.**
 
 **Nothing else is waiting on the owner.** Cog is implementing, Probe is
 verifying, and the last red has an owner with the work in the queue.
+
+## The gap Cog found on WI-007 — and a third question for the owner
+
+Cog's WI-007 report (`6878e7c`) fixed the first symptom — the panel says what
+the decision did, and the e2e is 25 of 25 — and named the second: **the
+agent's reply is badged `failed` with no sentence.** `closeReply`
+(`apps/server/src/modules/approvals/resume.ts:186-188`) sets the status and
+nothing else, the `messages` table has no column to carry the reason, and the
+panel surfaces no audit trail.
+
+Checked against the tree, that is worse than a wording gap, and it is a
+**published-contract drift that exists today**:
+
+- `CONTRACTS.md:125-128` promises that an unknown outcome "is a question for
+  the owner, and only the owner can close it".
+- **For a task that promise is kept** — `PATCH /api/tasks/:id`, the task leaves
+  `unknown`, and the transition is written to the audit trail as
+  `task.outcome.resolved`.
+- **For a turn it is not, and it cannot be.** `resolveExecution`
+  (`apps/server/src/modules/approvals/service.ts:160-165`) is a service
+  method, called from exactly one place — the approval decision path
+  (`resume.ts:151`). **There is no owner-facing route that resolves an
+  execution.** The owner has no way to close a turn, and no published route to
+  close it with.
+
+**WI-027 makes it visible.** It puts unknown turns on the waiting list, so
+after it lands the owner sees a turn to check and cannot close it. A visible
+dead end is worse than an invisible one, which is why this is its own item
+rather than a paragraph in WI-027 — and why it is not being folded into it.
+
+So it is **[WI-031](../work/WI-031.md)** — owner Cog, verifier Probe, sized,
+**not dispatched**: the contract half needs the owner's nod on a new published
+route, and the code half follows WI-027.
+
+**The third question, with a recommendation:** may the product publish a route
+that lets the owner close a turn whose outcome could not be confirmed? The
+proposal is `POST /api/executions/:id/resolve`, taking the owner's own
+conclusion — _it did run_ or _it did not run_ — writing the transition to the
+audit trail beside the task path's. **The recommendation is yes**, and the
+reason is that the contract already promises the thing: the promise is what
+the code is failing to keep, so the route is one the product already owes. A
+new owner-facing route is a published contract, so it carries a migration note
+like every other one.
