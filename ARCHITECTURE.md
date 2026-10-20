@@ -314,6 +314,8 @@ These are real, and deliberately not hidden:
   created at first run and there are no default credentials. A forgotten password is
   replaced from the command line (`node apps/server/dist/index.js --reset-password`),
   which keeps every conversation, resource and task and signs out the sessions the
-  old credential produced.
+  old credential produced. The new password is passed as a command-line argument, so
+  it is visible in the host's process list for as long as the command runs, and
+  another user on the host can read it there.
 - **No native desktop or mobile client.** The web client is responsive and
   installable as a PWA.
