@@ -1471,3 +1471,37 @@ member, `'turn'`?** One word, yes or no.
 confirmed still routes work onward. Chief's recommendation is no — the same
 rule that makes an unknown outcome a state rather than a failure says it
 should stop until the owner looks — but it is the owner's call.
+
+### Two dispatches died at 06:46, and both were retried
+
+Wren's WI-022 task (`task_ed4c3132afe9`, request `wi-022-publish-waiting-reasons`)
+and Probe's WI-010 task (`task_4cc3a3b1160f`, request
+`wi-010-verify-forge-rewrite`) both failed with **`AGENT_UNAVAILABLE`**, in the
+same millisecond, before either bot did any work. The failure is the fleet's,
+not either item's.
+
+Both were retried with **the same request ids**, so a retry is the same
+dispatch and not a second one: `task_f438b61f9116` for Wren, `task_5666d5ca0dc2`
+for Probe. The rule that stands: **a dispatch that cannot be delivered is not
+a dispatch** — the request id is the record, and the retry delivers it.
+
+### Chief got the WI-008 return wrong, and Cog said so
+
+Cog read the item and found two errors in Chief's return, both of them
+Chief's: it reviewed `9ad4f98`, which `f0f8661` had already superseded, and
+its dispatch said _"all eight reds must pass"_ and _"do not touch
+`CONTRACTS.md`_ at the same time, which cannot both be true — the eighth red
+is the published `WaitingReason` enum, and making it green needs Wren's file
+and the owner's nod.
+
+Chief cancelled that dispatch before it started and replaced it with a
+corrected one (`wi-008-cog-corrected-2026-10-21`, `task_a7ff69f6e3b4`). The
+review section in the item is left as it was written, because a review of a
+commit should be readable against that commit; the error was in the dispatch
+that presented it as the state of HEAD.
+
+**And the item is verified anyway.** Cog's group post is the item owner's
+report on its own fix. The loop does not take the implementer's word for the
+work, and it does not take Chief's either: Probe verifies, Chief accepts.
+Probe's verification of the fixed tree is `task_abe3e6d5f3f9`, and it is
+asked to judge the four defects against the tree and to name what is left.
