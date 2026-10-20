@@ -18,7 +18,7 @@
  *  1. The exposure is real. The password is visible in the command line of
  *     the reset process, as the operating system reports it to another
  *     process.
- *  2. The documentation says so, in both places the command is documented.
+ *  2. The documentation says so, in every place the command is documented.
  */
 import { spawn, spawnSync, type ChildProcess } from 'node:child_process';
 import BetterSqlite3 from 'better-sqlite3';
@@ -231,7 +231,14 @@ describe('the command line of the recovery path', () => {
 });
 
 describe('what the documentation says about it', () => {
-  const documents = [{ name: 'CONTRACTS.md' }, { name: 'README.md' }];
+  /**
+   * Every document that names the recovery command has to say what it costs.
+   *
+   * A reader who copies the command out of the architecture document learns
+   * what it costs there too, so the list is the documents that name the
+   * command, not the documents that publish it.
+   */
+  const documents = [{ name: 'CONTRACTS.md' }, { name: 'README.md' }, { name: 'ARCHITECTURE.md' }];
 
   it.each(documents)('$name says the password is visible in the process list', ({ name }) => {
     const text = fs.readFileSync(path.join(repoRoot, name), 'utf8');
