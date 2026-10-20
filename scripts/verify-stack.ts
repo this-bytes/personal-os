@@ -14,6 +14,11 @@
  * always adds an agent and a conversation. Against a deployment that is not
  * yours, pass --allow-remote to say that you mean it.
  *
+ * It gets in with PERSONAL_OS_OWNER_TOKEN when that is set, which is what
+ * lets it work against a deployment that was initialised before. Without it,
+ * the script signs in as the owner account it creates, and that only works
+ * against a deployment it created itself.
+ *
  *   npx tsx scripts/verify-stack.ts http://127.0.0.1:4317
  */
 const args = process.argv.slice(2);
@@ -57,6 +62,18 @@ const PASSWORD = 'correct horse battery';
 const REPLY = 'Hello from the echo agent.';
 
 /**
+ * The credential the check uses to get in, when there is one.
+ *
+ * A deployment that was initialised before has an owner whose password is not
+ * this script's, and a fixed password cannot sign in to it. The server accepts
+ * a static owner token for headless access — the same token the container job
+ * already sets for the stack it builds — so that token is used when one is
+ * configured. Without one, the script falls back to the owner account, which
+ * is the only credential it has.
+ */
+const OWNER_TOKEN = process.env['PERSONAL_OS_OWNER_TOKEN'] ?? '';
+
+/**
  * How long to wait for the worker's reply.
  *
  * The default is the wait the pipeline uses. The override exists so the gate
@@ -82,6 +99,7 @@ async function api(
   const headers = new Headers(init.headers);
   if (init.json !== undefined) headers.set('content-type', 'application/json');
   if (cookie) headers.set('cookie', cookie);
+  if (OWNER_TOKEN) headers.set('authorization', `Bearer ${OWNER_TOKEN}`);
 
   const response = await fetch(`${base}${route}`, {
     ...init,
@@ -109,22 +127,51 @@ async function main(): Promise<void> {
   const health = await api('/api/health');
   assert(health.status === 200, `the server is healthy (got ${health.status})`);
 
-  // 2. The owner can sign in. A deployment that was set up before answers
-  //    with a conflict, so fall back to logging in.
-  const setup = await api('/api/auth/setup', {
-    method: 'POST',
-    json: { email: EMAIL, password: PASSWORD, displayName: 'Stack check' },
-  });
+  // 2. The owner can get in.
+  //
+  // A deployment that was initialised before has an owner whose password is
+  // not this script's, and signing in with a fixed password fails against it.
+  // The static owner token is the credential for headless access, so it is
+  // used when one is configured, and the owner account is the fallback only
+  // when there is no token.
+  if (OWNER_TOKEN) {
+    // The token is checked first and on its own, so a token the deployment
+    // does not know is reported as a bad token and not mistaken for a working
+    // owner. Nothing has signed in at this point, so nothing else could have
+    // answered for it.
+    const me = await api('/api/auth/me');
+    assert(me.status === 200, `the owner token is accepted (got ${me.status})`);
 
-  if (setup.status === 201) {
-    assert(setup.body.user.email === EMAIL, 'the owner is created');
+    // A deployment that has never been set up has no owner and no workspace,
+    // and there is nothing for the check to do. The owner is created, as it
+    // always has been.
+    const status = await api('/api/auth/status');
+    assert(status.status === 200, `the auth status is readable (got ${status.status})`);
+    if (status.body?.setupRequired === true) {
+      const setup = await api('/api/auth/setup', {
+        method: 'POST',
+        json: { email: EMAIL, password: PASSWORD, displayName: 'Stack check' },
+      });
+      assert(setup.status === 201, `the owner is created (got ${setup.status})`);
+    }
   } else {
-    assert(setup.status === 409, `the setup endpoint answers as expected (got ${setup.status})`);
-    const login = await api('/api/auth/login', {
+    // The owner account: create it when the deployment has none, and sign in
+    // to it when it does.
+    const setup = await api('/api/auth/setup', {
       method: 'POST',
-      json: { email: EMAIL, password: PASSWORD },
+      json: { email: EMAIL, password: PASSWORD, displayName: 'Stack check' },
     });
-    assert(login.status === 200, `the owner can sign in (got ${login.status})`);
+
+    if (setup.status === 201) {
+      assert(setup.body.user.email === EMAIL, 'the owner is created');
+    } else {
+      assert(setup.status === 409, `the setup endpoint answers as expected (got ${setup.status})`);
+      const login = await api('/api/auth/login', {
+        method: 'POST',
+        json: { email: EMAIL, password: PASSWORD },
+      });
+      assert(login.status === 200, `the owner can sign in (got ${login.status})`);
+    }
   }
 
   // 3. A workspace to work in.

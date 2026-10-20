@@ -1,17 +1,20 @@
 /**
  * The deployment verification gate.
  *
- * `scripts/verify-stack.ts` does two things worth being sure about. It is the
+ * `scripts/verify-stack.ts` does three things worth being sure about. It is the
  * only check that proves the worker of a running deployment executes an
- * agent's turn, and its `--allow-remote` guard is the only thing between it
- * and somebody else's instance.
+ * agent's turn, its `--allow-remote` guard is the only thing between it and
+ * somebody else's instance, and it has to get into a deployment that may
+ * already have been initialised by somebody else.
  *
- * Both are exercised here, because a gate that has never been shown to fail
- * is a gate that might never fail. The guard is checked by watching what the
- * script contacts: a refusal has to happen before the first request, not
+ * All three are exercised here, because a gate that has never been shown to
+ * fail is a gate that might never fail. The guard is checked by watching what
+ * the script contacts: a refusal has to happen before the first request, not
  * after it. The worker check is checked both ways: it has to pass when a
  * worker is running and fail when the server answers but nothing executes the
- * turn.
+ * turn. The sign-in is checked against a deployment whose owner password is
+ * not the script's — the case where a fixed password cannot get in, and the
+ * one the static owner token exists for.
  *
  * The script is spawned rather than run in-process, and it is spawned
  * asynchronously: a synchronous spawn would block the event loop this file's
@@ -60,6 +63,75 @@ function runScript(
     child.on('close', (code) => resolve({ status: code, stdout, stderr }));
   });
 }
+
+/** Every process this file starts, so that every one of them is stopped. */
+const children: ChildProcess[] = [];
+
+/** Every data directory this file makes, so that every one of them is removed. */
+const dataDirs: string[] = [];
+
+function start(entry: string, port: number, dataDir: string, ownerToken: string): ChildProcess {
+  const child = spawn(process.execPath, [tsxCli, entry], {
+    cwd: repoRoot,
+    env: {
+      ...process.env,
+      PERSONAL_OS_HOST: '127.0.0.1',
+      PERSONAL_OS_PORT: String(port),
+      PERSONAL_OS_DATA_DIR: dataDir,
+      PERSONAL_OS_OWNER_TOKEN: ownerToken,
+      LOG_LEVEL: 'warn',
+    },
+    stdio: ['ignore', 'pipe', 'pipe'],
+  });
+  child.stdout?.on('data', () => undefined);
+  child.stderr?.on('data', () => undefined);
+  children.push(child);
+  return child;
+}
+
+async function waitForServer(port: number, timeoutMs = 60_000): Promise<void> {
+  const deadline = Date.now() + timeoutMs;
+  while (Date.now() < deadline) {
+    try {
+      const response = await fetch(`http://127.0.0.1:${port}/api/health`);
+      if (response.ok) return;
+    } catch {
+      // not up yet
+    }
+    await new Promise((resolve) => setTimeout(resolve, 200));
+  }
+  throw new Error('the server did not become healthy');
+}
+
+async function stop(child: ChildProcess): Promise<void> {
+  if (child.exitCode !== null || child.signalCode !== null) return;
+  await new Promise<void>((resolve) => {
+    const timer = setTimeout(() => {
+      child.kill('SIGKILL');
+      resolve();
+    }, 4_000);
+    child.on('exit', () => {
+      clearTimeout(timer);
+      resolve();
+    });
+    child.kill('SIGTERM');
+  });
+}
+
+/** A deployment of its own, so that each one in this file starts empty. */
+function freshDataDir(prefix: string): string {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), prefix));
+  dataDirs.push(dir);
+  return dir;
+}
+
+const serverEntry = path.join(repoRoot, 'apps', 'server', 'src', 'index.ts');
+const workerEntry = path.join(repoRoot, 'apps', 'worker', 'src', 'index.ts');
+
+afterAll(async () => {
+  await Promise.all(children.map((child) => stop(child)));
+  for (const dir of dataDirs) fs.rmSync(dir, { recursive: true, force: true });
+});
 
 describe('the remote guard', () => {
   let seen: string[] = [];
@@ -135,73 +207,34 @@ describe('the remote guard', () => {
 
     expect(result.status).toBe(2);
   });
+
+  it('refuses a non-local deployment even when the owner token is configured', async () => {
+    seen = [];
+
+    // The owner token is a credential, not a permission. A deployment the
+    // owner did not point the check at stays off limits with a token in hand,
+    // and the refusal still happens before the first request.
+    const result = await runScript(`http://0.0.0.0:${port}`, [], {
+      PERSONAL_OS_OWNER_TOKEN: 'a-token-that-should-not-help',
+    });
+
+    expect(result.status).toBe(2);
+    expect(result.stderr).toContain('--allow-remote');
+    expect(seen).toEqual([]);
+  });
 });
 
 describe('the worker check', () => {
-  const children: ChildProcess[] = [];
   const port = 4500 + Math.floor(Math.random() * 400);
-  const dataDir = fs.mkdtempSync(path.join(os.tmpdir(), 'verify-stack-test-'));
-
-  function start(entry: string): ChildProcess {
-    const child = spawn(process.execPath, [tsxCli, entry], {
-      cwd: repoRoot,
-      env: {
-        ...process.env,
-        PERSONAL_OS_HOST: '127.0.0.1',
-        PERSONAL_OS_PORT: String(port),
-        PERSONAL_OS_DATA_DIR: dataDir,
-        PERSONAL_OS_OWNER_TOKEN: 'test-owner-token',
-        LOG_LEVEL: 'warn',
-      },
-      stdio: ['ignore', 'pipe', 'pipe'],
-    });
-    child.stdout?.on('data', () => undefined);
-    child.stderr?.on('data', () => undefined);
-    children.push(child);
-    return child;
-  }
-
-  async function waitForServer(timeoutMs = 60_000): Promise<void> {
-    const deadline = Date.now() + timeoutMs;
-    while (Date.now() < deadline) {
-      try {
-        const response = await fetch(`http://127.0.0.1:${port}/api/health`);
-        if (response.ok) return;
-      } catch {
-        // not up yet
-      }
-      await new Promise((resolve) => setTimeout(resolve, 200));
-    }
-    throw new Error('the server did not become healthy');
-  }
-
-  async function stop(child: ChildProcess): Promise<void> {
-    if (child.exitCode !== null || child.signalCode !== null) return;
-    await new Promise<void>((resolve) => {
-      const timer = setTimeout(() => {
-        child.kill('SIGKILL');
-        resolve();
-      }, 4_000);
-      child.on('exit', () => {
-        clearTimeout(timer);
-        resolve();
-      });
-      child.kill('SIGTERM');
-    });
-  }
+  const dataDir = freshDataDir('verify-stack-test-');
 
   beforeAll(async () => {
-    start(path.join(repoRoot, 'apps', 'server', 'src', 'index.ts'));
-    await waitForServer();
-  });
-
-  afterAll(async () => {
-    await Promise.all(children.map((child) => stop(child)));
-    fs.rmSync(dataDir, { recursive: true, force: true });
+    start(serverEntry, port, dataDir, 'test-owner-token');
+    await waitForServer(port);
   });
 
   it('passes when a worker executes the turn', async () => {
-    const worker = start(path.join(repoRoot, 'apps', 'worker', 'src', 'index.ts'));
+    const worker = start(workerEntry, port, dataDir, 'test-owner-token');
 
     try {
       const result = await runScript(`http://127.0.0.1:${port}`, [], {
@@ -227,4 +260,119 @@ describe('the worker check', () => {
     expect(result.status).not.toBe(0);
     expect(result.stderr).toContain('worker');
   }, 90_000);
+
+  it('gives up sooner with a shorter wait, and never passes on a missing reply', async () => {
+    // No worker is running now. A shorter wait may only make the check give
+    // up sooner, and it must never turn a missing reply into a pass.
+    const shortStarted = Date.now();
+    const short = await runScript(`http://127.0.0.1:${port}`, [], {
+      PERSONAL_OS_VERIFY_STACK_TIMEOUT_MS: '2000',
+    });
+    const shortElapsed = Date.now() - shortStarted;
+
+    const longStarted = Date.now();
+    const long = await runScript(`http://127.0.0.1:${port}`, [], {
+      PERSONAL_OS_VERIFY_STACK_TIMEOUT_MS: '12000',
+    });
+    const longElapsed = Date.now() - longStarted;
+
+    expect(short.status).not.toBe(0);
+    expect(long.status).not.toBe(0);
+    expect(short.stderr).toContain('worker');
+    expect(long.stderr).toContain('worker');
+    expect(shortElapsed, 'the shorter wait did not give up sooner').toBeLessThan(longElapsed);
+  }, 90_000);
+});
+
+describe('a deployment with no owner', () => {
+  const port = 5300 + Math.floor(Math.random() * 400);
+  const dataDir = freshDataDir('verify-stack-no-owner-');
+  const ownerToken = 'stack-owner-token';
+
+  beforeAll(async () => {
+    start(serverEntry, port, dataDir, ownerToken);
+    await waitForServer(port);
+  });
+
+  it('creates the owner when the deployment has none', async () => {
+    // Before the check runs, the deployment has never been set up.
+    const before = await fetch(`http://127.0.0.1:${port}/api/auth/status`);
+    expect(((await before.json()) as { setupRequired: boolean }).setupRequired).toBe(true);
+
+    const worker = start(workerEntry, port, dataDir, ownerToken);
+
+    try {
+      const result = await runScript(`http://127.0.0.1:${port}`, [], {
+        PERSONAL_OS_OWNER_TOKEN: ownerToken,
+        PERSONAL_OS_VERIFY_STACK_TIMEOUT_MS: '20000',
+      });
+
+      expect(result.stderr).toBe('');
+      expect(result.status).toBe(0);
+      expect(result.stdout).toContain('the owner is created');
+    } finally {
+      await stop(worker);
+    }
+
+    // And the owner is there afterwards.
+    const after = await fetch(`http://127.0.0.1:${port}/api/auth/status`);
+    expect(((await after.json()) as { setupRequired: boolean }).setupRequired).toBe(false);
+  }, 90_000);
+});
+
+describe('a deployment that already has an owner', () => {
+  const port = 5700 + Math.floor(Math.random() * 400);
+  const dataDir = freshDataDir('verify-stack-has-owner-');
+  const ownerToken = 'stack-owner-token';
+
+  beforeAll(async () => {
+    start(serverEntry, port, dataDir, ownerToken);
+    await waitForServer(port);
+
+    // The deployment was initialised before, by somebody else, with a
+    // password the script does not know and an email that is not its own.
+    const setup = await fetch(`http://127.0.0.1:${port}/api/auth/setup`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({
+        email: 'the-owner@example.com',
+        password: 'a password the check does not know',
+        displayName: 'The Owner',
+      }),
+    });
+    expect(setup.status).toBe(201);
+  });
+
+  it('gets past the sign-in when the static owner token is configured', async () => {
+    const worker = start(workerEntry, port, dataDir, ownerToken);
+
+    try {
+      const result = await runScript(`http://127.0.0.1:${port}`, [], {
+        PERSONAL_OS_OWNER_TOKEN: ownerToken,
+        PERSONAL_OS_VERIFY_STACK_TIMEOUT_MS: '20000',
+      });
+
+      // The sign-in is not where this stops: the check gets past it and runs
+      // the whole way through.
+      expect(result.stderr).toBe('');
+      expect(result.status).toBe(0);
+      expect(result.stdout).toContain('the owner token is accepted');
+      expect(result.stdout).toContain('The deployment is serving the product.');
+    } finally {
+      await stop(worker);
+    }
+  }, 90_000);
+
+  it('still fails at the sign-in when no owner token is configured', async () => {
+    // The same deployment, without the token. This is the failure the item
+    // is about: the check cannot sign in to an owner whose password it does
+    // not know, and it says so rather than pretending otherwise.
+    const result = await runScript(`http://127.0.0.1:${port}`, [], {
+      PERSONAL_OS_OWNER_TOKEN: '',
+      PERSONAL_OS_VERIFY_STACK_TIMEOUT_MS: '5000',
+    });
+
+    expect(result.status).not.toBe(0);
+    expect(result.stderr).toContain('the owner can sign in (got 401)');
+  }, 60_000);
 });
