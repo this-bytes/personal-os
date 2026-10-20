@@ -2524,7 +2524,10 @@ it something else.
 
 **W4 is folded, and the fold is not a disposal.** WI-007 is the same subject
 under a different name, and it is with Cog now with its fix landed. The fold
-is recorded in WI-007's file, so the item carries its own scope.
+is recorded here rather than in WI-007's file, because that file is the other
+Chief session's live claim and two sessions editing one work item's file is
+the collision this factory keeps repairing — WI-007's own criteria are W4's
+criteria, so the item already carries the scope.
 
 **W3 is deferred, and the reason is capacity, not judgement.** It is the
 largest of the seven and the furthest from what the owner said matters:
