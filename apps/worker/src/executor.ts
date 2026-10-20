@@ -1,6 +1,7 @@
 import { and, desc, eq, sql } from 'drizzle-orm';
 import { z } from 'zod';
 import {
+  buildAgentMemoryBrief,
   dashboardSpecSchema,
   dataSourceSpecSchema,
   parseAdapterConfig,
@@ -9,12 +10,14 @@ import {
   type AgentAdapter,
   type AgentConnection,
   type AgentEvent,
+  type AgentMemoryBrief,
   type AgentTurnInput,
   type ContentPart,
   type MessageOrigin,
   type Participant,
   type Persona,
 } from '@personal-os/contracts';
+import { listAgentMemories } from '@personal-os/server/runtime';
 import {
   agentConnections,
   approvals,
@@ -118,6 +121,19 @@ export function frameWithPersona(context: string, persona: Persona | undefined):
   if (persona.instructions) lines.push(persona.instructions);
   if (lines.length === 0) return context;
   return `Persona in force for this conversation:\n${lines.join('\n')}\n\n${context}`;
+}
+
+/**
+ * Frame the turn with the agent's own memory.
+ *
+ * The brief is the agent's memories, pinned first and then most recent,
+ * within the budget that keeps them from crowding out the conversation. It
+ * is the agent's own memory, so it is here in every conversation the agent
+ * takes part in — and in no other agent's turns.
+ */
+export function frameWithAgentMemory(context: string, brief: AgentMemoryBrief): string {
+  if (brief.text.length === 0) return context;
+  return `${brief.text}\n\n${context}`;
 }
 
 export async function executeJob(
@@ -240,6 +256,13 @@ async function executeChatTurn(context: ExecutorContext, job: QueueJob): Promise
     override: participant?.personaOverride,
     base: connection.persona,
   });
+
+  // The agent's own memory. It belongs to the connection, so it follows the
+  // agent into every conversation it takes part in, and it is budgeted so it
+  // cannot crowd out the conversation itself.
+  const memoryBrief = buildAgentMemoryBrief(
+    listAgentMemories(db, connection.workspaceId, connection.id),
+  );
 
   const now = new Date().toISOString();
   const origin: MessageOrigin = {
@@ -366,7 +389,7 @@ async function executeChatTurn(context: ExecutorContext, job: QueueJob): Promise
     const turn: AgentTurnInput = {
       conversationId: payload.conversationId,
       message: turnMessage,
-      context: frameWithPersona(contextText, persona.persona),
+      context: frameWithPersona(frameWithAgentMemory(contextText, memoryBrief), persona.persona),
       executionId: payload.executionId,
       signal: controller.signal,
       ...(externalSessionId ? { externalSessionId } : {}),

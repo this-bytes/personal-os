@@ -92,13 +92,138 @@ export const dataSourceSpecSchema = z.object({
 });
 export type DataSourceSpec = z.infer<typeof dataSourceSpecSchema>;
 
-export const memorySpecSchema = z.object({
-  scope: z.enum(['workspace', 'conversation', 'goal']).default('workspace'),
-  key: z.string().min(1).max(300),
-  value: z.unknown(),
-  tags: z.array(z.string()).default([]),
-});
+/**
+ * The scopes a memory can belong to.
+ *
+ * `agent` is the agent's own memory. It belongs to the agent connection, so
+ * it follows the agent across every conversation it takes part in and reaches
+ * no other agent's turns. The other three scopes keep their meaning.
+ */
+export const memoryScopeSchema = z.enum(['workspace', 'conversation', 'goal', 'agent']);
+export type MemoryScope = z.infer<typeof memoryScopeSchema>;
+
+export const memorySpecSchema = z
+  .object({
+    scope: memoryScopeSchema.default('workspace'),
+    /**
+     * The agent this memory belongs to. Required when the scope is 'agent':
+     * a memory scoped to an agent names the agent it belongs to.
+     */
+    agentConnectionId: idSchema.optional(),
+    key: z.string().min(1).max(300),
+    value: z.unknown(),
+    tags: z.array(z.string()).default([]),
+  })
+  .superRefine((spec, ctx) => {
+    if (spec.scope === 'agent' && !spec.agentConnectionId) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['agentConnectionId'],
+        message: 'A memory scoped to an agent names the agent it belongs to.',
+      });
+    }
+  });
 export type MemorySpec = z.infer<typeof memorySpecSchema>;
+
+/**
+ * The agent's share of the turn context.
+ *
+ * The agent's memory is in the turn context, within this budget, so an
+ * agent's memory cannot crowd out the conversation.
+ */
+export const AGENT_MEMORY_CONTEXT_BUDGET = 6_000;
+
+/**
+ * The tag that pins a memory.
+ *
+ * A pinned memory keeps its place at the head of the brief whatever was
+ * written since. The keying is ours: no plugin's scope or tag vocabulary is
+ * imported here.
+ */
+export const PINNED_MEMORY_TAG = 'pinned';
+
+/** One thing an agent remembers. */
+export interface AgentMemoryEntry {
+  /** What the agent remembers, under this key. */
+  key: string;
+  /** The memory itself. */
+  value: unknown;
+  tags: string[];
+  /** When the memory was last written. */
+  updatedAt: string;
+}
+
+export interface AgentMemoryBrief<T extends AgentMemoryEntry = AgentMemoryEntry> {
+  /** The memories that fit, in the order the agent sees them. */
+  entries: T[];
+  /** The brief as it appears in the turn context. */
+  text: string;
+  /** The budget, in characters. */
+  budget: number;
+  /** The characters the brief uses. */
+  used: number;
+  /** How many memories did not fit. */
+  dropped: number;
+}
+
+/** Is this memory pinned? */
+export function isPinnedMemory(entry: AgentMemoryEntry): boolean {
+  return entry.tags.includes(PINNED_MEMORY_TAG);
+}
+
+/**
+ * Order the agent's memories: pinned first, then most recent.
+ *
+ * The order is the same wherever the memories are shown, so the panel and
+ * the agent read them the same way round.
+ */
+export function orderAgentMemories<T extends AgentMemoryEntry>(entries: T[]): T[] {
+  return [...entries].sort((a, b) => {
+    const pinned = Number(isPinnedMemory(b)) - Number(isPinnedMemory(a));
+    if (pinned !== 0) return pinned;
+    const byTime = b.updatedAt.localeCompare(a.updatedAt);
+    if (byTime !== 0) return byTime;
+    return a.key.localeCompare(b.key);
+  });
+}
+
+/** Render a memory value the way the agent reads it. */
+function renderMemoryValue(value: unknown): string {
+  if (typeof value === 'string') return value;
+  const json = JSON.stringify(value);
+  return json === undefined ? '' : json;
+}
+
+/**
+ * Build the brief the agent reads: its own memories, pinned first and then
+ * most recent, within the budget.
+ *
+ * A memory that does not fit is left out rather than truncated, and the rest
+ * still fit, so one oversized memory cannot empty the brief.
+ */
+export function buildAgentMemoryBrief<T extends AgentMemoryEntry>(
+  entries: T[],
+  options: { budget?: number } = {},
+): AgentMemoryBrief<T> {
+  const budget = options.budget ?? AGENT_MEMORY_CONTEXT_BUDGET;
+  const header = 'What you remember:';
+  const kept: T[] = [];
+  let text = '';
+  let dropped = 0;
+
+  for (const entry of orderAgentMemories(entries)) {
+    const line = `- ${entry.key}: ${renderMemoryValue(entry.value)}`;
+    const candidate = text.length === 0 ? `${header}\n${line}` : `${text}\n${line}`;
+    if (candidate.length > budget) {
+      dropped += 1;
+      continue;
+    }
+    text = candidate;
+    kept.push(entry);
+  }
+
+  return { entries: kept, text, budget, used: text.length, dropped };
+}
 
 export const createResourceInputSchema = z.object({
   workspaceId: idSchema,

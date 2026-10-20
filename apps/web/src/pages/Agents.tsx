@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { KeyRound, Pencil, Plus, RefreshCw, ShieldCheck, Trash2 } from 'lucide-react';
+import { Brain, KeyRound, Pencil, Plus, RefreshCw, ShieldCheck, Trash2 } from 'lucide-react';
 import { Badge, Button, Card, CardContent, Switch } from '@personal-os/ui';
 import type { AgentCapabilities, AdapterType } from '@personal-os/contracts';
 import { adapterTypeLabels, resolvePersona } from '@personal-os/contracts';
@@ -11,6 +11,7 @@ import { EmptyState, ErrorState, LoadingState } from '../components/ErrorState';
 import { StatusBadge } from '../components/StatusBadge';
 import { AgentConnectionForm, type AgentFormInput } from '../components/AgentConnectionForm';
 import { AgentTokenPanel } from '../components/AgentTokenPanel';
+import { AgentMemoryPanel } from '../components/AgentMemoryPanel';
 import { PersonaBadge } from '../components/PersonaBadge';
 import { ToolGrantPanel } from '../components/ToolGrantPanel';
 
@@ -32,6 +33,7 @@ export function Agents(): React.JSX.Element {
   const [editing, setEditing] = useState<AgentConnectionDetail | null>(null);
   const [tokenAgent, setTokenAgent] = useState<AgentConnectionDetail | null>(null);
   const [grantAgent, setGrantAgent] = useState<AgentConnectionDetail | null>(null);
+  const [memoryAgent, setMemoryAgent] = useState<AgentConnectionDetail | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
 
   const agents = useQuery<AgentConnectionDetail[]>({
@@ -258,6 +260,10 @@ export function Agents(): React.JSX.Element {
                     Tools
                     <span className="text-[10px] text-slate-500">{agent.toolGrants.length}</span>
                   </Button>
+                  <Button variant="ghost" size="sm" onClick={() => setMemoryAgent(agent)}>
+                    <Brain className="h-3.5 w-3.5" />
+                    Memory
+                  </Button>
                   <Button
                     variant="ghost"
                     size="icon"
@@ -327,6 +333,14 @@ export function Agents(): React.JSX.Element {
           if (!open) setGrantAgent(null);
         }}
         agent={grantAgent}
+      />
+
+      <AgentMemoryPanel
+        open={memoryAgent !== null}
+        onOpenChange={(open) => {
+          if (!open) setMemoryAgent(null);
+        }}
+        agent={memoryAgent}
       />
     </div>
   );

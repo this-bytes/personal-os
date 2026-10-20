@@ -2,7 +2,7 @@ import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js';
 import type { FastifyReply, FastifyRequest } from 'fastify';
 import { z } from 'zod';
-import { ownerToolGrants, type McpToolName } from '@personal-os/contracts';
+import { ownerToolGrants, memorySpecSchema, type McpToolName } from '@personal-os/contracts';
 import type { CapabilitiesService, Actor } from '../capabilities/service.js';
 import { AppError } from '../../lib/errors.js';
 
@@ -100,6 +100,25 @@ export async function createMcpServer(options: McpServerOptions): Promise<McpSer
     if (!allowedIds.includes(workspaceId)) {
       throw new AppError('forbidden', 'This agent has no access to that workspace.', 403);
     }
+  };
+
+  /**
+   * An agent writes into its own memory, not into another agent's.
+   *
+   * An agent-scoped memory is read by the agent it names, on every turn it
+   * takes. One agent writing into another's memory would put words in its
+   * mouth, so only the owner may name somebody else's agent.
+   */
+  const assertOwnMemoryScope = (type: string, data: unknown): void => {
+    if (actor.kind !== 'agent') return;
+    if (type !== 'memory') return;
+
+    const spec = memorySpecSchema.safeParse(data ?? {});
+    if (!spec.success) return;
+    if (spec.data.scope !== 'agent') return;
+    if (spec.data.agentConnectionId === actor.agentConnectionId) return;
+
+    throw new AppError('forbidden', 'An agent may only write into its own memory.', 403);
   };
 
   if (granted.has('workspace.list')) {
@@ -301,6 +320,7 @@ export async function createMcpServer(options: McpServerOptions): Promise<McpSer
           guard('resource.create');
           const workspaceId = args.workspaceId ?? (await defaultWorkspace());
           await assertWorkspace(workspaceId);
+          assertOwnMemoryScope(args.type, args.data);
           return jsonResult(
             options.capabilities.resourceCreate({
               workspaceId,

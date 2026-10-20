@@ -35,6 +35,8 @@ export { createAuthService } from './modules/auth/service.js';
 export type { AuthenticatedUser } from './modules/auth/service.js';
 export { planAndDispatch } from './modules/conversations/dispatch.js';
 export { planRouting, deriveChainState } from './modules/conversations/routing.js';
+export { listAgentMemories } from './modules/resources/agent-memory.js';
+export type { AgentMemoryRecord } from './modules/resources/agent-memory.js';
 export {
   computeNextRun,
   cronMatches,

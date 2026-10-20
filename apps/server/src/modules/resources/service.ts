@@ -10,6 +10,7 @@ import {
   triggerableEventTypes,
   type AutomationAction,
   type AutomationTrigger,
+  type MemorySpec,
   type Resource,
   type ResourceType,
 } from '@personal-os/contracts';
@@ -104,14 +105,17 @@ export function createResourcesService(options: ResourcesServiceOptions): Resour
     db.select().from(resourcesTable).where(eq(resourcesTable.id, id)).get();
 
   /** A provider backed by the generic `resources` table. */
-  function tableProvider<T>(type: ResourceType, schema: z.ZodType<T>): ResourceProvider<T> {
+  function tableProvider<T extends z.ZodTypeAny>(
+    type: ResourceType,
+    schema: T,
+  ): ResourceProvider<z.infer<T>> {
     return {
       type,
       validate: (data: unknown) => schema.parse(data),
-      create(input): Resource<T> {
+      create(input): Resource<z.infer<T>> {
         const id = newId('res');
         const now = new Date().toISOString();
-        const data = schema.parse(input.data);
+        const data = this.validate(input.data);
         db.insert(resourcesTable)
           .values({
             id,
@@ -126,20 +130,21 @@ export function createResourcesService(options: ResourcesServiceOptions): Resour
             updatedAt: now,
           })
           .run();
-        return toTableResource(tableRow(id)!) as Resource<T>;
+        return toTableResource(tableRow(id)!) as Resource<z.infer<T>>;
       },
-      get(id): Resource<T> {
+      get(id): Resource<z.infer<T>> {
         const row = tableRow(id);
         if (!row) throw errors.notFound('Resource');
-        return toTableResource(row) as Resource<T>;
+        return toTableResource(row) as Resource<z.infer<T>>;
       },
-      update(id, patch): Resource<T> {
+      update(id, patch): Resource<z.infer<T>> {
         const row = tableRow(id);
         if (!row) throw errors.notFound('Resource');
         if (row.revision !== patch.expectedRevision) {
           throw errors.revisionMismatch(patch.expectedRevision, row.revision);
         }
-        const data = patch.data === undefined ? (row.data as T) : schema.parse(patch.data);
+        const data =
+          patch.data === undefined ? (row.data as z.infer<T>) : this.validate(patch.data);
         db.update(resourcesTable)
           .set({
             title: patch.title ?? row.title,
@@ -295,10 +300,34 @@ export function createResourcesService(options: ResourcesServiceOptions): Resour
     };
   }
 
+  /**
+   * The memory provider.
+   *
+   * A memory that breaks the contract is a bad request, not a server fault.
+   * The clearest case is a scope of 'agent' that names no agent: the memory
+   * would belong to nobody, and nobody would read it.
+   */
+  function memoryProvider(): ResourceProvider<MemorySpec> {
+    const provider = tableProvider('memory', memorySpecSchema);
+    return {
+      ...provider,
+      validate(data: unknown): MemorySpec {
+        const parsed = memorySpecSchema.safeParse(data);
+        if (!parsed.success) {
+          throw errors.validation(
+            'This memory does not satisfy the memory contract.',
+            parsed.error.issues,
+          );
+        }
+        return parsed.data;
+      },
+    };
+  }
+
   const dashboardProvider = tableProvider('dashboard', dashboardSpecSchema);
   const documentProvider = tableProvider('document', documentSpecSchema);
   const dataSourceProvider = tableProvider('data-source', dataSourceSpecSchema);
-  const memoryProvider = tableProvider('memory', memorySpecSchema);
+  const memoryResourceProvider = memoryProvider();
   const automationResourceProvider = automationProvider();
   const taskResourceProvider = taskProvider();
 
@@ -306,7 +335,7 @@ export function createResourcesService(options: ResourcesServiceOptions): Resour
     ['dashboard', dashboardProvider as ResourceProvider<unknown>],
     ['document', documentProvider as ResourceProvider<unknown>],
     ['data-source', dataSourceProvider as ResourceProvider<unknown>],
-    ['memory', memoryProvider as ResourceProvider<unknown>],
+    ['memory', memoryResourceProvider as ResourceProvider<unknown>],
     ['automation', automationResourceProvider as ResourceProvider<unknown>],
     ['task', taskResourceProvider as ResourceProvider<unknown>],
   ]);

@@ -101,6 +101,31 @@ export interface WaitingItem {
   agentConnectionId: string | null;
 }
 
+/** One thing an agent remembers, as the panel shows it. */
+export interface AgentMemory {
+  id: string;
+  key: string;
+  value: unknown;
+  tags: string[];
+  /** When the memory was last written. */
+  updatedAt: string;
+  /** Whether the memory is pinned to the head of the brief. */
+  pinned: boolean;
+  /** Whether the memory fits the turn context budget. */
+  inBrief: boolean;
+}
+
+/** An agent's memory, and how much of it the agent actually carries. */
+export interface AgentMemoryResponse {
+  memories: AgentMemory[];
+  /** The budget for the agent's share of the turn context, in characters. */
+  budget: number;
+  /** The characters the brief uses. */
+  used: number;
+  /** How many memories did not fit. */
+  dropped: number;
+}
+
 export type {
   AgentConnectionDetail,
   Automation,

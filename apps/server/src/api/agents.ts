@@ -1,6 +1,12 @@
 import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
-import { adapterTypeSchema, personaSchema, toolGrantListSchema } from '@personal-os/contracts';
+import {
+  adapterTypeSchema,
+  buildAgentMemoryBrief,
+  personaSchema,
+  toolGrantListSchema,
+} from '@personal-os/contracts';
+import { listAgentMemories } from '../modules/resources/agent-memory.js';
 import { audit, parseBody, parseQuery, requireAuth } from './helpers.js';
 
 const listQuerySchema = z.object({ workspaceId: z.string() });
@@ -117,6 +123,21 @@ export function registerAgentRoutes(app: FastifyInstance): void {
       return reply.send({ ok: true });
     },
   );
+
+  app.get('/api/agents/:id/memories', { preHandler: requireAuth }, async (request) => {
+    const { id } = request.params as { id: string };
+    const agent = app.services.agents.get(id);
+    const memories = listAgentMemories(app.services.runtime.db, agent.workspaceId, agent.id);
+    const brief = buildAgentMemoryBrief(memories);
+    const inBrief = new Set(brief.entries.map((entry) => entry.id));
+
+    return {
+      memories: memories.map((memory) => ({ ...memory, inBrief: inBrief.has(memory.id) })),
+      budget: brief.budget,
+      used: brief.used,
+      dropped: brief.dropped,
+    };
+  });
 
   app.get('/api/secrets', { preHandler: requireAuth }, async (request) => {
     const { workspaceId } = parseQuery(listQuerySchema, request.query);
