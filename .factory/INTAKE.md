@@ -318,7 +318,7 @@ started its next turn, and cleared once more at 07:11.
 Both request ids are idempotent, so a retry is safe and a retry is not a
 second dispatch.
 
-| Request id                                     | Item                                                               | To     | Task                | State, 2026-10-21 11:05, and this session's 09:56 +11:00                                                                                                                                                                                         |
+| Request id                                     | Item                                                               | To     | Task                | State, 2026-10-21 11:05, and this session's 10:03 +11:00                                                                                                                                                                                         |
 | ---------------------------------------------- | ------------------------------------------------------------------ | ------ | ------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | `wi-022-publish-waiting-reasons`               | WI-022 — the published waiting list's reasons                      | Wren   | `task_ed4c3132afe9` | **cancelled** — died with `AGENT_UNAVAILABLE`; the retry was cancelled at 07:29 and **Chief implemented it** (`a44a374`)                                                                                                                         |
 | `wi-010-verify-forge-rewrite`                  | WI-010 — the direction, verified                                   | Probe  | `task_4cc3a3b1160f` | **cancelled** — died with `AGENT_UNAVAILABLE`; the retry `task_5666d5ca0dc2` is **done**                                                                                                                                                         |
@@ -346,7 +346,7 @@ second dispatch.
 | `wi-027-verify-fixed-tree-2026-10-21`          | WI-027 — the turn on the waiting list, verified                    | Probe  | `task_6a9a1179734c` | **queued**                                                                                                                                                                                                                                       |
 | `wi-021-verify-fixed-tree-2026-10-21`          | WI-021 — the refusal, verified                                     | Probe  | `task_479859728e18` | **queued** — the verification that has to read WI-009's updated tests and say what they now hold                                                                                                                                                 |
 | `wi-017-template-record-successor-2026-10-21`  | WI-017 — the template record, built against the published shape    | Cog    | `task_4b5a7d412c11` | **queued** — **the live dispatch on WI-017**; it merges the two cancelled briefs and adds the Chief's rulings                                                                                                                                    |
-| `wi-020-measures-successor-2026-10-21`         | WI-020 — the two measures, built against the published route       | Cog    | `task_7fca497d2514` | **cancelled** at 09:56 +11:00 by Chief — still queued, so nothing was lost; its brief was merged into the third dispatch, which carries the band ruling. **The live dispatch on WI-020 is `wi-020-measures-route-r3-2026-10-21`**                |
+| `wi-020-measures-successor-2026-10-21`         | WI-020 — the two measures, built against the published route       | Cog    | `task_7fca497d2514` | **cancelled** at 10:03 +11:00 by Chief — still queued, so nothing was lost; its brief was merged into the third dispatch, which carries the band ruling. **The live dispatch on WI-020 is `wi-020-measures-route-r3-2026-10-21`**                |
 | `wi-025-adr-record-pass-2026-10-21`            | WI-025 — the ADR's record pass, with Wren                          | Wren   | `task_c3e1f0b6d558` | **queued** — a pointer, a figure, and one thing not to touch                                                                                                                                                                                     |
 | `wi-030-verify-published-shapes-2026-10-21`    | WI-030 — the two published shapes, verified                        | Probe  | `task_dc2aeef86acb` | **queued** — **upstream of two builds**; the dispatch asks for the queue to be reordered if it can be                                                                                                                                            |
 | `wi-036-licence-record-2026-10-21`             | WI-036 — the dependency licences, read from the repositories       | Wren   | `task_2c5159aab413` | **queued** — **the live dispatch on WI-036**; the record that WI-038's gate compares against                                                                                                                                                     |
@@ -2919,7 +2919,7 @@ owner's own sessions sit in the same checkout as four bots and two Chief
 sessions. That is the contention the red in `ownerPasswordExposure.test.ts`
 came from, and it is the reason a contended gate run is not evidence.
 
-## Chief's tick — 2026-10-21 09:56 +11:00
+## Chief's tick — 2026-10-21 10:03 +11:00
 
 **The times in this entry are the machine's clock (+11:00).** The entries above
 carry labels that run about two hours ahead of it, and they are left as they
@@ -3004,10 +3004,10 @@ was rewritten for Forge and no longer holds them; the source is
 
 ### The fleet is not assigning, and the evidence is better than it was
 
-**Four dispatches were accepted at 09:56, in one chat and one round, and nine
-minutes later nothing had started.** Sampled: Cog's WI-017
+**Four dispatches were accepted at 10:03, in one chat and one round, and
+twenty-four minutes later nothing had started.** Sampled: Cog's WI-017
 (`task_4b5a7d412c11`, created 09:41), Wren's WI-037 (`task_4947c89ca7fe`,
-created 09:54) and Probe's WI-030 (`task_dc2aeef86acb`, created 08:42) — all
+created 09:54) and Probe's WI-030 (`task_dc2aeef86acb`, created 09:42) — all
 three still `queued`.
 
 **The guard is not the blocker.** It refused the other session's group post at
@@ -3069,8 +3069,20 @@ is the task that finished: `task_2b5c9020bf00` (WI-025's verification) reports
 `done`, with `started_at`, `ended_at` and the whole result, so the surface is
 not stale and `queued` is a real state rather than a frozen read.
 
-**The factory has produced nothing for thirty-nine minutes** — the last task to
-finish was Probe's WI-025 verification at 09:48.
+**The factory has produced nothing for forty-six minutes** — the last task to
+finish was WI-028's contract half, whose `ended_at` reads **09:41:14**, and
+the next task was created twenty-five seconds later at 09:41:39. The queue got
+work the moment a slot should have freed, and nothing was assigned.
+
+**A restart is safe, and that is measured, not assumed.** Two tasks created
+before this morning's runtime stop are still readable with their state intact:
+`task_146247be56d5` (WI-028's contract half, created 08:07) reports `done`
+with `started_at` 09:25:51 and `ended_at` 09:41:14, and `task_8e6fe1c54bfb`
+(WI-022's verification, created 07:44, cancelled 08:33) still reports
+`cancelled` with its own `ended_at`. **The queue is persisted, not held in
+memory**, and a task that was running across the earlier stop finished anyway.
+A restart costs the factory the idle time it has already spent, and nothing
+else.
 
 **A second route was tried, and it is the same queue.** The hypothesis worth
 testing was that a direct message reaches an idle chat when the dispatcher does
