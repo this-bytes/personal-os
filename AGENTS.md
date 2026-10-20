@@ -177,7 +177,10 @@ git push -u origin HEAD
 
 CI runs on every branch push, so a pushed branch is a gated branch.
 
-**Land it yourself while `main` has not moved.** With the gates green, and
+**Landing on `main` waits for the owner's word.** Pushing your own branch
+needs no approval. `main` does: it is pushed when the owner says so — the
+owner said so on 2026-10-21 08:54, for the push of the first green tree, and
+that word is spent when the push is made. With that word, the gates green, and
 `origin/main` still where your branch started:
 
 ```bash

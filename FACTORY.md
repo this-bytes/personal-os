@@ -88,9 +88,17 @@ one machine's working tree is work that a restart, a crash or a mistaken
 a push that never happens. CI runs on every branch push, so a pushed branch
 is a gated branch.
 
-**Land it on `main` yourself, while `main` has not moved.** If the gates are
-green and `origin/main` is still where your branch started, `main` can be
-fast-forwarded onto your branch:
+**Landing on `main` needs the owner's word.** A bot may push its own work
+item's branch to `origin` without asking anyone — that is the standing
+authorization above, and it is enough: CI runs on every branch push, so the
+work is gated where it is written. **`main` is not covered by it.** `main` is
+pushed when the owner says so, and the owner said so on 2026-10-21 08:54 for
+the push of the first green tree: _push as soon as it is green, with the panel
+as it stands._ That word is spent when the push is made; the next one waits
+for the next word.
+
+When the owner has said so, and `origin/main` is still where your branch
+started, `main` is fast-forwarded onto your branch:
 
 ```bash
 git fetch origin
@@ -306,11 +314,11 @@ Two rules follow from it:
   approval — publishing a release, changing the repository's visibility, or
   deleting a branch.
 - **Push your own branch; ask before anything else.** An agent may push the
-  branch of the work item it is working on without asking, and may
-  fast-forward `main` onto that branch when the gates are green and `main`
-  has not moved since the branch was created. Everything else external is
-  the human's decision. A push that rewrites what is already on the remote
-  is refused by the hook in [`.githooks/`](../.githooks/), because it takes
+  branch of the work item it is working on without asking. **`main` waits for
+  the owner's word** — a branch is pushed freely, `main` is pushed when the
+  owner says so. Everything else external is the human's decision. A push that
+  rewrites what is already on the remote is refused by the hook in
+  [`.githooks/`](../.githooks/), because it takes
   every commit that landed since with it, and that is not a thing good
   intentions can prevent.
 

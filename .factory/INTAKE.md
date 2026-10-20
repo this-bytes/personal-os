@@ -2371,7 +2371,7 @@ on the push (below) can change the order of the queue, and W2 is a contract
 entry that must land before W1's code, which is the same rule this factory
 keeps applying.
 
-### The owner's three open questions, and what each one blocks
+### The owner's three questions, and what each one blocks
 
 Asked in `Personal OS Strategy` at 07:40 and 07:50, and restated here because
 the answer changes what gets built and published:
@@ -2389,3 +2389,103 @@ the answer changes what gets built and published:
 
 Nothing else is owed by anybody. The reds are green when WI-027 lands, and
 CI has still never run on GitHub — the first run is the push.
+
+### The owner's answers, 2026-10-21 08:54
+
+A fourth question was added at 08:47, because the other Chief session had
+drafted a rule that touches the owner's standing instruction. All four were
+answered together, in the owner's own session, with the owner's explicit
+confirmation.
+
+1. **Private for now — push it, and decide visibility later.** No LICENSE and
+   no code of conduct are wanted at this push. **The open-source aim is
+   deferred by the owner's word, not by an oversight**, and it comes back the
+   day they decide on visibility: the licence question is answered by "not
+   yet", not by "no". The licence column in `docs/strategy.md` describes
+   _comparators_, not this repository, so nothing in that document is now
+   wrong.
+2. **Push as soon as the tree is green, with the panel as it stands. Forge
+   lands right after.** This is the owner's word for the push, and it is
+   conditional on the same condition they set before: the tree is green. So
+   the push happens after the gates, not before them — and the panel that
+   goes public is the panel that is green today, with WI-024 (Forge) landing
+   as the first visible change after it.
+3. **Yes — publish `POST /api/executions/:id/resolve`.** WI-031 is released.
+   The route carries the owner's own conclusion (`outcome: 'completed' |
+'failed'`) and an optional note, the execution and its reply follow it, the
+   item leaves the waiting list, and the transition is audited as
+   `execution.outcome.resolved`. The contract half goes first, because the
+   contract leads the code.
+4. **Yes to branch pushes; main still waits for the owner's word.** The rule
+   the other session drafted — a bot may push its own work item's branch to
+   `origin` without asking, and CI gates every branch — **stands**. What does
+   not stand is its second half: it said a bot may fast-forward `main` itself
+   when `main` has not moved, and that is wider than what the owner granted.
+   **Main waits for the owner's word.** The word given here is for this
+   push, and it is spent when the push is made.
+
+**What this changes in the factory's own rules.** The parallel-work rule
+(`0658b9f`) is committed as drafted, and the line that lets a bot land `main`
+without asking is narrowed to match the owner's answer. The rest of the rule
+stands: a work item gets a branch and a worktree, a bot pushes its own
+branch, and a branch is a gated branch because CI runs on every branch push.
+
+**The order this is done in.** The gates first, the push second, and the
+push is made by this session, on this session's own reading of the tree — the
+implementer is not the verifier and the lead does not push on a summary.
+
+### What actually happened at 08:56, and what it means
+
+**The push is made.** `origin/main` is at `d03e225`, and the tree that commit
+carries is green — every gate measured green by the other Chief session before
+it pushed. The order of events, stated plainly because the order matters:
+
+- **08:54:42** — the owner answered the four questions. Their word includes
+  _push as soon as it is green, with the panel as it stands_.
+- **08:56:40** — the other Chief session pushed `main` to the private remote
+  with `d03e225`, under the parallel-work rule it had just committed
+  (`0658b9f`). **That push is after the owner's word and was authorised by
+  it**, because the tree it carried was green and the owner had said to push
+  when green.
+- **09:0x** — this session narrows the rule that allowed it, so that no bot
+  lands `main` again without a word, and records the owner's answers here.
+
+**The repository is private**, which is what the owner chose. Nothing is
+public, the visibility is unchanged, and no LICENSE was added, because the
+owner deferred visibility rather than refusing it.
+
+**CI ran on GitHub for the first time, twice.** The runs are in the Actions
+tab: one at 08:25:39, carrying a tree that still had the turn's red, and one
+at 08:56:40, carrying the green tree. **Their conclusions have not been read
+back yet** — the repository is private and this machine has no token for it,
+so the outcome of the pipeline is still unverified by anyone. That is the one
+thing about the push that is not yet evidence.
+
+### A gate that failed for a reason that is not a defect
+
+The first full-suite run at 09:00 came back **red**: two failures in
+`apps/server/src/__tests__/ownerPasswordExposure.test.ts` — "the reset process
+did not run, or its command line was not readable" and "the reset process did
+not finish: expected 1 to be +0" — and a `format:check` failure.
+
+They are two different things, and one of them was the lead's own:
+
+- **`format:check` was this session's fault.** `.factory/INTAKE.md` had been
+  edited and not formatted. Fixed, and the gate is green.
+- **The two test failures are a collision, not a regression.** The same file
+  **passes 5 of 5 in isolation**. The failure is the server's own database
+  and process list being contended by **another session's test run in the same
+  checkout at the same moment** — this repository has one working tree that
+  three sessions and four bots share, and the smoke gate in the same run
+  proves the behaviour itself is correct.
+
+**The finding is bigger than the failure.** The server suite is only
+trustworthy when nothing else is touching the checkout, which is the same
+problem the parallel-work rule solves on the git side and does not yet solve
+on the filesystem side. Until the bots work in the worktrees that rule
+creates, **a red in the full suite has to be re-checked in isolation before it
+is called a defect** — and a green full suite that ran alongside another
+session's run is not a green full suite. A check that cannot fail is worse
+than no check; a check that fails for the wrong reason is nearly as bad, and
+it is the reason this is written down rather than quietly re-run until it
+passed.
