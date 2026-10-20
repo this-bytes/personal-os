@@ -1252,6 +1252,69 @@ space has one owner and it is not this session's.
 - **Not urgent:** the owner reads one word, not a cost model, and the ADR that
   records the answer is written after the owner confirms.
 
+### A want with no number yet — the MCP surface's id-addressed tools are not workspace-scoped
+
+**This is a finding with no item, and a finding with no home is a finding that
+is lost.** It came out of WI-028's contract half: Wren published the two
+entries (`f62fca7`) and, checking what the read rule reaches, found that the
+rule is narrower than the surface it sits on. Chief checked it against the
+tree before recording it, and it is worse than the report said.
+
+**The code states the rule.** `apps/server/src/modules/mcp/server.ts:96`: _"An
+agent may only act inside a workspace it has been granted."_ The guard is
+`assertWorkspace` (`:97-103`), and it refuses with `forbidden` — _"This agent
+has no access to that workspace."_ — when the workspace is not among the
+agent's.
+
+**The guard is called in four places, and every one of them is a tool that
+takes a `workspaceId` as input**: `agent.list` (`:246`), `task.create` (`:273`),
+`resource.create` (`:360`), `automation.create` (`:468`).
+
+**The id-addressed tools do not call it at all**: `conversation.read`,
+`conversation.post`, `task.update`, `task.get`, **`resource.get`** (`:378-398`),
+**`resource.update`** (`:401-439`) and **`automation.inspect`** (`:484+`). They
+take a bare id, hand it to the capabilities service — `resourceGet(id)` is
+`resources.get(id)` (`apps/server/src/modules/capabilities/service.ts:197-199`),
+which has no actor and no workspace to check against — and the agent's granted
+workspaces are never consulted. **So an agent granted one workspace can read,
+update and inspect a resource, a task or an automation in another workspace, if
+it knows the id.**
+
+**What it is not.** It is not the memory rule, and it is not WI-033's audit
+gap. WI-028's rule is about _whose_ memory a resource is; this is about _which
+workspace_ a resource may be reached in. And the memory rule cannot close it:
+`memoryOwner` (`:113-121`) returns an owner for an agent-scoped memory and
+nothing for anything else, so every other resource passes through it untouched.
+
+**Why it is a defect and not a design question.** The code's own comment states
+the rule the id-addressed tools break, so this is not "which workspaces should
+an agent reach" — it is "the tools that were supposed to check do not check".
+
+- **Title:** The MCP surface's id-addressed tools are not scoped to a
+  workspace, so an agent can reach any resource it can name.
+- **Owner:** Cog, for the code (`apps/server/src/modules/mcp/**`), with the
+  contract half for Wren (`CONTRACTS.md`) — the contract leads and the code
+  follows, the same order as WI-022 → WI-027.
+- **Criteria:**
+  - An agent's read, update or inspect of a resource in a workspace it was
+    never granted is **refused**, and the refusal says why — the way the memory
+    rule refuses with "An agent may only reach its own memory."
+  - The check is made **where the resource is read**, not once per tool, so a
+    tool added later cannot forget it — and the check knows the resource's
+    workspace, which means the id-addressed path has to learn it.
+  - The owner's own access is untouched, and an agent keeps every access its
+    grant already gives it.
+  - The contract says which workspaces an agent's grant covers, and the refusal
+    is published with a migration note.
+  - A test pins it: an agent granted one workspace is refused a resource in
+    another, on read, on update and on inspect.
+- **Not a feature, and not a grilling.** This is a defect against a rule the
+  code already states, so it does not need the owner's release as a new idea
+  does. **What it needs is a number**, and the number space has one owner.
+  It is recorded here so that it is not lost while it waits for one, and
+  because WI-017 is adding a tool to this same surface — a rule that lands
+  after it has to be applied to it.
+
 ### The status post that is owed, request id `status-2026-10-21-0430`
 
 The 04:30 status post to the `Personal OS Factory` group was refused by the
@@ -2994,6 +3057,45 @@ and this session does not ask them a second time. These three are here:
    operator to absorb a bad action. WI-035 carries the work, and it is deferred
    behind Forge on capacity, so the answer changes the queue rather than the
    code.
+
+### The check, twenty minutes later — the dispatcher is the only path, and it is not scanning
+
+**Seven tasks, all still queued, and the query surface is live.** At 10:27
+Chief read all seven: Cog's WI-017 (`task_4b5a7d412c11`), Wren's WI-037
+(`task_4947c89ca7fe`), Probe's WI-030 (`task_dc2aeef86acb`), and the four
+dispatched this tick — `task_86010eeeb561`, `task_dd95fe7df207`,
+`task_644f23312ebc`, `task_9b1b44c1025f`. **All seven: `queued`.** The control
+is the task that finished: `task_2b5c9020bf00` (WI-025's verification) reports
+`done`, with `started_at`, `ended_at` and the whole result, so the surface is
+not stale and `queued` is a real state rather than a frozen read.
+
+**The factory has produced nothing for thirty-nine minutes** — the last task to
+finish was Probe's WI-025 verification at 09:48.
+
+**A second route was tried, and it is the same queue.** The hypothesis worth
+testing was that a direct message reaches an idle chat when the dispatcher does
+not. Chief handed Wren the same WI-039 brief as a message
+(`wi-039-evidence-contract-2026-10-21-via-chat`, task `task_c125d103127b`).
+**It came back `queued` as well.** So `dispatch_tasks` and `message_bot` are
+two doors into one queue, and the queue is the only way in. Chief cancelled
+that task in the same minute so that WI-039 keeps **one** live dispatch, and
+the attempt is on the record in WI-039's file.
+
+**What this rules out, and what it leaves.** It rules out the idea that the work
+is lost or misrouted: the tasks are persisted, they are named, they are
+readable, and both doors put them in the same place. It leaves the conclusion
+that **the dispatcher's scan is not running** — and the one fact that fits
+alongside it is that the local runtime stopped and restarted this morning, and
+the other session's goal-verifier child died on a capability violation at
+09:35. A dispatcher that did not come back with the runtime looks exactly like
+this: tasks queued, chats free, nothing assigned.
+
+**The owner's next action is a restart of the local runtime.** Chief cannot do
+it: this chat is hosted by the runtime that would be restarted, and the restart
+is the host's. Nothing else in the factory's hands moves the queue — the
+re-dispatch and the message both produced one more identical queued task, and
+the queue is where they stay. The tree is green, so a restart costs the
+factory nothing but the idle time it has already spent.
 
 ## A review of the strategy document, 2026-10-21 — Vision
 
