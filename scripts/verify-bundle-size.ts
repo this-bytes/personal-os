@@ -99,6 +99,12 @@ function captured(match: RegExpMatchArray): string | null {
  *
  * Read from the config source rather than duplicated here, so the check
  * follows the map when it changes instead of quietly checking a stale copy.
+ *
+ * The names come out of the source with a pattern, not by evaluating it. A
+ * declaration that parsed to a *different* set of names — rather than to
+ * none — would be checked against the wrong names, and nothing here would
+ * notice. The pattern is narrow on purpose: it only matches the shape it
+ * knows, so any other shape comes back empty and is reported as unreadable.
  */
 interface VendorDeclaration {
   /** The declared chunk names. */
