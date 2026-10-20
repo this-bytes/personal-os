@@ -268,3 +268,51 @@ describe('coordinator mode, naming a target the way the API asks', () => {
     ).toBe('not_coordinator');
   });
 });
+
+/**
+ * The owner path, end to end.
+ *
+ * The unit suite in `modules/conversations/__tests__/routing.test.ts` pins the
+ * rule inside the routing engine: in coordinator mode the owner's own message
+ * reaches the coordinator even when it names a participant.
+ *
+ * This one pins the same behaviour across the boundary the owner actually
+ * crosses, because that is where the shape changes. The published API names a
+ * target by its *participant* id, and the routing engine names an agent by its
+ * *connection* id. If the named participant is dropped in the crossing, the
+ * coordinator is still reached — the owner would never know — but the reason
+ * string quietly stops saying that the agent they named was not woken. That
+ * sentence is the only place the owner is told what happened to the agent they
+ * addressed, so it is worth a test of its own.
+ */
+describe('coordinator mode, from the owner side', () => {
+  it('reaches the coordinator when the owner names a participant, and says the named agent was not woken', async () => {
+    const response = await app.inject({
+      method: 'POST',
+      url: `/api/conversations/${conversationId}/messages`,
+      headers: { cookie: sessionCookie },
+      payload: {
+        content: [{ type: 'text', text: 'take this' }],
+        targetParticipantIds: [otherParticipantId],
+      },
+    });
+
+    expect(response.statusCode).toBe(201);
+    const result = response.json() as {
+      dispatches: Array<{ agentConnectionId: string }>;
+      routing: { targets: string[]; reason: string };
+    };
+
+    // The coordinator is the one that acts, and the agent the owner named is
+    // not woken.
+    expect(result.routing.targets).toEqual([coordinatorConnectionId]);
+    expect(result.dispatches.map((dispatch) => dispatch.agentConnectionId)).toEqual([
+      coordinatorConnectionId,
+    ]);
+
+    // And the owner is told what happened to the agent they named. This is the
+    // sentence that only survives if the named participant made it across the
+    // boundary in the shape the routing engine reads.
+    expect(result.routing.reason).toContain('not woken directly');
+  });
+});
