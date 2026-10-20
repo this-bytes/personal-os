@@ -6,7 +6,7 @@ import { eq } from 'drizzle-orm';
 import type { FastifyInstance } from 'fastify';
 import { buildApp } from '../app.js';
 import { findRepoRoot, loadConfig } from '../config.js';
-import { executions, queueJobs } from '../db/schema.js';
+import { executions, messages, queueJobs } from '../db/schema.js';
 import type { WaitingItem } from '../api/waiting.js';
 
 /**
@@ -123,6 +123,70 @@ describe('an outcome that could not be confirmed', () => {
     expect(item?.detail).toMatch(/cannot confirm/i);
     // It must not read as a failure that may simply be repeated.
     expect(item?.detail).not.toMatch(/blocked|unblock/i);
+  });
+
+  it('reaches the owner when it is a turn, not only when it is a task', async () => {
+    // The same question, asked of a different kind of item.
+    //
+    // A turn that runs out of time is recorded as `unknown` on the message and
+    // on the execution — the worker's own suite proves those exact rows. The
+    // contract says the owner sees an unknown item as "check this", and the
+    // owner only looks in one place: the waiting list. So an unknown turn
+    // belongs on it, exactly as an unknown task does.
+    const created = await app.inject({
+      method: 'POST',
+      url: '/api/conversations',
+      headers: { cookie: sessionCookie },
+      payload: { workspaceId, title: 'A turn we cannot confirm' },
+    });
+    expect(created.statusCode).toBe(201);
+    const conversationId = created.json().conversation.id as string;
+
+    const now = new Date().toISOString();
+    app.services.runtime.db
+      .insert(executions)
+      .values({
+        id: 'exe_unknown_turn',
+        workspaceId,
+        conversationId,
+        taskId: null,
+        externalRef: null,
+        agentConnectionId: 'agt_1',
+        executionOwner: 'personal-os',
+        status: 'unknown',
+        error: 'The agent did not finish within 900s.',
+        spendUnits: 0,
+        startedAt: now,
+        finishedAt: now,
+        createdAt: now,
+      })
+      .run();
+    app.services.runtime.db
+      .insert(messages)
+      .values({
+        id: 'msg_unknown_turn',
+        conversationId,
+        senderId: 'p_1',
+        targetParticipantIds: [],
+        replyToId: null,
+        kind: 'text',
+        content: [{ type: 'text', text: 'The agent started and then stopped.' }],
+        status: 'unknown',
+        correlationId: null,
+        origin: null,
+        executionId: 'exe_unknown_turn',
+        createdAt: now,
+      })
+      .run();
+
+    const items = await waiting();
+    const item = items.find((entry) => entry.conversationId === conversationId);
+
+    expect(
+      item,
+      'the owner is never told about a turn whose outcome could not be confirmed',
+    ).toBeDefined();
+    expect(item?.reason).toBe('unknown');
   });
 
   it('is never automatically retried', () => {

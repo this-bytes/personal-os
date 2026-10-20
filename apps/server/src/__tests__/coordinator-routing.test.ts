@@ -197,10 +197,15 @@ describe('coordinator mode, from the agent side', () => {
     expect(result.routing.reason).not.toContain('Delegated by the coordinator');
   });
 
-  it('does not let a non-coordinator delegate by naming an explicit target', async () => {
+  it('does not let a non-coordinator delegate by naming a target in the wrong unit', async () => {
     // The same delegation, expressed the other way: the target is named
     // instead of mentioned. The rule is about who delegates, not about how
     // the delegate is spelled.
+    //
+    // This one names the target in the wrong unit. The published shape is a
+    // participant id — see the block below, which is where the rule itself is
+    // held. A connection id names nobody, and it must not wake the
+    // coordinator on the way to being ignored.
     const body = await mcp(otherToken, 'tools/call', {
       name: 'conversation.post',
       arguments: {
