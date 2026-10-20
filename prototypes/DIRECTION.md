@@ -184,6 +184,47 @@ dashboard are all out. The expensive part of the four directions — a new
 component, a second room, a second density — is the part B does not buy. That
 is most of why B is the cheapest.
 
+## Adopting this direction
+
+**Desk is a layout decision, not a palette.** Desk's value is the three-band
+scroll — what needs me, what is running, what exists — and a reading-width
+conversation column. A theme item that only swaps the tokens and leaves the
+current information architecture in place is a warm coat of paint on the old
+layout, which is none of the four directions. The item that adopts this
+direction carries the structure as well as the material: the landing page's
+three bands and the conversation's reading-width column, in Desk's type and
+colour.
+
+**The panel is never half-migrated.** Light tokens with dark cards and dark
+page backgrounds read as broken, not as transitional. The adoption lands as one
+visible change; the palette pass and the structure pass are the same pass.
+
+**Where Q6's two measures go.** A band on the home, under the three bands,
+titled so it reads as a report and not as a control: what the environment did
+on its own. Two numbers, plainly labelled — features authored by agents
+in-instance, and operations completed without the owner touching code.
+
+**One rule for those numbers: no ratio whose denominator is zero.** For a long
+while the honest value of "the share of features authored by agents" is zero or
+undefined, because no agent has authored a feature in-instance yet. A panel
+that greets its owner with 0% reads as broken, and the product's first report
+on itself must not be a lie by omission. Show the counts — N features, M
+operations — and show the ratio only when there is a denominator to divide by.
+
+**The decision surface is two things, and the second one is missing.** The
+trace gutter shows what the agent did; an undo lets the owner take it back.
+Together they are the whole of the owner's authority: *show me what happened,
+let me take it back.* The second half has no surface in the product today —
+there is no undo, revert or rollback anywhere in the server or the web client
+— but the substrate is there: resources and automations already carry
+`revision` with `expectedRevision` for optimistic concurrency, and `auditLog`
+already records who did what to what. An undo is a surface over data the
+product already keeps, not a new data model.
+
+Authority without reversibility is not authority. With one owner there is no
+second operator to absorb a bad action, so the cost of a mistake lands
+entirely on the person the product is for.
+
 ## What this recommendation does not do
 
 It does not build anything, and it does not change the panel's behaviour. It

@@ -122,6 +122,31 @@ needing authority rather than a directory of screens; the visual direction
 taste; agent-created features are native resources; and the product reports on
 itself with the two measures.
 
+**What two of these decisions still need, checked against the code.** The
+identity the owner chose is an environment agents operate _and extend_, and a
+product that reports on itself. Both have their data model already, and
+neither has a work item.
+
+- **Q3's "authored through templates" — the third half is not built.** Typed:
+  six resource kinds in `resourceTypeSchema`. Validated: per-type specs
+  (`dashboardSpecSchema`, `documentSpecSchema`, `dataSourceSpecSchema`,
+  `memorySpecSchema`) checked by the owning provider's `validate(data)`.
+  Templates: there is no template concept for a resource anywhere in the
+  product — the only templates in the code are HTTP body templates and prompt
+  templates. So an agent can create a resource, and nothing tells it what a
+  good one looks like.
+- **Q6's two measures — the data is there, nothing counts it.**
+  `resources.createdBy` already separates an agent's authorship from the
+  owner's (the MCP server writes the agent's connection id), and `auditLog`
+  records the actor of every action. Nothing turns either into a number, and
+  no work item covers it.
+
+The queue behind these decisions is interaction and truthfulness work. None of
+it makes the environment extendable or self-reporting, which is the substance
+of the identity the owner chose. The measures are a read-only count and a
+band; the template path is real work, and it is the one that makes "agents
+extend it" true rather than merely possible.
+
 ## The owner's decisions, 2026-10-20 22:34
 
 Chief put four questions to the owner; the owner answered all four. These
@@ -204,6 +229,9 @@ something that leads to it. Each names where it was seen.
 | C-15 | A delegated action returns a durable admission receipt that the owner never sees, so "queued" and "done" look the same from the panel                                                                                                                                                                                                          | the MiniMax Bot brief §2 row 6, 2026-10-20 — the plugin's rule is "a receipt is not completion"                                                                                                                                                                                                                                                                                      |
 | C-16 | The event vocabulary has no approval event, so a decision taken outside the panel publishes nothing and the waiting list cannot notice it instantly                                                                                                                                                                                            | WI-004, Cog's report, 2026-10-20 — the fix is an `approval.decided` event in the shared contract, which is a contract change and therefore the owner's                                                                                                                                                                                                                               |
 | C-18 | The owner's new password is passed as a command line argument, so it is visible in the host's process list to every other user while the command runs                                                                                                                                                                                          | WI-002, Probe's verification, 2026-10-20 — **decided by Chief: keep the published command form and document the cost**, [WI-014](../work/WI-014.md) (owner Wren). The alternative — a form that never puts the password on a command line — changes a published contract, so it needs the owner, a migration plan and a `CONTRACTS.md` update. It stays a candidate, not a work item |
+| C-19 | Q3's third half is not built — an agent can create a typed, validated resource, but there is no template for a resource anywhere in the product, so nothing tells it what a good one looks like                                                                                                                                                | the strategy decisions, Q3; `packages/contracts/src/resource.ts`, `apps/server/src/modules/resources/service.ts` — the only templates in the product are HTTP body templates and prompt templates                                                                                                                                                                                    |
+| C-20 | The product does not report on itself — Q6's two measures are not computed and not shown, and no work item covers them                                                                                                                                                                                                                         | the strategy decisions, Q6; `apps/server/src/db/schema.ts`, `apps/server/src/modules/mcp/server.ts` — `resources.createdBy` already separates an agent's authorship from the owner's, and `auditLog` records the actor of every action                                                                                                                                               |
+| C-21 | The panel can decide but not take back — there is no undo, revert or rollback in the server or the web client, and with one owner there is no second operator to absorb a bad action                                                                                                                                                           | `apps/server/src/db/schema.ts` — `resources.revision`, `automations.revision` and `auditLog` are the substrate, so an undo is a surface over data the product already keeps                                                                                                                                                                                                          |
 
 ## The order
 
