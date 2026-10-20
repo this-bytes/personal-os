@@ -24,6 +24,7 @@ own words, not a summary of them.
 | W-2 | Interaction — talking to agents is the job that should get genuinely better | 2026-10-20 | open — the bar for WI-004: an entry the owner can act on, not a link to a screen about it |
 | W-3 | "Run within a stated scope"                                                 | 2026-10-20 | accepted — the scope is stated below                                                      |
 | W-4 | "Only me" — one person runs the instance                                    | 2026-10-20 | accepted — no permissions, sharing or onboarding work                                     |
+| W-5 | "dont rush to implement a feature when we havent discussed it" — and the product vision that came with it | 2026-10-20 | accepted — a strategy session, not a work item; the rule is recorded below          |
 
 Verdicts: `open` — not yet judged. `accepted` — became a work item, cited
 here. `declined` — not doing it, with the reason kept. `folded` — already
@@ -65,6 +66,7 @@ something that leads to it. Each names where it was seen.
 | C-07 | The instance has one owner; no teams, no sharing, no permissions                                                                          | ARCHITECTURE.md, known limitations                                                                      |
 | C-08 | 55 kB of zod is in the first paint, because the client validates every event frame with the contracts schema                              | WI-001, Cog's report                                                                                    |
 | C-09 | Four UI directions were built as prototypes; the owner has not chosen one, and direction D leaves the boundary between its two rooms open | `prototypes/README.md` — now [WI-006](../work/WI-006.md) prepares the recommendation, the owner chooses |
+| C-10 | The panel can list an approval but cannot decide one — nothing in `apps/web` calls `POST /api/approvals/:id/decide`, and no code fetches `GET /api/approvals` | `apps/web/src`, WI-004 review, 2026-10-20 |
 
 ## How a want becomes a work item
 
@@ -121,9 +123,23 @@ write.
 ## The rules that apply to every want
 
 - One owner per work item.
+- **Every new feature is grilled with the owner before it becomes a work
+  item.** The owner's rule, 2026-10-20: *"dont rush to implement a feature
+  when we havent discussed it."* The grilling is Matt Pocock's `grill-me`,
+  installed at `~/.minimax/skills/grill-me` and `~/.minimax/skills/grilling`
+  (MIT, © 2026 Matt Pocock). It asks in rounds: each round is the whole
+  frontier of settled questions, every question carries a recommended
+  answer, facts are looked up rather than asked for, and the decisions belong
+  to the owner. A work item does not open until the frontier is settled and
+  the owner has confirmed the shared understanding.
 - Never open a work item twice: post to the group **or** dispatch directly,
   never both.
 - Never weaken a gate to make a want affordable.
 - A want that changes a published contract needs a migration plan and a
   [CONTRACTS.md](../CONTRACTS.md) update **before** it is scheduled, not
   after.
+
+**Chief may hold; only the owner releases.** When the owner asks for a
+strategy discussion, Chief holds the items in flight, records the hold and
+the findings in the work item, and opens nothing new. The queue moves when
+the owner says so.
