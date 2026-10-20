@@ -8,8 +8,9 @@ section is the source, and this ADR is the copy into the repository's own decisi
 record. The borrowing rule went into the doctrine at `c7ae5fa`; the owner's four
 follow-up answers went into `INTAKE.md` at `b9f6181`.
 
-**Open:** four questions from the same round are not answered yet. They are listed
-under "What is still open", and this ADR does not close them.
+**Open:** none of the six questions from that round is answered, and two more are
+open that were never put to the owner at that round. They are listed under "What is
+still open", and this ADR does not close them.
 
 ## Context
 
@@ -80,27 +81,48 @@ nobody discovers it in a diff.
 
 ## What is still open
 
-Four questions went to the owner on 2026-10-20 at 23:55 and are not answered. Chief's
-recommendations are recorded in `.factory/INTAKE.md`; they are recommendations, not
-answers, and this ADR does not convert them.
+Six questions went to the owner on 2026-10-20 at 23:55, and none of them is
+answered. Chief's recommendations are recorded in `.factory/INTAKE.md`; they are
+recommendations, not answers, and this ADR does not convert them. The direction
+has its own section below, and the measures route is sized as WI-020. The other
+four are these:
 
-1. **The extension mechanism.** MCP Apps (SEP-1865) and AG-UI are the recommended
-   conformance targets for the agent-facing surface.
-2. **The definition of "authored by an agent"** — what counts as a feature an agent
+1. **The template concept.** Q3's third half — "authored through templates" — has
+   no template concept for a resource anywhere in the product, and a template in
+   the resource model is a published concept, so it needs the owner's nod before
+   it can be built. Sized as WI-017, and not dispatched until it is given.
+2. **The protocol boundary.** Which side of the product each protocol belongs to.
+   The recommendation: the panel's agent-facing surface conforms to MCP and AG-UI,
+   ACP and A2A are the agent-connection side, which we speak when we connect out
+   to an agent. Our resources, tasks and goals stay ours, and no protocol is
+   forked.
+3. **Reversibility.** With one owner there is no second operator to absorb a bad
+   action, so authority without reversibility is exposure. The recommendation: the
+   owner's decisions are reversible as a product principle. Part of the substrate
+   exists — resources and tasks carry `revision` with `expectedRevision` for
+   optimistic concurrency, and the audit trail records who did what to what — but
+   an automation carries a revision counter that nothing compares against, so its
+   update is last-write-wins, and the audit trail does not cover every action.
+   There is no undo, revert or rollback anywhere in the server or the web client
+   today. The surface is missing, and part of the substrate with it.
+4. **Whether a conversation can wait on the owner's reply.** `WaitingKind` is
+   `approval | task`, and no contract carries a state for a conversation waiting on
+   a person, so the clause in WI-004's criterion that says "an entry that needs a
+   reply opens the conversation it belongs to" cannot be true yet. An answer is a
+   third kind of entry, and a third kind of entry is a contract change.
+
+Two more are open, and neither was put to the owner at that round. One is a
+recommendation with no question behind it; the other is a definition the owner has
+not given:
+
+5. **The extension mechanism.** Which standard a server shipping its own UI to a
+   host should conform to. The recommendation: MCP Apps (SEP-1865) for
+   agent-created UI and AG-UI for the agent-to-UI event stream. Neither is
+   ratified, and MCP Apps requires a text-only fallback.
+6. **The definition of "authored by an agent"** — what counts as a feature an agent
    made, for the first of the two measures. The data is already there
    (`resources.createdBy`); the definition is not settled. The work item for the
    measures states its reading in its report, so the owner can correct it.
-3. **The protocol boundary.** The recommendation: the panel's agent-facing surface
-   conforms to MCP and AG-UI; ACP and A2A are the agent-connection side, which we
-   speak when we connect out to an agent. Our resources, tasks and goals stay ours,
-   and no protocol is forked.
-4. **Reversibility.** With one owner there is no second operator to absorb a bad
-   action, so authority without reversibility is exposure. The recommendation: the
-   owner's decisions are reversible as a product principle. The substrate exists —
-   resources, tasks and automations carry `revision` with `expectedRevision` for
-   optimistic concurrency, and the audit trail records who did what to what — but
-   there is no undo, revert or rollback anywhere in the server or the web client
-   today. The surface is missing; the data is not.
 
 ## The visual direction
 
@@ -131,7 +153,7 @@ is — is not blocked by the direction and does not wait on it.
   exists, and what the product reports about itself.
 - The borrowing rule is one rule in two places: the doctrine keeps it in
   [FACTORY.md](../FACTORY.md), and the product record states the product-side
-  consequence. Neither forks a protocol, and the boundary between them is the third
+  consequence. Neither forks a protocol, and the boundary between them is the second
   open question.
 - Two of the six answers are half-built, and they say so. The template third of
   Q3 is a work item waiting on the owner, because a template in the resource model

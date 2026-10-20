@@ -41,10 +41,15 @@ It is **not** responsible for:
 - replacing existing agent frameworks,
 - forcing external agents to use its internal task scheduler.
 
-The last point matters. When work is handed to an external orchestrator, Personal OS
-retains the external task id and status instead of creating a competing internal
-workflow. Personal OS shows the work, the references and the results — it does not
-recreate the other system's internals.
+The last point matters, and it is a boundary the product holds rather than a feature
+it has. When work is handed to an external orchestrator, Personal OS does not
+recreate the other system's internals — and it does not mirror the work either.
+What it stores today is an execution's `externalRef`, and the only value that ever
+reaches it is an ACP session id: the path for a genuine external task id asks the
+adapter for one, and no adapter implements it. No external status is retained, no
+execution is ever marked as externally owned, and the panel shows neither the
+reference nor the owner — `externalRef` and `executionOwner` do not appear in the
+web client at all.
 
 ## 3. The one owner, and the agents
 
@@ -86,8 +91,14 @@ product.
 
 A thing that exists independently of any conversation: a dashboard, a document, an
 automation, a data source, a task or a memory item. Humans, agents and automations all
-operate on resources through one shared API with the same validation, the same
-revision handling and the same audit trail.
+operate on resources through one shared API, and the validation is shared: each
+kind's own provider validates its spec. The revision handling and the audit trail
+are **not** uniform, and the product says so rather than smoothing it over. A
+resource update compares `expectedRevision` and refuses on a mismatch; an
+automation update increments its revision and never compares it, so the last write
+wins. A resource update writes an audit entry; an automation update writes none.
+And the worker's own `resource.refresh` action updates the resource row with no
+revision bump and no entry.
 
 A resource is not a chat message that got pinned. It survives the conversation that
 created it.
@@ -126,13 +137,20 @@ that produced it — so two automations cannot wake each other forever.
 
 ## 5. Autonomy
 
-Autonomy is optional, configurable per workspace and goal, and bounded everywhere it
-appears. Every autonomy policy carries at least:
+Autonomy is optional and configurable per workspace and goal. Every autonomy policy
+carries at least:
 
 - execution limits (turns, duration, spend),
 - the actions that are allowed,
-- the operations that require approval,
-- a way to pause the work.
+- the operations that require approval.
+
+**The policy is stored; it is not yet enforced.** A workspace's or a goal's autonomy
+mode and policy are written and read back, but nothing reads them to make a
+decision — the only mention outside the storage layer is a badge in the panel's
+settings. The limits that are actually enforced are the conversation's own (see
+[CONTRACTS.md](CONTRACTS.md), _Routing behaviour_), on a different object from the
+one the policy is attached to. And there is no pause in a policy: the only pause in
+the product is the conversation's own `paused` flag.
 
 Manual is the default everywhere. An agent never gains authority by being added to a
 group: adding an agent to a conversation changes who can be reached, not what that
@@ -162,10 +180,27 @@ The product answers two questions about itself, and shows both in the panel:
 2. **The share of operations done without the owner touching code** — of the routine
    work the instance does, how much of it the owner never had to hand-edit.
 
-**The data for both is already in the product.** Every resource records who created
-it, and the audit trail records the actor of every action. **Nothing counts them
-yet**, and the panel does not show these numbers today. Counting them is sized and
-waiting on the owner, because a route that returns them is a published contract.
+**The first measure has its data for four of the six kinds. The second is nearly
+there, and the gap is named.** A dashboard, a document, a data source and a memory
+item record who created it, so "which of these did an agent make?" is answerable
+from the data the product already keeps. But an automation and a task record their
+author as `system`, so for those two kinds the answer is **wrong**, not merely
+uncounted.
+
+The audit trail records the actor of most actions. Of the thirty-four routes that
+change something, twenty write an entry at the route, two more write from the
+service layer — an approval decision, and a task that leaves `unknown` — and twelve
+write none: a capability probe, an agent token revoked, a logout, an owner-token
+mint, an automation edited or deleted, a conversation deleted, a participant added
+or removed, a goal, and a workspace created or edited. An entry names who acted and
+what they acted on, and every entry written today records a success whether the
+action succeeded or not — `POST /api/resources/:id/execute` records one for a run
+that was merely queued. The second measure's denominator is therefore a real
+question, and it is part of what the owner has not settled.
+
+**Nothing counts them yet**, and the panel does not show these numbers today.
+Counting them is sized and waiting on the owner, because a route that returns them
+is a published contract.
 
 **No ratio whose denominator is zero.** For a long while the honest value of "the
 share of features authored by agents" is zero or undefined, because no agent has
@@ -232,11 +267,18 @@ stay ours. The owner is being asked to settle it.
 
 ## 11. The panel's own rules
 
-**One accent, one meaning.** The panel uses a single accent colour, and it always
-means the same thing: live, or waiting on you. Structure and data stay in their own
-colours. This is the rule that lets a number be read at a glance instead of being
-decoration, and it is the one thing a visual direction has to get right before the
-rest of the visual work matters.
+**One accent, one meaning.** The rule is that the panel uses a single accent
+colour, and it always means the same thing: live, or waiting on you. Structure
+and data stay in their own colours. This is the rule that lets a number be read at
+a glance instead of being decoration, and it is the one thing a visual direction
+has to get right before the rest of the visual work matters.
+
+**The panel does not do this yet.** Its accent is indigo, and indigo marks
+structure — the active nav item, an agent's messages, the app's own badge —
+rather than liveness, and the event stream's state is a four-colour traffic light:
+emerald for live, amber for reconnecting, red for offline, slate for idle. The
+direction that would fix it is Desk (B), it is recommended rather than decided,
+and the owner has one word to say about it.
 
 ## 12. What v1.0 deliberately leaves out
 
