@@ -151,6 +151,13 @@ Two rules follow from it:
   back as a surprise.
 - **A want that needs two owners is two work items.** Splitting happens at
   intake, not halfway through an implementation.
+- **A settled decision has a work item behind it, or it is not a decision.**
+  When the owner settles something, it is funded: it gets a work item, an
+  owner and a slot in the order. A decision with nothing behind it is a
+  wish, and a wish that lives in a candidate list is a promise the factory
+  forgot. The queue is reviewed against the owner's decisions, not only
+  against new wants — on 2026-10-20 two of the six settled decisions had no
+  work item at all.
 
 ## Rules the bots must not break
 
@@ -182,6 +189,14 @@ Two rules follow from it:
   directory stay out of git. `.gitignore` already covers the data directory.
 - **One worktree per work item.** Two bots in one worktree corrupt each
   other's state.
+- **One file, one live item.** Two Chief sessions in one tree have already
+  collided: on 2026-10-20 a workflow change in WI-005 landed on top of
+  another session's edit to the worker image tag. Before a session edits a
+  file, it checks that no live item claims it, and a second item touching a
+  claimed file waits for the first to land. The claim is the item's state and
+  dispatch record. When two sessions are the lead in one tree, the older
+  claim wins, the newer one waits, and the tiebreak is said out loud in the
+  group.
 - **A dispatch that cannot be delivered is not a dispatch.** When the runtime
   will not assign the work — the tool is busy, another turn holds the gate —
   record it in the work item's dispatch record with its request id, and

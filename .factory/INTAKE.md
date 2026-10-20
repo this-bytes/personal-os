@@ -239,27 +239,103 @@ The four items the MiniMax Bot brief produced are all owned by Cog, and Cog
 is one implementer. So the order is not a preference, it is the only thing
 that can happen.
 
-**WI-009 → WI-008 → WI-007 → WI-006 → WI-012.**
+**WI-008 → WI-009 → WI-007 → WI-006 → WI-012 → WI-004 + WI-016 → C-14 → WI-017.**
 
-1. **WI-009** (coordinator-only handoff) is first because it crosses no
+**Amended 2026-10-20 23:55 by Chief, with the reasoning said out loud.** The
+order was recorded as WI-009 first, and the dispatch that would have put it
+there was refused by the runtime's task-assignment guard — so the contract
+batch (WI-008, WI-007, WI-006, WI-012) went out without it. That is why
+WI-009 is second and not first: it is now behind the item that was already
+running, not because it lost its place. The owner's Q2 wanted the
+truthfulness work first, and WI-009 is it — it fixes a violation of a
+published contract (`CONTRACTS.md:99-107`: only the coordinator may hand
+over) — so it goes as soon as the tree is free.
+
+1. **WI-008** (outcome unknown) is in flight and stays first: its window is
+   open only while WI-004's front end is held.
+2. **WI-009** (coordinator-only handoff) is second for the reason above. It
+   crosses no published boundary, so it needs no approval and no contract
+   entry, and it is the smallest item in the queue.
+3. **WI-007** third, because it needs the `unknown` state to finish its last
+   criterion.
+4. **WI-006** fourth — the owner's TR-1 decision.
+5. **WI-012** fifth — last of the contract batch, because an agent's memory
+   only means something once the agent has a role.
+6. **WI-004's control and WI-016's band** are sixth, together: both land on
+   the home surface, so they are one client pass if the owner's nod on the
+   measures route arrives before Cog reaches the slot, and two small passes
+   if it does not. This is the product's judged surface — "everything waiting
+   on me in one place" — and its first honest report on itself.
+7. **C-14, the live stream, is seventh.** The owner's floor for it is
+   unchanged (after the truthfulness work and the contracts), and it is
+   after the inbox because the owner's judgement criterion is the inbox.
+8. **WI-017, the templates, is eighth** — gated on the owner's answers about
+   the template concept and the protocol boundary, not on its priority. The
+   extension surface is the deepest claim of the identity, and it is funded
+   now rather than parked in the candidate list.
+
+**Vision's read is accepted and answered.** The queue was carrying the
+surface, and the fix is not a slogan — the two unfunded decisions are funded
+below and placed in the queue. If the owner reads the seventh slot as the
+surface winning again, that is a one-line re-cut.
+
+**The two decisions that had no work item behind them, 2026-10-20 23:55.** C-19
+and C-20 are not candidates. They are the unfunded halves of decisions the
+owner already made: Q3's third half — "authored through templates" — and Q6 —
+"the product reports on itself". A decision with nothing behind it is a wish,
+and FACTORY.md now says so.
+
+- **C-20 → [WI-016](../work/WI-016.md)** — the product counts what it did.
+  Sized, and waiting on the owner's nod: a read-only route is a published
+  contract.
+- **C-19 → [WI-017](../work/WI-017.md)** — a template tells an agent what a
+  good resource looks like. Sized, and waiting on the owner's nod: a template
+  in the resource model is a published concept, and the way templates reach
+  agents depends on the protocol-boundary answer below.
+
+**The questions waiting on the owner, 2026-10-20 23:55.** Six, and each one is
+a word or a sentence. Chief's recommendations are in brackets.
+
+1. **The direction — Desk (B)?** [B] One word. The adoption item and the
+   home's layout wait on it; the decision control does not.
+2. **The measures route.** Q6 needs somewhere for the two numbers to come
+   from. Approve one read-only route, same auth as everything else? [yes]
+3. **The template concept.** Approve a resource-template registry in the
+   published model, reached by agents through our own MCP surface? [yes]
+4. **Reversibility.** With one owner there is no second operator to absorb a
+   bad action, so authority without reversibility is exposure. Is it a
+   product principle that the owner's decisions are reversible? [yes]
+5. **The protocol boundary.** The panel's agent-facing surface conforms to
+   MCP and AG-UI; ACP and A2A are the agent-connection side, which we speak
+   when we connect out to an agent. Our resources, tasks and goals stay ours,
+   and no protocol is forked. [yes]
+6. **Can a conversation wait on the owner's reply?** Today the data model
+   cannot: `WaitingKind` is `approval | task`, and no contract carries a
+   state for a conversation waiting on a person. If yes, it is a third kind of
+   entry, a contract change, and the clause in WI-004's criterion that says
+   "an entry that needs a reply opens the conversation it belongs to" becomes
+   real instead of vacuous. [yes — an agent asking its owner a question is
+   the most direct form of talking to agents]
+
+7. **WI-009** (coordinator-only handoff) is first because it crosses no
    published boundary, so it needs no approval and no contract entry. It is
    also the smallest. Chief answered its one open question from
    `CONTRACTS.md:99-107` — it is a defect against a published mandatory
    safeguard, not a contract change.
-2. **WI-008** (outcome unknown) is second because it is the smallest of the
+8. **WI-008** (outcome unknown) is second because it is the smallest of the
    contract changes, because its window is open _now_ — WI-004's front end
    is held, so landing it before that front end is finished avoids a second
    pass over the waiting list — and because WI-007's last criterion depends
    on it.
-3. **WI-007** (approval resumes the turn) is third because it is the clearest
+9. **WI-007** (approval resumes the turn) is third because it is the clearest
    interaction defect there is, and because it needs the `unknown` state to
    finish its last criterion.
-4. **WI-006** (persona) is fourth because it is the largest item, and
-   because one of its display criteria touches WI-004's front end, which is
-   still held.
-5. **WI-012** (an agent's own memory) is last because it is a second
-   published-contract change, and because an agent's memory only means
-   something once the agent has a role.
+10. **WI-006** (persona) is fourth because it is the largest item, and
+    because one of its display criteria touches WI-004's front end, which is
+    still held.
+11. **WI-012** (an agent's own memory) is last because it is a second
+    published-contract change, and because an agent's memory only means
+    something once the agent has a role.
 
 **The owner's answer put the live stream after this batch.** C-14 — one live
 SSE connection with a per-chat cursor instead of a 250 ms poll — stays a
