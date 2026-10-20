@@ -182,6 +182,12 @@ Two rules follow from it:
   directory stay out of git. `.gitignore` already covers the data directory.
 - **One worktree per work item.** Two bots in one worktree corrupt each
   other's state.
+- **A dispatch that cannot be delivered is not a dispatch.** When the runtime
+  will not assign the work — the tool is busy, another turn holds the gate —
+  record it in the work item's dispatch record with its request id, and
+  deliver it from there. A message that was never sent is not an item in
+  flight, and the queue does not move until somebody has actually been given
+  it. The repository is the state, and that includes the queue.
 - **Never accept your own work, whoever wrote it.** A work item that Chief
   wrote, Chief implemented and Chief accepted has no reviewer in it, and the
   item is not closed no matter how green the gates are. Chief's own output
