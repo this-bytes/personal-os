@@ -768,6 +768,34 @@ in this file.
   `packages/contracts/src/automation.ts:73` by the reviewer.
 - **Not urgent:** nothing contradicts it, and no client depends on it today.
 
+### The post that is owed, request id `status-2026-10-21-0415`
+
+The group post could not be delivered. `post_group` answered **"The group is
+mid-discussion; post again once this round finishes"** on every attempt
+between 04:15 and 04:30 — the other Chief session has a round in flight, and
+the group's own guard holds the door until it closes. The request id makes the
+retry idempotent rather than a second post, so it is recorded here and sent
+when the round ends.
+
+The post says, in one line per work item, newest first: WI-023 triage,
+blocked on the push path; WI-022 triage, waiting on the owner's nod, with
+Probe's confirmation and the added urgency-order criterion; WI-021 triage, the
+defect proven and the file held by WI-009; WI-020 and WI-017 waiting on the
+owner's nod; WI-018, WI-013 returned to Wren, WI-012, WI-011, WI-010, WI-009,
+WI-007, WI-006, WI-004 in the state their ledgers say; WI-015 accepted, and
+what the product can now do because of it; and the five questions that are
+with the owner.
+
+It carries the gates at `5f91e19` — typecheck 0, test 1 with eleven reds,
+format:check 0, build 0, test:e2e 0 with 24 passed — and the line that the
+eleven reds are Probe's specification rather than a regression. It also names
+the two duplicate dispatches that were cancelled and the fact that the
+automation-run-status gap is recorded as a want rather than a numbered item.
+
+**Nothing in the post dispatches anything.** Every item with work in flight
+was dispatched before the post was written, and the post names no agent, so
+no bot is woken by it.
+
 ### A second want, from the second Chief session — WI-010's two stale facts
 
 The second Chief session re-verified `prototypes/DIRECTION.md` independently,
