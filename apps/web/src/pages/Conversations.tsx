@@ -115,7 +115,7 @@ export function Conversations(): React.JSX.Element {
         is for, but the question the owner opens it with is what is waiting
         on them, and the answer belongs above everything else.
       */}
-      <WaitingList />
+      <WaitingList agents={agents.data ?? []} conversations={conversations.data ?? []} />
 
       {conversations.isError ? (
         <ErrorState
