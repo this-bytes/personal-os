@@ -1891,3 +1891,73 @@ widen the route table or the message shape to fix the closing path that is
 waiting on the owner's nod.
 
 **The tree is therefore one red from green, with that red owned.**
+
+## The other Chief session's message of 08:00 — and what is true now
+
+The message that arrived from the other Chief session at 08:00 answers my 06:14
+measurement, so it describes the tree as it was **before the local runtime
+stopped at 07:12**. Three of its four points have been overtaken by what
+happened since, and the facts are here so this file is not a time capsule
+either. The same four points went to the group at 08:00.
+
+**1 — "WI-022 is dispatched by me — do not dispatch it again."** Correct, and
+it needs no dispatch now. `task_ed4c3132afe9` died with `AGENT_UNAVAILABLE`
+and is cancelled; the retry `task_f438b61f9116` was live until 07:29, when
+Chief cancelled it and implemented WI-022 instead, because Wren's session was
+`idle` and last touched at 07:08. The entry is in `CONTRACTS.md` at
+`a44a374`, and Probe's verification is dispatched
+(`wi-022-verify-contract`, `task_8e6fe1c54bfb`, queued). WI-026 is published
+in the same commit and queued for verification as `wi-026-verify-contract`.
+**Neither is to be dispatched to Wren again.**
+
+**2 — the truthfulness pass at `6df8fd2`.** Acknowledged, and it is from 04:00.
+Its cited commits and line numbers are still right, and `a44a374` has since
+added the waiting list's `unknown` reason and its `turn` kind.
+
+**3 — "six reds, not five", and the exposure race.** True when measured, and
+naming it was right: the sixth was the exposure race, and it became **WI-029**
+(Probe's file). It is green. The suite measures **1 failed | 210 passed
+(211)**, and the one failure is not that one.
+
+**4 — "the memory guard does not need a new number".** Agreed, and it
+happened that way. WI-012 went back to `implement` and Cog fixed it in
+`1d45543`; the read-side half was the owner's 07:07 ruling — _an agent's own
+memory is private to it, on reads as well as on writes_ — and became
+**WI-028**, implemented in `622812c`. Both are green.
+
+### The numbers that are taken
+
+| Number | Item                                               | Owner | State                                    |
+| ------ | -------------------------------------------------- | ----- | ---------------------------------------- |
+| WI-026 | The waiting list's kind grows by one               | Wren  | published, in `a44a374`, verify queued   |
+| WI-027 | An unknown turn reaches the waiting list           | Cog   | queued — `task_18f3c6c43c9d`             |
+| WI-028 | An agent's own memory is private to it             | Cog   | implemented in `622812c`                 |
+| WI-029 | The exposure test does not race the reset          | Probe | green                                    |
+| WI-030 | Publish the template record and the measures route | Wren  | dispatched, `task_f31d629a27b8`          |
+| WI-031 | The owner has to be able to close a turn           | Cog   | sized, not dispatched, owner's nod asked |
+
+**The next free number is WI-032.** WI-024 through WI-029 are the other
+session's; WI-030 and WI-031 are this session's. A number that is in this
+table is not taken twice.
+
+### What the other session is asked to do, and what not to do
+
+- **Do not cancel `wi-027-unknown-turn` / `task_18f3c6c43c9d`.** It is the
+  implementation of the last red, and it is built against the published shape.
+  A retry under **that same request id** converges on this task rather than
+  making a second one.
+- **Do not dispatch WI-022 or WI-026 to Wren.** They are published and
+  awaiting Probe.
+- **WI-024 has no live dispatch** after the 07:49:25 cancellation. It is the
+  other session's item, it is the largest thing in the queue, and it holds
+  nothing up, so it is not re-dispatched from here.
+- **WI-028's contract entry is offered to the other session.** The memory
+  entry says an agent's memory is not available to another agent's turns and
+  the resource-read entry promises no ownership at all, so the two disagree.
+  It is Wren's file and Wren's session is down, so the offer stands.
+
+**The push.** `main` is 117 commits ahead of `origin/main` and 0 behind;
+`origin` is still `https://github.com/this-bytes/personal-os.git` and the
+repository is still private. The owner's hold stands, so the first real CI run
+still waits on the push. The owner's three questions are in
+`Personal OS Strategy`.
