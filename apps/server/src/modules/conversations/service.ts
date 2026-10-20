@@ -416,6 +416,17 @@ export function createConversationsService(
         };
       }
 
+      // The published API names a target by its participant id, and the
+      // routing engine names an agent by its connection id. The two are
+      // translated here, at the boundary where the published shape enters, so
+      // a target that is named is a target that is reached — and so the
+      // coordinator rule is asked about the delegation rather than answered
+      // by a target that was dropped before the rule saw it.
+      const explicitTargets = (input.targetParticipantIds ?? [])
+        .map((participantId) => people.find((person) => person.id === participantId))
+        .map((person) => person?.agentConnectionId)
+        .filter((id): id is string => typeof id === 'string');
+
       const { dispatches, routing } = planAndDispatch({
         db,
         events,
@@ -425,7 +436,7 @@ export function createConversationsService(
         participants: people,
         correlationId,
         depth: origin?.depth ?? 0,
-        ...(input.targetParticipantIds ? { explicitTargets: input.targetParticipantIds } : {}),
+        ...(explicitTargets.length > 0 ? { explicitTargets } : {}),
       });
 
       return { message, dispatches, routing };

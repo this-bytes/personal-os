@@ -171,12 +171,7 @@ export function planRouting(input: RoutingInput): RoutingDecision {
         if (delegated.length > 0) {
           if (
             coordinatorConnection &&
-            senderIsCoordinator(
-              message,
-              participants,
-              conversation.coordinatorId,
-              coordinatorConnection,
-            )
+            senderIsCoordinator(message, participants, conversation.coordinatorId)
           ) {
             return { targets: unique(delegated), reason: 'Delegated by the coordinator.' };
           }
@@ -294,40 +289,48 @@ function unique(values: string[]): string[] {
 }
 
 /**
- * Is the agent that spoke the coordinator of this conversation?
+ * Resolve the sender of a message to the participant that sent it.
  *
- * A message may name its sender as a participant id (the usual case) or as
- * an agent connection id (when the agent posts through a capability), and
- * the two may be recorded in different places. All of them identify the same
- * agent, so all of them are accepted — and anything that does not identify
- * the coordinator is not a delegation the coordinator made.
+ * A message names its sender in more than one shape, and the shapes can
+ * disagree. The rule asks about the participant the message is *from*, not
+ * about whichever of the claims happens to match: a message that claims the
+ * coordinator's connection while its sender is somebody else is not the
+ * coordinator's message, and it does not get the coordinator's rights.
+ *
+ * The worker names the agent by its connection id when the participant row is
+ * missing, so a sender that is a connection id is resolved through it.
+ */
+function resolveSenderParticipant(
+  message: RoutingMessage,
+  participants: RoutingParticipant[],
+): RoutingParticipant | undefined {
+  const byParticipantId = participants.find((participant) => participant.id === message.senderId);
+  if (byParticipantId) return byParticipantId;
+
+  return participants.find((participant) => participant.agentConnectionId === message.senderId);
+}
+
+/**
+ * Is the participant that sent the message the coordinator of this
+ * conversation?
+ *
+ * The sender is resolved to a participant first, and the question is asked
+ * about that participant. Nothing a message says about itself can make it
+ * the coordinator's message.
  */
 function senderIsCoordinator(
   message: RoutingMessage,
   participants: RoutingParticipant[],
   coordinatorParticipantId: string | undefined,
-  coordinatorConnectionId: string,
 ): boolean {
-  const coordinatorIds = new Set<string>([coordinatorConnectionId]);
-  if (coordinatorParticipantId) coordinatorIds.add(coordinatorParticipantId);
-
-  const claimed = [message.senderId, message.origin.actorId, message.origin.agentConnectionId];
-  if (claimed.some((id) => typeof id === 'string' && coordinatorIds.has(id))) return true;
-
-  // The sender may be recorded by participant id while the coordinator is
-  // known by connection id, or the other way round.
-  return participants.some(
-    (participant) =>
-      claimed.includes(participant.id) &&
-      participant.agentConnectionId !== undefined &&
-      coordinatorIds.has(participant.agentConnectionId),
-  );
+  if (!coordinatorParticipantId) return false;
+  return resolveSenderParticipant(message, participants)?.id === coordinatorParticipantId;
 }
 
 /** The name of the participant that sent a message, for the reason string. */
 function senderName(message: RoutingMessage, participants: RoutingParticipant[]): string {
   const sender =
-    participants.find((p) => p.id === message.senderId) ??
+    resolveSenderParticipant(message, participants) ??
     participants.find((p) => p.id === message.origin.actorId) ??
     (message.origin.agentConnectionId
       ? participants.find((p) => p.agentConnectionId === message.origin.agentConnectionId)
