@@ -2069,3 +2069,37 @@ nothing depends on the post landing.
 > unknown turn, with its implementation queued with Cog; e2e 25 of 25; the
 > push still held, `main` 118 ahead of `origin/main`, the repository still
 > private; the owner's three questions in `Personal OS Strategy`.
+
+## The fleet's queue did not drain, and why that matters for reading the ledger
+
+At 08:15 **every task in the fleet was queued and none had started**: Cog's
+three (WI-017, WI-020, WI-027), Probe's five (the two contract verifications,
+the ADR verification, the CI review, WI-010) and Wren's two (WI-030 and
+WI-028's contract half). The minimax-bot runtime was up — it restarted at 07:26,
+after the 07:12 stop — and the bot sessions existed: Cog's and Probe's were
+`started`, Wren's `idle` since 07:08.
+
+The cause looks like the guard that refused our dispatches twice today:
+**the Chief bot replying in more than one chat while a group round is open,
+which holds task assignment.** The group was mid-discussion for the whole
+window, and that window is when the other Chief session was writing WI-024's
+six briefs.
+
+Two things follow, and both matter for reading any of this:
+
+- **"Queued" does not mean "in progress."** Every item in the table above is
+  queued. The tree's one red is waiting on the first of them to start, and the
+  push waits on that.
+- **Nothing is lost while a round is open, and nothing is running either.** A
+  red's fix is not silently in flight; the tree is exactly where the last
+  measurement said it was.
+
+**WI-027 — the last red's implementation — is queued with Cog** under
+`wi-027-unknown-turn`, `task_18f3c6c43c9d`, and it starts when the queue
+drains. A retry under that same request id converges on the same task, so
+handing it back was one dispatch and not two.
+
+**The minimax-bot runtime was deliberately not restarted** to shake the queue
+loose: the other Chief session is mid-round inside it, and a restart would
+abort that round's work exactly the way the 07:12 stop aborted this session's.
+A green suite is worth less than the work in the round.
