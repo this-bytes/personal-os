@@ -61,6 +61,31 @@ jobs:
       # source itself, so there is nothing to compile.
 
       - name: Perform CodeQL analysis
+        id: analyze
         uses: github/codeql-action/analyze@v3
         with:
           category: '/language:${{ matrix.language }}'
+          # The results are published with the run rather than uploaded to
+          # GitHub's code scanning.
+          #
+          # Code scanning is available on a private repository only when the
+          # account has GitHub Advanced Security, and this repository is
+          # private on a personal account. The scan itself works; the upload
+          # is what the licence covers, and with it missing the job failed
+          # with "Code scanning is not enabled for this repository" before it
+          # had analysed anything.
+          #
+          # When the repository is public — which is where the owner said it
+          # is going — code scanning is free, and this becomes `always` and
+          # the results go where a reader can see them.
+          upload: 'never'
+
+      - name: Publish the results with the run
+        uses: actions/upload-artifact@v4
+        with:
+          name: codeql-results-${{ matrix.language }}
+          path: ${{ steps.analyze.outputs.sarif-output }}
+          # If the scan produced nothing, the run fails rather than passing
+          # with an empty artifact. A check that cannot fail is worse than no
+          # check.
+          if-no-files-found: error
