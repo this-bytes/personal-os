@@ -206,7 +206,9 @@ Two rules follow from it:
   with a proposed title, owner and criteria, and the session that owns the
   numbers creates the file. An item that was written over is re-filed at a new
   number with the collision written into it, so a number is never reused and
-  the history stays readable.
+  the history stays readable. If the session that owns the numbers is not
+  running, the other session says so in the group and takes the space, rather
+  than taking it quietly.
   **The check belongs at commit time.** The rule above was written at 23:57
   on 2026-10-20 and was broken nine minutes later, so the claim is not
   enough on its own. Before a session commits, it reads `git status`. If a
