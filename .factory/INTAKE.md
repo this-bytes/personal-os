@@ -18,13 +18,13 @@ Intake is where that is discovered, before anyone spends an hour on it.
 Empty until the owner says something. A want is written here in the owner's
 own words, not a summary of them.
 
-| #   | Want                                                                        | Said       | Verdict                                                                                   |
-| --- | --------------------------------------------------------------------------- | ---------- | ----------------------------------------------------------------------------------------- |
-| W-1 | "I see everything waiting on me in one place"                               | 2026-10-20 | accepted — [WI-004](../work/WI-004.md)                                                    |
-| W-2 | Interaction — talking to agents is the job that should get genuinely better | 2026-10-20 | open — the bar for WI-004: an entry the owner can act on, not a link to a screen about it |
-| W-3 | "Run within a stated scope"                                                 | 2026-10-20 | accepted — the scope is stated below                                                      |
-| W-4 | "Only me" — one person runs the instance                                    | 2026-10-20 | accepted — no permissions, sharing or onboarding work                                     |
-| W-5 | "dont rush to implement a feature when we havent discussed it" — and the product vision that came with it | 2026-10-20 | accepted — a strategy session, not a work item; the rule is recorded below          |
+| #   | Want                                                                                                      | Said       | Verdict                                                                                   |
+| --- | --------------------------------------------------------------------------------------------------------- | ---------- | ----------------------------------------------------------------------------------------- |
+| W-1 | "I see everything waiting on me in one place"                                                             | 2026-10-20 | accepted — [WI-004](../work/WI-004.md)                                                    |
+| W-2 | Interaction — talking to agents is the job that should get genuinely better                               | 2026-10-20 | open — the bar for WI-004: an entry the owner can act on, not a link to a screen about it |
+| W-3 | "Run within a stated scope"                                                                               | 2026-10-20 | accepted — the scope is stated below                                                      |
+| W-4 | "Only me" — one person runs the instance                                                                  | 2026-10-20 | accepted — no permissions, sharing or onboarding work                                     |
+| W-5 | "dont rush to implement a feature when we havent discussed it" — and the product vision that came with it | 2026-10-20 | accepted — a strategy session, not a work item; the rule is recorded below                |
 
 Verdicts: `open` — not yet judged. `accepted` — became a work item, cited
 here. `declined` — not doing it, with the reason kept. `folded` — already
@@ -55,18 +55,18 @@ Gaps Chief found in the repository. These are **not** wants. They are
 possibilities, and they become work only when the owner picks one or asks for
 something that leads to it. Each names where it was seen.
 
-| #    | Candidate                                                                                                                                 | Found in                                                                                                |
-| ---- | ----------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------- |
-| C-01 | An approval closes its execution instead of resuming the interrupted agent turn                                                           | ARCHITECTURE.md, known limitations                                                                      |
-| C-02 | The event stream polls the event table every 250 ms instead of holding a connection to the worker                                         | ARCHITECTURE.md, known limitations                                                                      |
-| C-03 | ACP sessions are created per turn instead of resumed, though the protocol supports it                                                     | ARCHITECTURE.md, known limitations                                                                      |
-| C-04 | Only the OpenAI-compatible model API shape is implemented                                                                                 | ARCHITECTURE.md, known limitations                                                                      |
-| C-05 | Milestone 05 is partially implemented — scoped autonomy policies, review and acceptance workflow, evidence capture                        | ARCHITECTURE.md, incremental build plan                                                                 |
-| C-06 | The CLI adapter is supervised, not sandboxed                                                                                              | ARCHITECTURE.md, security posture                                                                       |
-| C-07 | The instance has one owner; no teams, no sharing, no permissions                                                                          | ARCHITECTURE.md, known limitations                                                                      |
-| C-08 | 55 kB of zod is in the first paint, because the client validates every event frame with the contracts schema                              | WI-001, Cog's report                                                                                    |
-| C-09 | Four UI directions were built as prototypes; the owner has not chosen one, and direction D leaves the boundary between its two rooms open | `prototypes/README.md` — now [WI-006](../work/WI-006.md) prepares the recommendation, the owner chooses |
-| C-10 | The panel can list an approval but cannot decide one — nothing in `apps/web` calls `POST /api/approvals/:id/decide`, and no code fetches `GET /api/approvals` | `apps/web/src`, WI-004 review, 2026-10-20 |
+| #    | Candidate                                                                                                                                                     | Found in                                                                                                                                                                                |
+| ---- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| C-01 | An approval closes its execution instead of resuming the interrupted agent turn                                                                               | ARCHITECTURE.md, known limitations                                                                                                                                                      |
+| C-02 | The event stream polls the event table every 250 ms instead of holding a connection to the worker                                                             | ARCHITECTURE.md, known limitations                                                                                                                                                      |
+| C-03 | ACP sessions are created per turn instead of resumed, though the protocol supports it                                                                         | ARCHITECTURE.md, known limitations                                                                                                                                                      |
+| C-04 | Only the OpenAI-compatible model API shape is implemented                                                                                                     | ARCHITECTURE.md, known limitations                                                                                                                                                      |
+| C-05 | Milestone 05 is partially implemented — scoped autonomy policies, review and acceptance workflow, evidence capture                                            | ARCHITECTURE.md, incremental build plan                                                                                                                                                 |
+| C-06 | The CLI adapter is supervised, not sandboxed                                                                                                                  | ARCHITECTURE.md, security posture                                                                                                                                                       |
+| C-07 | The instance has one owner; no teams, no sharing, no permissions                                                                                              | ARCHITECTURE.md, known limitations                                                                                                                                                      |
+| C-08 | 55 kB of zod is in the first paint, because the client validates every event frame with the contracts schema                                                  | WI-001, Cog's report                                                                                                                                                                    |
+| C-09 | Four UI directions were built as prototypes; the owner has not chosen one, and direction D leaves the boundary between its two rooms open                     | `prototypes/README.md` — [WI-006](../work/WI-006.md) is held: the owner is settling the direction in a strategy session, and Chief opens nothing new until the owner releases the queue |
+| C-10 | The panel can list an approval but cannot decide one — nothing in `apps/web` calls `POST /api/approvals/:id/decide`, and no code fetches `GET /api/approvals` | `apps/web/src`, WI-004 review, 2026-10-20                                                                                                                                               |
 
 ## How a want becomes a work item
 
@@ -124,8 +124,8 @@ write.
 
 - One owner per work item.
 - **Every new feature is grilled with the owner before it becomes a work
-  item.** The owner's rule, 2026-10-20: *"dont rush to implement a feature
-  when we havent discussed it."* The grilling is Matt Pocock's `grill-me`,
+  item.** The owner's rule, 2026-10-20: _"dont rush to implement a feature
+  when we havent discussed it."_ The grilling is Matt Pocock's `grill-me`,
   installed at `~/.minimax/skills/grill-me` and `~/.minimax/skills/grilling`
   (MIT, © 2026 Matt Pocock). It asks in rounds: each round is the whole
   frontier of settled questions, every question carries a recommended
