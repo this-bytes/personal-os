@@ -1,11 +1,30 @@
 # Product
 
-Personal OS is an agent-native control panel and personal software factory.
+**Personal OS is an environment that one person's agents operate and extend.**
+
+That is the owner's answer, given on 2026-10-20, and this document is the product's
+copy of it. An environment agents operate and extend — not a chat home. The software
+factory is a part of it, not the whole of it, and the panel is where the owner meets
+it.
 
 This document defines what the product owns, what it deliberately does not own, and
 where v1.0 stops.
 
-## 1. Product ownership boundaries
+## 1. The owner's role
+
+**The owner directs, approves and accepts. Agents do everything else.**
+
+Everything the product does on its own is something the owner has already delegated.
+The product asks the owner for authority in exactly three forms — direct it, approve
+it, accept it — and the owner is the only one who can give any of them.
+
+**One exception, and it is a trust decision rather than a decision.** Connecting a new
+agent is not something the owner evaluates and then approves; it is something the
+owner trusts. A connection is how something outside the instance acts inside it, with
+the instance's data behind it, so the owner's answer to "connect this?" is not "is it
+good?" but "do I trust it?".
+
+## 2. Product ownership boundaries
 
 Personal OS is responsible for three things.
 
@@ -27,7 +46,7 @@ retains the external task id and status instead of creating a competing internal
 workflow. Personal OS shows the work, the references and the results — it does not
 recreate the other system's internals.
 
-## 2. The three audiences
+## 3. The one owner, and the agents
 
 Personal OS has exactly one human user: the owner. That is a deliberate constraint,
 not an oversight. Multi-user tenancy and organisations are out of scope for v1.0.
@@ -36,7 +55,7 @@ It does have many agents. Each connected agent is an independent runtime with it
 context, its own credentials and its own failure modes. Personal OS owns the shared
 conversation history; each external agent owns its own runtime context.
 
-## 3. Core concepts
+## 4. Core concepts
 
 ### Conversation
 
@@ -73,6 +92,13 @@ revision handling and the same audit trail.
 A resource is not a chat message that got pinned. It survives the conversation that
 created it.
 
+**A resource is what "native" means for an agent-created feature.** An agent's
+feature is a typed, validated resource in these contracts — one of the six kinds
+above, with a spec its owning provider validates — and never a surface invented for
+agents. The third half of that is not built yet: nothing in the product tells an
+agent what a good resource looks like, so an agent creates one from the schema alone,
+and a schema is a type, not an example. That gap is sized and waiting on the owner.
+
 ### Factory
 
 The work-tracking layer:
@@ -98,7 +124,7 @@ A trigger is a schedule, an event, or a manual run. An event trigger names one o
 small allowlist of meaningful events, and every event carries the depth of the chain
 that produced it — so two automations cannot wake each other forever.
 
-## 4. Autonomy
+## 5. Autonomy
 
 Autonomy is optional, configurable per workspace and goal, and bounded everywhere it
 appears. Every autonomy policy carries at least:
@@ -117,7 +143,102 @@ within its granted scope. The system must never create an unlimited agent-to-age
 response loop; the routing safeguards in [CONTRACTS.md](CONTRACTS.md) exist for
 exactly that reason.
 
-## 5. What v1.0 deliberately leaves out
+## 6. What the product is for every day
+
+**Tasks/work and documents.** That is the owner's answer to what "everyday
+productivity" means, and it is the scope the product is built around: the work the
+owner asks for, and the things that come out of it.
+
+Deliberately out of it: **email and calendar**. The owner's answer named them by
+exclusion. An instance that reads someone's mail and writes their calendar is a
+different product with a different trust boundary, and nobody has asked for it.
+
+## 7. The product reports on itself
+
+The product answers two questions about itself, and shows both in the panel:
+
+1. **The share of features authored by agents in-instance** — of the resources that
+   exist, how many an agent made rather than the owner.
+2. **The share of operations done without the owner touching code** — of the routine
+   work the instance does, how much of it the owner never had to hand-edit.
+
+**The data for both is already in the product.** Every resource records who created
+it, and the audit trail records the actor of every action. **Nothing counts them
+yet**, and the panel does not show these numbers today. Counting them is sized and
+waiting on the owner, because a route that returns them is a published contract.
+
+**No ratio whose denominator is zero.** For a long while the honest value of "the
+share of features authored by agents" is zero or undefined, because no agent has
+authored a feature in-instance yet. A panel that greets its owner with 0% reads as
+broken, and the product's first report on itself must not be a lie by omission. So
+the counts are shown — N features, M operations — and a ratio is shown only when
+there is a denominator to divide by.
+
+## 8. What an agent-authored artefact needs
+
+**An agent-authored artefact does not exist until something has checked it.**
+
+This is the rule behind both working precedents of agent self-extension: a skill
+authored under a typed contract with evals, and a workflow created under
+validate-before-deploy and copy-before-edit. An agent that can write a thing with
+nothing checking it has not produced a feature; it has produced a proposal.
+
+**The ledger is where the product already does this.** Goal → task → execution →
+evidence → acceptance. An execution carries the evidence the run produced, and a
+task is closed by an explicit acceptance decision rather than by the agent's own
+report that it is done. The check is the acceptance; the ledger is the shape.
+
+## 9. The extension surface — a recommendation, not a decision
+
+_This section records a recommendation. The owner has not chosen it yet._
+
+**MCP Apps (SEP-1865)** is the standard for a server shipping its own UI to a host:
+pre-declared `ui://` templates the host can review before execution, plain MCP
+JSON-RPC so the exchange stays auditable, sandboxed frames, and a host able to
+require explicit approval for UI-initiated tool calls. It is a proposal rather than
+a ratified standard, and it requires a text-only fallback. It is the recommended
+target for **agent-created UI**.
+
+**AG-UI** is the recommended target for the **agent-to-UI event stream**.
+
+**The host's approval gate stays in front of any agent-initiated call.** That part
+is not a detail: it is the same shape as "the human decides", and it is the same
+shape as the ledger.
+
+**Scoped, so nobody reads this as a licence to fork something.** MCP Apps is a
+different surface from a domain resource — it is about a server shipping its own UI
+to a host, not about what a resource is. The panel's agent-facing surface is MCP and
+AG-UI. ACP and A2A are the agent-connection side, which Personal OS speaks when it
+connects out to an agent. **Our resources, tasks and goals stay ours, and no
+protocol is forked.**
+
+## 10. Borrowing, and the protocol boundary
+
+**Borrow the idea, not the dependency.** Another project that solves part of what
+we need is inspiration: read it, take the approach, and build the feature inside this
+repository against our own contracts, schemas and data model. Personal OS does not
+vendor a codebase in and does not take a runtime dependency to get a feature. The
+doctrine keeps the rule itself in [FACTORY.md](FACTORY.md); this is the product-side
+consequence of it.
+
+**An interface is conformed to, never reimplemented.** Personal OS is a client of
+ACP, A2A, MCP and the OpenAI-compatible API shape. "Our spec" means our domain
+model, not our dialect of someone else's protocol.
+
+**Where the boundary falls exactly is still open.** The reading in front of the
+owner is recorded in ADR 7: the panel's agent-facing surface conforms to MCP and
+AG-UI, ACP and A2A are the agent-connection side, and our resources, tasks and goals
+stay ours. The owner is being asked to settle it.
+
+## 11. The panel's own rules
+
+**One accent, one meaning.** The panel uses a single accent colour, and it always
+means the same thing: live, or waiting on you. Structure and data stay in their own
+colours. This is the rule that lets a number be read at a glance instead of being
+decoration, and it is the one thing a visual direction has to get right before the
+rest of the visual work matters.
+
+## 12. What v1.0 deliberately leaves out
 
 These are absent on purpose. Their absence is not an architectural limitation — the
 resource, conversation and agent boundaries provide places to add them when there is a
@@ -134,7 +255,7 @@ demonstrated need.
 - Sophisticated automatic knowledge extraction
 - Arbitrary agent-generated application code
 
-## 6. Success criteria
+## 13. Success criteria
 
 A milestone is not delivered because an agent reported success. It needs a working
 demonstration and tests that confirm its acceptance conditions.
