@@ -1,6 +1,6 @@
 import { and, asc, desc, eq, lte, sql } from 'drizzle-orm';
 import type { Database } from '../db/client.js';
-import { queueJobs } from '../db/schema.js';
+import { automationRuns, executions, queueJobs, tasks } from '../db/schema.js';
 import { newId } from '../lib/ids.js';
 
 export type JobType = 'chat.turn' | 'factory.execute' | 'automation.run' | 'resource.refresh';
@@ -196,21 +196,91 @@ export class Queue {
       .run();
   }
 
-  /** Release jobs whose worker died, so another worker can pick them up. */
+  /**
+   * Release jobs whose worker died, so another worker can pick them up.
+   *
+   * A job whose work is already recorded as `unknown` is not released. The
+   * work may already have had its side effect, and running it again is the
+   * one thing that must not happen on its own. Such a job is held instead,
+   * and the owner decides what happens next.
+   */
   reapStaleJobs(olderThanMs = 120_000): number {
     const cutoff = new Date(Date.now() - olderThanMs).toISOString();
-    const result = this.db
-      .update(queueJobs)
-      .set({
-        status: 'queued',
-        lockedAt: null,
-        lockedBy: null,
-        lastError: 'Worker lease expired; job was requeued.',
-        updatedAt: new Date().toISOString(),
-      })
+    const stale = this.db
+      .select()
+      .from(queueJobs)
       .where(and(eq(queueJobs.status, 'running'), lte(queueJobs.lockedAt, cutoff)))
-      .run();
-    return result.changes;
+      .all();
+
+    let handled = 0;
+    for (const job of stale) {
+      if (this.itemIsUnknown(job)) {
+        this.hold(
+          job.id,
+          'The outcome of this job could not be confirmed, so it was not run again.',
+        );
+        handled += 1;
+        continue;
+      }
+
+      this.db
+        .update(queueJobs)
+        .set({
+          status: 'queued',
+          lockedAt: null,
+          lockedBy: null,
+          lastError: 'Worker lease expired; job was requeued.',
+          updatedAt: new Date().toISOString(),
+        })
+        .where(eq(queueJobs.id, job.id))
+        .run();
+      handled += 1;
+    }
+    return handled;
+  }
+
+  /**
+   * Has the work this job was doing already been recorded as unknown?
+   *
+   * The worker holds a job after the executor has returned, so a worker that
+   * dies in between leaves the job running with the item already unknown.
+   * The item is the record of what happened, and it is what the contract
+   * says must not be run again.
+   */
+  private itemIsUnknown(job: { payload: unknown; lockedAt: string | null }): boolean {
+    const payload = job.payload as {
+      executionId?: string;
+      taskId?: string;
+      automationId?: string;
+    };
+
+    if (payload.executionId) {
+      const execution = this.db
+        .select()
+        .from(executions)
+        .where(eq(executions.id, payload.executionId))
+        .get();
+      if (execution?.status === 'unknown') return true;
+    }
+
+    if (payload.taskId) {
+      const task = this.db.select().from(tasks).where(eq(tasks.id, payload.taskId)).get();
+      if (task?.status === 'unknown') return true;
+    }
+
+    if (payload.automationId) {
+      // An automation run has no id in the job, so the run that belongs to
+      // this job is the one that started after the job was claimed.
+      const run = this.db
+        .select()
+        .from(automationRuns)
+        .where(eq(automationRuns.automationId, payload.automationId))
+        .all()
+        .find((row) => row.status === 'unknown' && row.startedAt >= (job.lockedAt ?? ''));
+      if (run) return true;
+    }
+
+    return false;
   }
 
   /** Cancel queued jobs for a conversation, used when a chat is paused. */

@@ -808,10 +808,15 @@ async function executeFactoryTask(
     );
   }
 
-  return failure
-    ? { status: 'failed', error: failure }
-    : unknown
-      ? { status: 'unknown', error: explanation }
+  // The outcome the worker acts on is the one that decides whether the job
+  // is retried, so it is the same judgement the row above made: a deadline
+  // that stopped work that had already started is an unknown outcome, not a
+  // failure. Reporting it as a failure would requeue the work and run it
+  // again, and it may already have had its side effect.
+  return unknown
+    ? { status: 'unknown', error: explanation }
+    : failure
+      ? { status: 'failed', error: failure }
       : { status: 'completed' };
 }
 
@@ -999,10 +1004,13 @@ async function executeAutomation(
     { workspaceId: automation.workspaceId, depth },
   );
 
-  return failure
-    ? { status: 'failed', error: failure }
-    : unknown
-      ? { status: 'unknown', error: explanation }
+  // The same judgement the run above recorded: a deadline that stopped an
+  // action that had already started is an unknown outcome, and the worker
+  // holds the job rather than running the action again.
+  return unknown
+    ? { status: 'unknown', error: explanation }
+    : failure
+      ? { status: 'failed', error: failure }
       : { status: 'completed' };
 }
 

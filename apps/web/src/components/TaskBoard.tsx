@@ -289,12 +289,15 @@ function TaskCard({
               </div>
             </div>
 
-            {task.status === 'review' ? (
+            {task.status === 'review' || task.status === 'unknown' ? (
               <div className="space-y-1.5 rounded-md border border-amber-800/50 bg-amber-950/20 p-2">
                 <p className="flex items-start gap-1.5 text-[11px] text-amber-200">
                   <ShieldCheck className="mt-0.5 h-3.5 w-3.5 shrink-0" />
-                  The agent reported that it finished. That is not acceptance — decide here whether
-                  the criteria are actually met.
+                  {task.status === 'unknown'
+                    ? 'The agent started this and we cannot confirm how it ended. It may already ' +
+                      'have run — check it, and decide here whether the criteria are met.'
+                    : 'The agent reported that it finished. That is not acceptance — decide here ' +
+                      'whether the criteria are actually met.'}
                 </p>
                 <Textarea
                   aria-label="Acceptance reason"

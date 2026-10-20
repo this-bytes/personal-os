@@ -292,6 +292,23 @@ export function createFactoryService(options: FactoryServiceOptions): FactorySer
       const now = new Date().toISOString();
       const executionId = newId('exe');
 
+      // Handing a task with an unknown outcome to an agent is the owner's
+      // decision to run the work again, and it is the answer to the question
+      // the worker could not answer. An audit reader has to be able to see
+      // that it happened.
+      if (task.status === 'unknown') {
+        audit.record({
+          workspaceId: task.workspaceId,
+          actorType: 'human',
+          actorId: 'owner',
+          action: 'task.outcome.resolved',
+          targetType: 'task',
+          targetId: taskId,
+          result: 'success',
+          metadata: { from: 'unknown', to: 'active', agentConnectionId },
+        });
+      }
+
       db.update(tasks)
         .set({ assigneeId: agentConnectionId, status: 'active', updatedAt: now })
         .where(eq(tasks.id, taskId))
