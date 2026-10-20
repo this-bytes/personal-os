@@ -146,7 +146,10 @@ describe('coordinator mode', () => {
     const decision = plan({
       conversation: coordinatorConversation,
       message: {
-        senderId: 'p_cto',
+        // The worker names the agent by its connection id when the
+        // participant row is missing, so there is no participant id to match
+        // on. Only the connection id identifies the coordinator here.
+        senderId: 'agt_cto',
         text: '@Codex implement this',
         origin: { kind: 'agent', actorId: 'agt_cto', agentConnectionId: 'agt_cto', depth: 1 },
       },
@@ -160,11 +163,12 @@ describe('coordinator mode', () => {
       conversation: coordinatorConversation,
       message: {
         senderId: 'p_codex',
-        text: 'done',
+        text: '@Hermes CTO are you there?',
         origin: { kind: 'agent', actorId: 'p_codex', depth: 2 },
       },
     });
     expect(decision.targets).toEqual([]);
+    expect(decision.blocked).toBe('not_coordinator');
   });
 
   it('does not let a non-coordinator agent delegate to another participant', () => {
@@ -180,6 +184,24 @@ describe('coordinator mode', () => {
     expect(decision.blocked).toBe('not_coordinator');
   });
 
+  it('does not let a non-coordinator delegate by naming an explicit target', () => {
+    // The same delegation, expressed the other way: the target is named
+    // instead of mentioned. The rule is about who delegates, not about how
+    // the delegate is spelled.
+    const decision = plan({
+      conversation: coordinatorConversation,
+      message: {
+        senderId: 'p_codex',
+        text: 'take this',
+        origin: { kind: 'agent', actorId: 'p_codex', depth: 2 },
+      },
+      explicitTargets: ['agt_cto'],
+    });
+    expect(decision.targets, `a non-coordinator routed a turn anyway: ${decision.reason}`).toEqual(
+      [],
+    );
+  });
+
   it('does not blame the coordinator for a delegation it never made', () => {
     const decision = plan({
       conversation: coordinatorConversation,
@@ -191,6 +213,21 @@ describe('coordinator mode', () => {
     });
     expect(decision.reason).not.toContain('Delegated by the coordinator');
     expect(decision.reason).toContain('Codex');
+  });
+
+  it('says so when the conversation has no active coordinator', () => {
+    const decision = plan({
+      conversation: coordinatorConversation,
+      // The coordinator participant is gone, so there is nobody to delegate.
+      participants: [participants[0]!, participants[2]!],
+      message: {
+        senderId: 'p_codex',
+        text: '@Codex please take this',
+        origin: { kind: 'agent', actorId: 'p_codex', depth: 2 },
+      },
+    });
+    expect(decision.targets).toEqual([]);
+    expect(decision.reason).toContain('no active coordinator');
   });
 });
 
