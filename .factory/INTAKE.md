@@ -234,20 +234,50 @@ Desk is the only direction whose home screen is that decision list. The owner
 chose the direction that recommendation rejected. Three things follow, and
 they are recorded here so that nobody has to re-derive them:
 
-- **Forge is coherent with Q2 in its settled form, and the recommendation
-  already settled it.** "The factory board, the agent list and the automation
-  runs do _not_ go in the orientation room. They are what needs the owner's
-  authority, so they belong in the execution room, next to the conversation,
-  where a decision can be taken. The orientation room keeps the map and
-  nothing else." The objection that Forge's orientation room is the project
-  dashboard the stated scope rules out does not survive that settlement — the
-  settled Forge is not the version that was on the table.
+- **Forge is coherent with Q2, and the boundary Forge settled is the rule-based
+  one — not the conditional this entry used to quote.** The owner's Q2 answer
+  is _"Only decide: direct, approve, accept. Agents do everything else.
+  Connecting a new agent is a trust decision"_ (see "The strategy decisions"
+  above). The Desk-era recommendation carried a conditional for the case where
+  the owner said Forge: _"the factory board, the agent list and the automation
+  runs do not go in the orientation room... The orientation room keeps the map
+  and nothing else. That is the version of D that would be worth building, and
+  it is not the version on the table."_ That was the factory's own preference,
+  written while it was recommending Desk, and it said outright that it was not
+  the version on the table.
+
+  **What Forge actually settled** is the rule in
+  [`prototypes/DIRECTION.md`](../prototypes/DIRECTION.md): _if it is a picture
+  of the system, it is in the orientation room; if it is a place where work is
+  inspected or decided, it is in the execution room._ Under that rule the
+  constellation and the agent list are in the orientation room — the
+  constellation **is** the agent list, spatialised, and building it twice
+  would build the same information twice — the factory board and the
+  automation runs are in the execution room, and the dashboards are in the
+  orientation room.
+
+  **The correction is recorded because this entry got it wrong the first
+  time.** An earlier version quoted that conditional as "Q2 in its settled
+  form" and put the agent list in the execution room. It is not the owner's
+  answer, it was conditional, and it did not survive the owner choosing Forge.
+
+  **One consequence is not answered yet, and it belongs to the build item.**
+  Q2 says connecting a new agent is a trust decision, and the agent list is
+  now a picture in the orientation room — a place where nothing is decided.
+  The Needs-you rail answers it for the waiting list, and it is the same
+  defect shape as WI-004's: the panel could list an approval and could not
+  decide one. So the constellation has to carry the connect decision in place,
+  or the agent list has to keep a decision surface in the execution room.
+  That is a build decision, and it is in [WI-024](work/WI-024.md).
+
 - **The cost objection survives, and answering it is the factory's job.**
   Forge is the most expensive of the four: two rooms, two densities, a new
   component and a dashboard screen, for the one implementer who already has
-  items ahead of it. Nobody has costed Forge. Its cost model, and the order
-  the work lands in, belong to the item that builds it — and that item does
-  not exist yet.
+  items ahead of it. The cost model is now written, in
+  [`prototypes/DIRECTION.md`](../prototypes/DIRECTION.md), and it is priced
+  from the tree: 215 `slate-` lines survive a re-hue in place, 34 `indigo-`
+  lines move, and amber's ten lines across six files hold the only semantic
+  collision — four of them mean caution, not liveness.
 - **The decision control is still not blocked by the direction.** That was true
   for Desk and it is true for Forge: the inbox is already a component, and a
   layout change re-lays-out the list's _layout_, not the control inside it.
@@ -270,11 +300,11 @@ is green → the push → CI runs on GitHub for the first time → WI-023 (CI
 proving the owner-token path) can run. No decision is owed by anybody else
 for any of it.
 
-### A want, not a work item — the Forge direction
+### The Forge direction — opened, as [WI-024](../work/WI-024.md)
 
-The Forge item will be numbered by the session that owns the number space.
-Chief is recording the want here rather than opening a file, and the decision
-itself is recorded in [WI-010](../work/WI-010.md).
+The want that was recorded here is now a work item. The other Chief session
+handed it over in writing — _"WI-010 is closed out and the build item is yours
+to open"_ — and this session opened it rather than leaving it a want.
 
 - **Title:** The panel takes Forge — an orientation room and an execution
   room.
@@ -284,23 +314,39 @@ itself is recorded in [WI-010](../work/WI-010.md).
 - **Criteria:** the cost of adopting Forge now is stated concretely — which
   parts of the existing app are affected, what in WI-004's landing page is
   preserved, and what is reworked, as a list and not as "low effort"; the
-  boundary is the settled one, so the orientation room keeps the map and
-  nothing else while the factory board, the agent list and the automation runs
-  go to the execution room; the decision control is not rebuilt by the
-  direction, and the landing page's _layout_ is what changes; the landing page
-  ends up in the execution room, because it is the decision list; and the
-  document is written where the next agent will find it.
+  boundary is the settled one, the rule-based one in
+  [`prototypes/DIRECTION.md`](../prototypes/DIRECTION.md); the decision
+  control is not rebuilt by the direction, and the landing page's _layout_ is
+  what changes; the landing page ends up in the execution room, because it is
+  the decision list; and the document is written where the next agent will
+  find it.
 - **Not urgent:** the control ships first and is not blocked, so the owner's
   top want does not wait for this.
 
-**Two things this section does not decide, and says so out loud.** The
+**The two numbers this session took, and why they are named here.** The number
+space has one owner, and the other session owns it; it handed over two items
+in writing, and this session took the two numbers for them:
+
+| Number | Item                                                              | Owner |
+| ------ | ----------------------------------------------------------------- | ----- |
+| WI-024 | The panel takes Forge — an orientation room and an execution room | Cog   |
+| WI-025 | The direction answer, written into ADR 0007                       | Wren  |
+
+They are named here rather than only in the files, because a session that opens
+items reads this file before it opens anything, and a number that is taken in
+two places is a number nobody takes twice. WI-025 was not in the hand-over
+text by number, but it is the second half of it — _"Wren writes the direction
+answer as a section of ADR 0007 — after the answer, not before"_ — and ADR
+0007 still says the direction is Desk (B) and _"not yet decided"_, which is
+now false.
+
+**One thing this section does not decide, and says so out loud.** The
 direction's own cost model is in `prototypes/DIRECTION.md`, rewritten for D
 after the owner's answer. That rewrite is Chief's own writing, so it goes to
 Probe before WI-010 is accepted, on the rule that a work item Chief wrote and
 Chief accepted has no reviewer in it — and the cost model inside it is the
-number the biggest item in the queue will be sized from, so it is worth one
-verifier slot to check. And the build item is the session that owns the
-number space's to open; the want above is what it is sized from.
+number the biggest item in the queue is sized from, so it is worth one
+verifier slot to check.
 
 ## Candidates
 
