@@ -71,9 +71,11 @@ A bot that needs a file owned by someone else asks Chief. It does not take it.
                                                      └──▶ back to Implement
 ```
 
-1. **Intake.** A work item arrives — a bug, a contract change, a gap in the
-   documentation. Chief writes it down as a work item (`.factory/TASK.md` is
-   the format) and decides whether it is worth doing at all.
+1. **Intake.** A want arrives — a bug, a contract change, a gap in the
+   documentation, or something the owner asked for. Chief records it in
+   [`.factory/INTAKE.md`](.factory/INTAKE.md) in the owner's own words, and
+   decides whether it is worth doing at all. A want that survives becomes a
+   work item in the format of `.factory/TASK.md`.
 2. **Triage.** Chief assigns the work item to one owner. A work item with two
    owners is two work items.
 3. **Implement.** Cog makes the change, in one worktree, following
@@ -124,6 +126,21 @@ it defeats the point of having an owner.
 Acceptance criteria are written so that _someone else_ could check them
 without reading the diff. "The revision guard rejects a stale update" is a
 criterion. "the code is cleaner" is not.
+
+## Where a want comes from
+
+A want reaches the factory in the owner's words — in chat, in the group, or
+from a gap someone noticed. It lands in [`.factory/INTAKE.md`](.factory/INTAKE.md),
+which is the queue of wants that have not yet become work items. That file
+also holds the standing questions Chief asks when a want is under-specified.
+
+Two rules follow from it:
+
+- **A want is judged before it is built.** Chief decides whether it is worth
+  doing at all. A want that is declined keeps its reason, so it does not come
+  back as a surprise.
+- **A want that needs two owners is two work items.** Splitting happens at
+  intake, not halfway through an implementation.
 
 ## Rules the bots must not break
 
