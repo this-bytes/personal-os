@@ -45,6 +45,15 @@ npm run build
 Linux and macOS are unaffected — their toolchains are present, and the
 compile simply succeeds.
 
+There is no way to fix this in the lockfile. The package declares
+`"gypfile": false` so that npm will not compile it, but npm does not carry
+that marker into `package-lock.json`, and it drops the marker again if you
+add it by hand — the next `npm install` rewrites the lockfile without it. The
+package is at the latest version and ships a prebuilt binary for every
+platform, so there is nothing to upgrade to either. The flag above is the
+fix, and it is safe here because nothing in the dependency tree needs its
+install script to run.
+
 Run the three processes separately while developing:
 
 ```bash
