@@ -100,6 +100,26 @@ Order matters when building: `contracts` → `agent-adapters` → `server` → `
 complains about. A pull request whose diff is mostly reformatting hides the
 change that matters, so run it before you commit rather than after.
 
+**Two ways the format gate reports a problem that is not there.** Both have
+been read as a broken file. Recognise them before you go looking for a defect.
+
+- **A file piped into `npx` is checked wrongly.**
+  `git show HEAD:README.md | npx prettier --check --stdin-filepath README.md`
+  prints `(stdin)` and exits 1 on a file that is clean. The same file checked
+  from disk is "All matched files use Prettier code style!", and the same pipe
+  straight into prettier's CLI is clean too: the bytes on the pipe are the
+  file's own, and it is the `npx` wrapper that changes the answer. To check a
+  committed file, check the working tree, or write the blob to a temporary
+  file with its real extension and check that file.
+- **Do not break an inline code span across lines.** A code span keeps its
+  content literally, newlines and indentation included, so a span split over
+  two lines carries that newline and the next line's indent into the span
+  itself. Prettier's formatter is not idempotent on one: it re-wraps the
+  paragraph, the re-wrap changes the span's content, and the next
+  `prettier --write` changes the file again — so a `format:check` run right
+  after one `npm run format` fails on a file that is not wrong. Keep the span
+  on one line.
+
 ### Adding a database change
 
 1. Edit `apps/server/src/db/schema.ts`.
