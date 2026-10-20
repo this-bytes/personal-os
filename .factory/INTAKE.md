@@ -2826,3 +2826,28 @@ written, already owner-funded, and blocked on nothing.
 **What the ledger's "Probe is the gate" reading was.** It was right about
 where acceptance is stuck, and it was not the whole truth: six items at
 `verify` is a queue, and a queue only matters if it moves.
+
+**Two measurements taken at 11:05, after the section above was written.**
+
+1. **The guard was refusing at that moment.** Chief's attempt to post this
+   state to the factory group was refused with "post_group is only available
+   in a private chat, not during a group turn" — the same guard, refusing at
+   the moment Cog, Wren and Probe were all idle with full queues. So the bot
+   was in a group turn then, and the assignment was held then. **That is
+   correlation, not proof** — a guard that refuses the lead's post while
+   three lanes are idle is the same fact as a guard that holds assignment,
+   but one occurrence of each is not a demonstration.
+2. **Twenty seconds of watching changed nothing.** A queued Cog task
+   (`task_4b5a7d412c11`, WI-017's successor) was watched for twenty seconds
+   for a state change. It stayed `queued`. The stall is not a slow queue
+   clearing; it is not clearing.
+
+**One more thing the owner should know, because it is in the same working
+tree.** Three of the owner's own desktop sessions point at `G:\code\personal-os`
+— "研究 MiniMax Code 复用与 Personal OS 架构", "Fix git remote for multi-agent
+pushes" and "Build personal OS planning specs handoff" — and the third was
+still being worked on at 09:56, minutes after Chief's commit. The factory's
+rule that one file carries one live item is the repository's rule, and the
+owner's own sessions sit in the same checkout as four bots and two Chief
+sessions. That is the contention the red in `ownerPasswordExposure.test.ts`
+came from, and it is the reason a contended gate run is not evidence.
