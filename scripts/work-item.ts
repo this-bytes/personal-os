@@ -172,14 +172,27 @@ function listWorktrees(): Worktree[] {
 /**
  * The commit a new work item branches from.
  *
- * `origin/main` when it is known, because a work item that starts from a
- * stale `main` will need a rebase before it can land — and the agent that
- * started it will not be around to resolve it. `main` is the fallback for a
- * checkout with no remote.
+ * The integration branch is `main`, and whichever of `main` and
+ * `origin/main` is ahead of the other is the newer of the two — so that is
+ * the base. This matters more than it looks: the local `main` is often
+ * ahead of the remote, because work lands on `main` before it is pushed,
+ * and a work item that started from `origin/main` would begin without the
+ * last few commits. A work item that does not have the current code is a
+ * work item whose every gate runs against the wrong tree.
+ *
+ * When the two have diverged — somebody pushed `main` from another clone —
+ * the local `main` is the base, and the pre-push hook catches the
+ * divergence when the branch is pushed and says what to do about it.
  */
 function baseRef(): string {
+  const hasMain = gitSucceeds(['rev-parse', '--verify', 'main']);
   const hasOrigin = gitSucceeds(['rev-parse', '--verify', 'origin/main']);
-  return hasOrigin ? 'origin/main' : 'main';
+
+  if (!hasMain) return 'origin/main';
+  if (!hasOrigin) return 'main';
+  if (gitSucceeds(['merge-base', '--is-ancestor', 'origin/main', 'main'])) return 'main';
+  if (gitSucceeds(['merge-base', '--is-ancestor', 'main', 'origin/main'])) return 'origin/main';
+  return 'main';
 }
 
 /**
@@ -227,15 +240,32 @@ function cmdNew(args: string[]): void {
     );
   }
   if (fs.existsSync(target)) {
-    fail(
-      `${target} already exists.\n` +
-        'Remove it first, or use "npx tsx scripts/work-item.ts remove ' +
-        id +
-        '" if it is a work item worktree.',
-    );
+    // A directory left behind by a worktree that git removed but could not
+    // delete, because the installed `node_modules` is untracked and git
+    // leaves untracked files alone. The path is derived from the work item,
+    // so it belongs to the work item, and this script is what clears it.
+    //
+    // A directory that still holds a `.git` file is a live worktree, and
+    // that is not this script's to delete.
+    if (fs.existsSync(path.join(target, '.git'))) {
+      fail(
+        `${target} already exists and is a live worktree.\n` +
+          'Work in it, or remove it first: npx tsx scripts/work-item.ts remove ' +
+          id,
+      );
+    }
+    fs.rmSync(target, { recursive: true, force: true });
   }
 
   fs.mkdirSync(worktreeRoot(), { recursive: true });
+
+  // Fetch first, so the base is chosen against the current remote rather
+  // than against a stale copy of it. A fetch only moves the remote-tracking
+  // refs; it does not touch the working tree or the local branches.
+  const fetched = gitOrNull(['fetch', 'origin']);
+  if (fetched === null) {
+    process.stdout.write('Note: the fetch failed, so the base was chosen without it.\n');
+  }
 
   const base = baseRef();
   process.stdout.write(`Creating ${branch} from ${base} at ${target}\n`);
@@ -322,6 +352,15 @@ function cmdRemove(args: string[]): void {
   const merged = branch !== '' && gitSucceeds(['merge-base', '--is-ancestor', branch, 'main']);
 
   run('git', ['worktree', 'remove', worktree.path]);
+
+  // `git worktree remove` leaves the directory behind when it holds
+  // untracked files, and the installed `node_modules` is exactly that: it is
+  // gitignored, so git leaves it. The worktree is not gone until the
+  // directory is, and a directory that is still there makes the next
+  // `new` refuse.
+  if (fs.existsSync(worktree.path)) {
+    fs.rmSync(worktree.path, { recursive: true, force: true });
+  }
 
   if (branch) {
     if (merged || force) {
