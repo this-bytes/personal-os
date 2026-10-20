@@ -637,8 +637,8 @@ list, so the client asks for one thing instead of fetching three and joining the
 answers itself.
 
 ```ts
-type WaitingKind = 'approval' | 'task';
-type WaitingReason = 'pending' | 'review' | 'blocked';
+type WaitingKind = 'approval' | 'task' | 'turn';
+type WaitingReason = 'pending' | 'review' | 'blocked' | 'unknown';
 
 interface WaitingItem {
   id: string; // unique across kinds, so the client can key the list
@@ -657,13 +657,68 @@ interface WaitingItem {
 `task:tsk_1` — so one list can be keyed without the client having to pair the
 id with the kind.
 
+**`unknown` is a reason of its own.** An item whose outcome could not be
+confirmed is on this list because there is something to check, not because a
+decision is waiting and not because the work is stuck. The state itself is
+defined in [The unknown outcome](#the-unknown-outcome); this entry publishes the
+list's use of it, and the two are not two definitions. The published type
+carries `pending | review | blocked | unknown`, member for member with
+`apps/server/src/api/waiting.ts:17`, and the route takes the reason straight
+from the task's status (`waiting.ts:85`), so a task that cannot be confirmed
+arrives as `reason: 'unknown'` and the published type cannot drift away from
+what the route returns.
+
+**Migration.** The enum grows by one member and nothing is reclassified. A
+client that matched on three reasons has a fourth case to handle, and the
+fourth is not `blocked` in disguise: it does not say the work is stuck, and
+clearing it is not what unblocks the item. A client that switches exhaustively
+on the reason must now render `unknown` as something to check, or it will show
+an item with no label at all. A task recorded before this change keeps the
+reason it was recorded with — no task's status is rewritten, and no task that
+was `review` or `blocked` becomes `unknown`. A client that treats an
+unrecognised reason as a generic "something is waiting" keeps working, and
+should.
+
 **One thing is one entry.** A pending approval that belongs to a task _is_ that
 task waiting on the owner, so the task does not appear a second time beside it.
 The owner would otherwise see the same thing twice and have no way to tell
 which one to act on.
 
-The order is the order of urgency: an agent that cannot continue comes first,
-then the work waiting for an acceptance decision, then the work that is stuck.
+**`turn` is its own kind.** A turn on this list is an agent turn whose outcome
+could not be confirmed: the work started and the server cannot say how it
+ended. It is not blocked, not failed, and not something the owner can fix — it
+is something to check. The `unknown` state itself is defined in
+[The unknown outcome](#the-unknown-outcome); this entry publishes the list's
+use of it, and the two are not two definitions. A turn is not an approval and
+not a task, so it is not spelled as either.
+
+**The server does not produce a turn yet.** The kind is published ahead of its
+implementation, because the contract leads and the code follows: the
+implementation is WI-027, and the shape above is what it has to reach. A
+published member the server never sends is the drift this factory has just
+spent a day closing — `CONTRACTS.md:544` publishes `executionOwner:
+'external'` and nothing ever writes it — so this entry says plainly that the
+member is not implemented yet rather than publishing it as though it were.
+Until WI-027 lands, the route returns `approval` and `task` only, and the kinds
+the code emits today are `approval` and `task`
+(`apps/server/src/api/waiting.ts:8`).
+
+**The order of the list is over reasons, not kinds.** A turn carries the reason
+its outcome earned, so an unknown turn sorts where an unknown task sorts. The
+published order below is not changed by this entry.
+
+**Migration.** The kind grows by one member and nothing is reclassified. A
+client that matched on two kinds has a third case to handle, and a turn is
+neither of the two it knew: a client that groups its list by kind has to decide
+where a turn sits in its own interface rather than filing it under a task. A
+client that matches on the reason is unaffected — the reasons did not change
+with this entry. A row recorded before this change keeps the kind it was
+recorded with: no approval becomes a turn, and no task becomes a turn.
+
+The order is the order of urgency, and it is the order the code assembles the
+list in (`apps/server/src/api/waiting.ts:106-110`): an agent that cannot
+continue comes first, then the work whose outcome could not be confirmed, then
+the work waiting for an acceptance decision, then the work that is stuck.
 
 The list is scoped to one workspace, and `workspaceId` is required. The route
 is read-only, returns only what the owner can see, and requires the same

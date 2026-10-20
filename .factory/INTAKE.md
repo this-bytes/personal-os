@@ -1713,3 +1713,71 @@ No work item covers it and no reviewer has looked at it. The gates that
 would catch a broken migration are green — the build, the bundle gate and the
 24-of-24 e2e suite all pass on it — so this is recorded as a gap in the
 record, not as a claim of a defect.
+
+### A correction to the paragraph above, from Wren's four-document review
+
+Wren **did** look at the Tailwind claims, in the review of the four
+documents (task `task_7435ab153854`), and the finding is the opposite of a
+gap: the root commit `d2f4ec6` **already had `tailwindcss` 4.3.3**,
+`vitest` 4.1.12 and `engines.node >=22.13.0`, so the `CHANGELOG.md` claim
+that this tree migrated "Tailwind CSS 3.4 → 4.3" described a migration that
+is not in the tree. Wren rewrote the entry to state the versions in use and
+the checkable facts (the `@theme` block, the explicit `@source`, the
+`@custom-variant dark` that preserves v3's `darkMode: 'class'`).
+
+So the correction is: **there is no unreviewed migration here to review.** The
+Tailwind v4 configuration was in the repository's first commit, it was never
+this factory's work, and the one place that claimed otherwise was a document
+that has been corrected. The paragraph above is left as it was written,
+because it was written as the record of a moment; this is the record of what
+turned out to be true.
+
+## The state at 2026-10-21 07:30 — one red left, and how it went
+
+**The tree has one red.** Measured first-hand, not read out of a commit
+message:
+
+```
+npm --prefix apps/server run test  → exit 1 — 1 failed | 208 passed (209)
+  unknown-outcome.test.ts  1  — "reaches the owner when it is a turn,
+                                  not only when it is a task"
+```
+
+Seven reds at 06:18. Two at 07:20. **One now.** The one that is left is the
+unknown _turn_ — the server does not put a turn on the waiting list — and it
+is WI-027's code, with Cog.
+
+**Wren's session did not come back.** The bot sessions were checked
+individually: Cog's (`mvs_db6a5624d51842cd8a029fc062c60503`) is alive and
+working — WI-012's guard round is done (`1d45543`) and WI-007 is running.
+Probe's (`mvs_f1f513955649480dbfb09fae820cf59f`) came back at 07:23 and has
+three tasks queued. **Wren's (`mvs_dff627414f0e47fbbdf7501b11dfdd06`) is
+`idle`, last touched at 07:08** — it was idle when the runtime stopped at
+07:12 and it never re-entered. Four tasks were queued behind a session that
+was not running: WI-022, WI-025, WI-026 and WI-030.
+
+**So the lead took the two that stood between the tree and green.** WI-022's
+dispatch (`task_f438b61f9116`) and WI-026's (`task_fbb0e0528036`) are
+cancelled, and Chief implemented both — WI-022 first, then WI-026, in the
+same file, in the order the items always named. The tiebreak, said out loud:
+`CONTRACTS.md` is Wren's file by the ownership table, but a file whose owner
+is not running does not get written, and the owner's condition is that the
+reds are green before the push. **The lead implemented it and Probe verifies
+it** — the implementer is never the verifier, and that rule is why this is
+safe to do at all. WI-025 and WI-030 stay with Wren, for when it comes back.
+
+**What the two entries say, in one line each.** `WaitingReason` now carries
+`'unknown'`, with what it means on the list and a migration note, and the
+published urgency order now has the code's four bands. `WaitingKind` now
+carries `'turn'`, with what a turn is, a migration note, the statement that
+the order is over reasons and not kinds, and the statement that **the server
+does not produce a turn yet** — that is WI-027's code, and publishing a
+member the server never sends is the drift `executionOwner: 'external'` is.
+
+**The one red that is left is honest.** It is not a soft gate and it is not
+`it.fails`: the test says the owner is never told about a turn whose outcome
+could not be confirmed, and that is true today. It is a specification to
+satisfy, and it has an owner with the work in the queue.
+
+**What is owed:** Probe's verification of the two contract entries, request
+ids `wi-022-verify-contract` and `wi-026-verify-contract`.
