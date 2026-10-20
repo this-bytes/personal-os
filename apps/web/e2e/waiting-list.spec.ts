@@ -13,6 +13,51 @@ import { firstWorkspaceId, signIn } from './support/owner';
  * again before the file ends.
  */
 
+/**
+ * How long the list may take to notice something.
+ *
+ * The list refetches on a fifteen second timer as a safety net, so a test
+ * that allows more than that proves nothing: the timer alone would satisfy
+ * it. These tests allow five seconds, which the timer cannot satisfy and the
+ * event stream can, in about a quarter of a second.
+ */
+const NOTICE_WITHIN_MS = 5_000;
+
+/**
+ * Answer the waiting list with a list of the owner's choosing.
+ *
+ * There is no route that creates an approval — an agent raises one, and the
+ * owner never does — so a row that only the worker can produce is put in
+ * front of the client the way the server would send it. The shape is the one
+ * CONTRACTS.md publishes.
+ */
+async function serveWaitingList(page: Page, items: unknown[]): Promise<void> {
+  await page.route(
+    (url) => url.pathname === '/api/waiting',
+    (route) =>
+      route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({ items }),
+      }),
+  );
+}
+
+/** One approval, in the shape CONTRACTS.md publishes. */
+function approvalItem(workspaceId: string) {
+  return {
+    id: 'approval:apr_waiting',
+    kind: 'approval',
+    title: 'Delete the production database',
+    detail: 'An agent is stopped and waiting for your decision.',
+    reason: 'pending',
+    workspaceId,
+    conversationId: 'cnv_waiting',
+    taskId: null,
+    agentConnectionId: 'agt_waiting',
+  };
+}
+
 async function createTaskWaitingForReview(page: Page, workspaceId: string, title: string) {
   const created = await page.request.post('/api/tasks', {
     data: { workspaceId, title, acceptanceCriteria: [] },
@@ -69,6 +114,191 @@ test.describe('what is waiting on the owner', () => {
       data: { satisfied: true, reason: 'accepted while the panel was open' },
     });
 
-    await expect(page.getByText('Waiting list live update')).toBeHidden({ timeout: 20_000 });
+    // The event stream has to carry it. The fifteen second safety net cannot
+    // answer this in time, so this test fails if the event is not what makes
+    // the list current.
+    await expect(page.getByText('Waiting list live update')).toBeHidden({
+      timeout: NOTICE_WITHIN_MS,
+    });
+  });
+
+  test('the list is one request, not three lists joined in the client', async ({ page }) => {
+    await signIn(page);
+    const workspaceId = await firstWorkspaceId(page);
+    await createTaskWaitingForReview(page, workspaceId, 'Waiting list one request');
+
+    const calls: string[] = [];
+    page.on('request', (request) => {
+      const url = new URL(request.url());
+      if (url.pathname.startsWith('/api/')) calls.push(url.pathname);
+    });
+
+    await page.goto('/conversations');
+    await expect(page.getByText('Waiting list one request')).toBeVisible();
+
+    // The waiting list is asked for once, and it is not assembled in the
+    // browser from the approvals and the tasks.
+    expect(calls.filter((path) => path === '/api/waiting')).toHaveLength(1);
+    expect(calls).not.toContain('/api/approvals');
+    expect(calls).not.toContain('/api/tasks');
+  });
+
+  test('a list that could not be loaded is not an empty list', async ({ page }) => {
+    await signIn(page);
+
+    // The list fails to load. That is not the same as there being nothing
+    // waiting, and the owner has to be able to tell the two apart.
+    await page.route(
+      (url) => url.pathname === '/api/waiting',
+      (route) => route.abort('failed'),
+    );
+
+    await page.goto('/conversations');
+
+    await expect(page.getByText('The waiting list could not be loaded')).toBeVisible();
+    await expect(page.getByText('Nothing is waiting on you')).toBeHidden();
+  });
+
+  test('the list is the first thing on the screen the panel opens at', async ({ page }) => {
+    await signIn(page);
+    const workspaceId = await firstWorkspaceId(page);
+    await createTaskWaitingForReview(page, workspaceId, 'Waiting list first');
+
+    await page.goto('/conversations');
+    await expect(page.getByText('Waiting list first')).toBeVisible();
+
+    // The list is above the conversation list, not below it.
+    const order = await page.evaluate(() => {
+      const heading = [...document.querySelectorAll('h2')].find((node) =>
+        node.textContent?.includes('Waiting on you'),
+      );
+      const conversations = [...document.querySelectorAll('h1')].find(
+        (node) => node.textContent?.trim() === 'Conversations',
+      );
+      if (!heading || !conversations) return null;
+      return heading.compareDocumentPosition(conversations) & Node.DOCUMENT_POSITION_PRECEDING
+        ? 1
+        : -1;
+    });
+
+    // The heading of the list comes after the page heading but before the
+    // conversation list, which is what "the first section" means.
+    expect(order).not.toBeNull();
+    const listBeforeConversations = await page.evaluate(() => {
+      const heading = [...document.querySelectorAll('h2')].find((node) =>
+        node.textContent?.includes('Waiting on you'),
+      );
+      const conversationList = document.querySelector('[data-conversation-list]');
+      if (!heading) return false;
+      if (!conversationList) return true;
+      return Boolean(
+        heading.compareDocumentPosition(conversationList) & Node.DOCUMENT_POSITION_FOLLOWING,
+      );
+    });
+    expect(listBeforeConversations).toBe(true);
+  });
+
+  test('an approval on the list is approved or rejected where the list is', async ({ page }) => {
+    await signIn(page);
+    const workspaceId = await firstWorkspaceId(page);
+    await serveWaitingList(page, [approvalItem(workspaceId)]);
+
+    // The decision the owner takes is recorded as it is made.
+    const decisions: Array<{ url: string; body: string }> = [];
+    page.on('request', (request) => {
+      if (request.method() === 'POST' && request.url().includes('/api/approvals/')) {
+        decisions.push({ url: request.url(), body: request.postData() ?? '' });
+      }
+    });
+
+    // The decision itself is answered here, so the test does not depend on an
+    // approval that the server has never heard of.
+    await page.route(
+      (url) => url.pathname.startsWith('/api/approvals/'),
+      (route) =>
+        route.fulfill({
+          status: 200,
+          contentType: 'application/json',
+          body: JSON.stringify({ approval: { id: 'apr_waiting', status: 'approved' } }),
+        }),
+    );
+
+    await page.goto('/conversations');
+
+    const row = page.getByRole('listitem').filter({ hasText: 'Delete the production database' });
+    await expect(row).toBeVisible();
+
+    const controls = row.getByRole('button');
+    const count = await controls.count();
+
+    expect(
+      count,
+      'the approval carries no control at all. The list only links out to the conversation, so ' +
+        'the owner cannot approve or reject the approval where the list is.',
+    ).toBeGreaterThan(0);
+
+    // Take every control in turn, on a freshly loaded row, and see what each
+    // one decides. The control is found by what it does rather than by what it
+    // is called, so the test does not depend on the wording of the button.
+    const verdicts: boolean[] = [];
+    for (let index = 0; index < count; index += 1) {
+      await page.goto('/conversations');
+      await page
+        .getByRole('listitem')
+        .filter({ hasText: 'Delete the production database' })
+        .getByRole('button')
+        .nth(index)
+        .click();
+
+      await expect.poll(() => decisions.length).toBe(index + 1);
+      const decision = decisions[index]!;
+      expect(decision.url).toContain('/api/approvals/');
+      expect(decision.url).toContain('/decide');
+      expect(decision.url).toContain('apr_waiting');
+      verdicts.push(JSON.parse(decision.body).approved === true);
+    }
+
+    // Approving and rejecting are two decisions, and the list offers both.
+    expect(verdicts).toContain(true);
+    expect(verdicts).toContain(false);
+  });
+
+  test('an entry says which agent is waiting', async ({ page }) => {
+    await signIn(page);
+    const workspaceId = await firstWorkspaceId(page);
+
+    // An agent the owner knows by name.
+    const created = await page.request.post('/api/agents', {
+      data: { workspaceId, name: 'Scout', adapterType: 'echo', config: { reply: 'hi' } },
+    });
+    expect(created.ok()).toBe(true);
+    const agentId = (await created.json()).agent.id as string;
+
+    await serveWaitingList(page, [
+      {
+        id: 'task:tsk_waiting',
+        kind: 'task',
+        title: 'Waiting list who is waiting',
+        detail: 'An agent reported this as done. It is not accepted until you say so.',
+        reason: 'review',
+        workspaceId,
+        conversationId: null,
+        taskId: 'tsk_waiting',
+        agentConnectionId: agentId,
+      },
+    ]);
+
+    await page.goto('/conversations');
+
+    const row = page.getByRole('listitem').filter({ hasText: 'Waiting list who is waiting' });
+    await expect(row).toBeVisible();
+
+    // "Who is waiting" is the agent: by name when the client can resolve it,
+    // by its identifier when it cannot.
+    const text = ((await row.innerText()) ?? '').replace(/\s+/g, ' ').trim();
+    expect(
+      text.includes('Scout') || text.includes(agentId),
+      `the entry does not say which agent is waiting. It says: "${text}"`,
+    ).toBe(true);
   });
 });
