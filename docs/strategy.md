@@ -136,7 +136,9 @@ because "AI makes a small edit — and something else breaks".
   records (ARCHITECTURE.md §9, C-01).
 
 **The wants.** W3 (history and take-back, scoped to resources) and W4 (the resume
-the contract already promises).
+the contract already promises). W4 was folded into WI-007, which is the same
+subject; W3 became WI-035 and is **deferred behind Forge** on capacity, so this
+gap is still open.
 
 ### Pillar 3 — The instance can see itself
 
@@ -159,8 +161,9 @@ and WI-030 (the published shape). Both dispatched 2026-10-21.
   merely queued (PRODUCT.md §7).
 
 **The wants.** W1 (make the data true) and W2 (publish the rules, so the measures
-route reads something true). WI-030 already requires the published entry to state
-plainly what the reading cannot cover; W1 and W2 are what remove the caveat.
+route reads something true) — now WI-033 and WI-034, with W2 first because the
+contract leads. WI-030 already requires the published entry to state plainly what
+the reading cannot cover; W1 and W2 are what remove the caveat.
 
 ---
 
@@ -247,6 +250,32 @@ does not claim any.
 **Seven wants.** Six came out of the gap analysis; **W7 came out of the owner's
 answer** that the borrow rule becomes a check, and it is a separate want because
 the record and the gate are different files with different owners.
+
+### Where the wants went
+
+**Triaged on 2026-10-21 09:25, and numbered.** The lead's verdict, its titles, its
+owners and its criteria are recorded in `.factory/INTAKE.md` under _"The seven
+wants, triaged"_, and each item below now carries the want it came from.
+
+| Want | Verdict           | Item                                 | Owner | Note                                                                                                                                                      |
+| ---- | ----------------- | ------------------------------------ | ----- | --------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| W1   | accepted, resized | [WI-033](../.factory/work/WI-033.md) | Cog   | The change behind the product's own report. Lands **after** W2 — the contract leads.                                                                      |
+| W2   | accepted          | [WI-034](../.factory/work/WI-034.md) | Wren  | The published shape for W1. Lands **before** W1.                                                                                                          |
+| W3   | **deferred**      | [WI-035](../.factory/work/WI-035.md) | Cog   | The largest of the seven and the furthest from the owner's stated priority. Starts after Forge. Capacity, not judgement — and numbered so it is not lost. |
+| W4   | **folded**        | [WI-007](../.factory/work/WI-007.md) | Cog   | The same subject under a different name. The fold is recorded in WI-007's file, so the item carries its own scope.                                        |
+| W5   | accepted          | [WI-036](../.factory/work/WI-036.md) | Wren  | The record the gate compares against. Lands **before** W7.                                                                                                |
+| W6   | accepted          | [WI-037](../.factory/work/WI-037.md) | Wren  | The cheapest item in the set and the most overdue.                                                                                                        |
+| W7   | accepted          | [WI-038](../.factory/work/WI-038.md) | Chief | The gate. Lands **after** W5 — a gate that compares against nothing catches nothing.                                                                      |
+
+**Two of the lead's decisions are worth carrying here, because they are judgements
+about this direction rather than about the code.** W4 was folded rather than
+re-filed, because WI-007 is the same want under a different name and a second
+item would be two workers on one subject. And W3 was deferred on capacity, not
+judgement — which means the gap under Pillar 2 is real and still open, and this
+document should not be read as saying the pillar is closed.
+
+**The order is not a preference.** One implementer, one item at a time: W2 before
+W1, W5 before W7, W6 on its own, W3 last.
 
 ### W1 — The audit trail records what happened, not that something happened
 
