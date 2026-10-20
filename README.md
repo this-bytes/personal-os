@@ -179,6 +179,7 @@ personal-os/
 │   ├── agent-adapters/   # ACP, A2A, CLI, HTTP, model adapters
 │   └── ui/               # Reusable components
 ├── docs/
+│   ├── strategy.md       # What this is, where each idea came from, where it goes
 │   └── decisions/        # Architecture decision records
 ├── deploy/
 │   └── compose.yaml
@@ -192,6 +193,7 @@ personal-os/
 
 ## Documentation
 
+- [docs/strategy.md](docs/strategy.md) — what this is, where each idea came from, and where it goes
 - [PRODUCT.md](PRODUCT.md) — product ownership boundaries and scope
 - [ARCHITECTURE.md](ARCHITECTURE.md) — components, data flow and design decisions
 - [CONTRACTS.md](CONTRACTS.md) — the conversation, connection, resource and factory contracts
