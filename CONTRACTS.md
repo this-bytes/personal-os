@@ -431,6 +431,95 @@ rejected with `409 revision_conflict`.
 
 Charts render from structured datasets, not agent-generated executable JavaScript.
 
+### The template record
+
+A template is a **named, versioned example of one resource kind, with its spec, that
+an agent can start from**. It answers a question a schema cannot: a schema is a
+type, and a template is an example that was written, reviewed and shipped.
+
+```ts
+interface ResourceTemplate {
+  id: string; // stable across versions
+  version: number; // positive integer, bumped when the spec changes
+  type: ResourceType; // the kind this template starts
+  title: string;
+  description: string;
+  spec: unknown; // validated by the owning provider for `type`
+}
+
+interface ResourceTemplateRef {
+  id: string;
+  version?: number; // omitted means the newest published version
+}
+```
+
+`ResourceType` is the published kind enum — `dashboard | document | automation |
+data-source | task | memory` (`packages/contracts/src/resource.ts:4-12`). A template
+belongs to exactly one kind, and `version` is part of its identity: the registry
+may hold several versions of one template, and each version is a spec that was
+reviewed on its own.
+
+**A template is not a resource.** It has no workspace, no revision, no `createdBy`
+and no audit trail of its own; it is not a row in `resources` and not a row in any
+table. Templates are **authored in the repository and reviewed like code**, so
+there is no template editor in the panel and no route or tool creates a template.
+The registry is the same for every workspace — a template is not scoped to one.
+
+**A resource created from a template is a normal resource.** It has the same
+[resource contract](#resource-contract): the same schema, the same validation, the
+same audit trail and the same revision, and it starts at revision 1 like every
+other resource. **The template's spec is validated by the owning provider exactly
+as a resource's spec is**, so a template cannot drift into describing something
+the product would reject. The resulting resource carries no reference back to its
+template — it is the resource, not a template instance.
+
+**The template is reached through the tool surface an agent already uses.** That
+surface is the existing `resource.*` MCP surface — not a second tool surface, and
+not a second way to create a resource:
+
+| Tool                     | Purpose                                              |
+| ------------------------ | ---------------------------------------------------- |
+| `resource.template.list` | List the templates published for one resource kind.  |
+| `resource.create`        | Create a resource — from a template, or from a spec. |
+
+`resource.template.list` takes the kind and returns the templates published for
+it. `resource.create` gains **one optional input**, `template`:
+
+```ts
+// the resource.create input
+{ workspaceId?, type, title, data?, template? }
+```
+
+`template` names the template to start from: its `spec` is the resource's `data`,
+and its `type` must equal the `type` the call asks for. `data` and `template` are
+**mutually exclusive** — a call that supplies both is refused, because there is
+no published answer to which of the two wins. An unknown template id is
+`not_found`; a template whose kind does not match, and a template whose spec the
+owning provider refuses, are `validation_failed`. Those codes are already
+published in [Error envelope](#error-envelope); this entry adds none. The tool's
+visibility follows the same grant rule as every other tool on that surface,
+published in [MCP exposure](#mcp-exposure).
+
+**The code does not implement this yet.** The record, the tool and the input are
+published ahead of their implementation, because the contract leads and the code
+follows: the implementation is WI-017, and the shapes above are what it has to
+reach. Nothing in the code carries a template today — there is no template record
+in `packages/contracts`, the published tool names
+(`packages/contracts/src/mcp.ts:11-23`) do not include one, and the server has
+none. A client written against this entry must treat the tool as absent until
+WI-017 lands, the same way the [waiting list](#the-waiting-list) publishes a kind
+the server does not send yet.
+
+**Migration.** Nothing is reclassified. `resource.create` without `template`
+behaves exactly as it does today, so no existing client changes what it sends,
+and no resource written before this change is affected — a resource has no
+template field and gains no template reference. A client that reads the list of
+MCP tools gains one name, `resource.template.list`, and a client that validates
+an agent's `toolGrants` against the known names has to allow for it, because the
+grant vocabulary grows with the surface. A client that renders a resource is
+unaffected: a resource created from a template is an ordinary resource with the
+same fields it always had.
+
 ### The agent memory scope
 
 A memory belongs to a workspace, a conversation, a goal — or to an agent.
@@ -476,20 +565,21 @@ memories were "really" the agent's.
 Personal OS exposes these capabilities through an MCP server at `/mcp`, so compatible
 external agents can discover and operate them.
 
-| Tool                 | Purpose                                                 |
-| -------------------- | ------------------------------------------------------- |
-| `workspace.list`     | List the workspaces available to the caller.            |
-| `conversation.read`  | Read a conversation with its participants and messages. |
-| `conversation.post`  | Post a message to a conversation.                       |
-| `agent.list`         | List the agent connections in a workspace.              |
-| `task.create`        | Create a factory task.                                  |
-| `task.update`        | Update a factory task.                                  |
-| `task.get`           | Read a task with its evidence.                          |
-| `resource.create`    | Create a resource.                                      |
-| `resource.get`       | Read a resource.                                        |
-| `resource.update`    | Update a resource with optimistic concurrency.          |
-| `automation.create`  | Create an automation.                                   |
-| `automation.inspect` | Inspect an automation and its runs.                     |
+| Tool                     | Purpose                                                 |
+| ------------------------ | ------------------------------------------------------- |
+| `workspace.list`         | List the workspaces available to the caller.            |
+| `conversation.read`      | Read a conversation with its participants and messages. |
+| `conversation.post`      | Post a message to a conversation.                       |
+| `agent.list`             | List the agent connections in a workspace.              |
+| `task.create`            | Create a factory task.                                  |
+| `task.update`            | Update a factory task.                                  |
+| `task.get`               | Read a task with its evidence.                          |
+| `resource.create`        | Create a resource, optionally from a template.          |
+| `resource.get`           | Read a resource.                                        |
+| `resource.update`        | Update a resource with optimistic concurrency.          |
+| `resource.template.list` | List the templates published for one resource kind.     |
+| `automation.create`      | Create an automation.                                   |
+| `automation.inspect`     | Inspect an automation and its runs.                     |
 
 These are Personal OS tool names, not predefined MCP methods. Agents discover each
 tool's input and output schema through MCP.
@@ -838,8 +928,119 @@ is not left deleting the database.
 | `POST`             | `/api/approvals/:id/decide`                          | Approve or reject a sensitive operation.                                                |
 | `GET`              | `/api/waiting`                                       | Everything waiting on the owner, in one list. See below.                                |
 | `GET`              | `/api/audit`                                         | Read the audit trail.                                                                   |
+| `GET`              | `/api/measures`                                      | The product's two measures of itself. See below.                                        |
 | `GET`              | `/api/events`                                        | Server-sent event stream.                                                               |
 | `ANY`              | `/mcp`                                               | MCP streamable HTTP endpoint.                                                           |
+
+### The measures route
+
+`GET /api/measures?workspaceId=…` returns the product's two measures of itself. It
+is **read-only**, it answers for **one workspace**, and it follows the same rules
+as every other route: the same authentication — a session cookie or the owner
+token, and never an agent token, which is MCP-only
+(`apps/server/src/api/helpers.ts:13-17`) — and a `workspaceId` that is required,
+as it is on the [waiting list](#the-waiting-list).
+
+```ts
+interface Measure {
+  count: number;
+  denominator: number;
+  ratio: number | null; // null when the denominator is zero
+}
+
+interface Measures {
+  workspaceId: string;
+  agentAuthoredResources: Measure;
+  agentPerformedOperations: Measure;
+}
+```
+
+**A measure is a count, its denominator, and a ratio** — the ratio is never
+returned without the two it came from, because a client that reads the ratio has
+to know what it is a ratio of. The ratio is the exact fraction
+`count / denominator`, between 0 and 1; a client that shows it as a percentage
+applies its own rounding.
+
+**Where there is no denominator the ratio is `null` and not `0`, and the count is
+still returned.** A panel that greets its owner with 0% reads as broken, and the
+product's first report on itself must not be a lie by omission.
+
+**What "authored by an agent" counts as.** A resource is **agent-authored** when
+its `createdBy` names an agent connection — the id of a connection in that
+workspace, and those ids carry the `agt_` form (`apps/server/src/lib/ids.ts:9-17`).
+It is **owner-authored** otherwise: the owner's user id, or the literal `owner`
+that is written when there is no user id (`apps/server/src/api/resources.ts:37`,
+`apps/server/src/modules/mcp/server.ts:368`). A resource's kind, its title, and
+who worked on it afterwards are not part of the reading. On the audit side an
+operation is **agent-performed** when the entry's `actorType` is `agent`, and the
+actor id is then the agent connection id; the published `ActorType` carries
+`human | agent | system | automation` (`packages/contracts/src/common.ts:33`),
+and the code writes `human` and `agent` only.
+
+**What the reading cannot cover.** Three things, said plainly.
+
+**Two of the six kinds can never be agent-authored.** The `automation` and `task`
+projections hardcode `createdBy: 'system'`
+(`apps/server/src/modules/resources/service.ts:170`, `:260`), and their tables
+have no `created_by` column at all (`apps/server/src/db/schema.ts:385-401`,
+`:305-330`) — the value is invented at projection time and nothing is stored. An
+agent-created automation or task is recorded as authored by `'system'`. **The
+first measure is therefore a lower bound**: those resources sit in the
+denominator and can never sit in the count, so the ratio is a share over four of
+the six kinds, reported over all six.
+
+**Twelve of the thirty-four mutating routes write no audit entry at all.** Of the
+34 mutating routes in `apps/server/src/api/`, 20 write an audit entry at the
+route level, two more write one from the service layer — `POST
+/api/approvals/:id/decide` at `apps/server/src/modules/approvals/resume.ts:53`,
+and `PATCH /api/tasks/:id` at `apps/server/src/modules/factory/service.ts:275`,
+and that one only when the task leaves `unknown`. The other twelve write none:
+
+| Method   | Path                                                 |
+| -------- | ---------------------------------------------------- |
+| `POST`   | `/api/agents/:id/probe`                              |
+| `DELETE` | `/api/agents/:id/tokens/:tokenId`                    |
+| `POST`   | `/api/auth/logout`                                   |
+| `POST`   | `/api/auth/owner-token`                              |
+| `PATCH`  | `/api/automations/:id`                               |
+| `DELETE` | `/api/automations/:id`                               |
+| `DELETE` | `/api/conversations/:id`                             |
+| `POST`   | `/api/conversations/:id/participants`                |
+| `DELETE` | `/api/conversations/:id/participants/:participantId` |
+| `POST`   | `/api/goals`                                         |
+| `POST`   | `/api/workspaces`                                    |
+| `PATCH`  | `/api/workspaces/:id`                                |
+
+So **the second measure is a ratio of audited operations only**. It cannot be
+read as the share of everything the owner did: a third of the mutating surface
+is invisible to it.
+
+**Nothing records a failure.** The audit trail's `result` carries
+`success | failure | unknown` (`apps/server/src/modules/audit/service.ts:19`),
+but no writer in the product writes `failure`: the route helper hardcodes
+`success` (`apps/server/src/api/helpers.ts:62`), the audit service defaults to
+it (`apps/server/src/modules/audit/service.ts:71`), and the only other value any
+writer produces is the `unknown` of
+[The unknown outcome](#the-unknown-outcome)
+(`apps/worker/src/executor.ts:104`). An operation that failed is counted here as
+an operation that completed.
+
+**The code does not implement this yet.** The route and its shape are published
+ahead of their implementation, because the contract leads and the code follows:
+the implementation is WI-020, and the shapes above are what it has to reach. No
+route answers this today, and nothing named `measures` exists in the server.
+
+**Migration.** Nothing is reclassified and no record is rewritten. The route is
+new and read-only, so a client that does not call it is unaffected, and a client
+that does has no earlier version of it to migrate from. **No resource's
+`createdBy` is changed** — the two kinds that record `'system'` keep recording
+it, and the measure publishes that as a lower bound rather than correcting the
+data behind the owner's back. **No audit entry is rewritten**, so the second
+measure's denominator is what the trail actually holds, which is fewer
+operations than the owner performed; a client that keeps a measure over time is
+keeping a number whose denominator moves as more routes are audited. A client
+that reads `ratio` has to handle `null`, which is a value the ratio can now take
+and which is not the same as 0.
 
 ### Error envelope
 
