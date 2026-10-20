@@ -333,4 +333,22 @@ describe("an agent's memory in the turn", () => {
     expect(sent).not.toContain('x'.repeat(100));
     expect(sent).toContain('Do the thing');
   });
+
+  it('keeps the pinned memory when a recent one does not fit', async () => {
+    // The order is pinned first and then the most recent, so the pinned
+    // memory has first claim on the budget. A brief that dropped the pinned
+    // entry to make room for a recent one would satisfy the budget and
+    // break the point of pinning.
+    writeMemory('res_1', 'agt_1', 'pinned', 'the pinned one', '2026-01-01T00:00:00.000Z', [
+      'pinned',
+    ]);
+    writeMemory('res_2', 'agt_1', 'huge', 'x'.repeat(6_000), '2026-03-01T00:00:00.000Z');
+
+    await executeJob(context, turn());
+
+    const sent = adapter.turns[0]?.context ?? '';
+    expect(sent).toContain('the pinned one');
+    expect(sent).not.toContain('x'.repeat(100));
+    expect(sent).toContain('Do the thing');
+  });
 });

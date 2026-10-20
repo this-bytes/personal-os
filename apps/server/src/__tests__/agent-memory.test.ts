@@ -246,3 +246,108 @@ describe("an agent's own memory", () => {
     expect(response.memories[0]?.key).toBe('own');
   });
 });
+
+/**
+ * The other way in.
+ *
+ * `resource.create` refuses a memory that names somebody else's agent, and
+ * that refusal is the whole of an agent's protection: one agent writing into
+ * another's memory would put words in its mouth.
+ *
+ * A memory that already exists is reachable through `resource.update`, which
+ * takes the id of the resource it changes. The guard that refuses a foreign
+ * agent is called on the way in through `resource.create`; the question here
+ * is whether it is also called on the way in through `resource.update`, which
+ * is the same kind of write and the same danger.
+ */
+describe("one agent reaching another agent's memory", () => {
+  /** A memory that belongs to one agent, written by the owner. */
+  async function memoryOf(
+    agentId: string,
+    key: string,
+    value: string,
+  ): Promise<{ id: string; revision: number }> {
+    const written = await app.inject({
+      method: 'POST',
+      url: '/api/resources',
+      headers: { cookie: sessionCookie },
+      payload: {
+        workspaceId,
+        type: 'memory',
+        title: 'A memory of the agent',
+        data: { scope: 'agent', agentConnectionId: agentId, key, value, tags: [] },
+      },
+    });
+    expect(written.statusCode).toBe(201);
+    const resource = written.json().resource as { id: string; revision: number };
+    return { id: resource.id, revision: resource.revision };
+  }
+
+  it('does not let an agent write into another agent’s memory by updating it', async () => {
+    const writer = await createAgent('Updater');
+    const other = await createAgent('Memory owner');
+    const memory = await memoryOf(other.id, 'private', 'the other agent only');
+
+    const body = await mcp(writer.token, 'resource.update', {
+      resourceId: memory.id,
+      expectedRevision: memory.revision,
+      data: {
+        scope: 'agent',
+        agentConnectionId: other.id,
+        key: 'private',
+        value: 'words from another agent',
+        tags: [],
+      },
+    });
+
+    // And the other agent still remembers what it remembered.
+    const response = await memoriesOf(other.id);
+    expect(response.memories[0]?.value).toBe('the other agent only');
+
+    expect(body, 'an agent updated another agent’s memory').toContain('isError');
+    expect(body).toContain('its own memory');
+  });
+
+  it('does not let an agent take over another agent’s memory', async () => {
+    const writer = await createAgent('Thief');
+    const other = await createAgent('Memory owner');
+    const memory = await memoryOf(other.id, 'private', 'the other agent only');
+
+    const body = await mcp(writer.token, 'resource.update', {
+      resourceId: memory.id,
+      expectedRevision: memory.revision,
+      data: {
+        scope: 'agent',
+        agentConnectionId: writer.id,
+        key: 'private',
+        value: 'the other agent only',
+        tags: [],
+      },
+    });
+
+    // The other agent still owns it, and the writer did not inherit it.
+    const theirs = await memoriesOf(other.id);
+    expect(theirs.memories[0]?.value).toBe('the other agent only');
+    const ours = await memoriesOf(writer.id);
+    expect(ours.memories, 'the writer inherited the other agent’s memory').toHaveLength(0);
+
+    expect(body, 'an agent took over another agent’s memory').toContain('isError');
+  });
+
+  it('does not let an agent read another agent’s memory', async () => {
+    // This one is a question, not a breach: `resource.get` is published as
+    // "Read a resource" with no promise about who owns it, so the contract
+    // does not say an agent may not read one. The rule the code states for
+    // writes — an agent touches only its own memory — has no read-side
+    // counterpart, and this test pins the stricter reading until the owner
+    // says which one holds.
+    const reader = await createAgent('Reader');
+    const other = await createAgent('Memory owner');
+    const memory = await memoryOf(other.id, 'private', 'the other agent only');
+
+    const body = await mcp(reader.token, 'resource.get', { resourceId: memory.id });
+
+    expect(body, 'an agent read another agent’s memory').not.toContain('the other agent only');
+    expect(body).toContain('isError');
+  });
+});
