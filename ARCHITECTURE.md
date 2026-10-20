@@ -299,7 +299,10 @@ These are real, and deliberately not hidden:
 - **Only the OpenAI-compatible model API shape is implemented.** Other providers need
   an adapter.
 - **ACP sessions are not resumed.** The adapter creates a session per turn. Native
-  `session/load` is supported by the protocol but not used yet.
+  `session/load` is supported by the protocol but not used yet. The published
+  contract has already moved: `CONTRACTS.md` says a turn re-enters the same session
+  when the adapter reports `persistentSessions` (WI-007). The code has not caught
+  up.
 - **Data sources are read-only and table-scoped.** SQLite data sources accept a
   single `SELECT` over an allowlist of tables. Credentials, sessions and audit
   records are deliberately not readable.
@@ -308,7 +311,9 @@ These are real, and deliberately not hidden:
   Deciding the approval finishes the execution with the decision's outcome — it
   does not re-enter the adapter and continue the interrupted turn. Resuming a
   blocked adapter turn needs a protocol-level resume that not every adapter
-  supports.
+  supports. `CONTRACTS.md` now publishes the opposite as the contract — a decision
+  resumes the turn when the adapter reports `persistentSessions` (WI-007) — and the
+  code still closes the execution.
 - **A single owner.** No teams, no sharing, no permissions beyond "this workspace".
 - **There is no email delivery, so there is no reset link.** The owner account is
   created at first run and there are no default credentials. A forgotten password is

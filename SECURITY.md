@@ -53,7 +53,10 @@ model rather than as bugs.
   agent credentials. Do not expose it to an untrusted network.
 - **An approval closes its execution; it does not resume it.** Deciding an
   approval finishes the blocked execution with that outcome. It does not
-  re-enter the adapter and continue the interrupted turn.
+  re-enter the adapter and continue the interrupted turn. `CONTRACTS.md` now
+  publishes the opposite as the contract — a decision resumes the turn when the
+  adapter reports `persistentSessions` (WI-007) — and the code still closes the
+  execution.
 - **Agent autonomy is bounded, not absent.** An autonomous agent can act
   within its policy, which is enforced server-side. Keep the policy tight and
   keep the approval list populated.

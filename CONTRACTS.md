@@ -41,6 +41,7 @@ interface Participant {
   type: 'human' | 'agent';
   agentConnectionId?: ID;
   displayName: string;
+  personaOverride?: Persona; // the override, for this conversation only
 }
 
 interface Message {
@@ -60,6 +61,8 @@ type ContentPart =
   | { type: 'file'; resourceId: ID };
 ```
 
+`personaOverride` is defined in [The persona](#the-persona).
+
 ### Additive extensions
 
 The implementation adds three fields, all optional and all required by production
@@ -68,7 +71,7 @@ behaviour:
 ```ts
 interface Message {
   // ...
-  status?: 'streaming' | 'complete' | 'failed';
+  status?: 'streaming' | 'complete' | 'failed' | 'unknown';
   correlationId?: ID;
   origin?: {
     kind: 'human' | 'agent' | 'system' | 'automation';
@@ -83,6 +86,46 @@ interface Message {
 `status` lets a client render a partially streamed answer. `correlationId` ties every
 turn derived from one human request together. `origin` records who spoke and how far
 the delegation chain has travelled — the basis of the echo-loop guard.
+
+### The unknown outcome
+
+A message, an execution and a task each carry a status, and one of those statuses
+means something other than failure: **`unknown` — we started this and we cannot
+confirm how it ended.**
+
+```ts
+type MessageStatus = 'streaming' | 'complete' | 'failed' | 'unknown';
+
+type ExecutionStatus =
+  | 'queued'
+  | 'running'
+  | 'blocked'
+  | 'completed'
+  | 'failed'
+  | 'cancelled'
+  | 'unknown';
+
+type TaskStatus = 'open' | 'active' | 'blocked' | 'review' | 'done' | 'cancelled' | 'unknown';
+```
+
+The rule that separates `unknown` from `failed` is whether anything started. A path
+where nothing began is `failed`: the work never happened and there is nothing to
+check. A path where something began and the outcome cannot be confirmed is
+`unknown` — a turn that timed out may well have had its side effect before the
+timeout. The owner sees an `unknown` item as **"check this"**, never as **"fix
+this"**.
+
+**An `unknown` item is never retried automatically.** There is no reaper, no
+redispatch and no reconciliation pass. An unknown outcome is a question for the
+owner, and only the owner can close it. Every transition into and out of
+`unknown` is written to the audit trail.
+
+This entry is the contract for **WI-008**. The code does not implement it yet:
+the shape above is what the implementation must reach.
+
+**Migration.** Nothing is reclassified. Rows recorded as `failed` before this
+change stay `failed` — we cannot know which of them were really unknown — and
+`unknown` applies only to transitions made after it.
 
 ### Routing behaviour
 
@@ -145,6 +188,7 @@ interface AgentConnection {
   adapterType: string;
   configRef: string;
   enabled: boolean;
+  persona?: Persona; // the base persona
 }
 
 interface AgentCapabilities {
@@ -210,6 +254,61 @@ This interface deliberately captures the minimum common functionality.
   default agent set. A connection with an empty grant list cannot call Personal OS
   through MCP at all.
 
+### The persona
+
+An agent the owner talks to has a persona: a named role with standing instructions.
+
+```ts
+interface Persona {
+  role?: string; // 1–200 characters, one line, shown to the owner
+  instructions?: string; // up to 8,000 characters, shown to the agent
+}
+```
+
+The persona lives in two places. The connection sets the base; a conversation may
+override it.
+
+```ts
+interface AgentConnection {
+  // ...
+  persona?: Persona; // the base persona
+}
+
+interface Participant {
+  // ...
+  personaOverride?: Persona; // the override, for this conversation only
+}
+```
+
+**Resolution — most specific first, whole entity.** If the participant's override
+sets `role` or `instructions`, that override _is_ the persona and the connection's
+base is not consulted. Otherwise the connection's base is the persona. Otherwise the
+agent runs with its runtime's own default framing.
+
+The override replaces rather than merges, field by field. A conversation that sets
+only `role` does not silently keep the connection's `instructions`: a half-overridden
+persona is a stranger.
+
+**One resolver, one truth.** The resolution is a pure function in the contracts
+package, so the server, the worker and the web client cannot disagree about which
+persona is in force. The panel shows which persona is in force and names its source
+— `conversation`, `connection` or `default` — so an overridden value is never
+displayed as if it were the base.
+
+**The persona frames the turn and nothing else.** The resolved persona is prepended
+to the turn context the worker already builds. It is not a second instruction
+system, and it never replaces or duplicates the external runtime's own harness or
+instruction file.
+
+This entry is the contract for **WI-006**. The code does not implement it yet:
+neither field exists on the connection or the participant, and there is no resolver
+to call.
+
+**Migration.** Nothing is reclassified and nothing is rewritten. Both fields are
+optional, so a connection and a participant written before this change stay valid
+and resolve to the runtime's default. The persona applies only to turns taken after
+it.
+
 ### Important design rules
 
 **Preserve native capabilities.** Do not reduce sophisticated agents to basic
@@ -233,19 +332,34 @@ tokens.
 
 The common event vocabulary:
 
-| Event                | Meaning                                |
-| -------------------- | -------------------------------------- |
-| `message.delta`      | Streaming text update.                 |
-| `message.completed`  | Finished message.                      |
-| `tool.started`       | Tool invocation reported.              |
-| `tool.completed`     | Tool result reported.                  |
-| `approval.requested` | Action requires approval.              |
-| `artifact.created`   | Produced resource.                     |
-| `execution.status`   | Running, blocked, completed or failed. |
-| `execution.error`    | Structured failure.                    |
+| Event                | Meaning                                         |
+| -------------------- | ----------------------------------------------- |
+| `message.delta`      | Streaming text update.                          |
+| `message.completed`  | Finished message.                               |
+| `tool.started`       | Tool invocation reported.                       |
+| `tool.completed`     | Tool result reported.                           |
+| `approval.requested` | Action requires approval.                       |
+| `artifact.created`   | Produced resource.                              |
+| `execution.status`   | Running, blocked, completed, failed or unknown. |
+| `execution.error`    | Structured failure.                             |
 
 Adapters emit only events they can genuinely observe. Missing events are not
 fabricated.
+
+The status an `execution.status` event carries is the execution status:
+
+```ts
+type ExecutionStatus =
+  | 'queued'
+  | 'running'
+  | 'blocked'
+  | 'completed'
+  | 'failed'
+  | 'cancelled'
+  | 'unknown';
+```
+
+`unknown` is defined in [The unknown outcome](#the-unknown-outcome).
 
 ---
 
@@ -302,9 +416,46 @@ rejected with `409 revision_conflict`.
 | `data-source` | `{ kind: 'json' \| 'http' \| 'sqlite', payload? \| url? \| query?, headers }`           |
 | `automation`  | `{ trigger, action, enabled }`                                                          |
 | `task`        | The factory task projection.                                                            |
-| `memory`      | `{ scope, key, value, tags }`                                                           |
+| `memory`      | `{ scope, key, value, tags, agentConnectionId? }`                                       |
 
 Charts render from structured datasets, not agent-generated executable JavaScript.
+
+### The agent memory scope
+
+A memory belongs to a workspace, a conversation, a goal — or to an agent.
+
+```ts
+type MemoryScope = 'workspace' | 'conversation' | 'goal' | 'agent';
+
+interface MemorySpec {
+  scope: MemoryScope;
+  agentConnectionId?: string; // required when scope is 'agent'
+  key: string;
+  value: unknown;
+  tags: string[];
+}
+```
+
+**The memory belongs to the agent, not to the persona.** A conversation may
+override an agent's persona, and a persona is per conversation; memory that changed
+when the conversation changed would not be the agent's memory. An agent-scoped
+memory is keyed by `agentConnectionId`, so it follows the agent across every
+conversation it takes part in — available to that agent's turns in every
+conversation, and to no other agent's turns.
+
+The agent's memories are in the turn context, within a budget of 6,000 characters,
+pinned first and then most recent, so an agent's memory cannot crowd out the
+conversation. The other three scopes keep their meaning and behave exactly as they
+do today.
+
+This entry is the contract for **WI-012**. The code does not implement it yet:
+`MemorySpec.scope` is `workspace | conversation | goal` and the memory spec carries
+no agent field.
+
+**Migration.** Nothing is reclassified. The three existing scopes keep their
+meaning, no memory is reclassified, and the `agent` scope applies only to memories
+written after this change — we cannot know which of the existing workspace-scoped
+memories were "really" the agent's.
 
 ### MCP exposure
 
@@ -377,7 +528,7 @@ interface FactoryTask {
   description: string;
   assigneeId?: string;
   executionOwner: 'personal-os' | 'external' | 'human';
-  status: 'open' | 'active' | 'blocked' | 'review' | 'done' | 'cancelled';
+  status: 'open' | 'active' | 'blocked' | 'review' | 'done' | 'cancelled' | 'unknown';
   acceptanceCriteria: string[];
   evidenceResourceIds: string[];
   revision: number; // optimistic concurrency, same rule as a resource
@@ -389,6 +540,8 @@ interface FactoryTask {
 revision it read; a stale revision is rejected with `409 revision_conflict`. A task
 assigned to an external orchestrator keeps that orchestrator's own task identifier in
 `externalRef` rather than creating a competing internal workflow.
+
+`unknown` is defined in [The unknown outcome](#the-unknown-outcome).
 
 Execution attempts, external references and status history are separate records.
 This leaves an opening for more advanced factory behaviour without designing a
@@ -423,12 +576,39 @@ request and holds the execution in `blocked`. The owner decides through
 `POST /api/approvals/:id/decide`. An approval that is never decided stays pending —
 the system never resolves it silently.
 
-**Deciding an approval finishes the execution it belongs to.** An approved request
-closes the execution as `completed`; a rejected one closes it as `failed` with the
-owner's reason. The decision does **not** re-enter the adapter and continue the
-interrupted turn — resuming a blocked adapter turn needs a protocol-level resume
-that not every adapter supports. This is a deliberate limitation, documented rather
-than approximated.
+**Deciding an approval resumes the turn when the adapter can.** The execution stays
+`blocked` while the owner is deciding. On a decision:
+
+- the adapter reports `persistentSessions` → the turn re-enters the **same** session
+  with the decision as its next input, and finishes normally;
+- otherwise → the execution finishes with the decision's outcome, and the panel says
+  the turn was **closed** rather than continued.
+
+The capability is the gate. `AgentCapabilities.persistentSessions` is negotiated at
+connect time and reported honestly by the adapter, and there is no second, parallel
+signal.
+
+**The decision is recorded before the resume is attempted**, so an answer is never
+lost because the session could not be restored.
+
+**The external session id lives in `externalRef`**, the execution's existing
+external orchestrator reference. A blocked execution with no `externalRef` carries
+no session to resume.
+
+This paragraph replaces the one that said a decision always finishes its execution.
+That paragraph was true of the code as it stood and is not true of the contract any
+more: resuming a blocked turn needs a protocol-level resume that not every adapter
+supports, and the capability to do it is already modelled and negotiated.
+
+This entry is the contract for **WI-007**. The code does not implement it yet — the
+extension point `AgentAdapterExtras.resumeSession` is declared and never
+implemented, so today every decision still closes its execution — and the shape
+above is what the implementation must reach.
+
+**Migration.** Nothing is reclassified. An execution that is already `blocked` when
+this ships has no persisted session id, so a decision on it cannot be resumed and
+closes the execution exactly as it does today. Only executions started after this
+change carry a session id.
 
 Every entry in the audit trail answers three questions: **who requested an action,
 which agent performed it, and what the result was.** Entries are append-only and
