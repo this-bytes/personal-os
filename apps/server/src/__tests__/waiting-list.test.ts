@@ -6,6 +6,7 @@ import { fileURLToPath } from 'node:url';
 import type { FastifyInstance } from 'fastify';
 import { buildApp } from '../app.js';
 import { loadConfig } from '../config.js';
+import { executions, messages } from '../db/schema.js';
 import type { WaitingItem } from '../api/waiting.js';
 
 /**
@@ -114,6 +115,91 @@ function publishedUrgencyOrder(): string[] {
     ).toBeGreaterThan(-1);
   }
   return found.sort((a, b) => a.at - b.at).map((entry) => entry.band.reason);
+}
+
+/**
+ * The claim the entry makes about where a turn sorts.
+ *
+ * The waiting list's entry says the order of the list is over reasons, not
+ * kinds, and that an unknown turn sorts where an unknown task sorts. This
+ * reads that paragraph, so the claim is checked against the route and not
+ * against a copy of it.
+ */
+function publishedOrderOverReasons(): string {
+  const text = fs.readFileSync(path.join(repoRoot, 'CONTRACTS.md'), 'utf8');
+
+  const start = text.indexOf('### The waiting list');
+  expect(start, 'CONTRACTS.md no longer publishes the waiting list').toBeGreaterThan(-1);
+  const end = text.indexOf('\n## ', start + 1);
+  const section = text.slice(start, end === -1 ? undefined : end);
+
+  const paragraph = section
+    .split(/\n\s*\n/)
+    .find((block) => block.includes('The order of the list is over reasons, not kinds'));
+  expect(
+    paragraph,
+    'CONTRACTS.md no longer says the order of the waiting list is over reasons, not kinds',
+  ).not.toBeUndefined();
+
+  return paragraph!.replace(/\s+/g, ' ');
+}
+
+/**
+ * An agent turn whose outcome could not be confirmed.
+ *
+ * The turn is written the way the worker writes it: an execution recorded as
+ * `unknown`, and the message that run produced. The owner's own routes cannot
+ * produce one, which is the whole reason the kind was published.
+ */
+async function createUnknownTurn(title: string): Promise<string> {
+  const created = await app.inject({
+    method: 'POST',
+    url: '/api/conversations',
+    headers: { cookie: sessionCookie },
+    payload: { workspaceId, title },
+  });
+  expect(created.statusCode).toBe(201);
+  const conversationId = created.json().conversation.id as string;
+  const executionId = `exe_unknown_${conversationId}`;
+
+  const now = new Date().toISOString();
+  app.services.runtime.db
+    .insert(executions)
+    .values({
+      id: executionId,
+      workspaceId,
+      conversationId,
+      taskId: null,
+      externalRef: null,
+      agentConnectionId: 'agt_1',
+      executionOwner: 'personal-os',
+      status: 'unknown',
+      error: 'The agent did not finish within 900s.',
+      spendUnits: 0,
+      startedAt: now,
+      finishedAt: now,
+      createdAt: now,
+    })
+    .run();
+  app.services.runtime.db
+    .insert(messages)
+    .values({
+      id: `msg_unknown_${conversationId}`,
+      conversationId,
+      senderId: 'p_1',
+      targetParticipantIds: [],
+      replyToId: null,
+      kind: 'text',
+      content: [{ type: 'text', text: 'The agent started and then stopped.' }],
+      status: 'unknown',
+      correlationId: null,
+      origin: null,
+      executionId,
+      createdAt: now,
+    })
+    .run();
+
+  return conversationId;
 }
 
 async function createTask(title: string, status?: string): Promise<string> {
@@ -392,6 +478,44 @@ describe('the shape of the list', () => {
     expect(items.findIndex((item) => item.taskId === review)).toBeLessThan(
       items.findIndex((item) => item.taskId === blocked),
     );
+  });
+
+  it('sorts an unknown turn where an unknown task sorts, because the order is over reasons', async () => {
+    // The entry says the order of the list is over reasons, not kinds: a turn
+    // carries the reason its outcome earned, so an unknown turn sorts where an
+    // unknown task sorts. The claim is checked against the contract and
+    // against the route, so neither can move alone.
+    const published = publishedOrderOverReasons();
+    expect(
+      published,
+      'the contract no longer says a turn sorts where an unknown task sorts',
+    ).toMatch(/turn .*sorts where an unknown task sorts/i);
+
+    const unknownTask = await createTask('Cannot confirm this task', 'unknown');
+    const conversationId = await createUnknownTurn('A turn we cannot confirm');
+    const review = await createTask('Waiting for a decision', 'review');
+    const blocked = await createTask('Stuck on something', 'blocked');
+    app.services.approvals.request({ workspaceId, summary: 'A decision is wanted' });
+
+    const items = await waiting();
+
+    const turn = items.find((entry) => entry.conversationId === conversationId);
+    expect(turn, 'the turn is not on the waiting list at all').toBeDefined();
+    expect(turn?.kind).toBe('turn');
+    expect(turn?.reason).toBe('unknown');
+
+    // The turn and the unknown task are in the same band: both come before the
+    // work waiting for a decision, and both before the work that is stuck.
+    const firstReview = items.findIndex((item) => item.reason === 'review');
+    const firstBlocked = items.findIndex((item) => item.reason === 'blocked');
+    expect(items.findIndex((item) => item.taskId === unknownTask)).toBeLessThan(firstReview);
+    expect(items.findIndex((item) => item.conversationId === conversationId)).toBeLessThan(
+      firstReview,
+    );
+    expect(items.findIndex((item) => item.conversationId === conversationId)).toBeLessThan(
+      firstBlocked,
+    );
+    expect(items.findIndex((item) => item.taskId === review)).toBeLessThan(firstBlocked);
   });
 
   it('says which agent is waiting, and where the item came from', async () => {
