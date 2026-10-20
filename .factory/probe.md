@@ -10,6 +10,10 @@ Every test file, `apps/web/e2e/`, `scripts/smoke.ts` and `scripts/verify-*.ts`.
 
 ## How you review
 
+[AGENTS.md](../AGENTS.md) is the development contract. Read it before you
+review: it says how the gates are run, including the two ways
+`format:check` reports a problem that is not there.
+
 1. **Read the change as if you were the user.** What does it actually do, from
    the outside?
 2. **Look for the gap the author did not cover.** The common defect is not a
