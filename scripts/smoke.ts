@@ -7,7 +7,8 @@
  *
  *   npx tsx scripts/smoke.ts
  */
-import { spawn, type ChildProcess } from 'node:child_process';
+import { spawn, spawnSync, type ChildProcess } from 'node:child_process';
+import BetterSqlite3 from 'better-sqlite3';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
@@ -113,6 +114,108 @@ async function api(
 function assert(condition: unknown, message: string): asserts condition {
   if (!condition) throw new Error(`Assertion failed: ${message}`);
   process.stdout.write(`  ok  ${message}\n`);
+}
+
+/**
+ * The command line of a running process, as the operating system shows it.
+ *
+ * On Linux this is /proc/<pid>/cmdline, which every user on the machine can
+ * read: the arguments of a process are not private to the user who started
+ * it. On Windows it is the command line the Win32_Process class reports.
+ *
+ * Returns null when the platform does not expose command lines at all.
+ */
+function readCommandLine(pid: number): string | null {
+  const linux = path.join('/proc', String(pid), 'cmdline');
+  if (fs.existsSync(linux)) {
+    return fs.readFileSync(linux, 'utf8').split('\0').filter(Boolean).join(' ');
+  }
+
+  if (process.platform === 'win32') {
+    const result = spawnSync(
+      'powershell.exe',
+      [
+        '-NoProfile',
+        '-NonInteractive',
+        '-Command',
+        `(Get-CimInstance Win32_Process -Filter "ProcessId=${pid}").CommandLine`,
+      ],
+      { encoding: 'utf8' },
+    );
+    const text = (result.stdout ?? '').trim();
+    return text.length > 0 ? text : null;
+  }
+
+  return null;
+}
+
+/** Whether this platform lets a process read the command line of another. */
+function exposesCommandLines(): boolean {
+  if (fs.existsSync(path.join('/proc', String(process.pid), 'cmdline'))) return true;
+  if (process.platform !== 'win32') return false;
+  const result = spawnSync(
+    'powershell.exe',
+    [
+      '-NoProfile',
+      '-NonInteractive',
+      '-Command',
+      `(Get-CimInstance Win32_Process -Filter "ProcessId=${process.pid}").CommandLine`,
+    ],
+    { encoding: 'utf8' },
+  );
+  return (result.stdout ?? '').trim().length > 0;
+}
+
+/** Wait until the command line of a process contains a given string. */
+async function waitForCommandLine(
+  pid: number,
+  needle: string,
+  timeoutMs = 30_000,
+): Promise<string | null> {
+  const deadline = Date.now() + timeoutMs;
+  while (Date.now() < deadline) {
+    const commandLine = readCommandLine(pid);
+    if (commandLine && commandLine.includes(needle)) return commandLine;
+    await new Promise((resolve) => setTimeout(resolve, 50));
+  }
+  return null;
+}
+
+/**
+ * A bash that can run the deployment check.
+ *
+ * Git Bash understands Windows paths. The WSL bash does not, so it is only
+ * used when there is no Git Bash to fall back on.
+ */
+function findBash(): { command: string; scriptPath: string } | null {
+  const script = path.join(repoRoot, 'scripts', 'verify-deployment.sh');
+
+  if (process.platform === 'win32') {
+    const gitBash = 'C:\\Program Files\\Git\\bin\\bash.exe';
+    if (fs.existsSync(gitBash)) {
+      return { command: gitBash, scriptPath: script.replace(/\\/g, '/') };
+    }
+  }
+
+  if (spawnSync('bash', ['--version'], { encoding: 'utf8' }).status === 0) {
+    return { command: 'bash', scriptPath: script };
+  }
+
+  return null;
+}
+
+/** Run a script and wait for it to finish. */
+function runToCompletion(
+  command: string,
+  args: string[],
+  options: { cwd: string; env: NodeJS.ProcessEnv },
+): { status: number | null; stdout: string; stderr: string } {
+  const result = spawnSync(command, args, { ...options, encoding: 'utf8' });
+  return {
+    status: result.status,
+    stdout: result.stdout ?? '',
+    stderr: result.stderr ?? '',
+  };
 }
 
 async function main(): Promise<void> {
@@ -412,7 +515,211 @@ async function main(): Promise<void> {
   const detail = await api(`/api/automations/${automation.body.automation.id}`);
   assert(detail.body.runs[0].status === 'completed', 'the automation run completed');
 
-  process.stdout.write('\nAll smoke checks passed.\n');
+  // 18. The owner password is replaced on a running instance
+  //
+  // The recovery path is a separate process: the server keeps serving, the
+  // database is shared, and only the credential moves.
+  process.stdout.write('\n-- recovering a forgotten owner password --\n');
+
+  const staleCookie = cookie;
+  const RECOVERED = 'a brand new password';
+
+  const reset = spawn(
+    process.execPath,
+    [
+      path.join(repoRoot, 'node_modules/tsx/dist/cli.mjs'),
+      'apps/server/src/index.ts',
+      '--reset-password',
+      RECOVERED,
+    ],
+    { cwd: repoRoot, env, stdio: ['ignore', 'pipe', 'pipe'] },
+  );
+  let resetOutput = '';
+  reset.stdout?.on('data', (chunk: Buffer) => (resetOutput += chunk.toString()));
+  reset.stderr?.on('data', (chunk: Buffer) => (resetOutput += chunk.toString()));
+  const resetExit = await new Promise<number | null>((resolve) => {
+    reset.on('exit', (code) => resolve(code));
+  });
+  assert(
+    resetExit === 0,
+    `the password is replaced on a running instance (exit ${resetExit}: ${resetOutput.trim()})`,
+  );
+
+  const staleSession = await fetch(`${base}/api/auth/me`, {
+    headers: { cookie: staleCookie },
+  });
+  assert(staleSession.status === 401, 'the session the old credential produced is signed out');
+
+  const oldLogin = await api('/api/auth/login', {
+    method: 'POST',
+    json: { email: 'owner@example.com', password: 'correct horse battery' },
+  });
+  assert(oldLogin.status === 401, 'the old password stops working');
+
+  const newLogin = await api('/api/auth/login', {
+    method: 'POST',
+    json: { email: 'owner@example.com', password: RECOVERED },
+  });
+  assert(newLogin.status === 200, 'the new password works');
+
+  const survived = await api('/api/conversations');
+  assert(
+    survived.body.conversations.some((c: any) => c.title === 'Smoke test'),
+    'the conversation survived the reset',
+  );
+  const survivedResource = await api(`/api/resources?workspaceId=${workspaceId}`);
+  assert(
+    survivedResource.body.resources.some((r: any) => r.title === 'Runbook'),
+    'the resource survived the reset',
+  );
+
+  // 19. The new password is visible in the process table
+  //
+  // A command-line argument is not private to the user who typed it. On Linux
+  // every user on the machine can read /proc/<pid>/cmdline, and the command
+  // line is written to the shell's history file as well.
+  //
+  // The reset is held on a database lock so the process stays alive long
+  // enough to be read from the outside.
+  process.stdout.write('\n-- the new password in the process table --\n');
+
+  const SENTINEL = 'sentinel-password-9931';
+  const canReadCommandLines = exposesCommandLines();
+  const exposureDir = fs.mkdtempSync(path.join(os.tmpdir(), 'pos-exposure-'));
+  const exposurePort = 4900 + Math.floor(Math.random() * 90);
+  const exposureBase = `http://127.0.0.1:${exposurePort}`;
+  const exposureEnv: NodeJS.ProcessEnv = {
+    ...process.env,
+    PERSONAL_OS_DATA_DIR: exposureDir,
+    PERSONAL_OS_PORT: String(exposurePort),
+    PERSONAL_OS_HOST: '127.0.0.1',
+    LOG_LEVEL: 'silent',
+  };
+
+  const exposureServer = spawn(
+    process.execPath,
+    [path.join(repoRoot, 'node_modules/tsx/dist/cli.mjs'), 'apps/server/src/index.ts'],
+    { cwd: repoRoot, env: exposureEnv, stdio: 'ignore' },
+  );
+  children.push(exposureServer);
+
+  let exposureReady = false;
+  const exposureDeadline = Date.now() + 60_000;
+  while (Date.now() < exposureDeadline) {
+    try {
+      const health = await fetch(`${exposureBase}/api/health`);
+      if (health.ok) {
+        exposureReady = true;
+        break;
+      }
+    } catch {
+      // not up yet
+    }
+    await new Promise((resolve) => setTimeout(resolve, 300));
+  }
+  assert(exposureReady, 'a second instance starts for the exposure check');
+
+  // 20. The deployment check does not consume the first-run setup slot
+  const bash = findBash();
+  if (!bash) {
+    process.stdout.write(
+      '  --  bash is not available here, so the deployment check is not exercised\n',
+    );
+  } else {
+    const deployment = runToCompletion(bash.command, [bash.scriptPath, exposureBase], {
+      cwd: repoRoot,
+      env: exposureEnv,
+    });
+    assert(
+      deployment.status === 2,
+      `the deployment check refuses to run on an instance that is not set up (exit ` +
+        `${deployment.status}: ${deployment.stdout.trim()} ${deployment.stderr.trim()})`,
+    );
+    assert(
+      deployment.stdout.includes('has no owner yet'),
+      'the deployment check says the instance has no owner',
+    );
+
+    const status = (await (await fetch(`${exposureBase}/api/auth/status`)).json()) as {
+      setupRequired?: boolean;
+    };
+    assert(
+      status.setupRequired === true,
+      'the deployment check did not consume the first-run setup slot',
+    );
+  }
+
+  // Give the second instance an owner, so the reset below gets as far as
+  // writing to the database.
+  const ownerCreated = await fetch(`${exposureBase}/api/auth/setup`, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({
+      email: 'owner@example.com',
+      password: 'correct horse battery',
+      displayName: 'Owner',
+    }),
+  });
+  assert(ownerCreated.status === 201, 'the second instance has an owner');
+
+  // The reset is held on a database lock so the process stays alive long
+  // enough to be read from the outside.
+  const lock = new BetterSqlite3(path.join(exposureDir, 'personal-os.db'));
+  lock.pragma('busy_timeout = 10000');
+  lock.exec('BEGIN EXCLUSIVE');
+
+  const exposed = spawn(
+    process.execPath,
+    [
+      path.join(repoRoot, 'node_modules/tsx/dist/cli.mjs'),
+      'apps/server/src/index.ts',
+      '--reset-password',
+      SENTINEL,
+    ],
+    { cwd: repoRoot, env: exposureEnv, stdio: ['ignore', 'pipe', 'pipe'] },
+  );
+  let exposedOutput = '';
+  exposed.stdout?.on('data', (chunk: Buffer) => (exposedOutput += chunk.toString()));
+  exposed.stderr?.on('data', (chunk: Buffer) => (exposedOutput += chunk.toString()));
+
+  const exposedPid = exposed.pid;
+  assert(exposedPid !== undefined, 'the reset process was started');
+
+  const commandLine = await waitForCommandLine(exposedPid, SENTINEL);
+  if (!canReadCommandLines) {
+    process.stdout.write(
+      '  --  this platform does not expose process command lines, so the exposure is not proven\n',
+    );
+  } else {
+    assert(
+      commandLine !== null,
+      'the new password is readable in the command line of the reset process',
+    );
+    process.stdout.write(`      ${commandLine}\n`);
+  }
+
+  // The lock is released the moment the command line has been read: the reset
+  // is waiting on it, and its busy timeout is not long.
+  lock.exec('COMMIT');
+  lock.close();
+
+  const exposedExit = await new Promise<number | null>((resolve) => {
+    exposed.on('exit', (code) => resolve(code));
+  });
+  assert(
+    exposedExit === 0,
+    `the reset completes once the database is free again (exit ${exposedExit}: ${exposedOutput.trim()})`,
+  );
+
+  const changed = new BetterSqlite3(path.join(exposureDir, 'personal-os.db'), { readonly: true });
+  const hash = (
+    changed.prepare('select password_hash from users').get() as { password_hash: string }
+  ).password_hash;
+  changed.close();
+  assert(hash.length > 0, 'the credential was replaced while the database was contended');
+
+  exposureServer.kill('SIGTERM');
+  await new Promise((resolve) => exposureServer.on('exit', resolve));
 }
 
 main()
