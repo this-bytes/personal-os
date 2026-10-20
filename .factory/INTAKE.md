@@ -18,12 +18,12 @@ Intake is where that is discovered, before anyone spends an hour on it.
 Empty until the owner says something. A want is written here in the owner's
 own words, not a summary of them.
 
-| #   | Want                                                                        | Said       | Verdict                                               |
-| --- | --------------------------------------------------------------------------- | ---------- | ----------------------------------------------------- |
-| W-1 | "I see everything waiting on me in one place"                               | 2026-10-20 | accepted — [WI-004](../work/WI-004.md)                |
-| W-2 | Interaction — talking to agents is the job that should get genuinely better | 2026-10-20 | open — shapes what WI-004 is judged against           |
-| W-3 | "Run within a stated scope"                                                 | 2026-10-20 | accepted — the scope is stated below                  |
-| W-4 | "Only me" — one person runs the instance                                    | 2026-10-20 | accepted — no permissions, sharing or onboarding work |
+| #   | Want                                                                        | Said       | Verdict                                                                                   |
+| --- | --------------------------------------------------------------------------- | ---------- | ----------------------------------------------------------------------------------------- |
+| W-1 | "I see everything waiting on me in one place"                               | 2026-10-20 | accepted — [WI-004](../work/WI-004.md)                                                    |
+| W-2 | Interaction — talking to agents is the job that should get genuinely better | 2026-10-20 | open — the bar for WI-004: an entry the owner can act on, not a link to a screen about it |
+| W-3 | "Run within a stated scope"                                                 | 2026-10-20 | accepted — the scope is stated below                                                      |
+| W-4 | "Only me" — one person runs the instance                                    | 2026-10-20 | accepted — no permissions, sharing or onboarding work                                     |
 
 Verdicts: `open` — not yet judged. `accepted` — became a work item, cited
 here. `declined` — not doing it, with the reason kept. `folded` — already
@@ -99,6 +99,13 @@ was given. This sets the cadence of the whole loop.
 **What should the factory build next?** One thing. The next work item is
 chosen from what the owner asks for, not from what looks interesting in the
 repository.
+
+**Which visual direction does the panel take?** Four directions are built as
+prototypes in `prototypes/` and none of them has been chosen. The landing page
+(WI-004) is written in the current design language, so a direction chosen
+afterwards means rewriting its front end. Deciding late costs a rewrite;
+deciding early costs nothing that has been built, because the server side of
+WI-004 does not depend on the visual language.
 
 **What is observably different afterwards?** If the answer is "it feels
 nicer", that is a valid reason but it is not a work item. Name the difference:
