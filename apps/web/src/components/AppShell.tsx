@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { Suspense, useState } from 'react';
 import { NavLink, Outlet, useNavigate } from 'react-router-dom';
 import {
   Bot,
@@ -17,6 +17,7 @@ import { cn } from '@personal-os/ui';
 import { useAuth } from '../state/auth';
 import { useServerEvents } from '../state/events';
 import { useWorkspace } from '../state/workspace';
+import { LoadingState } from './ErrorState';
 
 const NAV_ITEMS = [
   { to: '/conversations', label: 'Conversations', icon: MessagesSquare },
@@ -188,7 +189,15 @@ export function AppShell(): React.JSX.Element {
         </header>
 
         <main className="min-h-0 flex-1 overflow-y-auto">
-          <Outlet />
+          {/*
+            The pages behind the login screen arrive as separate chunks. The
+            boundary sits around the page content rather than around the whole
+            shell, so a route that is still loading shows a fallback in place
+            of the page while the navigation stays where it was.
+          */}
+          <Suspense fallback={<LoadingState />}>
+            <Outlet />
+          </Suspense>
         </main>
       </div>
     </div>

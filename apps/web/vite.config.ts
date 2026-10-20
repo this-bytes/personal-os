@@ -8,6 +8,44 @@ const here = path.dirname(fileURLToPath(import.meta.url));
 
 const API_TARGET = 'http://127.0.0.1:4317';
 
+/**
+ * The largest JavaScript chunk the client is allowed to emit.
+ *
+ * The build warns above this limit, so a change that quietly re-bundles the
+ * panel into one file shows up in the build output instead of in a user's
+ * first paint.
+ */
+const CHUNK_SIZE_LIMIT_KB = 300;
+
+/**
+ * Groups the heavy dependencies into their own chunks.
+ *
+ * Every page is loaded on demand, but React, the router, the query client and
+ * the schema library are needed by the shell itself, so they stay in the first
+ * paint. Splitting them out keeps each chunk under the limit and lets the
+ * browser cache them across deploys.
+ *
+ * Radix and Lucide are deliberately absent: they stay under Rollup's control,
+ * so the dialogs and icons that only the lazy pages use stay in those pages'
+ * chunks instead of joining the first paint.
+ */
+const VENDOR_CHUNKS: ReadonlyArray<readonly [string, RegExp]> = [
+  ['vendor-react', /\/node_modules\/(react-dom|react|scheduler)\//],
+  ['vendor-router', /\/node_modules\/react-router(-dom)?\//],
+  ['vendor-query', /\/node_modules\/@tanstack\//],
+  ['vendor-schema', /\/node_modules\/zod\//],
+  ['vendor-utils', /\/node_modules\/(tailwind-merge|clsx|class-variance-authority)\//],
+];
+
+function vendorChunk(id: string): string | undefined {
+  if (!id.includes('node_modules')) return undefined;
+  const normalised = id.replace(/\\/g, '/');
+  for (const [name, pattern] of VENDOR_CHUNKS) {
+    if (pattern.test(normalised)) return name;
+  }
+  return undefined;
+}
+
 export default defineConfig({
   plugins: [react(), tailwindcss()],
   resolve: {
@@ -35,5 +73,11 @@ export default defineConfig({
     outDir: 'dist',
     emptyOutDir: true,
     sourcemap: false,
+    chunkSizeWarningLimit: CHUNK_SIZE_LIMIT_KB,
+    rollupOptions: {
+      output: {
+        manualChunks: vendorChunk,
+      },
+    },
   },
 });
