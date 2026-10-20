@@ -105,6 +105,18 @@ function declaredVendorChunks(): string[] {
   const names = [...source.matchAll(/\['([a-z0-9-]+)',\s*\//g)]
     .map((match) => captured(match))
     .filter((name): name is string => name !== null);
+
+  // If the pattern stops matching — the config changed shape — the list
+  // comes back empty, and an empty list makes the "declared but never
+  // emitted" rule pass without checking anything. A check that silently
+  // stops checking is worse than no check, so this fails instead.
+  if (names.length === 0) {
+    fail(
+      `No vendor chunks could be read from ${viteConfigPath}. The declaration ` +
+        'format has changed, so the vendor chunk rules are not being checked.',
+    );
+  }
+
   return [...new Set(names)];
 }
 

@@ -89,6 +89,13 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      # The worker check below runs a TypeScript script, so it needs a
+      # runner. The one in the lockfile is the one it should get: an
+      # unpinned `npx` download would make a gate depend on the registry
+      # at the moment it runs, and fail for the wrong reason.
+      - name: Install the runner for the verification
+        run: npm ci --ignore-scripts --no-audit --no-fund
+
       - name: Build the server image
         run: docker build -f deploy/Dockerfile --target server -t personal-os:ci .
 

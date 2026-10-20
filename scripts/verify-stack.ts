@@ -23,8 +23,27 @@ const base = (
   'http://127.0.0.1:4317'
 ).replace(/\/$/, '');
 
-const isLocal = /^https?:\/\/(127\.0\.0\.1|localhost|\[::1\])(:|\/|$)/.test(base);
-if (!isLocal && !args.includes('--allow-remote')) {
+/**
+ * Whether the deployment is on this machine.
+ *
+ * The host is read from the parsed URL, not matched against the string.
+ * A pattern over the raw text can be fooled by the part of a URL before
+ * the host: `http://127.0.0.1:4317@example.com` looks local to a regex
+ * and is not — the host is example.com, and this script would create the
+ * owner, an agent and a conversation over there. Parsing cannot be fooled
+ * that way, because the parser knows where the host starts.
+ */
+function isLocalDeployment(url: string): boolean {
+  let host: string;
+  try {
+    host = new URL(url).hostname.toLowerCase();
+  } catch {
+    return false;
+  }
+  return host === '127.0.0.1' || host === 'localhost' || host === '[::1]' || host === '::1';
+}
+
+if (!isLocalDeployment(base) && !args.includes('--allow-remote')) {
   process.stderr.write(
     `This writes to the deployment at ${base}: it creates the owner if there is\n` +
       'none, and it adds an agent and a conversation. Pass --allow-remote if\n' +
