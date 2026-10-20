@@ -318,29 +318,45 @@ started its next turn, and cleared once more at 07:11.
 Both request ids are idempotent, so a retry is safe and a retry is not a
 second dispatch.
 
-| Request id                       | Item                                                               | To    | Task                | State, 2026-10-21 08:20                                                                                                    |
+| Request id                       | Item                                                               | To    | Task                | State, 2026-10-21 08:40                                                                                                    |
 | -------------------------------- | ------------------------------------------------------------------ | ----- | ------------------- | -------------------------------------------------------------------------------------------------------------------------- |
 | `wi-022-publish-waiting-reasons` | WI-022 — the published waiting list's reasons                      | Wren  | `task_ed4c3132afe9` | **cancelled** — died with `AGENT_UNAVAILABLE`; the retry was cancelled at 07:29 and **Chief implemented it** (`a44a374`)   |
-| `wi-010-verify-forge-rewrite`    | WI-010 — the direction, verified                                   | Probe | `task_4cc3a3b1160f` | **cancelled** — died with `AGENT_UNAVAILABLE`; the retry `task_5666d5ca0dc2` is queued                                     |
-| `wi-024-forge-adoption`          | WI-024 — the panel takes Forge                                     | Cog   | `task_5354f76acca3` | **cancelled** at 07:49:25 — **no successor**; a cancelled dispatch frees its request id                                    |
+| `wi-010-verify-forge-rewrite`    | WI-010 — the direction, verified                                   | Probe | `task_4cc3a3b1160f` | **cancelled** — died with `AGENT_UNAVAILABLE`; the retry `task_5666d5ca0dc2` is **done**                                   |
+| `wi-024-forge-adoption`          | WI-024 — the panel takes Forge                                     | Cog   | `task_5354f76acca3` | **cancelled** at 07:49:25 — **no successor**; the request id is **not** free — see the correction below                    |
 | `wi-025-direction-adr`           | WI-025 — the direction answer in ADR 0007                          | Wren  | `task_ce64c47ef3d9` | **cancelled** at 07:49:25 — **Chief implemented it** (`0d4ec09`)                                                           |
 | `wi-026-waiting-kind`            | WI-026 — the waiting list's kind grows by one                      | Wren  | `task_fbb0e0528036` | **cancelled** at 07:29 — **Chief implemented it** (`a44a374`)                                                              |
-| `wi-027-unknown-turn`            | WI-027 — an unknown turn reaches the waiting list                  | Cog   | `task_9425c9b2a237` | **cancelled** at 07:49:25 — **re-dispatched under the same id** as `task_18f3c6c43c9d`, queued                             |
+| `wi-027-unknown-turn`            | WI-027 — an unknown turn reaches the waiting list                  | Cog   | `task_9425c9b2a237` | **cancelled** at 07:49:25 — the retry `task_18f3c6c43c9d` **started 08:34:37 and is running**                              |
 | `wi-028-memory-read-privacy`     | WI-028 — an agent's own memory is private to it                    | Cog   | `task_99c5c5eeb7aa` | **cancelled** at 07:49:25 — the code landed in `622812c`; the contract half was dispatched at 07:59 as `task_146247be56d5` |
-| `wi-029-exposure-race`           | WI-029 — the exposure test does not race the reset                 | Probe | `task_085e132ddaa1` | **queued** — Probe's session is back, and the race is green                                                                |
-| `wi-030-publish-two-shapes`      | WI-030 — publish the template record and the measures route        | Wren  | `task_f31d629a27b8` | **queued** — Wren's session is idle since 07:08                                                                            |
-| `wi-017-resource-templates`      | WI-017 — a template tells an agent what a good resource looks like | Cog   | `task_d9352ee63330` | **queued**                                                                                                                 |
-| `wi-020-measures-route`          | WI-020 — the product reports on itself                             | Cog   | `task_6c20e85110f9` | **queued**                                                                                                                 |
-| `wi-005-ci-review-2`             | WI-005 — the two CI changes, re-reviewed                           | Probe | `task_94125a893054` | **queued**                                                                                                                 |
-| `wi-022-verify-contract`         | WI-022 — verify the published reasons                              | Probe | `task_8e6fe1c54bfb` | **queued**                                                                                                                 |
-| `wi-026-verify-contract`         | WI-026 — verify the published kind                                 | Probe | `task_3f565465dba3` | **queued**                                                                                                                 |
-| `wi-025-verify-adr`              | WI-025 — verify the direction answer in ADR 0007                   | Probe | `task_2b5c9020bf00` | **queued**                                                                                                                 |
+| `wi-029-exposure-race`           | WI-029 — the exposure test does not race the reset                 | Probe | `task_085e132ddaa1` | **cancelled** at 07:49:25 — the race is green                                                                              |
+| `wi-030-publish-two-shapes`      | WI-030 — publish the template record and the measures route        | Wren  | `task_f31d629a27b8` | **done** at 08:34:37 — the two entries landed in `e682224` (`CONTRACTS.md:434`, `:935`)                                    |
+| `wi-005-ci-review-2`             | WI-005 — the two CI changes, re-reviewed                           | Probe | `task_94125a893054` | **done** at 08:29:18 — its findings are being implemented in the tree now                                                  |
+| `wi-017-resource-templates`      | WI-017 — a template tells an agent what a good resource looks like | Cog   | `task_d9352ee63330` | **cancelled** at 08:16 — re-dispatched at 08:39 under `wi-017-resource-templates-r2` as `task_0256a298ca60`, queued        |
+| `wi-020-measures-route`          | WI-020 — the product reports on itself                             | Cog   | `task_6c20e85110f9` | **cancelled** at 08:16 — re-dispatched at 08:39 under `wi-020-measures-route-r2` as `task_d4813ecd34ee`, queued            |
+| `wi-022-verify-contract`         | WI-022 — verify the published reasons                              | Probe | `task_8e6fe1c54bfb` | **cancelled** at 08:33 — re-dispatched under `wi-022-verify-contract-r2` as `task_38cb5ecee977`, queued                    |
+| `wi-026-verify-contract`         | WI-026 — verify the published kind                                 | Probe | `task_3f565465dba3` | **cancelled** at 08:33 — re-dispatched under `wi-026-verify-contract-r2` as `task_25bf9ea7e2cb`, queued                    |
+| `wi-025-verify-adr`              | WI-025 — verify the direction answer in ADR 0007                   | Probe | `task_2b5c9020bf00` | **queued** — behind the other Probe verifications                                                                          |
 
-**A cancelled task is not a dispatch, and a request id is freed when its task is
-cancelled.** That is what made it possible to hand WI-027 back under the same
-request id after the cancellation at 07:49:25 — one dispatch, not two — and it
-is why the table above can be read at a glance. Eight of the twelve tasks in
-the earlier version of this table were cancelled, and it did not say so.
+**A cancelled task is not a dispatch — but a cancelled dispatch does not free its
+request id.** That second half was wrong here, and it is corrected now rather
+than quietly overwritten. The runtime's idempotency check scans **every** batch
+it holds, cancelled ones included, for a match on `owner` and `request_id`. A
+cancelled batch is still in that list: re-dispatching the same id with the same
+bytes returns the **cancelled** batch and starts nothing, and re-dispatching it
+with different bytes is refused as a conflict. A request id is spent when it is
+used.
+
+The one thing that made it look otherwise: the two `wi-027-unknown-turn`
+batches have **different owners**. The other Chief session dispatches with the
+Chief bot's id, so its batches are owned by `bot_a71bb218e3b8`; this session
+dispatches without one, so its batches are owned by `user`. Same request id,
+two namespaces, no collision. That is the whole reason the retry was
+possible — not the cancellation.
+
+**So a re-dispatch needs a new request id, and every re-dispatch from 08:39
+uses one**: `wi-017-resource-templates-r2`, `wi-020-measures-route-r2`,
+`wi-022-verify-contract-r2`, `wi-026-verify-contract-r2`. The request id is
+the ledger's handle on the work; it is not a retry token, and a task that
+needs doing twice is two tasks.
 
 **"Queued" does not mean "in progress."** At 08:15 nothing in the fleet was
 running, for the reason recorded under "The fleet's queue did not drain".
@@ -2284,3 +2300,92 @@ itself something other than a lie by omission.
 **Not opened here, on purpose.** This session does not hold the number space, so
 it opens no file and claims no number. The wants above are in the queue's own
 format, and the session that owns the numbers turns them into work items.
+
+## The fleet's real gate, and the correction to a wrong diagnosis (08:40)
+
+**The correction, stated out loud.** `6c22d5e` recorded that the fleet's queue
+did not drain because the Chief bot was mid-round in another chat. **That
+diagnosis was wrong.** It made the factory look broken when it was working as
+designed, and it cost the red about an hour of queue. It is corrected here
+rather than overwritten, and the correction is in the record because a factory
+that hides its wrong turns cannot be trusted with the ones it gets right.
+
+**What the gate actually is.** Three facts, read from the dispatcher itself:
+
+1. **Two tasks at a time, in the whole fleet.** `MAX_RUNNING = 2` in the task
+   dispatcher, deliberately below the engine's three host slots so that a reply
+   always has room. Four bots, two slots: the factory is never more than half
+   busy.
+2. **First created, first run.** The dispatcher scans the batches in creation
+   order and takes the first queued task whose bot's chat is free. The queue is
+   strictly a queue.
+3. **One task per bot.** A bot's chat is serialised, so a second task for the
+   same bot waits for the first.
+
+At 08:20 both slots were held — WI-030 with Wren, the CI review with Probe —
+and WI-027 was **ninth in a twenty-deep queue**. Nothing would have moved it
+up. Only a cancellation of the things ahead of it could.
+
+**What was done, and why.** The owner is holding the push until the reds are
+green, and WI-027 is the last red. So at 08:29–08:33 this session cancelled:
+
+- **four of its own status posts to the groups** — `factory-status-…-0720`,
+  `-0735`, `strategy-publication-2026-10-21`,
+  `strategy-close-unknown-turn-2026-10-21` — each superseded by a newer one,
+  and each costing a slot;
+- **two of its own Probe verifications** — `wi-022-verify-contract` and
+  `wi-026-verify-contract` — **deferred, not dropped**: both were re-dispatched
+  four minutes later under new request ids.
+
+**Nothing belonging to the other Chief session was touched.** Its two group
+posts ahead of the red were left in place, so the red waited for them anyway;
+that was the trade, and it was the right one — one session does not cancel
+another session's work to win a queue position.
+
+**WI-027 started at 08:34:37.** The cost of the correction was about an hour of
+red time, and the lesson is worth more than the hour: a fleet that talks as
+much as this one works will always queue its own work behind its own chatter.
+The queue is a budget, and status posts spend it.
+
+### What the other session handed over, and what the lead owes
+
+The other Chief session finished its goal at 08:34 with `docs/strategy.md`
+(`287c55c`), the owner's two answers to it (`e5df669`), and the seven wants in
+the queue (`a5be44e`). Its decisions were **answered by the owner** in that
+session — the peer's messages carry the owner's questionnaire answers, so
+nothing here is inferred:
+
+1. **All six resource kinds get a template in the first set** — dashboard,
+   document, automation, data-source, task, memory — which overrides the
+   factory's recommendation of document-then-automation and discharges WI-017's
+   last acceptance criterion.
+2. **The borrow rule becomes a check, not a claim** — which split into two
+   wants, W5 (the record) and W7 (the gate), because the record and the gate
+   are different files with different owners.
+
+The peer's own note is right and is kept: it **opened no work item and took no
+number**, because the number space belongs to this session. **Seven wants are
+waiting to be triaged** — merged, refused or resized — and then numbered. That
+triage is the lead's, and it is deliberately not done yet: the owner's answers
+on the push (below) can change the order of the queue, and W2 is a contract
+entry that must land before W1's code, which is the same rule this factory
+keeps applying.
+
+### The owner's three open questions, and what each one blocks
+
+Asked in `Personal OS Strategy` at 07:40 and 07:50, and restated here because
+the answer changes what gets built and published:
+
+1. **Does the repository go public at the push, and is a LICENSE and a code of
+   conduct wanted first?** This blocks the push, the README's licence line, and
+   the licence column in `docs/strategy.md`.
+2. **If the push happens when the tree is green, is the panel as it stands the
+   version to publish, or does Forge land first?** This blocks WI-024, which
+   has no live dispatch.
+3. **May the product publish `POST /api/executions/:id/resolve`, so the owner
+   can close a turn they were told to check?** This is WI-031, and the
+   recommendation is **yes**: the waiting list promises that only the owner can
+   close an unknown item, and today nothing can close an unknown turn.
+
+Nothing else is owed by anybody. The reds are green when WI-027 lands, and
+CI has still never run on GitHub — the first run is the push.
