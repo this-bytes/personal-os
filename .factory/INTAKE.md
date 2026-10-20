@@ -823,3 +823,9 @@ findings with Cog in one dispatch; WI-013 returned to Wren; the suite red on
 purpose, eleven failures, all of them Probe's specifications; and the
 bottleneck, which is one verifier, six items at verify or review, and no
 acceptance step happening.
+
+It also carries a tiebreak, said out loud: on WI-004's return, the approval
+row keeps its title link to the conversation, with Approve and Reject beside
+it. The criterion asks for both — an approval is decided where the list is,
+and an entry that needs a reply opens its conversation — and the link is the
+context for deciding, not a way out of deciding.
