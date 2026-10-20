@@ -349,6 +349,8 @@ second dispatch.
 | `wi-020-measures-successor-2026-10-21`         | WI-020 — the two measures, built against the published route       | Cog    | `task_7fca497d2514` | **queued** — **the live dispatch on WI-020**; same merge, same rulings                                                                                                                                                                           |
 | `wi-025-adr-record-pass-2026-10-21`            | WI-025 — the ADR's record pass, with Wren                          | Wren   | `task_c3e1f0b6d558` | **queued** — a pointer, a figure, and one thing not to touch                                                                                                                                                                                     |
 | `wi-030-verify-published-shapes-2026-10-21`    | WI-030 — the two published shapes, verified                        | Probe  | `task_dc2aeef86acb` | **queued** — **upstream of two builds**; the dispatch asks for the queue to be reordered if it can be                                                                                                                                            |
+| `wi-036-licence-record-2026-10-21`             | WI-036 — the dependency licences, read from the repositories       | Wren   | `task_2c5159aab413` | **queued** — **the live dispatch on WI-036**; the record that WI-038's gate compares against                                                                                                                                                     |
+| `wi-037-product-record-forge-2026-10-21`       | WI-037 — the product record says Desk (B); the owner chose Forge   | Wren   | `task_4947c89ca7fe` | **queued** — **the live dispatch on WI-037**; the overdue truthfulness fix                                                                                                                                                                       |
 
 **A cancelled task is not a dispatch — but a cancelled dispatch does not free its
 request id.** That second half was wrong here, and it is corrected now rather
@@ -2729,3 +2731,42 @@ author — and the ratio and the second measure wait for WI-033 and WI-034.
 This is a scoping change to a dispatched item, not a reordering: the item
 lands, and what it shows is bounded by what the data can carry. Nobody has
 said the band may publish a number the audit trail does not support.
+
+## Two of the seven wants start on Wren's lane — 2026-10-21 10:54 AEST
+
+W5 and W6 are dispatched, and the reason is capacity and ownership, not
+willingness. **Neither lane is idle**, so the order has to name which
+implementer is free of _new_ work and which items are heavy:
+
+- **Cog's lane holds four implementation-heavy items** — WI-024 (Forge),
+  WI-017, WI-020 and WI-031's implementation. One implementer, one item at a
+  time, so that is four turns before anything else reaches the tree.
+- **Wren's lane holds three small ones** — WI-025's ADR record pass, WI-031's
+  contract half and WI-007's migration note, which is one sentence — plus
+  WI-028's contract half, running now.
+
+**Implementation does not consume the verifier.** Dispatching W5 and W6 puts no
+new card in front of Probe, and it takes none of Cog's slot: both are Wren's
+files, neither touches code, and neither touches `CONTRACTS.md`, which is
+live. What it does is start the two wants that are already written, already
+owner-funded, and blocked on nothing.
+
+**W5 is the ground truth WI-038's gate compares against**, so it sits on the
+path to the owner's answer of 08:54 — the borrow rule becomes a check — and a
+gate that compares against nothing catches nothing. W6 is the one place in the
+repository still telling the owner the opposite of their decision.
+
+**What still waits, and why.** WI-034 and WI-033 wait because `CONTRACTS.md`
+is live — WI-028's contract half is writing it — and WI-034 publishes entries
+there. WI-035 is W3, deferred for capacity and last. The order among the
+wants stands: W2 before W1, W5 before W7, W6 on its own, W3 last.
+
+**The tiebreak, said out loud.** These two are dispatched by this session.
+**Do not dispatch WI-036 or WI-037 again from anywhere.** One item, one
+owner, one live dispatch. The request ids above are spent; a re-dispatch needs
+a new id and a new title, not a reuse.
+
+**The owner's two questions are with the other Chief session.**
+`ask_840a807bf1ad7291f4d92f44` holds them — whether an unconfirmed turn keeps
+dispatching work, which WI-008 cannot close without, and where Forge sits in
+the queue. This session does not ask them a second time.
