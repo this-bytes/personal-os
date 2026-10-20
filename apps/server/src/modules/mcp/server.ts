@@ -103,22 +103,57 @@ export async function createMcpServer(options: McpServerOptions): Promise<McpSer
   };
 
   /**
-   * An agent writes into its own memory, not into another agent's.
+   * Whose agent-scoped memory is this?
    *
-   * An agent-scoped memory is read by the agent it names, on every turn it
-   * takes. One agent writing into another's memory would put words in its
-   * mouth, so only the owner may name somebody else's agent.
+   * A memory scoped to an agent belongs to the agent it names. Anything else —
+   * another scope, another type, a shape that does not satisfy the memory
+   * contract — belongs to nobody in particular, and is not this rule's
+   * business.
    */
-  const assertOwnMemoryScope = (type: string, data: unknown): void => {
-    if (actor.kind !== 'agent') return;
-    if (type !== 'memory') return;
+  const memoryOwner = (type: string, data: unknown): string | undefined => {
+    if (type !== 'memory') return undefined;
 
     const spec = memorySpecSchema.safeParse(data ?? {});
-    if (!spec.success) return;
-    if (spec.data.scope !== 'agent') return;
-    if (spec.data.agentConnectionId === actor.agentConnectionId) return;
+    if (!spec.success) return undefined;
+    if (spec.data.scope !== 'agent') return undefined;
 
-    throw new AppError('forbidden', 'An agent may only write into its own memory.', 403);
+    return spec.data.agentConnectionId;
+  };
+
+  /**
+   * An agent touches only its own memory.
+   *
+   * An agent-scoped memory is read by the agent it names, on every turn it
+   * takes, and by no other. One agent writing into another's memory would put
+   * words in its mouth, so an agent may reach only its own.
+   *
+   * A write is judged twice: by whose memory the resource is now, and by whose
+   * memory the write says it should be. The first question is what a takeover
+   * runs into — a memory that already belongs to another agent stays that
+   * agent's, whether the write hands it to the writer itself or to somebody
+   * else, and whether it takes it away by giving it another owner or by
+   * rewriting what is in it. The second question is what a write arriving from
+   * outside reaches: a memory created for another agent is refused.
+   *
+   * The read side is a question this rule does not answer. `resource.get` is
+   * published as "Read a resource", with no promise about who owns a
+   * resource, so an agent can read another agent's memory today and whether
+   * that holds is Chief's call and the published contract's — it is not
+   * settled here.
+   */
+  const assertOwnMemory = (
+    current: { type: string; data: unknown } | undefined,
+    next: { type: string; data: unknown } | undefined,
+  ): void => {
+    if (actor.kind !== 'agent') return;
+
+    for (const candidate of [current, next]) {
+      if (!candidate) continue;
+      const owner = memoryOwner(candidate.type, candidate.data);
+      if (owner === undefined || owner === actor.agentConnectionId) continue;
+
+      throw new AppError('forbidden', 'An agent may only write into its own memory.', 403);
+    }
   };
 
   if (granted.has('workspace.list')) {
@@ -320,7 +355,7 @@ export async function createMcpServer(options: McpServerOptions): Promise<McpSer
           guard('resource.create');
           const workspaceId = args.workspaceId ?? (await defaultWorkspace());
           await assertWorkspace(workspaceId);
-          assertOwnMemoryScope(args.type, args.data);
+          assertOwnMemory(undefined, { type: args.type, data: args.data });
           return jsonResult(
             options.capabilities.resourceCreate({
               workspaceId,
@@ -371,6 +406,15 @@ export async function createMcpServer(options: McpServerOptions): Promise<McpSer
       async (args) => {
         try {
           guard('resource.update');
+          // A write to a memory is judged by who owns the memory now as well
+          // as by who the write says should own it. The resource is read
+          // first, because the owner of a memory is not in the write — the
+          // write may say nothing about it at all.
+          const current = options.capabilities.resourceGet(args.resourceId);
+          assertOwnMemory(
+            { type: current.type, data: current.data },
+            args.data === undefined ? undefined : { type: current.type, data: args.data },
+          );
           return jsonResult(
             options.capabilities.resourceUpdate(args.resourceId, {
               expectedRevision: args.expectedRevision,
