@@ -56,6 +56,18 @@ const EMAIL = 'stack-check@example.com';
 const PASSWORD = 'correct horse battery';
 const REPLY = 'Hello from the echo agent.';
 
+/**
+ * How long to wait for the worker's reply.
+ *
+ * The default is the wait the pipeline uses. The override exists so the gate
+ * can be tested against a deployment whose worker is dead, without a test
+ * that takes three quarters of a minute to fail. It can only make the check
+ * give up sooner: a shorter wait never turns a missing reply into a pass.
+ */
+const requestedTimeout = Number(process.env['PERSONAL_OS_VERIFY_STACK_TIMEOUT_MS'] ?? 45_000);
+const REPLY_TIMEOUT_MS =
+  Number.isFinite(requestedTimeout) && requestedTimeout > 0 ? requestedTimeout : 45_000;
+
 let cookie = '';
 
 function assert(condition: unknown, message: string): asserts condition {
@@ -156,7 +168,7 @@ async function main(): Promise<void> {
 
   // 7. The reply only exists if the worker picked the job up and ran it.
   let reply: any = null;
-  const deadline = Date.now() + 45_000;
+  const deadline = Date.now() + REPLY_TIMEOUT_MS;
   while (Date.now() < deadline) {
     const messages = await api(`/api/conversations/${conversationId}/messages`);
     const agentMessages = messages.body.messages.filter(
