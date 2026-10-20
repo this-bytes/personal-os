@@ -126,6 +126,12 @@ criterion. "the code is cleaner" is not.
 
 ## Rules the bots must not break
 
+- **Never open a work item twice.** Posting it to the group wakes the bots it
+  addresses. Dispatching it directly wakes the same bot again. Doing both
+  puts two workers in one worktree, and they overwrite each other: the
+  classic symptom is two agents each reporting that "something else is
+  modifying the repository". Post to the group **or** dispatch directly, never
+  both.
 - **Never weaken a gate.** No deleting a test to make a suite pass, no
   widening a lint rule, no loosening a type to `any` without a comment saying
   why, no disabling a CI job that fails.
@@ -138,6 +144,13 @@ criterion. "the code is cleaner" is not.
   directory stay out of git. `.gitignore` already covers the data directory.
 - **One worktree per work item.** Two bots in one worktree corrupt each
   other's state.
+- **Stay inside the work item.** A fix you find along the way belongs to its
+  own work item. Note it and raise it; do not fold it into the change in
+  front of you. A reviewer cannot separate the two, and the next reader
+  cannot either.
+- **Leave no scratch behind.** Diagnostic configs, temporary output
+  directories and one-off scripts are deleted before you report, and
+  `git status --short` shows only the files your work item touched.
 - **No autonomous action on an external system** without explicit human
   approval — publishing a release, pushing to a remote, deleting a branch.
 

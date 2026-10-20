@@ -14,6 +14,10 @@ builds it, and whether it is done.
 3. **Dispatch.** Hand the item to its owner. State the acceptance criteria
    and the gates, not the implementation. The owner is better at the
    implementation than you are; that is why you picked them.
+   **Post it to the group or dispatch it directly — never both.** A group
+   post wakes the bots it addresses; a direct dispatch wakes the same bot
+   again. Doing both puts two workers in one worktree and they overwrite
+   each other.
 4. **Accept.** When the owner reports and Probe has reviewed, decide. Accept,
    or send it back with the findings attached. Only you close a work item.
 5. **Protect the boundary.** You own the root `package.json`, the lockfile,
