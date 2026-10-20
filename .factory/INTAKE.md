@@ -57,17 +57,17 @@ The owner agreed with the recommended answers to Q1, Q2, Q3, Q4 and Q6, and
 corrected Q5. This section is the source of truth for the decisions;
 [WI-011](../work/WI-011.md) copies them into the product record.
 
-| #   | Decision                                                                                     | The answer                                                                                                     |
-| --- | -------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------- |
-| Q1  | Which ground the product is built on                                                         | An environment agents operate and extend — not a chat home; the factory is a part of it, not the whole of it    |
-| Q2  | Does the human ever operate software, or only decide                                         | Only decide: direct, approve, accept. Agents do everything else. Connecting a new agent is a trust decision    |
-| Q3  | What "native" means for an agent-created feature                                             | A typed, validated resource in our own contracts, authored through templates                                   |
-| Q4  | Which two things "everyday productivity" means                                               | Tasks/work and documents. Not email, not calendar                                                              |
-| Q5  | What "borrow without depending" means in practice                                            | **Corrected by the owner:** *"i want to use these as inspriation and then implement into our codebase against our spec"* |
-| Q6  | What number proves "sustainable and agent-developed"                                         | The share of features authored by agents in-instance, and the share of operations done without the owner touching code; both shown in the panel |
+| #   | Decision                                             | The answer                                                                                                                                      |
+| --- | ---------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- |
+| Q1  | Which ground the product is built on                 | An environment agents operate and extend — not a chat home; the factory is a part of it, not the whole of it                                    |
+| Q2  | Does the human ever operate software, or only decide | Only decide: direct, approve, accept. Agents do everything else. Connecting a new agent is a trust decision                                     |
+| Q3  | What "native" means for an agent-created feature     | A typed, validated resource in our own contracts, authored through templates                                                                    |
+| Q4  | Which two things "everyday productivity" means       | Tasks/work and documents. Not email, not calendar                                                                                               |
+| Q5  | What "borrow without depending" means in practice    | **Corrected by the owner:** _"i want to use these as inspriation and then implement into our codebase against our spec"_                        |
+| Q6  | What number proves "sustainable and agent-developed" | The share of features authored by agents in-instance, and the share of operations done without the owner touching code; both shown in the panel |
 
 **Q5 in the doctrine.** The owner's answer is now a rule in
-[FACTORY.md](../FACTORY.md): *Borrow the idea, not the dependency.* Another
+[FACTORY.md](../FACTORY.md): _Borrow the idea, not the dependency._ Another
 project is inspiration — we read it, take the approach, and build the feature
 inside this repository against our own contracts and data model. We do not
 vendor a codebase in, and we do not add a runtime dependency to get a feature.
