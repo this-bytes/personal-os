@@ -187,7 +187,7 @@ export function planRouting(input: RoutingInput): RoutingDecision {
             reason:
               `Only the coordinator may delegate in coordinator mode. ` +
               `${senderName(message, participants)} is not the coordinator, ` +
-              `so no participant was woken.`,
+              `so ${notWokenClause(delegated, participants)}.`,
             blocked: 'not_coordinator',
           };
         }
@@ -336,4 +336,39 @@ function senderName(message: RoutingMessage, participants: RoutingParticipant[])
       ? participants.find((p) => p.agentConnectionId === message.origin.agentConnectionId)
       : undefined);
   return sender?.displayName ?? message.senderId;
+}
+
+/**
+ * The name the owner knows a participant by.
+ *
+ * The engine names agents by their connection id and the owner knows them by
+ * their display name, so a refusal that says who was not woken has to speak
+ * the owner's language. A connection that matches no participant is named by
+ * its id, because saying nothing would be worse than saying something.
+ */
+function participantName(connectionId: string, participants: RoutingParticipant[]): string {
+  return (
+    participants.find((p) => p.agentConnectionId === connectionId)?.displayName ?? connectionId
+  );
+}
+
+/**
+ * Who the delegation was addressed to, and that they were not woken.
+ *
+ * A refusal that names only the participant that was refused leaves the owner
+ * with a request that was turned down and no idea where it went. Naming the
+ * target as well says which agent it was addressed to, so the answer is in
+ * the sentence rather than in the routing result.
+ */
+function notWokenClause(connectionIds: string[], participants: RoutingParticipant[]): string {
+  const names = unique(connectionIds).map((id) => participantName(id, participants));
+  const subject = joinNames(names);
+  return names.length === 1 ? `${subject} was not woken` : `${subject} were not woken`;
+}
+
+/** "Scout", "Scout and Wren", "Scout, Wren and Ada". */
+function joinNames(names: string[]): string {
+  if (names.length <= 1) return names[0] ?? '';
+  if (names.length === 2) return `${names[0]} and ${names[1]}`;
+  return `${names.slice(0, -1).join(', ')} and ${names[names.length - 1]}`;
 }

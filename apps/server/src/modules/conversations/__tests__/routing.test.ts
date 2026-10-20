@@ -221,6 +221,47 @@ describe('coordinator mode', () => {
     );
   });
 
+  it('names the participant whose wake-up was refused', () => {
+    // The refusal has to name the participant the delegation was addressed
+    // to, not only the participant that was refused the right to delegate.
+    // An owner who addressed Scout and is refused must be told Scout was not
+    // woken, or the request went somewhere else and the reason does not
+    // admit it.
+    const decision = plan({
+      conversation: coordinatorConversation,
+      message: {
+        senderId: 'p_codex',
+        text: '@Hermes CTO please take this',
+        origin: { kind: 'agent', actorId: 'p_codex', depth: 2 },
+      },
+    });
+
+    expect(decision.targets).toEqual([]);
+    expect(decision.blocked).toBe('not_coordinator');
+    // The sender that was refused, and the participant it addressed.
+    expect(decision.reason).toContain('Codex');
+    expect(decision.reason).toContain('Hermes CTO');
+  });
+
+  it('names the target that was refused when the delegation names one', () => {
+    // The same delegation, spelled the other way: the target is named
+    // instead of mentioned, and the refusal names it just the same.
+    const decision = plan({
+      conversation: coordinatorConversation,
+      message: {
+        senderId: 'p_codex',
+        text: 'take this',
+        origin: { kind: 'agent', actorId: 'p_codex', depth: 2 },
+      },
+      explicitTargets: ['agt_cto'],
+    });
+
+    expect(decision.targets).toEqual([]);
+    expect(decision.blocked).toBe('not_coordinator');
+    expect(decision.reason).toContain('Codex');
+    expect(decision.reason).toContain('Hermes CTO');
+  });
+
   it('does not blame the coordinator for a delegation it never made', () => {
     const decision = plan({
       conversation: coordinatorConversation,

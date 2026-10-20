@@ -271,6 +271,12 @@ describe('coordinator mode, naming a target the way the API asks', () => {
       result.routing.blocked,
       `the refusal did not say that a non-coordinator tried to delegate: ${result.routing.reason}`,
     ).toBe('not_coordinator');
+    // And the refusal names the participant the delegation was addressed to,
+    // not only the participant that was refused the right to delegate. The
+    // target is named by its participant id on this path, so this is also
+    // what says the name survived the crossing.
+    expect(result.routing.reason).toContain('Codex');
+    expect(result.routing.reason).toContain('Hermes CTO');
   });
 });
 
