@@ -289,43 +289,83 @@ they are recorded here so that nobody has to re-derive them:
 **The three published shapes are approved**, so WI-017 (a template concept in
 the resource model), WI-020 (the read-only route publishing the product's two
 measures of itself) and WI-022 (the published waiting-list shape) leave the
-queue. WI-022 is the one red in the tree: `CONTRACTS.md` publishes
-`WaitingReason` as `'pending' | 'review' | 'blocked'` while the code emits
-`'unknown'`, and Probe's test pins the drift on purpose rather than let it be
-forgotten.
+queue. WI-022 was the one red in the tree when this was written: `CONTRACTS.md`
+publishes `WaitingReason` as `'pending' | 'review' | 'blocked'` while the code
+emits `'unknown'`, and Probe's test pins the drift on purpose rather than let
+it be forgotten. **It is no longer the only one** — the tree has seven
+deliberate reds and they are listed in "The seven reds, measured" below.
 
 **The push is held until the reds are green**, and the chain is now explicit
-and short: WI-022 lands → the published enum includes `'unknown'` → the tree
-is green → the push → CI runs on GitHub for the first time → WI-023 (CI
-proving the owner-token path) can run. No decision is owed by anybody else
-for any of it.
+and short: the seven reds land → the tree is green → the push → CI runs on
+GitHub for the first time → WI-023 (CI proving the owner-token path) can run.
+No decision is owed by anybody else for any of it.
 
-### The two dispatches that are owed, request ids `wi-024-forge-adoption` and `wi-025-direction-adr`
+### The guard closed, and then cleared
 
-Both were refused by the runtime, not by the bots:
+Two of the dispatches below were refused by the runtime, not by the bots:
 
 > This Bot is replying in multiple chats, so this tool call cannot be assigned
 > safely. Retry when the other replies finish.
 
-This is the third different refusal this factory has hit today — _"post_group is
-only available in a private chat, not during a group turn"_, _"This tool call
-cannot be assigned to an active reply"_, and this one. The pattern is that the
-guard watches the **bot**, not the call: while the other Chief session is
-replying, this session cannot assign work at all. It cleared twice earlier —
-WI-022 to Wren and WI-010 to Probe both went through — and closed again when
-the other session started its next turn.
+This is the third different refusal this factory has hit today — _"post_group
+is only available in a private chat, not during a group turn"_, _"This tool
+call cannot be assigned to an active reply"_, and this one. The pattern is
+that the guard watches the **bot**, not the call: while the other Chief
+session is replying, this session cannot assign work at all. It cleared twice
+— WI-022 and WI-010 both went through — closed again when the other session
+started its next turn, and cleared once more at 07:11.
 
-Both request ids are idempotent, so a retry is safe and a retry is not a second
-dispatch.
+Both request ids are idempotent, so a retry is safe and a retry is not a
+second dispatch.
 
-| Request id              | Item                                      | To   |
-| ----------------------- | ----------------------------------------- | ---- |
-| `wi-024-forge-adoption` | WI-024 — the panel takes Forge            | Cog  |
-| `wi-025-direction-adr`  | WI-025 — the direction answer in ADR 0007 | Wren |
+| Request id                       | Item                                               | To    | Task                |
+| -------------------------------- | -------------------------------------------------- | ----- | ------------------- |
+| `wi-022-publish-waiting-reasons` | WI-022 — the published waiting list's reasons      | Wren  | `task_ed4c3132afe9` |
+| `wi-010-verify-forge-rewrite`    | WI-010 — the direction, verified                   | Probe | `task_4cc3a3b1160f` |
+| `wi-024-forge-adoption`          | WI-024 — the panel takes Forge                     | Cog   | `task_5354f76acca3` |
+| `wi-025-direction-adr`           | WI-025 — the direction answer in ADR 0007          | Wren  | `task_ce64c47ef3d9` |
+| `wi-026-waiting-kind`            | WI-026 — the waiting list's kind grows by one      | Wren  | `task_fbb0e0528036` |
+| `wi-027-unknown-turn`            | WI-027 — an unknown turn reaches the waiting list  | Cog   | `task_9425c9b2a237` |
+| `wi-028-memory-read-privacy`     | WI-028 — an agent's own memory is private to it    | Cog   | `task_99c5c5eeb7aa` |
+| `wi-029-exposure-race`           | WI-029 — the exposure test does not race the reset | Probe | `task_085e132ddaa1` |
 
-WI-025 is deliberately behind WI-022, which is with Wren as
-`task_ed4c3132afe9`, and WI-024 goes behind WI-003, WI-017, WI-018 and WI-020
-rather than jumping them: the recorded order stands.
+WI-025 and WI-026 are deliberately behind WI-022, which is with Wren as
+`task_ed4c3132afe9`, because the file is live and the order in it is WI-022
+first, then WI-025, then WI-026. WI-024 goes behind WI-003, WI-017, WI-018
+and WI-020 rather than jumping them: the recorded order stands. WI-027 and
+WI-028 are ahead of WI-024, because the owner is holding the push until the
+tree is green and those two are on the path to green.
+
+### The seven reds, measured
+
+Chief measured the tree at 06:18 and the other Chief session measured it at
+06:14. They are not in conflict: the difference is a test that had not failed
+yet. The tree has **seven** deliberate reds, and every one of them now has an
+owner.
+
+| #   | The red                                                        | Where it is fixed                           |
+| --- | -------------------------------------------------------------- | ------------------------------------------- |
+| 1   | The waiting list's missing `unknown` reason                    | WI-022, with Wren                           |
+| 2   | The waiting list's missing `turn` kind                         | WI-026 (the contract) and WI-027 (the code) |
+| 3   | An agent can write into another agent's memory                 | WI-012, with Cog                            |
+| 4   | An agent can read another agent's memory                       | WI-028, with Cog — **the owner's ruling**   |
+| 5   | The panel does not say a turn was closed rather than continued | WI-007, with Cog                            |
+| 6   | The password exposure test races the reset it inspects         | WI-029, with Probe                          |
+
+The e2e red is #5: `apps/web/e2e/waiting-list.spec.ts`, "the panel says when a
+turn was closed rather than continued". The contract promises it at
+`CONTRACTS.md:598` and the server keeps it — the decision route returns the
+outcome and the detail — but the panel's decide mutation reads the response
+only to invalidate the query, so the detail never reaches the screen and the
+owner is left with a red "failed" and no sentence saying the operation was
+never performed. The test was added by `5649c6d` on purpose, and it belongs to
+WI-007.
+
+The sixth is #6, and it is the one the other count did not have: it passes on
+its own and fails only under the full suite's load, because the test holds a
+database lock while it reads the reset's command line and the reset's own busy
+timeout is ten seconds. A test that answers differently depending on what else
+the machine is doing is not a gate.
 
 ### The Forge direction — opened, as [WI-024](../work/WI-024.md)
 
@@ -395,6 +435,11 @@ ruling settled:
 | WI-027 | An unknown turn reaches the waiting list | Cog   | The implementation, built against the published shape, and the one-line correction that says which commit implements it. |
 | WI-028 | An agent's own memory is private to it   | Cog   | The read-side guard, and the two contract entries that stop disagreeing.                                                 |
 
+And one more, which the owner's answers did not cause: **WI-029**, owner
+**Probe** — the password exposure test races the reset it inspects, so it
+passes alone and fails under load. It is the seventh red, and the only one
+that was a race rather than a specification of a defect.
+
 The contract leads and the code follows — that is the house order, and it is
 why WI-026 says outright that the code does not implement the kind yet. A
 published member the product never produces is a drift of the kind this
@@ -408,11 +453,13 @@ until the owner says which one holds."_ The owner has now said, and the test
 was the specification all along — it stays in the suite and it goes green.
 
 **What the two answers do not change.** The push is still held until the tree
-is green, and the tree is not green yet: WI-022 (the reason) and WI-026 (the
-kind) are the waiting list's published shape, WI-012 is the memory guard's
-write side, WI-027 and WI-028 are the two the answers released, and the
-password exposure test races the reset it inspects. None of that needs a
-decision from anybody else now.
+is green, and the tree is not green yet. The seven reds and their owners are
+listed in "The seven reds, measured" below: WI-022 and WI-026 (the waiting
+list's published shape), WI-027 and WI-028 (the two the answers released),
+WI-012 (the memory guard's write side), WI-007 (the panel's closed-rather-
+than-continued wording), and WI-029 (the exposure test's race). None of that
+needs a decision from anybody else now, and every one of them has an owner
+and a next step.
 
 **The number space, once more.** These three numbers were taken by this
 session because the owner's answer is new information the number-owning session
