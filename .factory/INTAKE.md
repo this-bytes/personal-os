@@ -2141,3 +2141,146 @@ nobody reads it as current:
 The note's own substance — the 07:12 deaths, the two second dispatches it made
 by mistake and cancelled, and the acceptance pass that survived — was already
 in the ledger, and all of it is still true.
+
+## The direction, and the seven wants it produces — 2026-10-21 08:20
+
+The owner asked for the open-source landscape to be brought together into one
+place, and for the direction to be handed to the factory as specs. That is
+`docs/strategy.md` (commit `287c55c`; the owner's answers at `e5df669`), and it
+is the product's single pane of glass: what Personal OS is, where each idea came
+from, the three pillars the landscape implies, and the gap in each.
+
+**The gap it found.** The 2026-10-20 sweep read twelve comparators and three
+findings survived into ADR 0007 and this file. The list itself did not survive:
+`prototypes/DIRECTION.md` was rewritten for Forge and the sweep went with it, and
+WI-011 still points at that file as its source. The repository could no longer
+answer _which projects is this built on, and what does each licence permit_.
+`docs/strategy.md` answers it, with every licence read from the repository rather
+than from a directory listing — n8n's Sustainable Use is not an open source
+licence, Dify's is a modified Apache 2.0 with additional conditions, and
+Windmill's is Apache-2.0, AGPLv3 and a proprietary enterprise licence at once.
+
+**The two decisions the owner took today**, both recorded in the document:
+
+1. **All six resource kinds get a template in the first set.** This overrides the
+   factory's recommendation of document-then-automation, and the recommendation is
+   kept on the record because a decision that does not say what it rejected is not
+   a decision. WI-017's last criterion — which template set ships — is now
+   answered by the owner's answer rather than by the factory, and WI-030's
+   deferral ("which kind gets a template first — that is the owner's call") is
+   discharged. Posted to `Personal OS Factory` so Cog has it mid-implementation.
+2. **The borrow rule becomes a check, not a claim.** The build fails when a
+   dependency's licence changes or an unapproved licence appears. That is what
+   catches the AGPL-vendoring case the owner raised, as a failed build rather than
+   as a surprise discovered later.
+
+**These are wants, not work items.** The number space has one owner and this
+session does not hold it, so it takes no number and opens no file. What follows is
+what the number owner needs: a proposed title, an owner, and the criteria.
+
+### W1 — The audit trail records what happened, not that something happened
+
+**Owner:** Cog. **Files:** `apps/server`, `packages/contracts`.
+
+Every mutating route writes an audit entry; the entry carries the outcome rather
+than an assumed success; every resource kind records a real author, so no kind
+reports `system` for an agent's work; the twelve routes that write no entry write
+one.
+
+**Criteria:** each of the thirty-four mutating routes writes an entry; an entry
+records whether the action succeeded, and `POST /api/resources/:id/execute`
+records `queued` rather than `done`; automations and tasks carry the author who
+created them; a test proves each of those three.
+
+### W2 — Publish the authorship and audit rules that W1 implements
+
+**Owner:** Wren. **File:** `CONTRACTS.md`.
+
+What "authored by an agent" counts as, what an audit entry's outcome can be, and
+what a client written before the change must do, with a migration note.
+
+**Criteria:** the entries land before the code ships; they match the code member
+for member; the migration note says what a client written before does and what a
+record written before the change means; nothing is reclassified.
+
+### W3 — Resources keep a history the owner can take back
+
+**Owner:** Cog. **Files:** `apps/server`, `packages/contracts`.
+
+Each revision of a resource is retained rather than overwritten, and the owner can
+restore a resource to an earlier revision through a published route. The restore
+is itself an audited action. This is C-21, scoped to resources; tasks and
+automations are named out of scope.
+
+**Criteria:** a resource's revisions are retrievable; the restore route publishes
+the revision it restored and is audited like any other change; a test proves a
+restore returns the resource to the earlier revision's spec and that the audit
+trail says the restore happened.
+
+### W4 — An approval resumes the turn the contract says it resumes
+
+**Owner:** Cog. **Files:** `apps/server`, `packages/agent-adapters`.
+
+`CONTRACTS.md` already promises that a decision resumes the turn when the adapter
+reports `persistentSessions`. The code closes the execution instead. This makes
+the code keep the promise for the adapters that can keep it; for the ones that
+cannot, the contract's wording is corrected rather than the behaviour faked.
+
+**Criteria:** for an adapter reporting `persistentSessions`, a decision re-enters
+the adapter and the turn continues; for one that does not, the published wording
+says so; a test proves the resume for the first and the published exception for
+the second.
+
+### W5 — The dependency licences, read from the repositories
+
+**Owner:** Wren. **File:** `docs/strategy.md`, and a note in PRODUCT.md §10.
+
+Each dependency in the lockfile has its licence read from the repository and
+recorded, with what that licence permits and what it forbids.
+
+**Criteria:** every dependency in the lockfile has a licence recorded and
+attributed to the file it was read from; the AGPL question the owner raised is
+answered against the actual dependency set; a note in the document says when the
+column was read.
+
+### W6 — The product record says Desk (B); the owner chose Forge
+
+**Owner:** Wren. **File:** `PRODUCT.md`.
+
+PRODUCT.md §11 still says the direction that would fix the accent is "Desk (B),
+it is recommended rather than decided, and the owner has one word to say about
+it". The owner said their word at 06:01: **D — Forge**. A product record that
+states the opposite of the decision is the one thing it cannot carry.
+
+**Criteria:** §11 names Forge, with the date and the fact that the factory
+recommended B; the accent rule's statement matches ADR 0007; nothing else in the
+product record is changed in the same item.
+
+### W7 — The borrow rule becomes a check, not a claim
+
+**Owner:** Chief. **Files:** `.github/workflows/`, `package.json` (root), the
+lockfile.
+
+The build compares the dependency set's licences against the recorded ones and
+fails when a licence changes or an unapproved licence appears.
+
+**Criteria:** a licence change in the lockfile fails the build with the dependency
+named and the licence it changed from and to; an unapproved licence fails the
+build; the recorded licences W5 writes are what the gate compares against; a test
+or check proves a deliberately changed licence fails; the gate's own output is
+shown in the run.
+
+**Why it is Chief's:** the gate lives in the workflow and the root manifest, which
+the ownership table gives to Chief, and one want with two owners is two wants —
+so the record (W5) and the gate (W7) are separate.
+
+**What the lead is asked for.** Triage these seven: merge them, refuse them, or
+resize them. Four sit directly behind work that is already dispatched — WI-017,
+WI-020, WI-030 — so they are queue and sizing questions rather than new ground.
+W6 is small and independent of all of them. W1 and W2 are one change and one
+published shape, and together they are what makes the product's first report on
+itself something other than a lie by omission.
+
+**Not opened here, on purpose.** This session does not hold the number space, so
+it opens no file and claims no number. The wants above are in the queue's own
+format, and the session that owns the numbers turns them into work items.
