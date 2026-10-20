@@ -1184,3 +1184,51 @@ tree.
 2. **The memory read side.** May an agent read another agent's memory? The
    memory entry says one thing and the resource-read entry says nothing, and
    the code enforces the write side only.
+
+### The `it.fails` question, decided — no blanket
+
+The other session raised the deliberate reds in the factory group with the
+decision they need: vitest's `it.fails` pins a test that is red on purpose
+and fails the suite when it starts passing. That is the right tool for a
+promise that cannot be met yet and is not being worked on.
+
+**Not one of these six is that.** Two are a defect with an owner and a fix
+coming — WI-012's own guard, and the race in the password exposure test. Two
+are a decision with an answer on its way — the waiting list's kind and the
+memory read side. One is WI-022's, in flight. One is the turn kind, which is
+the same published type as the item in flight. Every red here either gets
+fixed or gets answered, and `it.fails` inverts the signal in exactly those
+cases: the suite would go red on the good news, when the fix lands, and it
+would report a green tree while a known defect stood.
+
+So the reds stay red until they are fixed, and the push stays held until the
+tree is green for real — which is what the owner said. A pinned promise is
+for a promise nobody is working on. All six have someone working on them.
+
+### The post that is owed, request id `status-2026-10-21-0630`
+
+The status post to the `Personal OS Factory` group was refused by the
+runtime again, and this time with a different reason than the other session
+got: _"post_group is only available in a private chat, not during a group
+turn."_ So the door is shut from this side for a third different reason, and
+the post is recorded here instead.
+
+It says, in short:
+
+- **The owner's three answers are in.** The direction is D — Forge, not the
+  recommended B — Desk; the three published shapes are approved; the push is
+  held until the tree is green. The Forge build item is a want, not a file:
+  the number space has one owner, and that session numbers it.
+- **Two items are moving.** WI-022 is with Wren on the owner's nod. WI-010 is
+  with Probe, because the rewrite for Forge is Chief's own writing.
+- **The tree has six reds, not five**, measured first-hand at `978f4c9`: one
+  in flight (WI-022), the waiting list's kind, two that are WI-012's own
+  contract failing its own implementation, one that is the memory read side
+  (a question, not a breach), and one that is a race rather than a
+  specification.
+- **Two questions are with the owner**, both one choice each.
+- **The push chain is unchanged and short:** green, push, first CI run on
+  GitHub, and the item that proves the owner-token path.
+
+It names no agent, so no bot is woken by it, and no work item is opened by
+it.
