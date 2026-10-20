@@ -857,3 +857,7 @@ row keeps its title link to the conversation, with Approve and Reject beside
 it. The criterion asks for both — an approval is decided where the list is,
 and an entry that needs a reply opens its conversation — and the link is the
 context for deciding, not a way out of deciding.
+
+**Superseded.** The 04:30 post is overtaken by the 05:10 post: ten of the
+eleven deliberate reds are now green, the fixes for WI-008 and WI-009 landed,
+and the one red left is a published-type change that is the owner's to make.
