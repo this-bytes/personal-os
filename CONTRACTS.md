@@ -434,6 +434,40 @@ Every entry in the audit trail answers three questions: **who requested an actio
 which agent performed it, and what the result was.** Entries are append-only and
 readable at `GET /api/audit`.
 
+### The waiting list
+
+`GET /api/waiting?workspaceId=…` returns everything waiting on the owner as one
+list, so the client asks for one thing instead of fetching three and joining the
+answers itself.
+
+```ts
+type WaitingKind = 'approval' | 'task';
+type WaitingReason = 'pending' | 'review' | 'blocked';
+
+interface WaitingItem {
+  id: string; // unique across kinds, so the client can key the list
+  kind: WaitingKind;
+  title: string;
+  detail: string;
+  reason: WaitingReason;
+  workspaceId: string;
+  conversationId: string | null;
+  taskId: string | null;
+  agentConnectionId: string | null;
+}
+```
+
+**One thing is one entry.** A pending approval that belongs to a task _is_ that
+task waiting on the owner, so the task does not appear a second time beside it.
+The owner would otherwise see the same thing twice and have no way to tell
+which one to act on.
+
+The order is the order of urgency: an agent that cannot continue comes first,
+then the work waiting for an acceptance decision, then the work that is stuck.
+
+The route is read-only, returns only what the owner can see, and requires the
+same authentication as every other route.
+
 ---
 
 ## Contract 6 — Automations
@@ -533,6 +567,7 @@ cannot authenticate. Every session is revoked when it runs.
 | `POST`             | `/api/automations/:id/enable` · `/disable` | Toggle scheduling.                                                                      |
 | `GET`              | `/api/approvals`                           | List approval requests.                                                                 |
 | `POST`             | `/api/approvals/:id/decide`                | Approve or reject a sensitive operation.                                                |
+| `GET`              | `/api/waiting`                             | Everything waiting on the owner, in one list. See below.                                |
 | `GET`              | `/api/audit`                               | Read the audit trail.                                                                   |
 | `GET`              | `/api/events`                              | Server-sent event stream.                                                               |
 | `ANY`              | `/mcp`                                     | MCP streamable HTTP endpoint.                                                           |
