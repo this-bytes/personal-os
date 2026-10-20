@@ -3,3 +3,7 @@ dist/
 data/
 package-lock.json
 apps/server/drizzle/
+
+# Scratch prototypes are design work, not part of the shipped codebase. They
+# live outside the workspaces and are not formatted with it.
+prototypes/

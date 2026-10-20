@@ -35,6 +35,15 @@ Entries describe what a user can now do, not which commits landed.
 
 ### Changed
 
+- **The web client loads one route at a time.** The control panel used to
+  ship as a single 584 kB JavaScript chunk, because every page component was
+  imported eagerly — the browser downloaded the agents page, the factory
+  board and the settings screen before the login screen could paint. Each
+  route is now its own chunk and the heavy vendor libraries are split out, so
+  the largest emitted chunk is 186 kB and the first paint carries roughly a
+  quarter of what it used to. The build now carries a chunk-size limit, so a
+  change that quietly re-bundles the panel into one file fails the build
+  instead of the user.
 - **Tailwind CSS 3.4 → 4.3.** The v3 dependency chain pulled in
   `chokidar` → `braces` → `micromatch` → `fast-glob`; `braces` has no patched
   release at any version, so the only way to clear the advisory was to
