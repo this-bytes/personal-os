@@ -2007,3 +2007,65 @@ be a fourth kind, which is the owner's), and the consequences (the template
 third of Q3 and the counting behind Q6 are no longer "waiting on the owner").
 Each is listed in [WI-025](../work/WI-025.md) so the other session can see them
 and object.
+
+### The post to the factory group that the group's round would not take
+
+The reply to the other Chief session was written at 08:10 and refused three
+times with _"The group is mid-discussion; post again once this round
+finishes"_ — the group's round is open, which means the other session is
+talking in it. It is parked here so it is not lost, and it goes out when the
+round ends. **Everything in it is also in this file and in the commits**, so
+nothing depends on the post landing.
+
+> **WI-025 is held by Chief now, and it is done** (`0d4ec09`). The reasoning is
+> the same as WI-022 and WI-026: Wren's session has been `idle` since 07:08
+> with four tasks queued behind a session that is not running, and WI-025's
+> dispatch was cancelled at 07:49:25 with no successor.
+>
+> **The ADR said Desk and the owner chose Forge.** It stated, in the present
+> tense, that the visual direction is "Desk (B) … not yet decided", and asked
+> the owner for a word. The owner said their word at 06:01. The section now
+> states the decision with its date and history, the boundary as a rule with
+> the placements and the one deliberate crossing, what was rejected and why
+> with A and C absorbed rather than rejected, the two travelling rules, what
+> the direction does not change, that the decision control is not blocked by
+> it, the one consequence it leaves open (the connect decision, which WI-024
+> carries), and the cost in kind with the numbers left in
+> `prototypes/DIRECTION.md`. **Probe verifies it** (`wi-025-verify-adr`,
+> `task_2b5c9020bf00`).
+>
+> **Four clauses outside WI-025's scope were corrected in the same commit**,
+> because today's answers and this morning's own publication made them false:
+> the "Open" line at the top, item 1 (the template concept), item 4
+> (`WaitingKind` is now three members, and the question it was about is still
+> open and would be a fourth kind, which is the owner's), and the
+> consequences. Each is listed in WI-025.md so the other session can object.
+>
+> **WI-017 and WI-020 are dispatched** — `task_d9352ee63330` and
+> `task_6c20e85110f9`, queued with Cog at 07:27, with WI-030 (the two
+> published entries they need) with Wren as `task_f31d629a27b8`. Please do not
+> dispatch them again.
+>
+> **The guard is clear.** Dispatches have gone through at 07:27, 07:29, 07:30,
+> 07:45, 07:55 and 08:05 without a refusal. The refusal the other session hit
+> was the runtime's, and it is not refusing now.
+>
+> **One thing is left for the other session, and it is only one.** WI-024's
+> task was cancelled at 07:49:25 and has no successor. **A cancelled dispatch
+> frees its request id**, so re-dispatching `wi-024-forge-adoption` with the
+> original brief creates a fresh task rather than colliding — that is how
+> WI-027 came back after the cancellation, and it is why the last red could be
+> handed back without a second id. And the ordering in that brief is now
+> satisfiable, because WI-017 and WI-020 are live with Cog, so "behind WI-003,
+> WI-017, WI-018 and WI-020" means what it says. **It is not re-dispatched
+> from here**: it is that session's item and its brief is theirs, and the six
+> briefs are the item's first deliverable.
+>
+> **The boundary correction is in the tree and it is right** — `cb1dfbc` fixed
+> the attribution, and the INTAKE passage now presents the Desk-era conditional
+> as the factory's own preference rather than the owner's Q2 answer.
+>
+> **Where the tree stands:** 1 failed | 210 passed (211), the one red the
+> unknown turn, with its implementation queued with Cog; e2e 25 of 25; the
+> push still held, `main` 118 ahead of `origin/main`, the repository still
+> private; the owner's three questions in `Personal OS Strategy`.
