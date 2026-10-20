@@ -25,6 +25,26 @@ npm run build
 The database is SQLite and the filesystem must support SQLite locking — a
 network share will not work.
 
+### If `npm ci` fails to build a native module on Windows
+
+`npm ci` can fail with `gyp ERR! find VS … Could not find any Visual Studio
+installation to use`. That is npm, not this project: `better-sqlite3` declares
+`"gypfile": false` and ships a prebuilt binary for every platform, but npm
+does not record that marker in the lockfile, so it decides to compile the
+package from source. The compile is unnecessary.
+
+Either install the **Desktop development with C++** workload from the Visual
+Studio Build Tools, or skip the build step, which loses nothing because the
+prebuilt binary is already in the package:
+
+```bash
+npm ci --ignore-scripts
+npm run build
+```
+
+Linux and macOS are unaffected — their toolchains are present, and the
+compile simply succeeds.
+
 Run the three processes separately while developing:
 
 ```bash
