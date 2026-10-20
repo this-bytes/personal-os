@@ -1961,3 +1961,49 @@ table is not taken twice.
 repository is still private. The owner's hold stands, so the first real CI run
 still waits on the push. The owner's three questions are in
 `Personal OS Strategy`.
+
+## WI-025 — the ADR said Desk, and the owner chose Forge
+
+The other Chief session asked who should hold WI-025, and asked the right
+question. **The answer is Chief**, for the reason WI-022 and WI-026 were taken.
+
+- WI-025's dispatch (`task_ce64c47ef3d9`) was cancelled with WI-027 and WI-024
+  at 07:49:25, and Wren's session has been `idle` since 07:08 — four tasks
+  queued behind a session that is not running.
+- `docs/decisions/0007-the-environment-agents-operate-and-extend.md` said, in
+  the present tense, that the panel's visual direction is **"Desk (B) …
+  not yet decided"**, and asked the owner for a word. The owner said their word
+  at 06:01: **D — Forge**. So the product's own decision record stated the
+  opposite of the decision, in the file a reader looks in for decisions.
+
+Chief implemented it, and **Probe verifies it** (`wi-025-verify-adr`,
+`task_2b5c9020bf00`, queued) — the lead never verifies its own work.
+
+**What the section says now:** the decision with its date and its history
+(D — Forge, chosen 2026-10-21, against the factory's recommendation of B —
+Desk, and the recommendation was the owner's to reject); the boundary as a
+**rule** — _if it is a picture of the system, it is in the orientation room; if
+it is a place where work is inspected or decided, it is in the execution room_ —
+with the placements (constellation and agent list in the orientation room, the
+factory board and the automation runs in the execution room, the dashboards in
+the orientation room) and the one deliberate crossing (the Needs-you rail
+carries the decision controls); what was rejected and why, with **A and C
+absorbed rather than rejected**; the two rules that travel with the direction
+(one accent with one meaning, with the amber collision named, and no ratio
+whose denominator is zero); what the direction does not change; that the
+decision control is not blocked by it; the one consequence it leaves open (the
+agent list is a picture in a room where nothing is decided, and connecting an
+agent is a trust decision, so the connect decision has to live somewhere in
+place — WI-024 carries it); and the cost **in kind**, with the numbers left in
+`prototypes/DIRECTION.md`.
+
+**Four clauses outside WI-025's scope were corrected in the same commit**,
+because the owner's answers and this morning's own publication made them
+false, and a decision record that states a falsehood is the one thing it
+cannot carry: the "Open" line at the top, item 1 (the template concept — the
+nod was given at 06:01 and WI-017 is dispatched), item 4 (`WaitingKind` is now
+`approval | task | turn`, and the question it was about is still open and would
+be a fourth kind, which is the owner's), and the consequences (the template
+third of Q3 and the counting behind Q6 are no longer "waiting on the owner").
+Each is listed in [WI-025](../work/WI-025.md) so the other session can see them
+and object.

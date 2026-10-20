@@ -8,9 +8,11 @@ section is the source, and this ADR is the copy into the repository's own decisi
 record. The borrowing rule went into the doctrine at `c7ae5fa`; the owner's four
 follow-up answers went into `INTAKE.md` at `b9f6181`.
 
-**Open:** none of the six questions from that round is answered, and two more are
-open that were never put to the owner at that round. They are listed under "What is
-still open", and this ADR does not close them.
+**Open:** of the six questions that went to the owner on 2026-10-20 at 23:55,
+**three have since been answered — the direction, the measures route and the
+template concept, all on 2026-10-21 at 06:01** — and the rest are open, with
+two more that were never put to the owner at that round. They are listed under
+"What is still open", and this ADR closes none of them.
 
 ## Context
 
@@ -81,16 +83,22 @@ nobody discovers it in a diff.
 
 ## What is still open
 
-Six questions went to the owner on 2026-10-20 at 23:55, and none of them is
-answered. Chief's recommendations are recorded in `.factory/INTAKE.md`; they are
-recommendations, not answers, and this ADR does not convert them. The direction
-has its own section below, and the measures route is sized as WI-020. The other
-four are these:
+Six questions went to the owner on 2026-10-20 at 23:55, and **three of them have
+since been answered — the direction (D — Forge, in the section above), the
+measures route, and the template concept, all on 2026-10-21 at 06:01.** Chief's
+recommendations are recorded in `.factory/INTAKE.md`; they are recommendations,
+not answers, and this ADR does not convert them. The direction has its own
+section above, the measures route is sized as
+[WI-020](../../.factory/work/WI-020.md), and the rest are these, with the answer
+marked where one has come:
 
-1. **The template concept.** Q3's third half — "authored through templates" — has
-   no template concept for a resource anywhere in the product, and a template in
-   the resource model is a published concept, so it needs the owner's nod before
-   it can be built. Sized as WI-017, and not dispatched until it is given.
+1. **The template concept. Answered — 2026-10-21 at 06:01.** Q3's third half —
+   "authored through templates" — had no template concept for a resource
+   anywhere in the product, and a template in the resource model is a published
+   concept, so it needed the owner's nod before it could be built. The owner
+   gave it, and it is in build as
+   [WI-017](../../.factory/work/WI-017.md), with its published shape in
+   [WI-030](../../.factory/work/WI-030.md).
 2. **The protocol boundary.** Which side of the product each protocol belongs to.
    The recommendation: the panel's agent-facing surface conforms to MCP and AG-UI,
    ACP and A2A are the agent-connection side, which we speak when we connect out
@@ -105,11 +113,14 @@ four are these:
    update is last-write-wins, and the audit trail does not cover every action.
    There is no undo, revert or rollback anywhere in the server or the web client
    today. The surface is missing, and part of the substrate with it.
-4. **Whether a conversation can wait on the owner's reply.** `WaitingKind` is
-   `approval | task`, and no contract carries a state for a conversation waiting on
-   a person, so the clause in WI-004's criterion that says "an entry that needs a
-   reply opens the conversation it belongs to" cannot be true yet. An answer is a
-   third kind of entry, and a third kind of entry is a contract change.
+4. **Whether a conversation can wait on the owner's reply.** The published
+   `WaitingKind` is now `approval | task | turn` — `turn` was added by the
+   owner's answer of 2026-10-21 at 07:07 so that an agent turn whose outcome
+   could not be confirmed reaches the owner, which is a different thing from
+   this question. No contract still carries a state for a conversation waiting
+   on a person, so the clause in WI-004's criterion that says "an entry that
+   needs a reply opens the conversation it belongs to" cannot be true yet. An
+   answer would be a fourth kind of entry, and a published kind is the owner's.
 
 Two more are open, and neither was put to the owner at that round. One is a
 recommendation with no question behind it; the other is a definition the owner has
@@ -126,24 +137,90 @@ not given:
 
 ## The visual direction
 
-The panel's visual direction is **Desk (B)**, recommended by Vision and **not yet
-decided**. The owner has one word to say: confirm B, or name A, C or D. It is a
-section of this ADR rather than a second one because the strategy session and the
-direction are one session.
+The panel's visual direction is **D — Forge**, chosen by the owner on
+**2026-10-21**, against the factory's recommendation of **B — Desk**. The
+recommendation was the owner's to reject, and rejecting it is a decision rather
+than a mistake: Desk was the cheapest of the four and the closest to the
+existing stack, and the owner took the one that costs more and changes more.
+The factory concurred with the recommendation and the owner chose anyway; that
+is the owner's call and this record is its consequence, not an argument.
 
-Desk was judged against the owner's own answers rather than against taste: the
-panel's home screen is the list of what needs the owner's authority (Q2), one list in
-one place, the conversation as a first-class surface, and the two measures visible
-without a new screen (Q6). The three rejected directions were rejected for reasons
-recorded in `prototypes/DIRECTION.md` — the event stream is a poor place to decide,
-a constellation answers a question one owner does not have, and a direction that
-needs a second decision is not one decision.
+It is a section of this ADR rather than a second one because the strategy
+session and the direction were one session. The direction itself, with its
+reasoning and its numbers, is
+[`prototypes/DIRECTION.md`](../../prototypes/DIRECTION.md). This section
+carries the decision, the boundary, what it rejects, and what it costs in kind;
+it does not restate the cost model.
 
-Two rules were harvested from the rejected directions and are now product rules:
-**one accent with one meaning**, and **no ratio whose denominator is zero**.
+**The boundary is a rule, not a layout.**
 
-The decision control — approving an approval from the landing page, where the list
-is — is not blocked by the direction and does not wait on it.
+> If it is a picture of the system, it is in the orientation room. If it is a
+> place where work is inspected or decided, it is in the execution room.
+
+Under that rule: the constellation and the agent list are in the **orientation
+room** — the constellation _is_ the agent list, spatialised, and building it
+twice would build the same information twice; the factory board and the
+automation runs are in the **execution room**; and the dashboards are in the
+**orientation room**. There is one deliberate crossing, and it is
+load-bearing: the Map's **Needs you** rail carries the decision controls, so a
+decision is taken where the list is.
+
+**What was rejected, and why it was rejected.** A decision that does not say
+what it rejected is not a decision, so the record of what was rejected on the
+owner's behalf is kept.
+
+- **B — Desk. Rejected.** Warm paper, light, Today-first: a single vertical
+  scroll answering what needs me, what is running, what exists, and a
+  reading-width conversation column. It was recommended because it is the only
+  direction whose home screen _is_ the decision list — the owner's top want and
+  Q2 in the same screen — and it is the cheapest of the four and the closest to
+  the existing stack. Against it: a warm-paper rebuild of a dark panel, a serif
+  added to a product that has no serif, and a 195-line palette rewrite to buy a
+  three-band scroll. It buys the least structure of the four.
+- **A — Deck. Absorbed rather than rejected.** A's trace gutter is now part of
+  Forge's execution room, and A's dense instrumented language is the execution
+  room's language. A alone was rejected: it promotes the event stream from an
+  implementation detail to the primary navigation surface, so the panel answers
+  _"what just happened"_ — a fine place to watch and a poor place to decide.
+- **C — Orbit. Absorbed rather than rejected.** C's constellation is now the
+  orientation room. C alone was rejected: a constellation answers _"who is
+  working"_, not _"what needs you"_, and it is the hardest of the four to keep
+  legible as agents and threads grow. That difficulty is Forge's now, and it is
+  priced in the cost model rather than argued away.
+
+**Two rules travel with the direction.** **One accent with one meaning** — and
+amber is the one collision that breaks it, because in Forge amber always means
+_live or waiting on you_ and never caution, so a caution block has to become
+neutral or use the error colour. And **no ratio whose denominator is zero**:
+the product's first report on itself must not be a lie by omission, so the
+counts are shown and a ratio appears only when there is a denominator to divide
+by.
+
+**What the direction does not change.** No server, no contract, no database, no
+CI, no dependency. Nothing in it changes behaviour, so nothing in it needs a
+contract change. It is a material and a structure, and the structure lives in
+the web client.
+
+**The decision control is not blocked by the direction, and does not wait on
+it.** The inbox is already a component, and the control is already built — the
+landing page's list of what needs the owner's authority, decided where the list
+is. What the adoption re-lays-out is the _layout_ of the list, not the control
+inside it, and the finished control is what Forge's Needs-you rail wraps. The
+owner's top want does not wait on a palette.
+
+**The one consequence the direction leaves open.** The agent list is a picture
+in the orientation room, and by that room's own rule nothing is decided there —
+but connecting an agent is a trust decision (Q2). So the connect decision has
+to live somewhere in place: either the constellation carries it, or the agent
+list keeps a decision surface in the execution room. That is a build decision
+inside the direction rather than an owner decision, because the owner chose the
+direction and this is inside it, and
+[WI-024](../../.factory/work/WI-024.md) carries it.
+
+**What it costs** is in `prototypes/DIRECTION.md`: a new component (the
+constellation), a third surface (the dashboards), a room switch, and a material
+that re-hues rather than replaces. Stated in kind, that is the price of D, and
+the numbers are in that document.
 
 ## Consequences
 
@@ -156,12 +233,15 @@ is — is not blocked by the direction and does not wait on it.
   consequence. Neither forks a protocol, and the boundary between them is the second
   open question.
 - Two of the six answers are half-built, and they say so. The template third of
-  Q3 is a work item waiting on the owner, because a template in the resource model
-  is a published concept. The counting behind Q6 is a work item waiting on the
-  owner, because a route that returns the numbers is a published contract.
+  Q3 and the counting behind Q6 are both published shapes, so both needed the
+  owner's nod, and the owner gave both on 2026-10-21 at 06:01. They are in build
+  as [WI-017](../../.factory/work/WI-017.md) and
+  [WI-020](../../.factory/work/WI-020.md), with their published entries in
+  [WI-030](../../.factory/work/WI-030.md).
 - **The product does not report on itself yet.** Nothing counts the two measures and
   the panel does not show them.
 - One licence question is the owner's and not the factory's, and it is recorded
   above rather than left in a candidate table.
-- The open questions stay open. This ADR records a recommendation for each one and
-  closes none of them.
+- The open questions stay open, and this ADR does not close them: it records a
+  recommendation for each one. The three that have since been answered carry
+  the owner's answer above, and the rest stay open with theirs.
