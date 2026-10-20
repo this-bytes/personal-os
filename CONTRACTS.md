@@ -538,6 +538,14 @@ node apps/server/dist/index.js --reset-password "<new password>"
 It is not an HTTP route, because it is the recovery path for an owner who
 cannot authenticate. Every session is revoked when it runs.
 
+**The new password is visible in the host's process list.** It is passed as a
+command-line argument, so it sits there for as long as the command runs, and
+another user on the host can read it there. It is also the only way to set the
+password after setup — no route changes it — so the exposure cannot be avoided
+by running something else instead. That is the cost of this recovery path, and
+it is paid knowingly: the path exists so that an owner who cannot authenticate
+is not left deleting the database.
+
 | Method             | Path                                                 | Purpose                                                                                 |
 | ------------------ | ---------------------------------------------------- | --------------------------------------------------------------------------------------- |
 | `GET`              | `/api/health`                                        | Liveness and setup state.                                                               |

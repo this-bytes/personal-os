@@ -65,6 +65,21 @@ docker compose -f deploy/compose.yaml exec server \
   node apps/server/dist/index.js --reset-password "<new password>"
 ```
 
+**The new password is visible to other users on the host while the command
+runs.** It is passed as a command-line argument, so it appears in the host's
+process list for as long as the command runs, and another user on the host can
+read it there — in `/proc/<pid>/cmdline` on Linux, in the process table on
+macOS and Windows. The checkout form puts it in the list twice: once for the
+`tsx` process you started, and once for the server it spawns. The command is
+in your shell's history as well.
+
+There is no way around that with the forms above. Nothing else sets the
+password — the setup screen only runs once, and no route changes it
+afterwards — so recovering a forgotten password means putting the new one on a
+command line, and whoever reads the process list while it runs holds the
+password to your instance. Run it on a host whose other users are ones you
+trust.
+
 For headless access — an MCP client, a script — the instance also takes a static
 owner token. Set `PERSONAL_OS_OWNER_TOKEN` in `deploy/.env` and send it as a bearer
 credential:
