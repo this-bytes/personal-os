@@ -32,17 +32,17 @@ Gaps Chief found in the repository. These are **not** wants. They are
 possibilities, and they become work only when the owner picks one or asks for
 something that leads to it. Each names where it was seen.
 
-| #    | Candidate                                                                                                          | Found in                                |
-| ---- | ------------------------------------------------------------------------------------------------------------------ | --------------------------------------- |
-| C-01 | An approval closes its execution instead of resuming the interrupted agent turn                                    | ARCHITECTURE.md, known limitations      |
-| C-02 | The event stream polls the event table every 250 ms instead of holding a connection to the worker                  | ARCHITECTURE.md, known limitations      |
-| C-03 | ACP sessions are created per turn instead of resumed, though the protocol supports it                              | ARCHITECTURE.md, known limitations      |
-| C-04 | Only the OpenAI-compatible model API shape is implemented                                                          | ARCHITECTURE.md, known limitations      |
-| C-05 | Milestone 05 is partially implemented — scoped autonomy policies, review and acceptance workflow, evidence capture | ARCHITECTURE.md, incremental build plan |
-| C-06 | The CLI adapter is supervised, not sandboxed                                                                       | ARCHITECTURE.md, security posture       |
-| C-07 | The instance has one owner; no teams, no sharing, no permissions                                                   | ARCHITECTURE.md, known limitations      |
-| C-08 | 55 kB of zod is in the first paint, because the client validates every event frame with the contracts schema   | WI-001, Cog's report                    |
-| C-09 | Four UI directions were built as prototypes; the owner has not chosen one, and direction D leaves the boundary between its two rooms open | `prototypes/README.md`                   |
+| #    | Candidate                                                                                                                                 | Found in                                |
+| ---- | ----------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------- |
+| C-01 | An approval closes its execution instead of resuming the interrupted agent turn                                                           | ARCHITECTURE.md, known limitations      |
+| C-02 | The event stream polls the event table every 250 ms instead of holding a connection to the worker                                         | ARCHITECTURE.md, known limitations      |
+| C-03 | ACP sessions are created per turn instead of resumed, though the protocol supports it                                                     | ARCHITECTURE.md, known limitations      |
+| C-04 | Only the OpenAI-compatible model API shape is implemented                                                                                 | ARCHITECTURE.md, known limitations      |
+| C-05 | Milestone 05 is partially implemented — scoped autonomy policies, review and acceptance workflow, evidence capture                        | ARCHITECTURE.md, incremental build plan |
+| C-06 | The CLI adapter is supervised, not sandboxed                                                                                              | ARCHITECTURE.md, security posture       |
+| C-07 | The instance has one owner; no teams, no sharing, no permissions                                                                          | ARCHITECTURE.md, known limitations      |
+| C-08 | 55 kB of zod is in the first paint, because the client validates every event frame with the contracts schema                              | WI-001, Cog's report                    |
+| C-09 | Four UI directions were built as prototypes; the owner has not chosen one, and direction D leaves the boundary between its two rooms open | `prototypes/README.md`                  |
 
 ## How a want becomes a work item
 
