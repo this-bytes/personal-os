@@ -1,7 +1,8 @@
 # Strategy — what Personal OS is, and where it goes
 
-**Status:** a direction for the owner to settle and the factory to iterate on. It is
-not a decision, it changes no published contract, and it opens no work item.
+**Status:** a direction for the factory to iterate on. **Two of the owner's decisions
+are settled and recorded below**; the rest of it is not a decision, it changes no
+published contract, and it opens no work item.
 **Written by:** the root session, at the owner's request — _"take inspiration from
 other opensource projects and bring it all together in a single pane of glass."_
 **Written against:** commit `cc973f3`, clean working tree.
@@ -106,7 +107,9 @@ WI-030 (the published shape). Both dispatched 2026-10-21.
 
 **What we do not have.** A template set. WI-017's last acceptance criterion says the
 report states which template set ships; WI-030 says which kind goes first is the
-owner's call. **The item waits on the owner's word** — see open decision 1.
+owner's call. **The owner has now answered: all six kinds get a template in the
+first set** (2026-10-21). That is wider than the factory recommended, and the
+recommendation was the owner's to reject — see decision 1.
 
 ### Pillar 2 — One truth, one history, and a way back
 
@@ -191,26 +194,46 @@ not have" is a want below. This document is the line between them.
 
 ---
 
-## The open decisions
+## The decisions
 
-Two, and both are the owner's.
+Two, both the owner's, **both answered on 2026-10-21**.
 
-**1. Which resource kinds get the first template set?** WI-017 needs the answer to
-close its last criterion and WI-030 defers it explicitly.
+### 1. Which resource kinds get the first template set?
 
-> **Recommendation: document first, then automation.** Documents are Q4's everyday
-> output and the simplest spec to hold an example of. Automation is second because
-> it is the kind whose update path is wrong today — last write wins, and no audit
-> entry — so a reviewed example there is worth more than one elsewhere.
+**The owner's answer: all six at once.** One template per resource kind —
+dashboard, document, automation, data-source, task, memory — in the first set.
 
-**2. Is the borrow rule a claim, or a check?** Today it is a claim, written in
-FACTORY.md and PRODUCT.md, and C-13 says nothing verifies it. The owner's own hard
-case — vendoring AGPL-3.0 code changes this project's licence — is exactly what a
-check would catch.
+**This overrides the factory's recommendation**, which was document first, then
+automation: documents are Q4's everyday output and the simplest spec to hold an
+example of, and automation is the kind whose update path is wrong today — last
+write wins, and no audit entry — so a reviewed example there is worth more than
+one elsewhere. The recommendation was the owner's to reject, and it was rejected.
+The reason to keep the recommendation on the record is the one this factory keeps
+every recommendation on: the owner deserves the record of what was rejected on
+their behalf, and WI-017's last criterion is now answered by the answer rather
+than by the factory.
 
-> **Recommendation: make it a check.** Record each dependency's licence read from
-> the repository, and let CI fail when a licence changes. That turns a doctrine
-> rule into a fact the build can prove.
+**What the answer costs, stated plainly.** Six templates is six reviewed examples
+to write, and the two kinds nobody authors as a feature yet — task and memory —
+are examples of a good thing whose writer has not been seen doing it. A template
+for those two is a guess. That is the trade the owner made, and it is recorded
+here rather than argued against.
+
+**WI-017 needs this to close its last criterion and WI-030 defers it explicitly.
+Both now have the answer.**
+
+### 2. Is the borrow rule a claim, or a check?
+
+**The owner's answer: make it a check.**
+
+Today it is a claim, written in FACTORY.md and PRODUCT.md, and C-13 says nothing
+verifies it. The owner's own hard case — vendoring AGPL-3.0 code changes this
+project's licence — is exactly what a check would catch.
+
+So the borrow rule becomes a fact the build proves: each dependency's licence is
+recorded read from its repository, and the build fails when a licence changes or
+an unapproved one appears. That splits into two wants, because the record and the
+gate are different files and different owners — W5 records it, W7 checks it.
 
 ---
 
@@ -220,6 +243,10 @@ Recorded as wants, in the format `.factory/TASK.md` asks for: a proposed title, 
 owner and acceptance criteria. **The number space has one owner**, and the session
 that owns it opens and numbers the items; this document does not take numbers and
 does not claim any.
+
+**Seven wants.** Six came out of the gap analysis; **W7 came out of the owner's
+answer** that the borrow rule becomes a check, and it is a separate want because
+the record and the gate are different files with different owners.
 
 ### W1 — The audit trail records what happened, not that something happened
 
@@ -283,7 +310,8 @@ second.
 Each dependency in the lockfile has its licence read from the repository and
 recorded here, with what that licence permits and what it forbids — and the
 landscape table above is brought under the same rule, because a comparator's
-licence is part of what it teaches.
+licence is part of what it teaches. This is the **record** half of the owner's
+answer that the borrow rule becomes a check; W7 is the gate.
 
 **Acceptance:** every dependency in the lockfile has a licence recorded and
 attributed to the file it was read from; the AGPL question the owner raised is
@@ -303,14 +331,37 @@ the opposite of the decision is the one thing it cannot carry.
 recommended B; the accent rule's statement matches ADR 0007; nothing else in the
 product record is changed in the same item.
 
+### W7 — The borrow rule becomes a check, not a claim
+
+**Owner:** Chief. **Files:** `.github/workflows/`, `package.json` (root), and the
+lockfile.
+
+The owner's answer to the second decision. The build compares the dependency set's
+licences against the recorded ones and **fails** when a licence changes or an
+unapproved licence appears. The owner's own hard case — vendoring AGPL-3.0 code
+changes this project's licence — is what this gate exists to catch, and it must
+catch it as a failed build rather than as a surprise discovered later.
+
+**Acceptance:** a licence change in the lockfile fails the build with the
+dependency named and the licence it changed from and to; an unapproved licence
+fails the build; the recorded licences W5 writes are what the gate compares
+against, so the two agree; a test or check proves a deliberately changed licence
+fails; the gate's own output is shown in the run.
+
+**Why this is Chief's and not Wren's.** The gate lives in the workflow and the
+root manifest, which the ownership table gives to Chief — and one want with two
+owners is two wants, so the record (W5) and the gate (W7) are separate items with
+separate owners.
+
 ---
 
 ## What this document does not do
 
-- It does not change a published contract, and it does not settle anything the owner
-  has not settled.
+- It does not change a published contract. It records the owner's two answers, and
+  settles nothing else.
 - It does not replace PRODUCT.md, ARCHITECTURE.md or ADR 0007. It points at them.
-- It does not re-scope WI-017, WI-020 or WI-030, which are dispatched.
+- It does not re-scope WI-017, WI-020 or WI-030, which are dispatched. It answers
+  the question WI-017 was waiting on.
 - It does not open a work item, and it takes no number. The wants above are wants.
 - It does not name a product the factory should not build. It names three pillars,
   the gap in each, and the item that closes it.
