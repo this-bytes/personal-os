@@ -981,7 +981,7 @@ audit side an operation is **agent-performed** when the entry's `actorType` is
 (`packages/contracts/src/common.ts:33`), and the code writes `human` and `agent`
 only.
 
-**What the reading cannot cover.** Three things, said plainly.
+**What the reading cannot cover.** Four things, said plainly.
 
 **Two of the six kinds can never be agent-authored.** The `automation` and `task`
 projections hardcode `createdBy: 'system'`
@@ -1018,6 +1018,19 @@ and that one only when the task leaves `unknown`. The other twelve write none:
 So **the second measure is a ratio of audited operations only**. It cannot be
 read as the share of everything the owner did: a third of the mutating surface
 is invisible to it.
+
+**The agent's own operations are not audited at all.** The MCP surface writes no
+audit entry — there is no audit call anywhere in
+`apps/server/src/modules/mcp/server.ts`, and none in the capabilities service its
+tools call, which reach the resources service directly rather than through the
+auditing route. The only writer of the trail that is not an owner HTTP route is
+the worker's `unknown` record (`apps/worker/src/executor.ts:97`). So every
+audited operation is an owner operation, except the worker's own `unknown`
+entries, which carry `actorType: 'agent'`. **The second measure does not count
+the work an agent does through MCP**: an agent can create, update and publish
+resources all day and the trail will show none of it. An implementation that
+wants the measure to mean what it says has to widen the audit coverage first,
+and that is WI-020's to decide.
 
 **Nothing records a failure.** The audit trail's `result` carries
 `success | failure | unknown` (`apps/server/src/modules/audit/service.ts:19`),
