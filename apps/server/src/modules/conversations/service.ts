@@ -1,4 +1,4 @@
-import { and, desc, eq } from 'drizzle-orm';
+import { and, desc, eq, isNull } from 'drizzle-orm';
 import {
   contentToText,
   type ContentPart,
@@ -46,6 +46,19 @@ export interface Dispatch {
   correlationId: string;
 }
 
+/**
+ * A turn whose outcome could not be confirmed.
+ *
+ * A turn is identified by its execution: the execution is the run itself, and
+ * the message it produced is that run's own record.
+ */
+export interface UnknownTurn {
+  executionId: string;
+  conversationId: string;
+  conversationTitle: string;
+  agentConnectionId: string | null;
+}
+
 export interface PostMessageResult {
   message: Message;
   dispatches: Dispatch[];
@@ -55,6 +68,14 @@ export interface PostMessageResult {
 export interface ConversationsService {
   list(workspaceId: string): ConversationDetail[];
   get(id: string): ConversationDetail;
+  /**
+   * The turns of a workspace whose outcome could not be confirmed.
+   *
+   * A turn that belongs to a task is not among them: that run is the task's
+   * own outcome, and the task already carries it. What is left are the runs
+   * that belong to a conversation alone.
+   */
+  listUnknownTurns(workspaceId: string): UnknownTurn[];
   create(input: {
     workspaceId: string;
     title: string;
@@ -200,6 +221,32 @@ export function createConversationsService(
       const row = db.select().from(conversations).where(eq(conversations.id, id)).get();
       if (!row) throw errors.notFound('Conversation');
       return toConversation(row);
+    },
+
+    listUnknownTurns(workspaceId): UnknownTurn[] {
+      return db
+        .select({
+          executionId: executions.id,
+          conversationId: executions.conversationId,
+          conversationTitle: conversations.title,
+          agentConnectionId: executions.agentConnectionId,
+        })
+        .from(executions)
+        .innerJoin(conversations, eq(conversations.id, executions.conversationId))
+        .where(
+          and(
+            eq(executions.workspaceId, workspaceId),
+            eq(executions.status, 'unknown'),
+            isNull(executions.taskId),
+          ),
+        )
+        .all()
+        .map((row) => ({
+          executionId: row.executionId,
+          conversationId: row.conversationId!,
+          conversationTitle: row.conversationTitle,
+          agentConnectionId: row.agentConnectionId,
+        }));
     },
 
     create(input): ConversationDetail {

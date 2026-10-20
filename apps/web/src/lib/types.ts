@@ -86,7 +86,7 @@ export interface ResourceInspection {
 export interface WaitingItem {
   /** Unique across kinds, so the list can be keyed. */
   id: string;
-  kind: 'approval' | 'task';
+  kind: 'approval' | 'task' | 'turn';
   /** What the item is. */
   title: string;
   /** Why it is waiting on the owner. */

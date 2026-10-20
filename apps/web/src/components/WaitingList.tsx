@@ -293,15 +293,16 @@ function WaitingRow({
 /**
  * Where the owner acts on the item.
  *
- * An approval is a request inside a conversation, so the conversation is
- * where the request is read. A task is decided on the factory board, and
- * the link opens the exact card so the decision is one click away.
+ * An approval is a request inside a conversation and a turn happened inside
+ * one, so the conversation is where they are read. A task is decided on the
+ * factory board, and the link opens the exact card so the decision is one
+ * click away.
  */
 function targetFor(item: WaitingItem): string {
-  if (item.kind === 'approval') {
-    return item.conversationId ? `/conversations/${item.conversationId}` : '/agents';
+  if (item.kind === 'task') {
+    return item.taskId ? `/factory?task=${item.taskId}` : '/factory';
   }
-  return item.taskId ? `/factory?task=${item.taskId}` : '/factory';
+  return item.conversationId ? `/conversations/${item.conversationId}` : '/agents';
 }
 
 /**

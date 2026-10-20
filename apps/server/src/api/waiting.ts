@@ -5,7 +5,7 @@ import { parseQuery, requireAuth } from './helpers.js';
 const waitingQuerySchema = z.object({ workspaceId: z.string() });
 
 /** What kind of thing is waiting on the owner. */
-export type WaitingKind = 'approval' | 'task';
+export type WaitingKind = 'approval' | 'task' | 'turn';
 
 /**
  * Why the item is on the list.
@@ -42,11 +42,14 @@ export interface WaitingItem {
  * instead of three and joins the answers itself. A pending approval is an
  * agent stopped mid-turn; a task in review is waiting for an acceptance
  * decision; a blocked task is waiting for the owner to unblock it; a task
- * whose outcome is unknown is waiting for the owner to check it.
+ * whose outcome is unknown is waiting for the owner to check it; and a turn
+ * whose outcome is unknown is waiting for the owner to check that too.
  *
  * The order is the order of urgency: an agent that cannot continue comes
  * first, then the work whose outcome could not be confirmed, then the work
- * waiting for an acceptance decision, then the work that is stuck.
+ * waiting for an acceptance decision, then the work that is stuck. That order
+ * is over the reasons, not the kinds: a turn and a task whose outcome could
+ * not be confirmed are both something to check, so they are in the same band.
  */
 export function registerWaitingRoutes(app: FastifyInstance): void {
   app.get('/api/waiting', { preHandler: requireAuth }, async (request) => {
@@ -78,6 +81,13 @@ function listWaiting(app: FastifyInstance, workspaceId: string): WaitingItem[] {
     pending.map((approval) => approval.taskId).filter((id): id is string => id !== null),
   );
 
+  // The same rule for a turn. An approval is a turn stopped on a decision, so
+  // a turn that has one pending is that approval waiting on the owner, and it
+  // must not appear beside it.
+  const turnsCoveredByAnApproval = new Set(
+    pending.map((approval) => approval.executionId).filter((id): id is string => id !== null),
+  );
+
   const tasks: WaitingItem[] = app.services.factory.listTasks(workspaceId).flatMap((task) => {
     if (coveredByAnApproval.has(task.id)) return [];
     if (task.status !== 'review' && task.status !== 'blocked' && task.status !== 'unknown')
@@ -103,9 +113,33 @@ function listWaiting(app: FastifyInstance, workspaceId: string): WaitingItem[] {
     ];
   });
 
+  // A turn whose outcome could not be confirmed is something to check, in
+  // the same band as an unknown task. It is not blocked and it is not a
+  // failure that may simply be repeated: the work started, and we cannot
+  // confirm how it ended.
+  const turns: WaitingItem[] = app.services.conversations
+    .listUnknownTurns(workspaceId)
+    .flatMap((turn) => {
+      if (turnsCoveredByAnApproval.has(turn.executionId)) return [];
+      return [
+        {
+          id: `turn:${turn.executionId}`,
+          kind: 'turn' as const,
+          title: turn.conversationTitle,
+          detail:
+            'This turn started and we cannot confirm how it ended. Check whether it ran before you ask the agent again.',
+          reason: 'unknown',
+          workspaceId,
+          conversationId: turn.conversationId,
+          taskId: null,
+          agentConnectionId: turn.agentConnectionId,
+        },
+      ];
+    });
+
   const unknown = tasks.filter((task) => task.reason === 'unknown');
   const review = tasks.filter((task) => task.reason === 'review');
   const blocked = tasks.filter((task) => task.reason === 'blocked');
 
-  return [...approvals, ...unknown, ...review, ...blocked];
+  return [...approvals, ...unknown, ...turns, ...review, ...blocked];
 }
