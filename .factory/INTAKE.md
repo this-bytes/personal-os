@@ -239,45 +239,70 @@ The four items the MiniMax Bot brief produced are all owned by Cog, and Cog
 is one implementer. So the order is not a preference, it is the only thing
 that can happen.
 
-**WI-008 → WI-009 → WI-007 → WI-006 → WI-012 → WI-004 + WI-016 → C-14 → WI-017.**
+**WI-004 → WI-020 + WI-021 → WI-018 → C-14 → WI-017.**
 
-**Amended 2026-10-20 23:55 by Chief, with the reasoning said out loud.** The
-order was recorded as WI-009 first, and the dispatch that would have put it
-there was refused by the runtime's task-assignment guard — so the contract
-batch (WI-008, WI-007, WI-006, WI-012) went out without it. That is why
-WI-009 is second and not first: it is now behind the item that was already
-running, not because it lost its place. The owner's Q2 wanted the
-truthfulness work first, and WI-009 is it — it fixes a violation of a
-published contract (`CONTRACTS.md:99-107`: only the coordinator may hand
-over) — so it goes as soon as the tree is free.
+**The order, 2026-10-21 03:30, rewritten because most of the batch landed.**
+Between 23:55 and 03:20 the contract batch, the persona, the agent's memory,
+the stack check, the coordinator rule and WI-004's decision control all
+landed: `5f019b9`, `bf400bd`, `70d042c`, `e764e6a`, `ff15a90`, `3872dbc`,
+`a2aadb4`. What is left is the part that was never started.
 
-1. **WI-008** (outcome unknown) is in flight and stays first: its window is
-   open only while WI-004's front end is held.
-2. **WI-009** (coordinator-only handoff) is second for the reason above. It
-   crosses no published boundary, so it needs no approval and no contract
-   entry, and it is the smallest item in the queue.
-3. **WI-007** third, because it needs the `unknown` state to finish its last
-   criterion.
-4. **WI-006** fourth — the owner's TR-1 decision.
-5. **WI-012** fifth — last of the contract batch, because an agent's memory
-   only means something once the agent has a role.
-6. **WI-004's control and WI-016's band** are sixth, together: both land on
-   the home surface, so they are one client pass if the owner's nod on the
-   measures route arrives before Cog reaches the slot, and two small passes
-   if it does not. This is the product's judged surface — "everything waiting
-   on me in one place" — and its first honest report on itself.
-7. **C-14, the live stream, is seventh.** The owner's floor for it is
-   unchanged (after the truthfulness work and the contracts), and it is
-   after the inbox because the owner's judgement criterion is the inbox.
-8. **WI-017, the templates, is eighth** — gated on the owner's answers about
-   the template concept and the protocol boundary, not on its priority. The
-   extension surface is the deepest claim of the identity, and it is funded
-   now rather than parked in the candidate list.
+1. **WI-004** is in flight with Cog. Probe found two criteria unmet — the
+   approval row carried no control, and the entry did not say which agent
+   was waiting — and both now have implementations in the tree: the control
+   (`a2aadb4`), and the agent on the entry, which the client renders by name
+   or by id and the server sends as `agentConnectionId`. It is one report
+   away from verify.
+2. **WI-020** (the product counts what it did) and **WI-021** (a delegation
+   addressed to a participant is not silently dropped) are next. WI-020
+   waits on the owner's nod for the route; WI-021 waits for WI-009's
+   verification, because it is the same file.
+3. **WI-018** (the published `WaitingItem` lives in the contracts package)
+   comes after WI-004's front end settles, because the shape of a waiting
+   item changes while it does.
+4. **C-14**, the live stream, keeps the floor the owner set for it: after the
+   truthfulness work and the contracts, and after the inbox, because the
+   owner's judgement criterion is the inbox.
+5. **WI-017** (the templates) is last among the substance, gated on the
+   owner's answers about the template concept and the protocol boundary, not
+   on its priority.
 
-**Vision's read is accepted and answered.** The queue was carrying the
-surface, and the fix is not a slogan — the two unfunded decisions are funded
-below and placed in the queue. If the owner reads the seventh slot as the
-surface winning again, that is a one-line re-cut.
+**What the 23:55 order said, and why it is superseded.** It was
+WI-009 → WI-008 → WI-007 → WI-006 → WI-012, with WI-009 second rather than
+first because its dispatch was refused by the runtime's guard and the
+contract batch went out without it. It is superseded because that batch
+landed, not because the reasoning was wrong: an item that crosses no
+published boundary goes first, an item whose window is open goes next, and
+an item that depends on another goes after it.
+
+### Chief's adjudications, 2026-10-21 03:30
+
+- **WI-009 — accepted into verify.** Every gate that applies is green with
+  the actual output: typecheck, 190 server tests and the rest, format,
+  build, smoke. The e2e gate does not apply — no web client changed — and
+  the two e2e failures are WI-004's criteria 1 and 5, which were failing
+  before this change and are not this item's. No contract change and no
+  migration: the published safeguard already says what the behaviour must
+  be, and Probe's covering tests were failing before and pass now.
+  **One condition on the verification:** Cog changed the owner's own message
+  in coordinator mode — it now reaches the coordinator even when it names a
+  participant — and no test pins it. The behaviour is accepted, because it
+  makes the mode's published promise true and matches how a mention already
+  behaved. The gap is the missing test, so Probe's verification must pin it
+  or the item returns.
+- **WI-009's second finding is now WI-021.** The MCP tool's
+  `targetParticipantIds` argument is matched against agent connection ids, so
+  a client passing real participant ids has them silently dropped. That is a
+  published-argument defect, not a taste question, and it is a work item now.
+- **WI-011 — Wren's report accepted, and the two additions stay.** The
+  conversation question is in scope: it is question six of the six the ADR
+  has to list, WI-004's own criterion refers to it, and the ADR is the
+  record of what is open. The record that said four questions where there
+  were six was a plain error, and it is corrected. The item is in review:
+  the product record and ADR 0007 landed, and Probe's verification is owed.
+  The verification dispatch was attempted at 03:25 and refused by the
+  runtime's task-assignment gate; request id `wi-011-probe-review-2026-10-21`,
+  so the retry is idempotent rather than a second worker.
 
 **The two decisions that had no work item behind them, 2026-10-20 23:55.** C-19
 and C-20 are not candidates. They are the unfunded halves of decisions the
@@ -285,7 +310,7 @@ owner already made: Q3's third half — "authored through templates" — and Q6 
 "the product reports on itself". A decision with nothing behind it is a wish,
 and FACTORY.md now says so.
 
-- **C-20 → [WI-016](../work/WI-016.md)** — the product counts what it did.
+- **C-20 → [WI-020](../work/WI-020.md)** — the product counts what it did.
   Sized, and waiting on the owner's nod: a read-only route is a published
   contract.
 - **C-19 → [WI-017](../work/WI-017.md)** — a template tells an agent what a
