@@ -2770,3 +2770,59 @@ a new id and a new title, not a reuse.
 `ask_840a807bf1ad7291f4d92f44` holds them — whether an unconfirmed turn keeps
 dispatching work, which WI-008 cannot close without, and where Forge sits in
 the queue. This session does not ask them a second time.
+
+## The factory is idle with a full queue — 2026-10-21 10:57 AEST
+
+**Every lane is full and nothing is running.** The last task to _start_ was
+Probe's WI-025 verification at 09:35:16; the last task to _finish_ was at
+09:48. Since then — nine minutes — the runtime has assigned nothing, though
+fourteen tasks are queued and waiting.
+
+| Lane  | Queued                                                                                    | Idle since |
+| ----- | ----------------------------------------------------------------------------------------- | ---------- |
+| Cog   | 4 — WI-024 (Forge), WI-017, WI-020, WI-031's implementation                               | **08:51**  |
+| Wren  | 5 — WI-025's record pass, WI-031's contract half, WI-007's migration note, WI-036, WI-037 | 09:34:34   |
+| Probe | 5 — WI-022, WI-007, WI-021, WI-027, WI-030                                                | 09:48      |
+
+**This is not a queue with too much on it.** Probe finished WI-025's
+verification at 09:48, freed its slot, and was not given the next one —
+WI-022's, which had been waiting since 09:13. **A bot that frees a slot and
+is not given the next task is an assignment that is not happening.** Cog's
+lane has been idle for sixty-four minutes, and Forge — the owner's chosen
+direction — is in it.
+
+**Two readings fit the evidence, and the factory can separate them.**
+
+1. _The guard holds the assignment._ The runtime refuses a tool call with
+   "This Bot is replying in multiple chats, so this tool call cannot be
+   assigned safely", and the Chief bot is in two chats — this session and the
+   other Chief session's group turn. The other session named this cause at
+   08:15 and 08:22. Against it: the guard is not refusing anything now —
+   this session's dispatches were accepted at 09:54 and its task queries work
+   — and the assignment is still not happening. **The guard explains the
+   refusals. It does not yet explain the silence.**
+2. _A bot session is wedged._ Cog has had seven tasks cancelled today, three
+   of them at 07:49:25 with `AGENT_UNAVAILABLE`, and a cancelled task may
+   leave its session spinning with the queue behind it. Cog's lane is the
+   longest idle, and Cog is the bot that has been cancelled the most. Wren
+   and Probe are shorter idle, and both finished cleanly.
+
+**The test for the next tick costs one dispatch of nothing.** Watch whether a
+queued task starts once the Chief bot is in one chat and one round. If one
+starts, the first reading is right, and the factory's throughput depends on
+how many places the lead is talking at once — which is a rule worth keeping.
+If none starts, the second reading is right, and a wedged session has to be
+replaced rather than waited on.
+
+**What was not done about it, deliberately.** Chief did not cancel and
+re-dispatch a queued task to force it moving: a cancelled dispatch strands
+the item and costs a new request id, and forcing an assignment the runtime is
+not making does not make it. Chief did not message a bot to ask whether it
+is alive, because a message is another item in a queue that is not draining,
+and it would compete with the real work rather than replace it. And Chief
+added no new work to the queue, except the two wants that were already
+written, already owner-funded, and blocked on nothing.
+
+**What the ledger's "Probe is the gate" reading was.** It was right about
+where acceptance is stuck, and it was not the whole truth: six items at
+`verify` is a queue, and a queue only matters if it moves.
