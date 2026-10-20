@@ -116,7 +116,7 @@ timeout. The owner sees an `unknown` item as **"check this"**, never as **"fix
 this"**.
 
 **A second `unknown`, on a connection.** `AgentConnectionStatus` carries
-`unknown` too (`packages/contracts/src/agent.ts:52-58`), and it means something
+`unknown` too (`packages/contracts/src/agent.ts:127-134`), and it means something
 else: a connection whose state was never checked, which is how a new connection
 starts. This `unknown` is about an outcome that cannot be confirmed; that one
 is about a state that was never looked at. They are different things that
@@ -127,8 +127,11 @@ redispatch and no reconciliation pass. An unknown outcome is a question for the
 owner, and only the owner can close it. Every transition into and out of
 `unknown` is written to the audit trail.
 
-This entry is the contract for **WI-008**. The code does not implement it yet:
-the shape above is what the implementation must reach.
+This entry is the contract for **WI-008**, and the code implements it — as of
+`9ad4f98`. `messageStatusSchema` carries `'unknown'` at
+`packages/contracts/src/conversation.ts:62`, `executionStatusSchema` at
+`packages/contracts/src/agent.ts:153`, and `taskStatusSchema` at
+`packages/contracts/src/factory.ts:25`.
 
 **Migration.** Nothing is reclassified. Rows recorded as `failed` before this
 change stay `failed` — we cannot know which of them were really unknown — and
@@ -307,9 +310,10 @@ to the turn context the worker already builds. It is not a second instruction
 system, and it never replaces or duplicates the external runtime's own harness or
 instruction file.
 
-This entry is the contract for **WI-006**. The code does not implement it yet:
-neither field exists on the connection or the participant, and there is no resolver
-to call.
+This entry is the contract for **WI-006**, and the code implements it — as of
+`70d042c`. `personaSchema` is at `packages/contracts/src/agent.ts:28`,
+`resolvePersona` at `:79`, the connection's base persona at `:102`, and the
+participant's override at `packages/contracts/src/conversation.ts:38`.
 
 **Migration.** Nothing is reclassified and nothing is rewritten. Both fields are
 optional, so a connection and a participant written before this change stay valid
@@ -455,9 +459,12 @@ pinned first and then most recent, so an agent's memory cannot crowd out the
 conversation. The other three scopes keep their meaning and behave exactly as they
 do today.
 
-This entry is the contract for **WI-012**. The code does not implement it yet:
-`MemorySpec.scope` is `workspace | conversation | goal` and the memory spec carries
-no agent field.
+This entry is the contract for **WI-012**, and the code implements it — as of
+`e764e6a`. `memoryScopeSchema` carries `'agent'` at
+`packages/contracts/src/resource.ts:102`, the spec's `agentConnectionId` at `:112`,
+and `listAgentMemories` at
+`apps/server/src/modules/resources/agent-memory.ts:29` is what puts the agent's
+memories in the turn context.
 
 **Migration.** Nothing is reclassified. The three existing scopes keep their
 meaning, no memory is reclassified, and the `agent` scope applies only to memories
@@ -607,10 +614,12 @@ That paragraph was true of the code as it stood and is not true of the contract 
 more: resuming a blocked turn needs a protocol-level resume that not every adapter
 supports, and the capability to do it is already modelled and negotiated.
 
-This entry is the contract for **WI-007**. The code does not implement it yet — the
-extension point `AgentAdapterExtras.resumeSession` is declared and never
-implemented, so today every decision still closes its execution — and the shape
-above is what the implementation must reach.
+This entry is the contract for **WI-007**, and the code implements it — as of
+`5f019b9`. `resumeSession` is implemented at
+`packages/agent-adapters/src/acp.ts:213` and called at
+`apps/worker/src/executor.ts:375`, and the gate is the capability and the session
+id together: `canResume = capabilities?.persistentSessions === true &&
+Boolean(execution.externalRef)`.
 
 **Migration.** Nothing is reclassified. An execution that is already `blocked` when
 this ships has no persisted session id, so a decision on it cannot be resumed and
