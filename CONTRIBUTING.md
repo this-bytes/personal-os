@@ -79,6 +79,10 @@ or the worker, the browser tests and the bundle budget if you touched the web
 client, and the build check if you changed how the compiled output is
 produced.
 
+The first two build the two library packages on the way, so they work on a
+fresh checkout without a separate build step. `npm run build` is still worth
+running before the browser tests, because they drive the built client.
+
 `npm run test:e2e` needs a browser once: `npx playwright install chromium`.
 
 ## Checking a deployment

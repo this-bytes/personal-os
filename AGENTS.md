@@ -145,6 +145,9 @@ change that matters, so run it before you commit rather than after.
 
 ## Before you say you are done
 
+The gates below work on their own, on a fresh checkout. You do not have to
+build first.
+
 - `npm run typecheck` passes.
 - `npm run test` passes.
 - `npm run format:check` passes.
