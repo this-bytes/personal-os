@@ -4,6 +4,8 @@ data/
 package-lock.json
 apps/server/drizzle/
 
-# Scratch prototypes are design work, not part of the shipped codebase. They
-# live outside the workspaces and are not formatted with it.
+# Design prototypes: static, hand-tuned artefacts rather than shipped code.
+# Prettier would reflow the deliberately compact CSS and break the intended
+# line-by-line layout of the mock-data script. They live outside the
+# workspaces and are not part of the formatted codebase.
 prototypes/

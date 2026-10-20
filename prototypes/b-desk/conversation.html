@@ -1,0 +1,234 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Release notes for v1.0 — Direction B · Desk</title>
+    <link rel="stylesheet" href="theme.css" />
+  </head>
+  <body>
+    <header class="topbar">
+      <div class="wordmark">
+        Personal OS <span class="sub">desk</span>
+      </div>
+      <nav class="topnav">
+        <a href="index.html">Today</a>
+        <a class="on" href="conversation.html">Conversations</a>
+        <a href="#">Factory</a>
+        <a href="#">Resources</a>
+        <a href="#">Automations</a>
+      </nav>
+      <div class="topbar-right">
+        <span class="mode"><span class="dot"></span>Assisted</span>
+        <span class="wspick">Studio <span class="faint">▾</span></span>
+        <span class="avatar">A</span>
+      </div>
+    </header>
+
+    <div class="split">
+      <div class="split-main">
+        <div class="thread-head">
+          <h1>Release notes for v1.0</h1>
+          <div class="sub">
+            <span class="pill accent">mentions routing</span>
+            <span>You, Cog and Wren</span>
+            <span>·</span>
+            <span>last message 09:44</span>
+          </div>
+        </div>
+
+        <div class="thread" id="thread"></div>
+      </div>
+
+      <aside class="side">
+        <div class="side-group">
+          <div class="lbl">In this conversation</div>
+          <div id="people"></div>
+        </div>
+
+        <div class="side-group">
+          <div class="lbl">Safeguards</div>
+          <dl class="kv">
+            <dt>Routing</dt>
+            <dd>Mentions — only an addressed agent wakes</dd>
+            <dt>Max turns</dt>
+            <dd>8 (3 used)</dd>
+            <dt>Max duration</dt>
+            <dd>900 seconds</dd>
+            <dt>Spend cap</dt>
+            <dd>Not set</dd>
+            <dt>Paused</dt>
+            <dd>No</dd>
+          </dl>
+        </div>
+
+        <div class="side-group">
+          <div class="lbl">Made in this thread</div>
+          <div id="artifacts"></div>
+        </div>
+      </aside>
+    </div>
+
+    <div class="dock with-side">
+      <div class="dock-inner">
+        <div class="composer">
+          <span class="placeholder">Write to the thread — @Cog or @Wren to address one</span>
+          <button class="send" aria-label="Send">
+            <svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8">
+              <path d="M2 8h11M9 4l4 4-4 4" />
+            </svg>
+          </button>
+        </div>
+        <div class="composer-bar">
+          <span class="pill accent">mentions</span>
+          <span>turns 3 of 8</span>
+          <span>·</span>
+          <span>20 spend units</span>
+          <span>·</span>
+          <span style="margin-left:auto">@ to address · ⌘↵ to send</span>
+        </div>
+      </div>
+    </div>
+
+    <script src="../shared/data.js"></script>
+    <script>
+      (function () {
+        'use strict';
+
+        var threadEl = document.getElementById('thread');
+
+        function agentFor(actorId) {
+          return POS.agentById(actorId);
+        }
+
+        function mentionMarkup(text) {
+          return text.replace(/@([A-Za-z][\w-]*)/g, function (m, name) {
+            var agent = POS.agents.filter(function (a) {
+              return a.name.toLowerCase() === name.toLowerCase();
+            })[0];
+            if (!agent) return m;
+            return '<span class="mention m-' + agent.accent + '">' + m + '</span>';
+          });
+        }
+
+        threadEl.innerHTML = POS.messages
+          .map(function (m) {
+            if (m.kind === 'activity') {
+              return (
+                '<div class="msg system"><div class="who-orb" style="background:var(--surface-3);color:var(--faint)">·</div>' +
+                '<div class="body"><div class="text">' +
+                m.content[0].text +
+                '</div></div></div>'
+              );
+            }
+
+            var isHuman = m.origin.kind === 'human';
+            var agent = isHuman ? null : agentFor(m.origin.actorId);
+            var name = isHuman ? 'You' : agent.name;
+            var orb = isHuman
+              ? '<div class="who-orb" style="background:var(--text)">A</div>'
+              : '<div class="who-orb" style="background:var(--agent-' +
+                agent.accent +
+                ')">' +
+                agent.name.charAt(0) +
+                '</div>';
+
+            var parts = m.content
+              .map(function (part) {
+                if (part.type === 'text') {
+                  return '<div class="text">' + mentionMarkup(part.text) + '</div>';
+                }
+                if (part.type === 'artifact') {
+                  var res = POS.resourceById(part.resourceId);
+                  return (
+                    '<a class="attach" href="#"><span class="ic"><svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4">' +
+                    '<path d="M9 1.5H4.5A1.5 1.5 0 0 0 3 3v10a1.5 1.5 0 0 0 1.5 1.5h7A1.5 1.5 0 0 0 13 13V5.5z" />' +
+                    '<path d="M9 1.5V5a.5.5 0 0 0 .5.5H13" /></svg></span>' +
+                    '<span><span class="nm">' +
+                    res.title +
+                    '</span><span class="mt" style="display:block">' +
+                    res.type +
+                    ' · revision ' +
+                    res.revision +
+                    ' · updated ' +
+                    res.updatedAt +
+                    '</span></span></a>'
+                  );
+                }
+                return '';
+              })
+              .join('');
+
+            var stamp = m.createdAt.slice(11, 16);
+
+            return (
+              '<div class="msg">' +
+              orb +
+              '<div class="body"><div class="name">' +
+              name +
+              (agent ? ' <span class="faint" style="font-weight:400">· ' + agent.adapterLabel + '</span>' : '') +
+              '</div>' +
+              parts +
+              '<div class="when">' +
+              stamp +
+              (agent ? ' · depth ' + m.origin.depth : '') +
+              '</div></div></div>'
+            );
+          })
+          .join('');
+
+        /* ---- side panel: people ------------------------------------------- */
+
+        var conv = POS.conversations[0];
+
+        document.getElementById('people').innerHTML = conv.participants
+          .map(function (p) {
+            if (p.type === 'human') {
+              return (
+                '<div class="person"><span class="o" style="background:var(--text)">A</span>' +
+                '<span><span class="nm">' +
+                p.displayName +
+                '</span><span class="ty" style="display:block">You · the owner</span></span></div>'
+              );
+            }
+            var a = POS.agentById(p.agentConnectionId);
+            return (
+              '<div class="person"><span class="o" style="background:var(--agent-' +
+              a.accent +
+              ')">' +
+              a.name.charAt(0) +
+              '</span><span><span class="nm">' +
+              a.name +
+              '</span><span class="ty" style="display:block">' +
+              a.adapterLabel +
+              '</span></span><span class="rt"><span class="pill ok"><span class="dot" style="background:var(--ok)"></span>' +
+              (a.status === 'degraded' ? 'degraded' : 'connected') +
+              '</span></span></div>'
+            );
+          })
+          .join('');
+
+        /* ---- side panel: artifacts ----------------------------------------- */
+
+        var made = POS.resources.filter(function (r) {
+          return r.id === 'rs_notes' || r.id === 'rs_pr';
+        });
+
+        document.getElementById('artifacts').innerHTML = made
+          .map(function (r) {
+            return (
+              '<div class="person"><span class="o" style="background:var(--accent-soft);color:var(--accent)">◧</span>' +
+              '<span><span class="nm">' +
+              r.title +
+              '</span><span class="ty" style="display:block">' +
+              r.type +
+              ' · rev ' +
+              r.revision +
+              '</span></span></div>'
+            );
+          })
+          .join('');
+      })();
+    </script>
+  </body>
+</html>

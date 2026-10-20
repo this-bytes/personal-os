@@ -1,0 +1,374 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Personal OS — Direction C · Orbit</title>
+    <link rel="stylesheet" href="theme.css" />
+  </head>
+  <body>
+    <div class="field">
+      <div class="blob a"></div>
+      <div class="blob b"></div>
+      <div class="blob c"></div>
+    </div>
+
+    <header class="topbar">
+      <span class="mark">P</span>
+      <span class="brand">Personal OS</span>
+      <nav class="gnav">
+        <a class="on" href="index.html">Orbit</a>
+        <a href="conversation.html">Conversations</a>
+        <a href="#">Factory</a>
+        <a href="#">Resources</a>
+        <a href="#">Automations</a>
+      </nav>
+      <div class="topbar-right">
+        <span class="live"><span class="dot"></span>live</span>
+        <span class="pill">Studio</span>
+        <span class="avatar">A</span>
+      </div>
+    </header>
+
+    <div class="shell">
+      <!-- ── canvas ─────────────────────────────────────────────── -->
+      <section class="canvas">
+        <div class="canvas-head">
+          <h1>Your orbit</h1>
+          <p>
+            Five agents, four live threads, one you. Lines show where your attention is
+            currently going — a bright spoke means that agent is working right now.
+          </p>
+        </div>
+
+        <div class="stage">
+          <svg viewBox="0 0 800 500" preserveAspectRatio="xMidYMid meet" id="constellation"></svg>
+        </div>
+
+        <div class="legend" id="legend"></div>
+      </section>
+
+      <!-- ── rail ───────────────────────────────────────────────── -->
+      <aside class="rail">
+        <div class="panel-head">
+          <h2>Needs you</h2>
+          <span class="n" id="needsCount"></span>
+        </div>
+        <div class="needs" id="needs"></div>
+
+        <div class="panel-head">
+          <h2>Live pulse</h2>
+          <span class="n">seq 4812</span>
+        </div>
+        <div class="pulse" id="pulse"></div>
+      </aside>
+    </div>
+
+    <script src="../shared/data.js"></script>
+    <script>
+      (function () {
+        'use strict';
+
+        var CX = 400;
+        var CY = 250;
+
+        /* Agents sit on an inner ellipse, conversations on an outer one.
+         * The graph is the navigation model: a thread is the subgraph its
+         * agents share, so the shape of the system is visible at a glance. */
+        var AGENT_POS = [
+          { x: 400, y: 100 },
+          { x: 633, y: 204 },
+          { x: 544, y: 371 },
+          { x: 256, y: 371 },
+          { x: 167, y: 204 },
+        ];
+
+        var CONV_POS = [
+          { x: 149, y: 84 },
+          { x: 651, y: 84 },
+          { x: 651, y: 416 },
+          { x: 149, y: 416 },
+        ];
+
+        /* Which conversations are live right now, and who is in them. */
+        var LIVE = {
+          cv_release: { pos: 1, agents: ['ag_cog', 'ag_wren'], hot: true },
+          cv_cost: { pos: 2, agents: ['ag_probe', 'ag_hermes'], hot: false },
+          cv_network: { pos: 3, agents: ['ag_hermes'], hot: false },
+          cv_review: { pos: 0, agents: ['ag_cog'], hot: false },
+        };
+
+        /* Agents with work in flight get a bright spoke. */
+        var BUSY = { ag_cog: true, ag_hermes: true };
+
+        var agentIndex = {};
+        POS.agents.forEach(function (a, i) {
+          agentIndex[a.id] = i;
+        });
+
+        var svg = document.getElementById('constellation');
+        var parts = [];
+
+        /* --- orbit rings -------------------------------------------- */
+
+        parts.push('<ellipse class="ring" cx="400" cy="250" rx="245" ry="150" />');
+        parts.push('<ellipse class="ring" cx="400" cy="250" rx="355" ry="235" />');
+
+        /* --- owner core --------------------------------------------- */
+
+        parts.push(
+          '<circle cx="400" cy="250" r="42" fill="rgba(167,139,250,0.12)" stroke="rgba(167,139,250,0.5)" />'
+        );
+        parts.push('<circle cx="400" cy="250" r="26" fill="url(#core)" />');
+        parts.push(
+          '<defs><linearGradient id="core" x1="0" y1="0" x2="1" y2="1">' +
+            '<stop offset="0%" stop-color="#a78bfa" /><stop offset="100%" stop-color="#22d3ee" />' +
+            '</linearGradient></defs>'
+        );
+        parts.push('<text class="core-label" x="400" y="255">You</text>');
+
+        /* --- spokes: owner to each agent ----------------------------- */
+
+        POS.agents.forEach(function (a, i) {
+          var p = AGENT_POS[i];
+          var hot = BUSY[a.id];
+          parts.push(
+            '<line class="spoke' +
+              (hot ? ' hot' : '') +
+              '" x1="400" y1="250" x2="' +
+              p.x +
+              '" y2="' +
+              p.y +
+              '" />'
+          );
+        });
+
+        /* --- edges: agent to the threads it belongs to ---------------- */
+
+        Object.keys(LIVE).forEach(function (cid) {
+          var conf = LIVE[cid];
+          var cp = CONV_POS[conf.pos];
+          conf.agents.forEach(function (aid) {
+            var p = AGENT_POS[agentIndex[aid]];
+            parts.push(
+              '<line class="spoke" x1="' +
+                p.x +
+                '" y1="' +
+                p.y +
+                '" x2="' +
+                cp.x +
+                '" y2="' +
+                cp.y +
+                '" opacity="0.55" />'
+            );
+          });
+        });
+
+        /* --- agent nodes --------------------------------------------- */
+
+        POS.agents.forEach(function (a, i) {
+          var p = AGENT_POS[i];
+          var off = a.enabled ? '' : ' opacity="0.35"';
+          var colour = 'var(--agent-' + a.accent + ')';
+          var glow =
+            BUSY[a.id] && a.enabled
+              ? '<circle cx="' +
+                p.x +
+                '" cy="' +
+                p.y +
+                '" r="26" fill="' +
+                colour +
+                '" opacity="0.16" />'
+              : '';
+          var ring =
+            a.status === 'degraded'
+              ? ' stroke-dasharray="3 3"'
+              : '';
+
+          parts.push(
+            '<g' +
+              off +
+              '>' +
+              glow +
+              '<circle cx="' +
+              p.x +
+              '" cy="' +
+              p.y +
+              '" r="18" fill="' +
+              colour +
+              '" opacity="0.92"' +
+              ring +
+              ' />' +
+              '<text class="node-label" x="' +
+              p.x +
+              '" y="' +
+              (p.y + 34) +
+              '">' +
+              a.name +
+              '</text>' +
+              '<text class="node-sub" x="' +
+              p.x +
+              '" y="' +
+              (p.y + 47) +
+              '">' +
+              (a.enabled ? a.status.toUpperCase() : 'DISABLED') +
+              '</text>' +
+              '</g>'
+          );
+        });
+
+        /* --- conversation nodes --------------------------------------- */
+
+        Object.keys(LIVE).forEach(function (cid) {
+          var conf = LIVE[cid];
+          var cp = CONV_POS[conf.pos];
+          var conv = POS.conversationById(cid);
+          var size = conf.hot ? 8 : 6;
+          parts.push(
+            '<g><rect x="' +
+              (cp.x - size) +
+              '" y="' +
+              (cp.y - size) +
+              '" width="' +
+              size * 2 +
+              '" height="' +
+              size * 2 +
+              '" rx="2.5" transform="rotate(45 ' +
+              cp.x +
+              ' ' +
+              cp.y +
+              ')" fill="' +
+              (conf.hot ? 'var(--accent-2)' : 'rgba(255,255,255,0.28)') +
+              '"' +
+              (conf.hot ? ' opacity="0.9"' : '') +
+              ' />' +
+              '<text class="node-sub" x="' +
+              cp.x +
+              '" y="' +
+              (cp.y + 22) +
+              '">' +
+              (conv.title.length > 22 ? conv.title.slice(0, 21) + '…' : conv.title) +
+              '</text></g>'
+          );
+        });
+
+        svg.innerHTML = parts.join('');
+
+        /* --- legend --------------------------------------------------- */
+
+        document.getElementById('legend').innerHTML =
+          '<span class="k"><span class="swatch" style="background:var(--accent-2)"></span>thread in progress</span>' +
+          '<span class="k"><span class="swatch" style="background:rgba(255,255,255,0.28)"></span>thread</span>' +
+          '<span class="k"><span class="swatch" style="background:var(--accent)"></span>you</span>' +
+          '<span class="k">bright spoke · agent is working now</span>';
+
+        /* --- needs you ------------------------------------------------ */
+
+        var needs = [];
+
+        POS.approvals.forEach(function (a) {
+          needs.push({
+            hot: true,
+            k: 'Approval · ' + a.requestedBy,
+            t: a.summary,
+            s: a.details.why,
+            actions: [
+              { label: 'Approve', cls: 'primary' },
+              { label: 'Decline', cls: 'quiet' },
+            ],
+          });
+        });
+
+        POS.tasks.forEach(function (t) {
+          if (t.status === 'review') {
+            needs.push({
+              hot: false,
+              k: 'Ready for acceptance · ' + t.assignee,
+              t: t.title,
+              s: 'The agent reported this done. You decide whether it counts.',
+              actions: [
+                { label: 'Accept', cls: 'primary' },
+                { label: 'Send back', cls: 'quiet' },
+              ],
+            });
+          }
+          if (t.status === 'blocked') {
+            needs.push({
+              hot: false,
+              k: 'Blocked · ' + t.assignee,
+              t: t.title,
+              s: 'Waiting on a data-source grant.',
+              actions: [{ label: 'Grant access', cls: '' }],
+            });
+          }
+        });
+
+        document.getElementById('needsCount').textContent = needs.length;
+        document.getElementById('needs').innerHTML = needs
+          .map(function (n) {
+            return (
+              '<div class="need' +
+              (n.hot ? ' hot' : '') +
+              '"><div class="k">' +
+              n.k +
+              '</div><div class="t">' +
+              n.t +
+              '</div><div class="s">' +
+              n.s +
+              '</div><div class="btnrow">' +
+              n.actions
+                .map(function (a) {
+                  return '<button class="btn ' + a.cls + '">' + a.label + '</button>';
+                })
+                .join('') +
+              '</div></div>'
+            );
+          })
+          .join('');
+
+        /* --- live pulse ------------------------------------------------- */
+
+        var GLYPH = {
+          message: '✉',
+          task: '✓',
+          agent: '◉',
+          automation: '⚡',
+          approval: '!',
+          resource: '◧',
+          execution: '▸',
+        };
+
+        var KIND = {
+          'message.delta': 'message',
+          'message.updated': 'message',
+          'message.created': 'message',
+          'task.updated': 'task',
+          'agent.status': 'agent',
+          'automation.run': 'automation',
+          'approval.requested': 'approval',
+          'resource.updated': 'resource',
+          'artifact.created': 'resource',
+          'execution.status': 'execution',
+        };
+
+        document.getElementById('pulse').innerHTML = POS.events
+          .slice(0, 9)
+          .map(function (e) {
+            var kind = KIND[e.type] || 'execution';
+            return (
+              '<div class="pulse-row"><span class="glyph">' +
+              (GLYPH[kind] || '·') +
+              '</span><span class="txt"><b>' +
+              (e.actor || 'system') +
+              '</b> · ' +
+              e.summary +
+              '</span><span class="at">' +
+              e.at +
+              '</span></div>'
+            );
+          })
+          .join('');
+      })();
+    </script>
+  </body>
+</html>
