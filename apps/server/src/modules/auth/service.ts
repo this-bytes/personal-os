@@ -30,6 +30,14 @@ export interface AuthService {
   logout(token: string): Promise<void>;
   authenticate(token: string): Promise<AuthenticatedUser | null>;
   findUserByEmail(email: string): Promise<AuthenticatedUser | null>;
+  /**
+   * Replace the owner's password.
+   *
+   * This is the recovery path for a forgotten password: it changes nothing
+   * else, so conversations, resources and tasks survive. Every existing
+   * session is invalidated, because the old credential is gone.
+   */
+  resetOwnerPassword(password: string): Promise<AuthenticatedUser>;
 }
 
 /**
@@ -158,6 +166,27 @@ export function createAuthService(db: Database): AuthService {
         .where(eq(users.email, email.toLowerCase().trim()))
         .get();
       return row ?? null;
+    },
+
+    async resetOwnerPassword(password: string): Promise<AuthenticatedUser> {
+      if (password.length < 8) {
+        throw errors.validation('The password must be at least 8 characters long.');
+      }
+      const row = db.select().from(users).limit(1).get();
+      if (!row) {
+        throw errors.notFound('Owner');
+      }
+
+      const { hash, salt } = hashPassword(password);
+      db.update(users)
+        .set({ passwordHash: hash, passwordSalt: salt })
+        .where(eq(users.id, row.id))
+        .run();
+
+      // The old credential is gone, so the sessions it produced are revoked.
+      db.delete(sessions).where(eq(sessions.userId, row.id)).run();
+
+      return { id: row.id, email: row.email, displayName: row.displayName };
     },
   };
 }

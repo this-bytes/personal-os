@@ -23,6 +23,8 @@ export interface Runtime {
 export { Queue } from './queue/client.js';
 export type { QueueJob, JobType, EnqueueOptions } from './queue/client.js';
 export { EventsService } from './modules/events/service.js';
+export { createAuthService } from './modules/auth/service.js';
+export type { AuthenticatedUser } from './modules/auth/service.js';
 export { planAndDispatch } from './modules/conversations/dispatch.js';
 export { planRouting, deriveChainState } from './modules/conversations/routing.js';
 export {

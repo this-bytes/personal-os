@@ -487,11 +487,23 @@ result, so the resource really has fresh data afterwards — it is not a no-op.
 All routes are prefixed with `/api`. Authentication is a session cookie
 (`pos_session`) or a bearer token.
 
+There are **no default credentials**. The owner account is created by
+`POST /api/auth/setup`, which succeeds only once per instance; after that the
+login route is the only way in. A forgotten password is replaced by the server
+binary's `--reset-password` mode, which changes nothing else:
+
+```
+node apps/server/dist/index.js --reset-password "<new password>"
+```
+
+It is not an HTTP route, because it is the recovery path for an owner who
+cannot authenticate. Every session is revoked when it runs.
+
 | Method             | Path                                       | Purpose                                                                                 |
 | ------------------ | ------------------------------------------ | --------------------------------------------------------------------------------------- |
 | `GET`              | `/api/health`                              | Liveness and setup state.                                                               |
 | `GET`              | `/api/auth/status`                         | Whether setup is still required.                                                        |
-| `POST`             | `/api/auth/setup`                          | Create the owner account.                                                               |
+| `POST`             | `/api/auth/setup`                          | Create the owner account. Once per instance.                                            |
 | `POST`             | `/api/auth/login`                          | Start a session.                                                                        |
 | `POST`             | `/api/auth/logout`                         | End the session.                                                                        |
 | `GET`              | `/api/auth/me`                             | The current owner.                                                                      |

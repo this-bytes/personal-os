@@ -3,18 +3,24 @@
 # Verify a running Personal OS deployment.
 #
 # Checks that the published port serves the client and the API, and that the
-# whole stack works together: the owner account, a registered agent, a chat
-# turn that the worker answers, and the audit trail.
+# whole stack works together: an agent is registered, a chat turn that the
+# worker answers, the audit trail, and the MCP surface.
 #
-#   ./scripts/verify-deployment.sh [base-url]
+#   ./scripts/verify-deployment.sh [base-url] [email] [password]
 #
-# The default base URL is http://127.0.0.1:4317.
+# The base URL defaults to http://127.0.0.1:4317. The owner's credentials
+# default to the PERSONAL_OS_EMAIL and PERSONAL_OS_PASSWORD environment
+# variables.
+#
+# This script never creates the owner account. On an instance that has not
+# been set up yet, it says so and stops, so that running it cannot consume
+# the first-run slot and hide the setup screen from the person using it.
 
 set -euo pipefail
 
 BASE="${1:-http://127.0.0.1:4317}"
-EMAIL="deploy-check@example.com"
-PASSWORD="correct horse battery"
+EMAIL="${2:-${PERSONAL_OS_EMAIL:-}}"
+PASSWORD="${3:-${PERSONAL_OS_PASSWORD:-}}"
 WORK="$(mktemp -d)"
 COOKIE="$WORK/cookies.txt"
 
@@ -52,22 +58,30 @@ grep -q '"ok":true' "$WORK/health.json" || fail "the health endpoint does not re
 ok "the health endpoint reports ok"
 
 # --- the owner account ------------------------------------------------------
-SETUP_CODE="$(curl -s -o "$WORK/setup.json" -w '%{http_code}' -c "$COOKIE" \
-  -H 'content-type: application/json' \
-  -d "{\"email\":\"$EMAIL\",\"password\":\"$PASSWORD\",\"displayName\":\"Deploy Check\"}" \
-  "$BASE/api/auth/setup")"
-if [ "$SETUP_CODE" = "201" ]; then
-  ok "the owner account was created"
-else
-  # An instance that already has an owner refuses a second setup; sign in.
-  LOGIN_CODE="$(curl -s -o "$WORK/login.json" -w '%{http_code}' -c "$COOKIE" \
-    -H 'content-type: application/json' \
-    -d "{\"email\":\"$EMAIL\",\"password\":\"$PASSWORD\"}" \
-    "$BASE/api/auth/login")"
-  [ "$LOGIN_CODE" = "200" ] \
-    || fail "could not sign in (setup $SETUP_CODE, login $LOGIN_CODE): $(cat "$WORK/login.json")"
-  ok "the owner signed in"
+curl -s -o "$WORK/status.json" "$BASE/api/auth/status"
+if grep -q '"setupRequired":true' "$WORK/status.json"; then
+  echo ""
+  echo "This instance has no owner yet, so there is nothing to sign in to."
+  echo "Open $BASE and create the owner account — that is the first-run setup."
+  echo "Then re-run this script with the owner's email and password."
+  exit 2
 fi
+
+if [ -z "$EMAIL" ] || [ -z "$PASSWORD" ]; then
+  echo ""
+  echo "This instance is set up, so the owner has to sign in for the checks below."
+  echo "Pass the credentials as arguments, or set PERSONAL_OS_EMAIL and PERSONAL_OS_PASSWORD:"
+  echo "  ./scripts/verify-deployment.sh $BASE <email> <password>"
+  exit 2
+fi
+
+LOGIN_CODE="$(curl -s -o "$WORK/login.json" -w '%{http_code}' -c "$COOKIE" \
+  -H 'content-type: application/json' \
+  -d "{\"email\":\"$EMAIL\",\"password\":\"$PASSWORD\"}" \
+  "$BASE/api/auth/login")"
+[ "$LOGIN_CODE" = "200" ] \
+  || fail "could not sign in (HTTP $LOGIN_CODE): $(cat "$WORK/login.json")"
+ok "the owner signed in"
 
 # --- a workspace ------------------------------------------------------------
 curl -s -o "$WORK/workspaces.json" -b "$COOKIE" "$BASE/api/workspaces"

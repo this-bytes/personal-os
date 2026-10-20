@@ -310,5 +310,10 @@ These are real, and deliberately not hidden:
   blocked adapter turn needs a protocol-level resume that not every adapter
   supports.
 - **A single owner.** No teams, no sharing, no permissions beyond "this workspace".
+- **There is no email delivery, so there is no reset link.** The owner account is
+  created at first run and there are no default credentials. A forgotten password is
+  replaced from the command line (`node apps/server/dist/index.js --reset-password`),
+  which keeps every conversation, resource and task and signs out the sessions the
+  old credential produced.
 - **No native desktop or mobile client.** The web client is responsive and
   installable as a PWA.

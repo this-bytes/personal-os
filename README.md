@@ -46,6 +46,35 @@ The built-in **Echo** agent works without any external setup, so you can exercis
 whole loop — mention an agent in a conversation, watch it reply — before connecting a
 real agent.
 
+### There are no default credentials
+
+Personal OS has no built-in login. The owner account is created the first time you
+open the instance, and that setup screen is the onboarding: it asks for a display
+name, an email and a password, and the account it creates owns every workspace.
+
+Once the owner exists, the login screen asks for that email and password. If you
+forget them, the password can be replaced in place — the conversations, resources
+and tasks are not affected, and every open session is signed out:
+
+```bash
+# On the host
+npx tsx scripts/reset-owner-password.ts "<new password>"
+
+# In a container
+docker compose -f deploy/compose.yaml exec server \
+  node apps/server/dist/index.js --reset-password "<new password>"
+```
+
+For headless access — an MCP client, a script — the instance also takes a static
+owner token. Set `PERSONAL_OS_OWNER_TOKEN` in `deploy/.env` and send it as a bearer
+credential:
+
+```bash
+curl -H "Authorization: Bearer $PERSONAL_OS_OWNER_TOKEN" http://localhost:4317/mcp
+```
+
+That token is the owner, so treat it like a password.
+
 ### Docker Compose
 
 ```bash
@@ -76,14 +105,16 @@ ln -sf "/mnt/c/Program Files/Docker/Docker/resources/bin/docker-credential-deskt
   ~/.local/bin/docker-credential-desktop
 
 docker compose -f deploy/compose.yaml up -d --build
-./scripts/verify-deployment.sh
+./scripts/verify-deployment.sh http://127.0.0.1:4317 "<owner email>" "<owner password>"
 ```
 
-`scripts/verify-deployment.sh` checks a running deployment end to end: the
-client is served, the API answers, an owner signs in, an agent is registered, the
-worker answers a message, the audit trail records the work, and MCP exposes its
-tools. Pass a base URL as the first argument if it is not
-`http://127.0.0.1:4317`.
+`scripts/verify-deployment.sh` checks a running deployment end to end: the client
+is served, the API answers, an agent is registered, the worker answers a message,
+the audit trail records the work, and MCP exposes its tools.
+
+It never creates the owner account. On an instance that has not been set up yet it
+says so and stops, so that running it cannot consume the first-run slot and hide
+the setup screen from the person using it.
 
 The SQLite database lives in a Docker volume on the engine's own filesystem, not
 on a network share, which is what SQLite's locking requires.

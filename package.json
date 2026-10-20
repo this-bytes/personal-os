@@ -29,6 +29,7 @@
     "test:e2e": "npm run build && npm run test:e2e -w @personal-os/web",
     "smoke": "tsx scripts/smoke.ts",
     "verify:build": "tsx scripts/verify-build.ts",
+    "reset:owner-password": "tsx scripts/reset-owner-password.ts",
     "verify:bundle": "tsx scripts/verify-bundle-size.ts",
     "db:migrate": "npm run db:migrate -w @personal-os/server",
     "db:generate": "npm run db:generate -w @personal-os/server",
