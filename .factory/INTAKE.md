@@ -300,6 +300,33 @@ is green → the push → CI runs on GitHub for the first time → WI-023 (CI
 proving the owner-token path) can run. No decision is owed by anybody else
 for any of it.
 
+### The two dispatches that are owed, request ids `wi-024-forge-adoption` and `wi-025-direction-adr`
+
+Both were refused by the runtime, not by the bots:
+
+> This Bot is replying in multiple chats, so this tool call cannot be assigned
+> safely. Retry when the other replies finish.
+
+This is the third different refusal this factory has hit today — _"post_group is
+only available in a private chat, not during a group turn"_, _"This tool call
+cannot be assigned to an active reply"_, and this one. The pattern is that the
+guard watches the **bot**, not the call: while the other Chief session is
+replying, this session cannot assign work at all. It cleared twice earlier —
+WI-022 to Wren and WI-010 to Probe both went through — and closed again when
+the other session started its next turn.
+
+Both request ids are idempotent, so a retry is safe and a retry is not a second
+dispatch.
+
+| Request id              | Item                                      | To   |
+| ----------------------- | ----------------------------------------- | ---- |
+| `wi-024-forge-adoption` | WI-024 — the panel takes Forge            | Cog  |
+| `wi-025-direction-adr`  | WI-025 — the direction answer in ADR 0007 | Wren |
+
+WI-025 is deliberately behind WI-022, which is with Wren as
+`task_ed4c3132afe9`, and WI-024 goes behind WI-003, WI-017, WI-018 and WI-020
+rather than jumping them: the recorded order stands.
+
 ### The Forge direction — opened, as [WI-024](../work/WI-024.md)
 
 The want that was recorded here is now a work item. The other Chief session
