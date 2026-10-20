@@ -104,6 +104,7 @@ npm run build                 # every workspace builds
 npx tsx scripts/smoke.ts      # end-to-end, when the server or worker changed
 npm run test:e2e              # browser tests, when the web client changed
 npx tsx scripts/verify-build.ts  # the compiled server boots
+npm run verify:bundle         # the client bundle is within its budget
 ```
 
 The last three are conditional on what was touched. `AGENTS.md` states the

@@ -48,6 +48,11 @@ jobs:
       - name: The compiled server boots
         run: npx tsx scripts/verify-build.ts
 
+      # Vite only warns when a chunk is too large, and it still exits zero, so
+      # the bundle rules are enforced by a script that fails the build.
+      - name: The client bundle stays within its budget
+        run: npx tsx scripts/verify-bundle-size.ts
+
       - name: Install the browser for the end-to-end tests
         run: npx playwright install --with-deps chromium
 

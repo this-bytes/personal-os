@@ -13,7 +13,17 @@ import { defineConfig, devices } from '@playwright/test';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const repoRoot = path.resolve(here, '../..');
-const port = 4319;
+
+/**
+ * The port the test server listens on.
+ *
+ * It is configurable because several agents can run this suite at the same
+ * time, and two Playwright sessions on one port fight over the same data
+ * directory: the second one empties the database the first one is serving.
+ * The symptom is a client that waits forever for the login screen, which
+ * reads as a missing page rather than as a collision.
+ */
+const port = Number(process.env['PERSONAL_OS_E2E_PORT'] ?? 4319);
 
 export default defineConfig({
   testDir: './e2e',
@@ -40,7 +50,9 @@ export default defineConfig({
     env: {
       PERSONAL_OS_HOST: '127.0.0.1',
       PERSONAL_OS_PORT: String(port),
-      PERSONAL_OS_DATA_DIR: path.join(repoRoot, 'data', 'e2e'),
+      // The data directory is per port, for the same reason the port is
+      // configurable: two runs must never share a database.
+      PERSONAL_OS_DATA_DIR: path.join(repoRoot, 'data', `e2e-${port}`),
       PERSONAL_OS_OWNER_TOKEN: 'e2e-owner-token',
       LOG_LEVEL: 'warn',
     },

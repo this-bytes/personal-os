@@ -150,6 +150,7 @@ change that matters, so run it before you commit rather than after.
 - `npm run format:check` passes.
 - `npx tsx scripts/smoke.ts` passes if you touched the server or the worker.
 - `npm run test:e2e` passes if you touched the web client.
+- `npm run verify:bundle` passes if you touched the web client or the build.
 - `npm run build` passes if you touched the web client.
 - The documentation matches the code. If you changed a contract, `CONTRACTS.md`
   changed with it.

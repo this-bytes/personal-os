@@ -21,10 +21,13 @@ Entries describe what a user can now do, not which commits landed.
 - **A browser test suite.** Playwright drives the built client in headless
   Chromium: the owner creates the account, narrows an agent's MCP tool grants
   and confirms the server stored them, and builds an event-triggered
-  automation. `npm run test:e2e` runs it.
-- **A test layer for the web client.** 28 unit and component tests cover the
+  automation. The route splitting is covered too — every lazy route renders,
+  the first paint fetches no page, and a chunk that fails to load shows an
+  error state instead of a blank screen. `npm run test:e2e` runs all 15.
+- **A test layer for the web client.** 44 unit and component tests cover the
   API client's error handling, the event stream's replay and schema
-  validation, and the status badge.
+  validation, the status badge, the vendor-chunk map, and the bundle budget
+  rules.
 - **An open-source project surface.** MIT licence, contribution guide, code of
   conduct, security policy, issue and pull-request templates, editor config,
   Dependabot and CodeQL.
@@ -32,6 +35,11 @@ Entries describe what a user can now do, not which commits landed.
   formats, runs the end-to-end smoke test, boots the compiled server, runs
   the browser suite, audits the dependency tree, and starts the container
   stack to prove the shipped image serves the client.
+- **A bundle budget the build enforces.** Vite only warns when a chunk is too
+  large, and it still exits zero, so the rules are enforced by a script that
+  fails the build: no chunk may exceed 300 kB, every declared vendor chunk
+  must actually be emitted, and the first paint may not carry a page chunk.
+  `npm run verify:bundle` runs it, and CI runs it on every pull request.
 
 ### Changed
 
@@ -40,8 +48,11 @@ Entries describe what a user can now do, not which commits landed.
   imported eagerly — the browser downloaded the agents page, the factory
   board and the settings screen before the login screen could paint. Each
   route is now its own chunk and the heavy vendor libraries are split out, so
-  the largest emitted chunk is 186 kB and the first paint carries roughly a
-  quarter of what it used to. The build now carries a chunk-size limit, so a
+  the largest emitted chunk is 186 kB and the first paint is 497 kB across six
+  chunks — about 15% smaller than the 584 kB it used to download in one
+  piece. The entry chunk on its own is 154 kB, a quarter of the old one, but
+  the browser preloads the vendor chunks too, so the honest figure is the
+  sum and not the entry. The build now carries a chunk-size limit, so a
   change that quietly re-bundles the panel into one file fails the build
   instead of the user.
 - **Tailwind CSS 3.4 → 4.3.** The v3 dependency chain pulled in
@@ -59,6 +70,16 @@ Entries describe what a user can now do, not which commits landed.
 
 ### Fixed
 
+- **A page that fails to load no longer blanks the control panel.** Splitting
+  the client into one chunk per route introduced a failure that did not exist
+  when the whole panel shipped as one file: the browser can fail to download
+  a page's code — a deploy renames the file, a request is dropped — and the
+  failure tore down the entire application, leaving the owner with an empty
+  page and no way out. Each route now sits behind its own error boundary, so
+  the panel and its navigation survive the failure and the page shows an
+  error state with a retry. A retry that fails a second time reloads the
+  panel, because the browser keeps a failed module in its cache and no
+  further request for it could ever succeed.
 - **A portable Compose verification.** `scripts/verify-compose.ps1` resolved
   the repository from an absolute path that only existed on one machine. It
   now resolves from its own location, so it runs in any checkout.

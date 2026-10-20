@@ -1,5 +1,6 @@
-import { expect, test, type Page } from '@playwright/test';
+import { expect, test } from '@playwright/test';
 import { mcpToolNames, triggerableEventTypes } from '@personal-os/contracts';
+import { firstWorkspaceId, signIn } from './support/owner';
 
 /**
  * The control panel, in a real browser.
@@ -7,47 +8,6 @@ import { mcpToolNames, triggerableEventTypes } from '@personal-os/contracts';
  * These tests cover the two screens that carry the newest behaviour: the
  * per-connection MCP tool grants and the event-triggered automation.
  */
-
-const OWNER = {
-  email: 'owner@example.com',
-  password: 'correct horse battery',
-  displayName: 'Owner',
-};
-
-/**
- * Sign in through the login screen.
- *
- * The first test creates the owner account; every later test finds it
- * already there and signs in instead.
- */
-async function signIn(page: Page): Promise<void> {
-  await page.goto('/');
-
-  const setup = page.getByRole('heading', { name: 'Create the owner account' });
-  const login = page.getByRole('heading', { name: 'Sign in' });
-
-  await expect(setup.or(login)).toBeVisible();
-
-  if (await setup.isVisible()) {
-    await page.locator('#displayName').fill(OWNER.displayName);
-    await page.locator('#email').fill(OWNER.email);
-    await page.locator('#password').fill(OWNER.password);
-    await page.getByRole('button', { name: 'Create account' }).click();
-  } else {
-    await page.locator('#email').fill(OWNER.email);
-    await page.locator('#password').fill(OWNER.password);
-    await page.getByRole('button', { name: 'Sign in' }).click();
-  }
-
-  await expect(page).toHaveURL(/\/conversations/);
-}
-
-async function firstWorkspaceId(page: Page): Promise<string> {
-  const response = await page.request.get('/api/workspaces');
-  expect(response.ok()).toBe(true);
-  const body = await response.json();
-  return body.workspaces[0].id as string;
-}
 
 test.describe('the MCP tool grants of an agent connection', () => {
   test('the owner narrows the tools a connection may call', async ({ page }) => {
