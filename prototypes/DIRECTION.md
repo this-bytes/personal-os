@@ -1,280 +1,268 @@
-# Direction — a recommendation, not a decision
+# Direction — Forge (D)
 
 **Written by:** Vision, for [WI-010](../.factory/work/WI-010.md).
 **Written against:** commit `235f97c` (2026-10-21), clean working tree.
-**Re-verified:** 2026-10-21 against `235f97c`. The recommendation was first
-written against `c734a99` and a dirty tree; the tree has moved since. What
-changed is recorded in "Re-verification" at the end. The recommendation itself
-did not move.
-**Status:** a recommendation. It is not a decision until the owner answers the
-question at the end. The ADR that records the answer is `docs/decisions/0007-*.md`,
-which is Wren's, and it is written after the owner confirms.
+**Owner decision, 2026-10-21: D — Forge.** The recommendation had been B (Desk).
+The owner chose D. This document is rewritten for D: the rejections, the
+settled boundary and the cost model are all D's now. The reasoning that chose
+B is kept in "What the recommendation was, and why it changed" at the end,
+because a decision that does not say what it rejected is not a decision, and
+the owner deserves the record of what was rejected on their behalf.
+**Status:** a decision, taken by the owner. The item that builds it is Chief's
+to open; the ADR that records it is `docs/decisions/0007-*.md`, and it is
+Wren's.
 
-## The question, in one word
+---
 
-**Desk (B)?**
+## The decision
 
-Confirm it, or name a different direction. Nothing else is needed to settle it.
+**D — Forge.** The hybrid: an **orientation room** in Orbit's spatial language
+and an **execution room** in Deck's dense, instrumented language, held together
+by one material — a dark base, hairline borders, violet for structure, cyan for
+data, amber always meaning live or waiting on you.
 
-## The recommendation
+The three surfaces, as the prototype has them:
 
-**B — Desk.** Warm paper, light, one vertical scroll that answers what needs
-me, what is running, what exists, and a reading-width conversation column with
-a plain-language side panel.
+- **Map** — the orientation room. The constellation, the counters, the tiles,
+  and an instrument rail carrying **Needs you** and **Live pulse**.
+- **Work** — the execution room. The conversation with the **execution trace**
+  beside it.
+- **Dashboards** — bound data sources, with the widget bindings visible.
 
-The panel's front door is a decision list, because the owner's own answer to
-Q2 is that the human *decides* — directs, approves, accepts — and the agents do
-everything else. B is the only direction whose home screen is that list, in
-reading order, in a calm light surface, for one owner.
+## The boundary Forge leaves open, now settled
 
-## The test this was judged by
+The prototype README records the open question: D puts the map and the
+dashboards in one room and the conversation in the other, but **the factory
+board, the agent list and the automation runs could reasonably belong to
+either.** A direction that inherits an open boundary is not a decision, so
+here is the rule and the answers.
 
-The owner's decisions in `.factory/INTAKE.md` give a sharper test than taste.
-A direction has to pass all four.
+**The rule.** *If it is a picture of the system, it is in the orientation room.
+If it is a place where work is inspected or decided, it is in the execution
+room.*
 
-1. **Q2 — the human decides, and the panel surfaces only what needs the owner's
-   authority.** Not what is interesting, not what is new, not what is running.
-   Everything else is the agents' business.
-2. **W-1 — "I see everything waiting on me in one place."** One list, one place,
-   not three screens to reconcile.
-3. **W-2 — talking to agents is the job that should get genuinely better.** The
-   conversation is a first-class surface, not a tab.
-4. **Q6 — the product reports on itself.** The two measures — the share of
-   features authored by agents in-instance, and the share of operations done
-   without the owner touching code — have to be visible in the panel.
+| Surface | Room | Why |
+| --- | --- | --- |
+| The constellation (the map) | Orientation | It is the picture of the system. |
+| The agent list | Orientation | The constellation **is** the agent list, spatialised. A flat roster beside it would build the same information twice, and the map is the better version. |
+| The factory board | Execution | It is a dense, stateful view of work in flight, and it behaves like the trace. |
+| The automation runs | Execution | Same. They are live instrumentation, not a picture of the system. |
+| The dashboards | Orientation | They are bound to data sources the owner configured. |
 
-And one constraint that is not a test but a veto: the stated scope says the
-panel is not a project dashboard, and the instance has one owner with no
-permissions, sharing or onboarding.
+**The one deliberate crossing, and why it exists.** The Map's **Needs you**
+rail is the only place that crosses from orientation into work on purpose:
+**it carries the decision controls.** WI-004 was returned to `implement` on
+2026-10-21 for exactly this reason — the panel could list an approval and
+could not decide one, because the criterion says an approval is approved or
+rejected *where the list is*. A Forge panel that links out to the conversation
+for a decision would re-create that defect inside a bigger frame. So the rail
+is not a summary that links away; it is the decision surface, and Work is where
+you go when the rail's summary is not enough.
 
-A general form of this test, proposed here and not decided: *does this make the
-environment better for the next agent, or only better for this turn?* It is
-offered as a candidate for the factory's standing questions, because the
-factory will meet wants that do not fit the queue, and it needs a line to draw.
+**The owner's top want is safe.** W-1 — *"I see everything waiting on me in one
+place"* — is satisfied by one rail on the landing screen. The honest caveat is
+in the risk section below: in Forge the map is what the page is *about* and the
+rail sits beside it, so the list is present rather than primary.
 
-## Why B
+## Why D, against the test
 
-**It is the decision surface, in the order the owner decides.** B's home leads
-with what needs the owner, in a single scroll, and every entry in it is
-something the owner can act on. That is W-1 and Q2 in the same screen, and
-nothing in it is decoration. A has the same list, but the list is not what the
-page is *about* — see below.
+D was judged against the owner's own settled answers, and it passes all four —
+but it is the direction that passes with the most to carry, so the reasoning is
+recorded honestly rather than generously.
 
-**It is built for one owner.** One vertical scroll, light, calm, no spatial
-navigation to learn. The instance has one user. A console sized for a control
-room is the wrong furniture for one person.
+1. **Q2 — the human decides, and the panel surfaces only what needs the
+   owner's authority.** Forge's Needs-you rail is that surface, and the
+   boundary above puts every decision in the execution room where it is taken.
+   The orientation room is the one place the panel is allowed to show the
+   system *for its own sake*, which is why the rule above is about pictures and
+   not about numbers.
+2. **W-1 — everything waiting on me in one place.** One rail, on the landing
+   screen, carrying the count and the actions. The risk is real and is stated
+   below.
+3. **W-2 — talking to agents is the job.** The Work room is a conversation
+   with the execution trace beside it, and the trace is the surface that makes
+   an agent's work legible rather than merely readable.
+4. **Q6 — the product reports on itself.** The two measures go in the Map's
+   counters band, which becomes the self-report: features authored by agents
+   in-instance, and operations completed without the owner touching code.
 
-**It gives W-2 a real surface.** B's conversation is a reading-width column
-with a plain-language side panel — participants, safeguards, artifacts. Talking
-to an agent is the job, and this is the room it happens in.
+**One rule travels with the direction.** *No ratio whose denominator is zero.*
+For a long while the honest value of "the share of features authored by agents"
+is zero or undefined, because no agent has authored a feature in-instance yet.
+A panel that greets its owner with 0% reads as broken, and the product's first
+report on itself must not be a lie by omission. Show the counts — N features, M
+operations — and show the ratio only when there is a denominator to divide by.
 
-**It carries Q6's two measures without growing a screen.** They belong in a band
-on the home, under a heading like "what the environment did on its own": the
-share of features authored by agents in-instance, and the share of operations
-completed without the owner touching code. That is a band, not a dashboard, and
-it sits in the same place the owner already looks.
+## The cost of adopting D now, concretely
 
-**It is the cheapest of the four, and cheapest is a real argument here.** One
-implementer, with eight items ahead of it — WI-003, WI-004, WI-006, WI-007,
-WI-012, WI-016, WI-017, WI-018 — and two more already in verify. B is closest
-to the existing stack, which means the direction decision costs the factory the
-least of the four options it has.
+D is the most expensive of the four, and it is expensive in **structure**, not
+in paint. That distinction is the whole cost model, so it is worth stating
+plainly before the numbers.
 
-## Why not A — Deck
+**The material is closer to what already exists than the alternative was.**
+Forge's base is dark, with hairline borders and a single accent family. The
+current app is already a dark base (`bg-slate-950 text-slate-100`) with hairline
+borders and one accent (`indigo-`). The neutral scale re-hues — Forge's base is
+`#07060d`, a violet-black, against slate-950's `#020617` — but the scale
+survives, and with it most of the 215 call sites that name a `slate-` token.
+Forge's theme is one variable block (`--bg`, `--surface`, `--border`, `--text`,
+`--muted`, `--faint`, `--accent`, `--live`, `--ok`, `--warn`, `--err`,
+`--info`), not a second design system.
 
-**Rejected. Its spine is the wrong instrument for the owner's role.** A promotes
-the event stream from an implementation detail to the primary navigation
-surface. The panel then answers "what just happened" — which is the panel as a
-monitor of agent activity, the exact identity this product does not want. Q2
-says the human decides; a live event stream is a fine place to *watch* and a
-poor place to *decide*. It is also the largest behavioural change of the four:
-every surface in A is an inspector over one stream.
+**The palette pass, line by line** (reproduce with
+`git grep -c -E '<token>' -- 'apps/web/src' 'packages/ui/src'`):
 
-**Harvested: the trace gutter.** It is not mock. `packages/contracts` carries
-`tool.started`, `tool.completed`, `artifact.created` and `execution.status`,
-and spend is already tracked as an abstract counter (`spendUnits`), so "what the
-agent is doing" is in the data model today. The gutter is a component that
-belongs to the conversation surface, and it will land inside B's language when
-it gets its own item. It is not part of this direction, and this item does not
-build it.
+| Token | Lines | Files | Under Forge |
+| --- | --- | --- | --- |
+| `slate-` | 215 | 34 | The neutral scale. Re-hued in place, the call sites do not move; renamed, all 215 do. **The adoption item picks one.** Re-huing in place is the cheaper and is what the prototype's variable block assumes. |
+| `indigo-` | 34 | 14 | Becomes violet (`--accent: #a78bfa`). One bulk rename of a single token family. |
+| `amber-` | 10 | 6 | **The only semantic collision in the palette.** See below. |
+| `red-` | 26 | 19 | Maps to `--err: #fb7185`. Survives. |
+| `emerald-` | 9 | 7 | Maps to `--ok: #34d399`. Survives. |
+| `violet-` | 0 | 0 | New. |
+| `cyan-` | 0 | 0 | New. |
 
-## Why not C — Orbit
+**The amber collision, named exactly.** Forge's rule is *amber always means
+live or waiting on you*. Ten lines across six files use amber today, and **four
+of them mean something else**: `ConversationDetail.tsx:349` and `:504`, and
+`ResourceEditor.tsx:263` and `:264` are caution blocks, not liveness. Under
+Forge they read wrong — a caution would look like something waiting on the
+owner. The fix is semantic, not chromatic, and it is four lines: Forge's own
+theme sets `--live` and `--warn` to the same value (`#fbbf24`), so there is no
+second amber to move them to, and they need to become neutral or use `--err`.
+The remaining six amber usages — `AppShell.tsx:37` and `:170`, and
+`StatusBadge.tsx:30` — are already liveness or waiting, which is why the
+current app was closer to Forge's rule than it looked.
 
-**Rejected, and not deferred.** A constellation answers "who is working", not
-"what needs you". The owner is one person with a handful of agents; the map is
-a picture of a system that does not exist yet. C is also the hardest of the
-four to keep legible as agents and threads grow, it introduces a genuinely new
-component, and it has nowhere natural for Q6's two measures. The question it
-answers best is one a single owner does not have. If the instance ever has many
-owners and many agents, the data model can support it, and it becomes worth
-revisiting then.
+**The structural pass, which is where the money is.**
 
-## Why not D — Forge
+1. **Three surfaces and a room switch.** The top bar gains Forge's room
+   navigation (Map / Work / Dashboards). `AppShell.tsx` changes shape, not
+   just colour. Three routes, one material, two densities.
+2. **The constellation is a genuinely new component.** An SVG graph of agents
+   and threads, with a live spoke for agents working now and a thread drawn as
+   the subgraph its agents share. The data is real — agent connections,
+   conversations, participants — and the prototype hand-places the nodes, so
+   the build item needs a real layout algorithm and a legibility rule for
+   growth. This is the single hardest piece of any of the four directions and
+   Forge does not avoid it; it inherits it from Orbit.
+3. **The dashboards screen is Forge-only.** Widgets bound to a data source's
+   payload, with the bindings visible rather than implied. The contracts
+   already carry it: `dashboardSpec` (widgets, bindings, `refreshSeconds`) and
+   `dataSourceSpec` (`json`, `http`, `sqlite`).
+4. **The execution trace is now in scope.** It was out of scope under the Desk
+   recommendation and it is now part of the direction: the conversation's
+   companion, carrying `tool.started`, `tool.completed`, `artifact.created`
+   and `execution.status`, with spend as an abstract counter (`spendUnits`).
+   All of it is already in the contracts, so this is a surface over existing
+   data — which is also what makes it worth having.
+5. **Agents get an identity hue.** Forge's theme carries one `--agent-*` token
+   per agent, so each agent connection has a colour in the panel. The current
+   app has no equivalent concept. It lines up with the persona work: an agent
+   has a name, a role and now a hue.
 
-**Rejected for three reasons, and the open boundary is settled below anyway.**
-
-**Its orientation room is the project dashboard the scope rules out.** D puts
-Orbit's spatial language in the orientation room, and it puts dashboards
-there too. The scope says the panel is not a project dashboard, and Q2 says the
-panel surfaces what needs the owner's authority and nothing else. A screen of
-factory operations is the coordination view built for its own sake.
-
-**A direction that needs a second decision is not one decision.** D puts the
-map and the dashboards in one room and the conversation in the other, and the
-factory board, the agent list and the automation runs could reasonably belong
-to either. Adopting D is adopting a direction and then immediately making
-another decision about where half the product lives.
-
-**It is the most expensive of the four.** Two rooms, two densities, a new
-component and a dashboard screen, for the one implementer who is already four
-items behind.
-
-**Harvested: D's one-material rule.** One accent with one meaning — amber
-always means live or waiting on you, structure and data stay in their own
-colours. That rule belongs to B too, and it is the reason the two Q6 measures
-can be read at a glance instead of being decoration.
-
-**If you say Forge instead, the boundary is settled like this:** the factory
-board, the agent list and the automation runs do *not* go in the orientation
-room. They are what needs the owner's authority, so they belong in the
-execution room, next to the conversation, where a decision can be taken. The
-orientation room keeps the map and nothing else. That is the version of D that
-would be worth building, and it is not the version on the table.
-
-## The cost of adopting B now, concretely
-
-**Preserved from the landing page that is already written.** `WaitingList.tsx`
-keeps everything that is not visual language: one request to `GET /api/waiting`,
-the derived list, the event-driven invalidation, the "one thing is one entry"
-rule, and the loading, empty and error states. `Conversations.tsx` keeps the
-landing route. No data model, no contract, no server behaviour changes — the
-list is derived on the server and does not depend on how it looks. The
-component survives; its appearance does not.
-
-That landing page is committed now (`45c2e54`) rather than uncommitted work, and
-WI-004 was returned to `implement` on 2026-10-21 because its front end does not
-yet satisfy its own criterion: it links out to the conversation for an
-approval, while the criterion says an approval is approved or rejected *where
-the list is*, and nothing under `apps/web` calls
-`POST /api/approvals/:id/decide`. The panel can list an approval and cannot
-decide one.
-
-**The decision control is not blocked by the direction.** The inbox is already a
-component, so the control can be built now in the current language and the
-adoption then wraps the finished control in Desk's first band. What the
-adoption re-lays-out is the *layout* of the list, not the control inside it —
-so the owner's top want does not wait on this recommendation.
-
-**Reworked: the theme layer.** `apps/web/src/index.css` carries the whole
-current language in one `@theme` block — a cool slate scale, an indigo accent,
-a mono font token — and a dark base (`bg-slate-950 text-slate-100`) on the
-body, plus three `.pos-*` component classes. B replaces that with a warm paper
-scale, a terracotta accent, and a light base. The `darkMode: 'class'` variant
-is already declared, so a dark variant can stay available; B is a light base,
-not the deletion of dark. B also pairs a serif for headings, and there is no
-serif token today — one new token.
-
-**Reworked: the classes that name the old palette.** 224 lines across 31 files
-mention `slate-` or `indigo-` directly — 195 across 27 files in `apps/web/src`
-(29 of them in `index.css` itself), and 29 across 4 files in `packages/ui`
-(`primitives.tsx` 11, `card.tsx` 7, `button.tsx` 7, `input.tsx` 4). The
-heaviest app files are `TaskBoard.tsx` (19), `Settings.tsx` (19),
-`ChatMessageList.tsx` (15), `AppShell.tsx` (14), `Login.tsx` (11) and
-`ConversationDetail.tsx` (11). Reproduce it with
-`git grep -c -E 'slate-|indigo-' -- 'apps/web/src' 'packages/ui/src'`.
-This is the real cost of a direction change and it is not a small one: it is
-one theme edit, one pass over the shared primitives, and a pass over the app's
-own components.
-
-**Reworked: the two screens that carry the product.** The landing page becomes
-B's three bands — what needs me, what is running, what exists — with the
-Q6 measures in a fourth, short band. The conversation page becomes a
-reading-width column with a plain-language side panel, which is a layout
-change to `ConversationDetail.tsx` and `ChatMessageList.tsx`.
+**Preserved from what is already written.** The waiting list keeps everything
+that is not visual language: one request to `GET /api/waiting`, the derived
+list, the event-driven invalidation, the "one thing is one entry" rule, and the
+loading, empty and error states. No data model, no contract, no server
+behaviour changes — the list is derived on the server. In Forge it becomes the
+Needs-you rail, and it **gains** the decision controls that WI-004's criterion
+requires.
 
 **Not touched.** The server, `packages/contracts`, the database, CI, the
 dependency set, the lockfile. Nothing in this direction changes behaviour, so
 nothing in it needs a contract change.
 
-**Not in this cost.** The trace gutter, the constellation graph and the
-dashboard are all out. The expensive part of the four directions — a new
-component, a second room, a second density — is the part B does not buy. That
-is most of why B is the cheapest.
+**Not in this cost.** The undo surface, which the Desk recommendation
+discussed, is still not in scope: the second half of the owner's authority —
+*show me what happened, let me take it back* — has no surface in the product
+today. The substrate is there (resources and automations carry `revision` with
+`expectedRevision`, and `auditLog` records who did what to what), and an undo
+is a surface over data the product already keeps rather than a new data model.
+It needs its own brief and its own owner, because authority without
+reversibility is exposure: with one owner there is no second operator to
+absorb a bad action.
 
-## Adopting this direction
+## The risk, stated plainly
 
-**Desk is a layout decision, not a palette.** Desk's value is the three-band
-scroll — what needs me, what is running, what exists — and a reading-width
-conversation column. A theme item that only swaps the tokens and leaves the
-current information architecture in place is a warm coat of paint on the old
-layout, which is none of the four directions. The item that adopts this
-direction carries the structure as well as the material: the landing page's
-three bands and the conversation's reading-width column, in Desk's type and
-colour.
+**In Forge the map is the hero, and the list is beside it.** Desk led with the
+decision list, so W-1 was the page. Forge leads with the constellation, so W-1
+is a rail. That is a real difference in habit, not in capability: an owner
+whose actual loop is "scan the list and act" will find Forge's landing screen
+decorative before they find it useful.
 
-**The panel is never half-migrated.** Light tokens with dark cards and dark
-page backgrounds read as broken, not as transitional. The adoption lands as one
-visible change; the palette pass and the structure pass are the same pass.
+Two mitigations, and the second is the load-bearing one:
 
-**Where Q6's two measures go.** A band on the home, under the three bands,
-titled so it reads as a report and not as a control: what the environment did
-on its own. Two numbers, plainly labelled — features authored by agents
-in-instance, and operations completed without the owner touching code.
+1. The rail's count is always visible, and the rail is never a route away from
+   the landing screen.
+2. **The rail carries the decision controls**, so the loop is "scan and act"
+   *in place* — the owner never leaves the landing screen to approve, reject
+   or accept. That is the mitigation that makes Forge's landing surface an
+   inbox rather than a map with a notification badge.
 
-**One rule for those numbers: no ratio whose denominator is zero.** For a long
-while the honest value of "the share of features authored by agents" is zero or
-undefined, because no agent has authored a feature in-instance yet. A panel
-that greets its owner with 0% reads as broken, and the product's first report
-on itself must not be a lie by omission. Show the counts — N features, M
-operations — and show the ratio only when there is a denominator to divide by.
+**Forge is a large build for one implementer who already has eight items
+ahead of it** (WI-003, WI-004, WI-006, WI-007, WI-012, WI-016, WI-017,
+WI-018) and two more in verify. That is the honest cost of this direction and
+it belongs in the build item's sizing, not in a footnote.
 
-**The decision surface is two things, and the second one is missing.** The
-trace gutter shows what the agent did; an undo lets the owner take it back.
-Together they are the whole of the owner's authority: *show me what happened,
-let me take it back.* The second half has no surface in the product today —
-there is no undo, revert or rollback anywhere in the server or the web client
-— but the substrate is there: resources and automations already carry
-`revision` with `expectedRevision` for optimistic concurrency, and `auditLog`
-already records who did what to what. An undo is a surface over data the
-product already keeps, not a new data model.
+## Sequencing
 
-Authority without reversibility is not authority. With one owner there is no
-second operator to absorb a bad action, so the cost of a mistake lands
-entirely on the person the product is for.
+**The decision control is not blocked by the direction, and should not wait
+for it.** The inbox is already a component. The control can be built now in the
+current language, and the adoption then wraps the finished control in Forge's
+Needs-you rail. What the adoption re-lays-out is the *layout* of the list, not
+the control inside it.
 
-## Re-verification — 2026-10-21
+**Forge lands as one visible change.** Light tokens with dark cards and dark
+page backgrounds read as broken, not as transitional — and that rule applies
+to Forge too, which is the one place Forge is *not* a warm coat of paint. The
+palette pass and the structure pass are the same pass.
 
-Re-checked against `235f97c` with a clean tree, because this was first written
-against `c734a99` and a dirty tree. Four things moved. The recommendation did
-not.
+**The order that follows from that:**
 
-1. **The landing page is committed, and it is still moving.** `45c2e54` landed
-   WI-004's front end; `5c74e8b` returned WI-004 to `implement` because the
-   front end does not yet satisfy its own criterion. This changes WI-004's
-   size, not this recommendation, and it is why the cost section now says
-   explicitly that the decision control is not blocked by the direction.
-2. **The palette cost did not move.** The same 224 lines in the same 31 files.
-   The count in the cost section was corrected for *scope* — the two figures
-   were being mixed — and is now stated with the command that reproduces it,
-   rather than for change.
-3. **The queue got deeper.** One implementer now has eight items ahead of it
-   and two in verify, against four and a red tree when this was written. That
-   strengthens the "cheapest" argument rather than weakening it.
-4. **An outcome that cannot be confirmed is now its own state.** `9ad4f98`
-   landed WI-008's `unknown`. It strengthens the case for a decision list
-   rather than weakening it: an item whose outcome the system cannot confirm
-   is exactly an item the owner has to look at, and a direction built around
-   watching a live event stream would have shown it as a line in a log
-   instead of an entry in a list.
+1. Build the decision control, in the current language. (WI-004.)
+2. Build Forge as one visible change: the three surfaces, the material, the
+   trace, the constellation, the dashboards, and the finished control in the
+   rail.
+3. Write the ADR as a section of 0007.
 
-One thing this re-verification cannot do is claim the tree is unchanged. It
-is not, and the numbers that moved have been moved.
+## What was recommended, and why it changed
 
-## What this recommendation does not do
+The recommendation before the owner's answer was **B — Desk**, on this
+reasoning, which is kept because it is the record of what was rejected on the
+owner's behalf and by how much.
+
+- **B — Desk.** Rejected. Warm paper, light, Today-first: a single vertical
+  scroll answering what needs me, what is running, what exists, and a
+  reading-width conversation column. It is the cheapest of the four and
+  closest to the existing stack. It was recommended because it is the only
+  direction whose home screen *is* the decision list, which is W-1 and Q2 in
+  the same screen. **Against it: it is a warm-paper rebuild of a dark panel**,
+  a serif added to a product that has no serif, and a 195-line palette
+  rewrite to buy a three-band scroll. It buys the least structure of the four.
+- **A — Deck.** Absorbed rather than rejected. A's trace gutter is now part of
+  Forge's execution room, and A's dense instrumented language is the
+  execution room's language. A alone was rejected: it promotes the event
+  stream from an implementation detail to the primary navigation surface, so
+  the panel answers "what just happened" — a fine place to watch and a poor
+  place to decide.
+- **C — Orbit.** Absorbed rather than rejected. C's constellation is now the
+  orientation room. C alone was rejected: a constellation answers "who is
+  working", not "what needs you", and it is the hardest of the four to keep
+  legible as agents and threads grow. That difficulty is Forge's now, and it
+  is priced in the cost section rather than argued away.
+
+**What the change costs that the recommendation did not:** a new component
+(the constellation), a third surface (dashboards), a room switch, and a
+material that re-hues rather than replaces. **What it saves:** a 195-line
+palette rewrite, a new serif token, and a light/dark inversion across the
+whole panel.
+
+## What this document does not do
 
 It does not build anything, and it does not change the panel's behaviour. It
-names one direction, rejects three with reasons, settles the boundary Forge
-leaves open, and states what adopting B costs today. The trace gutter, the
-constellation and the dashboard are each a behaviour change and each needs its
-own brief and its own owner. When the owner answers, Chief opens the work item
-that builds the direction, and Wren writes the ADR.
+names the direction the owner chose, settles the boundary Forge left open,
+states what adopting it costs today, and records what was rejected. The
+constellation, the dashboards screen, the trace and the per-agent hues are each
+a build item with its own owner. The ADR is Wren's, and it is written after
+this, not before.
