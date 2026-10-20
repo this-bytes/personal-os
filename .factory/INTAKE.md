@@ -18,13 +18,35 @@ Intake is where that is discovered, before anyone spends an hour on it.
 Empty until the owner says something. A want is written here in the owner's
 own words, not a summary of them.
 
-| #   | Want                    | Said | Verdict |
-| --- | ----------------------- | ---- | ------- |
-| —   | _no wants recorded yet_ | —    | —       |
+| #   | Want                                                                        | Said       | Verdict                                               |
+| --- | --------------------------------------------------------------------------- | ---------- | ----------------------------------------------------- |
+| W-1 | "I see everything waiting on me in one place"                               | 2026-10-20 | accepted — [WI-004](../work/WI-004.md)                |
+| W-2 | Interaction — talking to agents is the job that should get genuinely better | 2026-10-20 | open — shapes what WI-004 is judged against           |
+| W-3 | "Run within a stated scope"                                                 | 2026-10-20 | accepted — the scope is stated below                  |
+| W-4 | "Only me" — one person runs the instance                                    | 2026-10-20 | accepted — no permissions, sharing or onboarding work |
 
 Verdicts: `open` — not yet judged. `accepted` — became a work item, cited
 here. `declined` — not doing it, with the reason kept. `folded` — already
 covered by an existing work item.
+
+## The stated scope
+
+The owner answered "run within a stated scope" for how much the factory
+decides on its own. The scope is this, until the owner says otherwise:
+
+> Improve **interaction** — the owner talking to agents — and make the panel
+> answer **"what needs me"** on the landing page. One owner. No permissions,
+> no sharing, no onboarding, no migration work.
+>
+> Inside the scope the factory works continuously and stops only at a
+> published boundary: a change to a contract in [CONTRACTS.md](../CONTRACTS.md),
+> a change to the dependency set, the lockfile, CI or a release, and anything
+> the owner must approve to be externally visible.
+
+W-2 is the reason the scope names interaction rather than coordination. The
+"what needs me" page is judged against that: it is the panel helping the owner
+talk to agents, not the panel showing a project dashboard. Anything that
+serves the coordination view for its own sake is out of scope.
 
 ## Candidates
 
