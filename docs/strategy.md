@@ -5,9 +5,13 @@ are settled and recorded below**; the rest of it is not a decision, it changes n
 published contract, and it opens no work item.
 **Written by:** the root session, at the owner's request — _"take inspiration from
 other opensource projects and bring it all together in a single pane of glass."_
-**Written against:** commit `cc973f3`, clean working tree.
-**House owner:** Wren (`docs/**`). This is a draft for the factory to adopt; Probe
-reviews it before Chief accepts it.
+**Written against:** the tree at `cc973f3` — the commit immediately before this
+document was created by `287c55c`.
+**House owner:** Wren (`docs/**`). **Probe reviewed this document on 2026-10-21**
+and raised six defects and six observations; every one that was a real defect is
+fixed in the commit that carries this line, and the observations are answered where
+they belong in the text. The review was requested from this session, so it is not in
+the ledger. **Chief's acceptance is still open.**
 
 ---
 
@@ -53,18 +57,23 @@ reading them.
 
 | Project                                                                                | Licence, read from the repository                         | What we took                                                                                                                                 | Where it lands here                                                |
 | -------------------------------------------------------------------------------------- | --------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------ |
-| [Backstage](https://backstage.io)                                                      | Apache-2.0                                                | _"A single pane of glass for all your infrastructure"_ — a catalog of what exists, plus a scaffolder that turns a template into a real thing | The template record (WI-017); the panel's orientation room         |
+| [Backstage](https://backstage.spotify.com/discover/backstage-101)                      | Apache-2.0                                                | _"A single pane of glass for all your infrastructure"_ — a catalog of what exists, plus a scaffolder that turns a template into a real thing | The template record; the panel's orientation room                  |
 | [Home Assistant](https://www.home-assistant.io)                                        | Apache-2.0                                                | The home as one surface; everything becomes an entity; an automation is trigger → condition → action                                         | The waiting list, the automations, the Needs-you rail              |
-| [n8n](https://github.com/n8n-io/n8n)                                                   | **Sustainable Use — not OSI**                             | Validate-before-deploy, copy-before-edit, a version history per workflow                                                                     | WI-017's templates; the acceptance boundary                        |
+| [n8n](https://github.com/n8n-io/n8n)                                                   | **Sustainable Use — not OSI**                             | Validate-before-deploy, copy-before-edit, a version history per workflow                                                                     | The templates; the acceptance boundary                             |
 | [Temporal](https://github.com/temporalio/temporal)                                     | MIT                                                       | A durable execution that survives the human's wait; the event history _is_ the record; a signal delivers the decision                        | The resume the contract already promises (C-01)                    |
 | [NetBox](https://github.com/netbox-community/netbox)                                   | Apache-2.0                                                | A source of truth deliberately kept separate from the running system; every change logged                                                    | The ledger's revision and audit rules                              |
-| [OpenHands](https://github.com/All-Hands-AI/OpenHands)                                 | MIT                                                       | The event stream as Action/Observation; a sandbox the agent works inside; reusable, trigger-activated skills                                 | The event log (ADR 0005); the skill layer, not built               |
+| [OpenHands](https://github.com/OpenHands/OpenHands)                                    | MIT                                                       | The event stream as Action/Observation; a sandbox the agent works inside; reusable, trigger-activated skills                                 | The event log (ADR 0005); the skill layer, not built               |
 | [Langfuse](https://github.com/langfuse/langfuse)                                       | MIT, except `ee/`                                         | Traces → evaluations → datasets → a fix, one loop from a production signal                                                                   | Q6's two measures                                                  |
 | [Dify](https://github.com/langgenius/dify)                                             | **Modified Apache-2.0 with additional conditions**        | One collaborative workspace where an agent builds the thing; observability embedded rather than bolted on                                    | The shape of the environment; the licence warning                  |
 | [Windmill](https://github.com/windmill-labs/windmill)                                  | **Apache-2.0 + AGPLv3 + proprietary** enterprise features | Scripts are first-class, and a typed signature generates the form                                                                            | Windmill's AGPL is why it is an inspiration and never a dependency |
-| [Letta](https://github.com/letta-ai/letta)                                             | Apache-2.0                                                | Agent memory the agent owns, kept in files, editable by the human                                                                            | WI-012's memory scope                                              |
+| [Letta](https://github.com/letta-ai/letta)                                             | Apache-2.0                                                | Agent memory the agent owns, kept in files, editable by the human                                                                            | The agent's own memory                                             |
 | [LangGraph](https://github.com/langchain-ai/langgraph)                                 | MIT                                                       | A durable agent with checkpoints and interrupts, so a human can be put in the loop mid-run                                                   | The resume the contract already promises (C-01)                    |
 | [MCP Apps (SEP-1865)](https://blog.modelcontextprotocol.io/posts/2025-11-21-mcp-apps/) | A proposal, not a ratified standard                       | A server ships `ui://` templates the host reviews before execution, and the host's approval gate stays in front of any UI-initiated call     | PRODUCT.md §9                                                      |
+
+**The last column names the subject, not the item number.** A work item's number
+is a claim on a space that moves; the subject is what the idea becomes. Where a
+stable anchor exists it is used instead — a candidate id, an ADR, a section of the
+product record.
 
 **What the 2026-10-20 sweep lost.** That sweep read twelve comparators and three
 findings survived into ADR 0007 and INTAKE.md. The list itself did not survive:
@@ -79,12 +88,27 @@ each licence permit?_
 "licensed under a modified version of the Apache License 2.0, with the following
 additional conditions". Windmill's says its source is "variously licensed" across
 Apache-2.0, AGPLv3 and a proprietary enterprise licence. A licence can change what
-the product is — and one hard case is the owner's to decide: vendoring AGPL-3.0 code
-into this repository changes this project's licence.
+the product is.
+
+**This repository's own licence is unsettled, and the record says so rather than
+implying otherwise.** A root `LICENSE` file (MIT) has been tracked since the initial
+commit; the root manifest's `"license": "MIT"` was removed on 2026-10-21 because the
+licence is deliberately undecided; the README still says MIT (being corrected); and
+the owner's answer at 08:54 was _"Private for now — push it, and decide visibility
+later."_ None of that is settled, and a licence gate that reads the dependency set
+cannot speak to any of it.
+
+**The owner's hard case, and what can actually catch it.** Vendoring AGPL-3.0 code
+into this repository's own tree changes this project's licence. **A gate over the
+dependency set cannot catch that** — vendored source is not a dependency and is not
+in the lockfile. It needs a separate check over this repository's own sources, which
+[no item funds yet](#w8--the-check-that-covers-this-repositorys-own-sources). The
+gate is worth having on its own terms, but naming it as the answer to the vendoring
+question would be a claim the check cannot back.
 
 ---
 
-## The three pillars
+## The four pillars
 
 Each pillar is a borrowed pattern, what the product already has, and what it does
 not have. Where a pillar's gap is already funded, the work item is named. Where it
@@ -165,6 +189,23 @@ route reads something true) — now WI-033 and WI-034, with W2 first because the
 contract leads. WI-030 already requires the published entry to state plainly what
 the reading cannot cover; W1 and W2 are what remove the caveat.
 
+### Pillar 4 — The decision shows the evidence it is taken on
+
+**The borrowed pattern.** OpenHands' event stream and Langfuse's traces: an agent's
+work is a sequence of actions and observations, not a claim about what it did.
+NetBox's change log: a decision is made against evidence that is on the record.
+
+**What we have.** The event log doubling as the stream (ADR 0005), and the Needs-you
+rail that carries the decision controls (Forge).
+
+**What we do not have.** The decision control does not show the evidence the decision
+is taken on. The owner can approve, but not see what they approved.
+
+**The items.** WI-039 — publish the evidence a decision is taken against — and
+WI-040 — the decision control shows the evidence it decides on. Both were raised by
+Vision's review of this strategy and numbered so they are not lost; the contract
+leads, so WI-040 waits for WI-039, and Cog's lane is four deep.
+
 ---
 
 ## The single pane of glass
@@ -180,8 +221,8 @@ is in the orientation room; if it is a place where work is inspected or decided,
 is in the execution room._
 
 **This document is the factory's pane of glass.** The product's identity is spread
-across six files and two thousand lines of intake, and no reader can hold it at
-once:
+across five files and an intake log of more than three thousand lines, and no reader
+can hold it at once:
 
 | Where it lives                                                                           | What it holds                        | What it does not hold                                                     |
 | ---------------------------------------------------------------------------------------- | ------------------------------------ | ------------------------------------------------------------------------- |
@@ -191,7 +232,7 @@ once:
 | [prototypes/DIRECTION.md](../prototypes/DIRECTION.md)                                    | the panel's visual direction         | the OSS landscape — it was rewritten for Forge and the sweep went with it |
 | [.factory/INTAKE.md](../.factory/INTAKE.md)                                              | every decision, in order             | anything a reader can hold at once                                        |
 
-**The bridge.** The three pillars are the product's next three moves. Each pillar's
+**The bridge.** The four pillars are the product's next four moves. Each pillar's
 "what we have" is a work item that is already dispatched; each pillar's "what we do
 not have" is a want below. This document is the line between them.
 
@@ -230,42 +271,55 @@ Both now have the answer.**
 **The owner's answer: make it a check.**
 
 Today it is a claim, written in FACTORY.md and PRODUCT.md, and C-13 says nothing
-verifies it. The owner's own hard case — vendoring AGPL-3.0 code changes this
-project's licence — is exactly what a check would catch.
+verifies it.
 
 So the borrow rule becomes a fact the build proves: each dependency's licence is
-recorded read from its repository, and the build fails when a licence changes or
-an unapproved one appears. That splits into two wants, because the record and the
-gate are different files and different owners — W5 records it, W7 checks it.
+recorded read from its repository, and the build fails when a licence changes or an
+unapproved one appears. That splits into two wants, because the record and the gate
+are different files and different owners — W5 records it, W7 checks it.
+
+**What the check does not cover, said before anyone assumes that it does.** It reads
+the **dependency set**. The owner's hard case — vendoring AGPL-3.0 code into this
+repository's own tree — is not a dependency, is not in the lockfile, and is outside
+what this gate can see; catching it needs a separate check over this repository's
+own sources, which is [W8](#w8--the-check-that-covers-this-repositorys-own-sources)
+and is not funded. A gate is not a proof of the whole borrow rule, and calling it
+one would be exactly the kind of claim this document exists to stop.
 
 ---
 
 ## The wants this direction produces
 
-Recorded as wants, in the format `.factory/TASK.md` asks for: a proposed title, an
-owner and acceptance criteria. **The number space has one owner**, and the session
-that owns it opens and numbers the items; this document does not take numbers and
-does not claim any.
+Recorded as wants in the reduced form: a proposed title, an owner and acceptance
+criteria. **That is not the full format `.factory/TASK.md` asks for** — that also
+requires _Not in scope_ and _Gates_, and the wants below carry neither. They were
+triage input; **each became a work item in the full format**, which is where the
+scope and the gates live.
+**The number space has one owner**, and the session that owns it opens and numbers
+the items; this document does not take numbers and does not claim any.
 
-**Seven wants.** Six came out of the gap analysis; **W7 came out of the owner's
+**Eight wants.** Six came out of the gap analysis; **W7 came out of the owner's
 answer** that the borrow rule becomes a check, and it is a separate want because
-the record and the gate are different files with different owners.
+the record and the gate are different files with different owners; **W8 came out of
+this document's own review**, because the gate as specified cannot see the owner's
+hard case.
 
 ### Where the wants went
 
-**Triaged on 2026-10-21 09:25, and numbered.** The lead's verdict, its titles, its
-owners and its criteria are recorded in `.factory/INTAKE.md` under _"The seven
-wants, triaged"_, and each item below now carries the want it came from.
+**Seven wants, triaged on 2026-10-21 09:25, and numbered.** The lead's verdict, its
+titles, its owners and its criteria are recorded in `.factory/INTAKE.md` under _"The
+seven wants, triaged"_, and each item below now carries the want it came from. W8
+came later and is not in this table.
 
-| Want | Verdict           | Item                                 | Owner | Note                                                                                                                                                      |
-| ---- | ----------------- | ------------------------------------ | ----- | --------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| W1   | accepted, resized | [WI-033](../.factory/work/WI-033.md) | Cog   | The change behind the product's own report. Lands **after** W2 — the contract leads.                                                                      |
-| W2   | accepted          | [WI-034](../.factory/work/WI-034.md) | Wren  | The published shape for W1. Lands **before** W1.                                                                                                          |
-| W3   | **deferred**      | [WI-035](../.factory/work/WI-035.md) | Cog   | The largest of the seven and the furthest from the owner's stated priority. Starts after Forge. Capacity, not judgement — and numbered so it is not lost. |
-| W4   | **folded**        | [WI-007](../.factory/work/WI-007.md) | Cog   | The same subject under a different name. The fold is recorded in WI-007's file, so the item carries its own scope.                                        |
-| W5   | accepted          | [WI-036](../.factory/work/WI-036.md) | Wren  | The record the gate compares against. Lands **before** W7.                                                                                                |
-| W6   | accepted          | [WI-037](../.factory/work/WI-037.md) | Wren  | The cheapest item in the set and the most overdue.                                                                                                        |
-| W7   | accepted          | [WI-038](../.factory/work/WI-038.md) | Chief | The gate. Lands **after** W5 — a gate that compares against nothing catches nothing.                                                                      |
+| Want | Verdict           | Item                                 | Owner | Note                                                                                                                                                                                                        |
+| ---- | ----------------- | ------------------------------------ | ----- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| W1   | accepted, resized | [WI-033](../.factory/work/WI-033.md) | Cog   | The change behind the product's own report. Lands **after** W2 — the contract leads.                                                                                                                        |
+| W2   | accepted          | [WI-034](../.factory/work/WI-034.md) | Wren  | The published shape for W1. Lands **before** W1.                                                                                                                                                            |
+| W3   | **deferred**      | [WI-035](../.factory/work/WI-035.md) | Cog   | The largest of the seven. Starts after Forge. **The deferral is capacity, not judgement** — Cog's lane is four deep — and it is numbered so it is not lost.                                                 |
+| W4   | **folded**        | [WI-007](../.factory/work/WI-007.md) | Cog   | The same subject under a different name. **The fold is recorded in `.factory/INTAKE.md`, not in WI-007's own file** — that item does not yet name the fold, which is a gap in the item, not in this record. |
+| W5   | accepted          | [WI-036](../.factory/work/WI-036.md) | Wren  | The record the gate compares against. Lands **before** W7.                                                                                                                                                  |
+| W6   | accepted          | [WI-037](../.factory/work/WI-037.md) | Wren  | The cheapest item in the set and the most overdue.                                                                                                                                                          |
+| W7   | accepted          | [WI-038](../.factory/work/WI-038.md) | Chief | The gate. Lands **after** W5 — a gate that compares against nothing catches nothing.                                                                                                                        |
 
 **Two of the lead's decisions are worth carrying here, because they are judgements
 about this direction rather than about the code.** W4 was folded rather than
@@ -289,20 +343,33 @@ write one.
 **Acceptance:** each of the thirty-four mutating routes writes an entry; an entry
 records whether the action succeeded, and `POST /api/resources/:id/execute` records
 `queued` rather than `done`; automations and tasks carry the author who created
-them; a test proves each of those three.
+them. **Whose test is named, because "a test proves" is not checkable without it:**
+Cog writes the implementation's test, and Probe owns the acceptance test — Cog's
+implementation is not Probe's to accept, and Probe's tests are not Cog's to defend.
 
-### W2 — Publish the authorship and audit rules that W1 implements
+### W2 — Publish the outcome vocabulary, and the migration that W1 makes
 
 **Owner:** Wren. **File:** `CONTRACTS.md`.
 
-The authorship column and the audit trail are read by WI-020's measures route, so
-what they mean has to be published before the route is trusted: what "authored by an
-agent" counts as, what an audit entry's outcome can be, and what a client written
-before the change must do. A migration note, as always.
+**What is already published, and what is not.** WI-030 has already published what
+"authored by an agent" counts as — a resource is agent-authored when its `createdBy`
+carries the `agt_` form — and the audit trail's outcome set, `success | failure |
+unknown`. Both landed at 08:34 on 2026-10-21, before this want was triaged. **This
+want does not re-publish them, and its dispatched form's claim that the contract
+"does not say what 'authored by an agent' means" is false.**
 
-**Acceptance:** the entries land before the code ships; they match the code member
-for member; the migration note says what a client written before does and what a
-record written before the change means; nothing is reclassified.
+What is left is the part WI-030 could not write, because the code did not write it:
+the **new** outcome vocabulary W1's code will produce — `queued`, `succeeded`,
+`failed`; the rule that an entry records the outcome rather than an assumed success;
+and the migration note saying what a client written before the change must do, and
+what a record written before the change means.
+
+**Acceptance:** the published outcome set is exactly the vocabulary the code writes,
+enumerated member for member so a reader can compare the two lists; the rule that
+an entry carries the outcome rather than an assumed success is stated; the migration
+note says what a client written before does and what a record written before the
+change means; the authorship definition is left as WI-030 published it; nothing is
+reclassified.
 
 ### W3 — Resources keep a history the owner can take back
 
@@ -313,14 +380,24 @@ restore a resource to an earlier revision through a published route. The restore
 itself an audited action. This is C-21, scoped to resources; tasks and automations
 are named in the item's "not in scope" and are not this.
 
-**Acceptance:** a resource's revisions are retrievable; the restore route publishes
-the revision it restored and is audited like any other change; a test proves a
-restore returns the resource to the earlier revision's spec and that the audit
-trail says the restore happened.
+**What this does not discharge.** C-21 stays open for the other two kinds. **Take-back
+for tasks and automations is not funded by this item, and no other item funds it
+yet** — so the gap under Pillar 2 is narrower after WI-035 and no smaller than it
+was. The one part this item removes is the "no undo at all" part.
 
-### W4 — An approval resumes the turn the contract says it resumes
+**Acceptance:** a resource's revisions are retrievable; the restore route publishes
+the revision it restored and is audited like any other change; Cog writes the
+implementation's test and Probe owns the acceptance test, so the restore is proved
+by both — the test shows a restore returns the resource to the earlier revision's
+spec and that the audit trail says the restore happened.
+
+### W4 — An approval resumes the turn the contract says it resumes — _folded into WI-007_
 
 **Owner:** Cog. **Files:** `apps/server`, `packages/agent-adapters`.
+
+**This want was folded into WI-007** — the same subject under a different name — so
+it is written up here for the record and must not be built twice. **The fold is
+recorded in `.factory/INTAKE.md`; WI-007's own file does not yet name it.**
 
 CONTRACTS.md already promises that a decision resumes the turn when the adapter
 reports `persistentSessions`. The code closes the execution instead. This item makes
@@ -329,8 +406,8 @@ cannot, the contract's wording is corrected rather than the behaviour faked.
 
 **Acceptance:** for an adapter reporting `persistentSessions`, a decision re-enters
 the adapter and the turn continues; for one that does not, the published wording
-says so; a test proves the resume for the first and the published exception for the
-second.
+says so; Cog writes the implementation's test and Probe owns the acceptance test,
+so the resume is proved for the first and the published exception for the second.
 
 ### W5 — The dependency licences, read from the repositories
 
@@ -342,10 +419,18 @@ landscape table above is brought under the same rule, because a comparator's
 licence is part of what it teaches. This is the **record** half of the owner's
 answer that the borrow rule becomes a check; W7 is the gate.
 
+**It also produces the approved set**, because a check cannot decide what is
+approved unless something says what is: the licences this project accepts, the
+reason each is accepted, and where the record lives. A licence outside that set
+fails the build.
+
 **Acceptance:** every dependency in the lockfile has a licence recorded and
-attributed to the file it was read from; the AGPL question the owner raised is
-answered against the actual dependency set; a note in this document says when the
-column was read.
+attributed to the file it was read from; the approved set is written down — the
+licence, the reason, and where the record lives — so W7's check has something to
+compare against; the AGPL question the owner raised is answered **in writing,
+against the actual dependency set, naming the dependency and the licence**, so
+"answered" is a place and not a mood; a note in this document says when the column
+was read.
 
 ### W6 — The product record says Desk (B); the owner chose Forge
 
@@ -367,20 +452,48 @@ lockfile.
 
 The owner's answer to the second decision. The build compares the dependency set's
 licences against the recorded ones and **fails** when a licence changes or an
-unapproved licence appears. The owner's own hard case — vendoring AGPL-3.0 code
-changes this project's licence — is what this gate exists to catch, and it must
-catch it as a failed build rather than as a surprise discovered later.
+unapproved licence appears.
+
+**What this gate covers, exactly.** The dependency set. **It does not cover source
+vendored into this repository's own tree** — that is not a dependency and is not in
+the lockfile — so the owner's hard case of vendoring AGPL-3.0 code sits outside it,
+and [W8](#w8--the-check-that-covers-this-repositorys-own-sources) is the want that
+would cover it. This gate is worth building on its own terms; it is not the whole
+answer to the borrow rule, and it is not named here as one.
 
 **Acceptance:** a licence change in the lockfile fails the build with the
-dependency named and the licence it changed from and to; an unapproved licence
-fails the build; the recorded licences W5 writes are what the gate compares
-against, so the two agree; a test or check proves a deliberately changed licence
-fails; the gate's own output is shown in the run.
+dependency named and the licence it changed from and to; a licence outside the
+approved set W5 records fails the build, and the set is the one the gate reads, so
+the two agree; a check proves a deliberately changed licence fails, and Chief owns
+it because the gate is his file; the gate's own output is shown in the run.
 
 **Why this is Chief's and not Wren's.** The gate lives in the workflow and the
 root manifest, which the ownership table gives to Chief — and one want with two
 owners is two wants, so the record (W5) and the gate (W7) are separate items with
 separate owners.
+
+### W8 — The check that covers this repository's own sources
+
+**Owner:** Chief. **Files:** `.github/workflows/`, and the repository's own sources.
+
+**Raised by this document's review, and not funded.** The owner's hard case is
+vendoring AGPL-3.0 code into this repository's tree, which changes this project's
+licence. W7 reads the dependency set and cannot see that. This want is the one
+that can.
+
+**Acceptance:** the check reads the licence header of the source this repository
+carries and fails the build when a file carries a licence outside the approved set
+W5 records, naming the file and the licence it carries; a check proves a file
+carrying AGPL-3.0 fails; **if the repository carries no third-party source, the
+check says so and passes, rather than passing silently**; the gate's output is
+shown in the run.
+
+**One owner, because the check is one file.** The set it compares against is W5's,
+and W5 is Wren's; this item is the gate, and the gate is Chief's — the same split
+as W5 and W7.
+
+**This want is a want.** It has not been triaged, it takes no number, and whether
+it is funded is the lead's call.
 
 ---
 
@@ -392,7 +505,7 @@ separate owners.
 - It does not re-scope WI-017, WI-020 or WI-030, which are dispatched. It answers
   the question WI-017 was waiting on.
 - It does not open a work item, and it takes no number. The wants above are wants.
-- It does not name a product the factory should not build. It names three pillars,
+- It does not name a product the factory should not build. It names four pillars,
   the gap in each, and the item that closes it.
 
 ---
