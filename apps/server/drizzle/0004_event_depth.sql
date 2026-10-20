@@ -1,0 +1,1 @@
+ALTER TABLE `execution_events` ADD `depth` integer DEFAULT 0 NOT NULL;

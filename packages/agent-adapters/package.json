@@ -1,0 +1,32 @@
+{
+  "name": "@personal-os/agent-adapters",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Adapter registry and built-in agent adapters (CLI, ACP, A2A, HTTP, Model API).",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "default": "./dist/index.js"
+    }
+  },
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.test.json",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@personal-os/contracts": "0.1.0",
+    "zod": "3.25.76"
+  },
+  "devDependencies": {
+    "typescript": "5.9.3",
+    "vitest": "4.1.12"
+  }
+}

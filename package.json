@@ -1,0 +1,43 @@
+{
+  "name": "personal-os",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Personal OS — agent-native control panel and personal software factory.",
+  "license": "MIT",
+  "engines": {
+    "node": ">=22.13.0"
+  },
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "overrides": {
+    "@esbuild-kit/core-utils": {
+      "esbuild": "^0.25.4"
+    }
+  },
+  "scripts": {
+    "build": "npm run build -w @personal-os/contracts && npm run build -w @personal-os/agent-adapters && npm run build -w @personal-os/server && npm run build -w @personal-os/worker && npm run build -w @personal-os/web",
+    "build:contracts": "npm run build -w @personal-os/contracts",
+    "build:adapters": "npm run build -w @personal-os/agent-adapters",
+    "dev": "npm run dev -w @personal-os/server",
+    "dev:web": "npm run dev -w @personal-os/web",
+    "dev:worker": "npm run dev -w @personal-os/worker",
+    "typecheck": "npm run typecheck --workspaces --if-present",
+    "test": "npm run test --workspaces --if-present",
+    "test:e2e": "npm run build && npm run test:e2e -w @personal-os/web",
+    "smoke": "tsx scripts/smoke.ts",
+    "verify:build": "tsx scripts/verify-build.ts",
+    "db:migrate": "npm run db:migrate -w @personal-os/server",
+    "db:generate": "npm run db:generate -w @personal-os/server",
+    "format": "prettier --write \"**/*.{ts,tsx,js,json,md,css}\"",
+    "format:check": "prettier --check \"**/*.{ts,tsx,js,json,md,css}\""
+  },
+  "devDependencies": {
+    "@types/node": "26.6.5",
+    "prettier": "3.6.2",
+    "typescript": "5.9.3",
+    "vitest": "4.1.12"
+  }
+}

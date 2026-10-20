@@ -1,0 +1,540 @@
+import { and, desc, eq, sql } from 'drizzle-orm';
+import {
+  automationActionSchema,
+  automationTriggerSchema,
+  dashboardSpecSchema,
+  dataSourceSpecSchema,
+  documentSpecSchema,
+  isTriggerableEventType,
+  memorySpecSchema,
+  triggerableEventTypes,
+  type AutomationAction,
+  type AutomationTrigger,
+  type Resource,
+  type ResourceType,
+} from '@personal-os/contracts';
+import { z } from 'zod';
+import type { Database } from '../../db/client.js';
+import { automations, resources as resourcesTable } from '../../db/schema.js';
+import { errors } from '../../lib/errors.js';
+import { assertSafeUrl, assertReadableQuery } from '../../lib/guards.js';
+import { newId } from '../../lib/ids.js';
+import type { EventsService } from '../events/service.js';
+import type { Queue } from '../../queue/client.js';
+import type { FactoryService } from '../factory/service.js';
+import { computeNextRun } from '../automations/cron.js';
+
+/**
+ * The shared resource API.
+ *
+ * Humans, agents and automations all operate through this one interface,
+ * so an agent can create exactly the resources a person can create.
+ */
+
+export interface ResourceInput<T = unknown> {
+  workspaceId: string;
+  title: string;
+  data: T;
+  createdBy: string;
+}
+
+export interface ResourceUpdate<T = unknown> {
+  expectedRevision: number;
+  title?: string;
+  data?: T;
+}
+
+export interface ResourceProvider<T = unknown> {
+  readonly type: ResourceType;
+  validate(data: unknown): T;
+  create(input: ResourceInput<T>): Resource<T>;
+  get(id: string): Resource<T>;
+  update(id: string, patch: ResourceUpdate<T>): Resource<T>;
+}
+
+export interface ResourceService {
+  list(workspaceId: string, type?: ResourceType): Resource[];
+  get(id: string): Resource;
+  create(input: {
+    workspaceId: string;
+    type: ResourceType;
+    title: string;
+    data: unknown;
+    createdBy: string;
+  }): Resource;
+  update(id: string, patch: { expectedRevision: number; title?: string; data?: unknown }): Resource;
+  /** Mark a resource live. Dashboards become visible, automations become active. */
+  publish(id: string): Resource;
+  /** Trigger the resource's own action once. */
+  execute(id: string): Promise<{ output: unknown }>;
+  /** Validate and describe the resource without changing it. */
+  inspect(id: string): { resource: Resource; valid: boolean; issues: string[] };
+}
+
+export interface ResourcesServiceOptions {
+  db: Database;
+  events: EventsService;
+  queue: Queue;
+  factory: FactoryService;
+  /** Allow outbound requests to private and loopback addresses. */
+  allowPrivateTargets?: boolean;
+}
+
+/**
+ * The resource service. Dispatch is per type so each resource keeps its
+ * natural storage while exposing one stable interface.
+ */
+export function createResourcesService(options: ResourcesServiceOptions): ResourceService {
+  const { db, events, queue, factory } = options;
+  const targetOptions = { allowPrivateTargets: options.allowPrivateTargets === true };
+
+  const toTableResource = (row: typeof resourcesTable.$inferSelect): Resource => ({
+    id: row.id,
+    workspaceId: row.workspaceId,
+    type: row.type as ResourceType,
+    schemaVersion: row.schemaVersion,
+    revision: row.revision,
+    title: row.title,
+    data: row.data,
+    createdBy: row.createdBy,
+    updatedAt: row.updatedAt,
+  });
+
+  const tableRow = (id: string) =>
+    db.select().from(resourcesTable).where(eq(resourcesTable.id, id)).get();
+
+  /** A provider backed by the generic `resources` table. */
+  function tableProvider<T>(type: ResourceType, schema: z.ZodType<T>): ResourceProvider<T> {
+    return {
+      type,
+      validate: (data: unknown) => schema.parse(data),
+      create(input): Resource<T> {
+        const id = newId('res');
+        const now = new Date().toISOString();
+        const data = schema.parse(input.data);
+        db.insert(resourcesTable)
+          .values({
+            id,
+            workspaceId: input.workspaceId,
+            type,
+            schemaVersion: 1,
+            revision: 1,
+            title: input.title,
+            data,
+            createdBy: input.createdBy,
+            createdAt: now,
+            updatedAt: now,
+          })
+          .run();
+        return toTableResource(tableRow(id)!) as Resource<T>;
+      },
+      get(id): Resource<T> {
+        const row = tableRow(id);
+        if (!row) throw errors.notFound('Resource');
+        return toTableResource(row) as Resource<T>;
+      },
+      update(id, patch): Resource<T> {
+        const row = tableRow(id);
+        if (!row) throw errors.notFound('Resource');
+        if (row.revision !== patch.expectedRevision) {
+          throw errors.revisionMismatch(patch.expectedRevision, row.revision);
+        }
+        const data = patch.data === undefined ? (row.data as T) : schema.parse(patch.data);
+        db.update(resourcesTable)
+          .set({
+            title: patch.title ?? row.title,
+            data,
+            revision: row.revision + 1,
+            updatedAt: new Date().toISOString(),
+          })
+          .where(eq(resourcesTable.id, id))
+          .run();
+        return this.get(id);
+      },
+    };
+  }
+
+  const toAutomationResource = (row: typeof automations.$inferSelect): Resource => ({
+    id: row.id,
+    workspaceId: row.workspaceId,
+    type: 'automation',
+    schemaVersion: 1,
+    revision: row.revision,
+    title: row.title,
+    data: { trigger: row.trigger, action: row.action, enabled: row.enabled },
+    createdBy: 'system',
+    updatedAt: row.updatedAt,
+  });
+
+  function automationProvider(): ResourceProvider<{
+    trigger: AutomationTrigger;
+    action: AutomationAction;
+    enabled: boolean;
+  }> {
+    const provider: ResourceProvider<{
+      trigger: AutomationTrigger;
+      action: AutomationAction;
+      enabled: boolean;
+    }> = {
+      type: 'automation',
+      validate(data: unknown) {
+        const parsed = z
+          .object({
+            trigger: automationTriggerSchema,
+            action: automationActionSchema,
+            enabled: z.boolean().default(false),
+          })
+          .parse(data);
+        validateAutomationConfig(parsed.trigger, parsed.action);
+        return parsed;
+      },
+      create(input) {
+        const id = newId('aut');
+        const now = new Date().toISOString();
+        const data = provider.validate(input.data);
+        db.insert(automations)
+          .values({
+            id,
+            workspaceId: input.workspaceId,
+            title: input.title,
+            trigger: data.trigger,
+            action: data.action,
+            revision: 1,
+            enabled: false,
+            lastRunAt: null,
+            nextRunAt: null,
+            createdAt: now,
+            updatedAt: now,
+          })
+          .run();
+        return provider.get(id);
+      },
+      get(id) {
+        const row = db.select().from(automations).where(eq(automations.id, id)).get();
+        if (!row) throw errors.notFound('Automation');
+        return toAutomationResource(row) as Resource<{
+          trigger: AutomationTrigger;
+          action: AutomationAction;
+          enabled: boolean;
+        }>;
+      },
+      update(id, patch) {
+        const row = db.select().from(automations).where(eq(automations.id, id)).get();
+        if (!row) throw errors.notFound('Automation');
+        if (row.revision !== patch.expectedRevision) {
+          throw errors.revisionMismatch(patch.expectedRevision, row.revision);
+        }
+        const current = { trigger: row.trigger, action: row.action, enabled: row.enabled };
+        const next = patch.data === undefined ? current : provider.validate(patch.data);
+        db.update(automations)
+          .set({
+            title: patch.title ?? row.title,
+            trigger: next.trigger,
+            action: next.action,
+            enabled: next.enabled,
+            revision: row.revision + 1,
+            updatedAt: new Date().toISOString(),
+          })
+          .where(eq(automations.id, id))
+          .run();
+        return provider.get(id);
+      },
+    };
+    return provider;
+  }
+
+  function taskProvider(): ResourceProvider<unknown> {
+    const toResource = (task: ReturnType<FactoryService['getTask']>): Resource => ({
+      id: task.id,
+      workspaceId: task.workspaceId,
+      type: 'task',
+      schemaVersion: 1,
+      revision: task.revision,
+      title: task.title,
+      data: task,
+      createdBy: 'system',
+      updatedAt: new Date().toISOString(),
+    });
+
+    return {
+      type: 'task',
+      validate: (data: unknown) => data,
+      create(input) {
+        const data = (input.data ?? {}) as {
+          goalId?: string;
+          description?: string;
+          assigneeId?: string;
+          acceptanceCriteria?: string[];
+        };
+        const task = factory.createTask({
+          workspaceId: input.workspaceId,
+          title: input.title,
+          description: data.description ?? '',
+          goalId: data.goalId,
+          assigneeId: data.assigneeId,
+          acceptanceCriteria: data.acceptanceCriteria ?? [],
+        });
+        return toResource(task);
+      },
+      get(id) {
+        return toResource(factory.getTask(id));
+      },
+      update(id, patch) {
+        const current = factory.getTask(id);
+        if (current.revision !== patch.expectedRevision) {
+          throw errors.revisionMismatch(patch.expectedRevision, current.revision);
+        }
+        const data = patch.data as { status?: string; description?: string } | undefined;
+        const updated = factory.updateTask(id, {
+          ...(patch.title !== undefined ? { title: patch.title } : {}),
+          ...(data?.description !== undefined ? { description: data.description } : {}),
+          ...(data?.status !== undefined ? { status: data.status as never } : {}),
+        });
+        return toResource(updated);
+      },
+    };
+  }
+
+  const dashboardProvider = tableProvider('dashboard', dashboardSpecSchema);
+  const documentProvider = tableProvider('document', documentSpecSchema);
+  const dataSourceProvider = tableProvider('data-source', dataSourceSpecSchema);
+  const memoryProvider = tableProvider('memory', memorySpecSchema);
+  const automationResourceProvider = automationProvider();
+  const taskResourceProvider = taskProvider();
+
+  const providers = new Map<ResourceType, ResourceProvider<unknown>>([
+    ['dashboard', dashboardProvider as ResourceProvider<unknown>],
+    ['document', documentProvider as ResourceProvider<unknown>],
+    ['data-source', dataSourceProvider as ResourceProvider<unknown>],
+    ['memory', memoryProvider as ResourceProvider<unknown>],
+    ['automation', automationResourceProvider as ResourceProvider<unknown>],
+    ['task', taskResourceProvider as ResourceProvider<unknown>],
+  ]);
+
+  const providerFor = (type: ResourceType): ResourceProvider<unknown> => {
+    const provider = providers.get(type);
+    if (!provider) throw errors.badRequest(`Unsupported resource type "${type}".`);
+    return provider;
+  };
+
+  function resolveType(id: string): ResourceType {
+    const row = tableRow(id);
+    if (row) return row.type as ResourceType;
+    const automation = db.select().from(automations).where(eq(automations.id, id)).get();
+    if (automation) return 'automation';
+    try {
+      factory.getTask(id);
+      return 'task';
+    } catch {
+      throw errors.notFound('Resource');
+    }
+  }
+
+  const service: ResourceService = {
+    list(workspaceId, type): Resource[] {
+      const rows = db
+        .select()
+        .from(resourcesTable)
+        .where(
+          type
+            ? and(eq(resourcesTable.workspaceId, workspaceId), eq(resourcesTable.type, type))
+            : eq(resourcesTable.workspaceId, workspaceId),
+        )
+        .orderBy(desc(resourcesTable.updatedAt))
+        .all()
+        .map(toTableResource);
+
+      const automationRows =
+        type === 'automation' || type === undefined
+          ? db
+              .select()
+              .from(automations)
+              .where(eq(automations.workspaceId, workspaceId))
+              .orderBy(desc(automations.updatedAt))
+              .all()
+              .map(toAutomationResource)
+          : [];
+
+      const taskRows =
+        type === 'task' || type === undefined
+          ? factory.listTasks(workspaceId).map((task) => ({
+              id: task.id,
+              workspaceId: task.workspaceId,
+              type: 'task' as ResourceType,
+              schemaVersion: 1,
+              revision: task.revision,
+              title: task.title,
+              data: task,
+              createdBy: 'system',
+              updatedAt: new Date().toISOString(),
+            }))
+          : [];
+
+      return [...rows, ...automationRows, ...taskRows];
+    },
+
+    get(id): Resource {
+      return providerFor(resolveType(id)).get(id);
+    },
+
+    create(input): Resource {
+      const provider = providerFor(input.type);
+      const resource = provider.create({
+        workspaceId: input.workspaceId,
+        title: input.title,
+        data: input.data,
+        createdBy: input.createdBy,
+      });
+      events.publish({ type: 'resource.updated', resource }, { workspaceId: resource.workspaceId });
+      return resource;
+    },
+
+    update(id, patch): Resource {
+      const resource = providerFor(resolveType(id)).update(id, {
+        expectedRevision: patch.expectedRevision,
+        ...(patch.title !== undefined ? { title: patch.title } : {}),
+        ...(patch.data !== undefined ? { data: patch.data } : {}),
+      });
+      events.publish({ type: 'resource.updated', resource }, { workspaceId: resource.workspaceId });
+      return resource;
+    },
+
+    publish(id): Resource {
+      const type = resolveType(id);
+      const current = providerFor(type).get(id);
+
+      if (type === 'dashboard') {
+        const data = dashboardSpecSchema.parse(current.data);
+        return service.update(id, {
+          expectedRevision: current.revision,
+          data: { ...data, published: true },
+        });
+      }
+
+      if (type === 'automation') {
+        const automation = db.select().from(automations).where(eq(automations.id, id)).get();
+        if (!automation) throw errors.notFound('Automation');
+        validateAutomationConfig(automation.trigger, automation.action);
+        db.update(automations)
+          .set({
+            enabled: true,
+            nextRunAt: computeNextRun(automation.trigger, new Date()),
+            revision: automation.revision + 1,
+            updatedAt: new Date().toISOString(),
+          })
+          .where(eq(automations.id, id))
+          .run();
+        const updated = service.get(id);
+        events.publish(
+          { type: 'resource.updated', resource: updated },
+          { workspaceId: updated.workspaceId },
+        );
+        return updated;
+      }
+
+      return current;
+    },
+
+    async execute(id): Promise<{ output: unknown }> {
+      const type = resolveType(id);
+      const current = providerFor(type).get(id);
+
+      if (type === 'automation') {
+        const automation = db.select().from(automations).where(eq(automations.id, id)).get();
+        if (!automation) throw errors.notFound('Automation');
+        queue.enqueue({
+          workspaceId: automation.workspaceId,
+          type: 'automation.run',
+          payload: { automationId: automation.id },
+        });
+        return { output: { queued: true, automationId: automation.id } };
+      }
+
+      if (type === 'data-source') {
+        const spec = dataSourceSpecSchema.parse(current.data);
+        return { output: await runDataSource(db, spec, targetOptions) };
+      }
+
+      if (type === 'dashboard') {
+        const spec = dashboardSpecSchema.parse(current.data);
+        const results: Record<string, unknown> = {};
+        for (const widget of spec.widgets) {
+          if (!widget.dataSourceId) continue;
+          const source = providerFor('data-source').get(widget.dataSourceId);
+          const sourceSpec = dataSourceSpecSchema.parse(source.data);
+          results[widget.id] = await runDataSource(db, sourceSpec, targetOptions);
+        }
+        return { output: results };
+      }
+
+      return { output: null };
+    },
+
+    inspect(id): { resource: Resource; valid: boolean; issues: string[] } {
+      const type = resolveType(id);
+      const resource = providerFor(type).get(id);
+      const issues: string[] = [];
+      try {
+        providerFor(type).validate(resource.data);
+      } catch (error) {
+        issues.push(error instanceof Error ? error.message : String(error));
+      }
+      return { resource, valid: issues.length === 0, issues };
+    },
+  };
+
+  return service;
+}
+
+/** Validate an automation configuration before it can be enabled. */
+export function validateAutomationConfig(
+  trigger: AutomationTrigger,
+  action: AutomationAction,
+): void {
+  if (trigger.type === 'schedule' && !trigger.cron && !trigger.everyMinutes) {
+    throw errors.validation('A schedule trigger needs either a cron expression or an interval.');
+  }
+  if (trigger.type === 'event' && !trigger.event) {
+    throw errors.validation('An event trigger needs an event name.');
+  }
+  if (trigger.type === 'event' && trigger.event && !isTriggerableEventType(trigger.event)) {
+    throw errors.validation(
+      `"${trigger.event}" cannot be used as a trigger. Allowed events: ${triggerableEventTypes.join(', ')}.`,
+    );
+  }
+  if (action.type === 'agent.prompt' && !action.agentConnectionId) {
+    throw errors.validation('An agent.prompt action needs an agent connection.');
+  }
+  if (action.type === 'resource.refresh' && !action.resourceId) {
+    throw errors.validation('A resource.refresh action needs a resource id.');
+  }
+  if (action.type === 'http.request' && !action.url) {
+    throw errors.validation('An http.request action needs a URL.');
+  }
+}
+
+/** Execute a data source and return its rows. */
+async function runDataSource(
+  db: Database,
+  spec: z.infer<typeof dataSourceSpecSchema>,
+  options: { allowPrivateTargets?: boolean } = {},
+): Promise<unknown> {
+  if (spec.kind === 'json') return spec.payload ?? null;
+
+  if (spec.kind === 'http') {
+    if (!spec.url) throw errors.validation('The HTTP data source needs a URL.');
+    assertSafeUrl(spec.url, { allowPrivateTargets: options.allowPrivateTargets });
+    const response = await fetch(spec.url, { headers: spec.headers });
+    if (!response.ok) throw errors.badRequest(`Data source returned HTTP ${response.status}.`);
+    const contentType = response.headers.get('content-type') ?? '';
+    return contentType.includes('application/json') ? await response.json() : await response.text();
+  }
+
+  if (spec.kind === 'sqlite') {
+    if (!spec.query) throw errors.validation('The SQLite data source needs a query.');
+    assertReadableQuery(spec.query);
+    return db.all(sql.raw(spec.query));
+  }
+
+  throw errors.badRequest('Unsupported data source kind.');
+}

@@ -1,0 +1,59 @@
+version: 2
+
+updates:
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+      time: "06:00"
+    open-pull-requests-limit: 5
+    labels:
+      - dependencies
+    groups:
+      # Patch and minor updates for the test and build tooling are low risk
+      # and noisy individually, so they arrive together.
+      dev-tooling:
+        dependency-type: development
+        update-types:
+          - patch
+          - minor
+        patterns:
+          - "vitest"
+          - "vite"
+          - "typescript"
+          - "prettier"
+          - "jsdom"
+          - "@testing-library/*"
+
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+      time: "06:00"
+    labels:
+      - dependencies
+      - security
+    # Security-relevant advisories are handled on their own so they are never
+    # held up behind a group.
+    allow:
+      - dependency-type: production
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+    labels:
+      - dependencies
+      - ci
+
+  - package-ecosystem: docker
+    directory: /deploy
+    schedule:
+      interval: weekly
+      day: monday
+    labels:
+      - dependencies
+      - docker

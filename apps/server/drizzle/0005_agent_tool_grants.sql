@@ -1,0 +1,1 @@
+ALTER TABLE `agent_connections` ADD `tool_grants` text;

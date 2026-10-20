@@ -1,0 +1,31 @@
+# Keep the build context small and correct. Without this, the host's
+# node_modules (including Windows native binaries) would be copied into the
+# Linux image and overwrite the installed dependencies.
+
+node_modules
+**/node_modules
+**/dist
+dist
+build
+
+# Runtime data must never end up in an image.
+data
+**/data
+*.db
+*.db-shm
+*.db-wal
+secret.key
+
+# Not needed to build or run the application.
+.git
+.github
+.gitignore
+*.log
+logs
+coverage
+playwright-report
+test-results
+.vscode
+.idea
+**/.env
+**/.env.local

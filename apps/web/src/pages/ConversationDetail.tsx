@@ -1,0 +1,414 @@
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { Link, useNavigate, useParams } from 'react-router-dom';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { AlertTriangle, ArrowLeft, Ban, Check, Info, Pause, Play, Trash2 } from 'lucide-react';
+import { Badge, Button, Card, CardContent, CardHeader, CardTitle, Select } from '@personal-os/ui';
+import type { RoutingMode } from '@personal-os/contracts';
+import { api, errorMessage } from '../lib/api';
+import type {
+  AgentConnectionDetail,
+  ConversationDetail,
+  Dispatch,
+  Message,
+  PostMessageResult,
+  RoutingDecision,
+} from '../lib/types';
+import { useServerEvents } from '../state/events';
+import { useWorkspace } from '../state/workspace';
+import { ChatMessageList, type StreamingEntry } from '../components/ChatMessageList';
+import { Composer } from '../components/Composer';
+import { EmptyState, ErrorState, LoadingState } from '../components/ErrorState';
+import { ParticipantManager } from '../components/ParticipantManager';
+import { RoutingModeSelector } from '../components/RoutingModeSelector';
+
+export function ConversationDetail(): React.JSX.Element {
+  const { conversationId } = useParams<{ conversationId: string }>();
+  const navigate = useNavigate();
+  const queryClient = useQueryClient();
+  const { activeWorkspaceId } = useWorkspace();
+  const { subscribe } = useServerEvents();
+
+  const [routingNotice, setRoutingNotice] = useState<{
+    messageId: string;
+    routing: RoutingDecision;
+    dispatches: Dispatch[];
+  } | null>(null);
+  const [streaming, setStreaming] = useState<StreamingEntry[]>([]);
+  const [executionNames, setExecutionNames] = useState<Record<string, string>>({});
+  const [actionError, setActionError] = useState<string | null>(null);
+
+  const conversation = useQuery<ConversationDetail>({
+    queryKey: ['conversation', conversationId],
+    queryFn: () =>
+      api
+        .get<{ conversation: ConversationDetail }>(`/conversations/${conversationId}`)
+        .then((r) => r.conversation),
+    enabled: Boolean(conversationId),
+  });
+
+  const messages = useQuery<Message[]>({
+    queryKey: ['messages', conversationId],
+    queryFn: () =>
+      api
+        .get<{ messages: Message[] }>(`/conversations/${conversationId}/messages`, { limit: 200 })
+        .then((r) => r.messages),
+    enabled: Boolean(conversationId),
+  });
+
+  const agents = useQuery<AgentConnectionDetail[]>({
+    queryKey: ['agents', activeWorkspaceId],
+    queryFn: () =>
+      api
+        .get<{
+          agents: AgentConnectionDetail[];
+        }>('/agents', { workspaceId: activeWorkspaceId ?? undefined })
+        .then((r) => r.agents),
+    enabled: Boolean(activeWorkspaceId),
+  });
+
+  // Live updates: the transcript grows over SSE, never by polling.
+  useEffect(() => {
+    return subscribe((event) => {
+      if (event.type === 'execution.event') {
+        if (event.conversationId !== conversationId) return;
+        if (event.event.type !== 'message.delta') return;
+        const delta = event.event.text;
+        setStreaming((current) => {
+          const index = current.findIndex((entry) => entry.executionId === event.executionId);
+          if (index < 0) {
+            return [
+              ...current,
+              {
+                executionId: event.executionId,
+                text: delta,
+                agentName: executionNames[event.executionId] ?? null,
+              },
+            ];
+          }
+          const next = [...current];
+          const existing = next[index];
+          if (!existing) return current;
+          next[index] = { ...existing, text: existing.text + delta };
+          return next;
+        });
+        return;
+      }
+
+      if (event.type === 'message.updated') {
+        const executionId = event.message.executionId;
+        if (!executionId) return;
+        setStreaming((current) => current.filter((entry) => entry.executionId !== executionId));
+      }
+    });
+  }, [subscribe, conversationId, executionNames]);
+
+  const agentById = useMemo(() => {
+    const map = new Map<string, AgentConnectionDetail>();
+    for (const agent of agents.data ?? []) map.set(agent.id, agent);
+    return map;
+  }, [agents.data]);
+
+  const invalidate = useCallback(async (): Promise<void> => {
+    await queryClient.invalidateQueries({ queryKey: ['conversation', conversationId] });
+    await queryClient.invalidateQueries({ queryKey: ['messages', conversationId] });
+    await queryClient.invalidateQueries({ queryKey: ['conversations'] });
+  }, [queryClient, conversationId]);
+
+  const postMessage = useMutation({
+    mutationFn: async (text: string) =>
+      api.post<PostMessageResult>(`/conversations/${conversationId}/messages`, {
+        content: [{ type: 'text', text }],
+      }),
+    onSuccess: async (result) => {
+      setExecutionNames((current) => {
+        const next = { ...current };
+        for (const dispatch of result.dispatches) {
+          const name = agentById.get(dispatch.agentConnectionId)?.name ?? 'Agent';
+          next[dispatch.executionId] = name;
+        }
+        return next;
+      });
+      setRoutingNotice({
+        messageId: result.message.id,
+        routing: result.routing,
+        dispatches: result.dispatches,
+      });
+      await invalidate();
+    },
+  });
+
+  const updateConversation = useMutation({
+    mutationFn: async (patch: Record<string, unknown>) =>
+      api.patch<{ conversation: ConversationDetail }>(`/conversations/${conversationId}`, patch),
+    onSuccess: async () => {
+      setActionError(null);
+      await invalidate();
+    },
+    onError: (error) => setActionError(errorMessage(error)),
+  });
+
+  const addParticipant = useMutation({
+    mutationFn: async (input: {
+      type: 'human' | 'agent';
+      agentConnectionId?: string;
+      displayName: string;
+    }) => api.post(`/conversations/${conversationId}/participants`, input),
+    onSuccess: async () => {
+      setActionError(null);
+      await invalidate();
+    },
+    onError: (error) => setActionError(errorMessage(error)),
+  });
+
+  const removeParticipant = useMutation({
+    mutationFn: async (participantId: string) =>
+      api.delete(`/conversations/${conversationId}/participants/${participantId}`),
+    onSuccess: async () => {
+      setActionError(null);
+      await invalidate();
+    },
+    onError: (error) => setActionError(errorMessage(error)),
+  });
+
+  const removeConversation = useMutation({
+    mutationFn: async () => api.delete(`/conversations/${conversationId}`),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ['conversations'] });
+      navigate('/conversations', { replace: true });
+    },
+    onError: (error) => setActionError(errorMessage(error)),
+  });
+
+  if (conversation.isError) {
+    return (
+      <div className="mx-auto w-full max-w-3xl p-4">
+        <ErrorState
+          title="This conversation could not be loaded"
+          message={errorMessage(conversation.error)}
+          onRetry={() => void conversation.refetch()}
+        />
+      </div>
+    );
+  }
+
+  if (conversation.isLoading || !conversation.data) {
+    return <LoadingState label="Loading conversation…" />;
+  }
+
+  const current = conversation.data;
+  const agentParticipants = current.participants.filter(
+    (participant) => participant.type === 'agent',
+  );
+  const coordinator = current.participants.find(
+    (participant) => participant.id === current.coordinatorId,
+  );
+
+  const dispatchNames = (routingNotice?.dispatches ?? []).map(
+    (dispatch) => agentById.get(dispatch.agentConnectionId)?.name ?? dispatch.agentConnectionId,
+  );
+
+  return (
+    <div className="mx-auto flex h-full w-full max-w-6xl flex-col gap-3 p-3 sm:p-4">
+      <header className="flex flex-wrap items-start justify-between gap-2">
+        <div className="min-w-0">
+          <Link
+            to="/conversations"
+            className="mb-1 inline-flex items-center gap-1 text-[11px] text-slate-500 hover:text-slate-300"
+          >
+            <ArrowLeft className="h-3 w-3" />
+            All conversations
+          </Link>
+          <h1 className="truncate text-lg font-semibold tracking-tight">{current.title}</h1>
+          <div className="mt-1 flex flex-wrap items-center gap-1.5 text-[11px] text-slate-500">
+            <Badge variant="outline">{current.routingMode}</Badge>
+            {current.paused ? <Badge variant="warning">paused</Badge> : null}
+            {coordinator ? <span>coordinator: {coordinator.displayName}</span> : null}
+          </div>
+        </div>
+
+        <div className="flex items-center gap-2">
+          <Button
+            variant={current.paused ? 'primary' : 'secondary'}
+            size="sm"
+            disabled={updateConversation.isPending}
+            onClick={() => updateConversation.mutate({ paused: !current.paused })}
+          >
+            {current.paused ? <Play className="h-3.5 w-3.5" /> : <Pause className="h-3.5 w-3.5" />}
+            {current.paused ? 'Resume' : 'Pause'}
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon"
+            aria-label="Delete conversation"
+            disabled={removeConversation.isPending}
+            onClick={() => {
+              if (window.confirm('Delete this conversation and its transcript?')) {
+                removeConversation.mutate();
+              }
+            }}
+          >
+            <Trash2 className="h-4 w-4" />
+          </Button>
+        </div>
+      </header>
+
+      {actionError ? <ErrorState title="The change was not applied" message={actionError} /> : null}
+
+      <div className="grid min-h-0 flex-1 gap-3 lg:grid-cols-[minmax(0,1fr)_20rem]">
+        <Card className="flex min-h-0 flex-col">
+          <CardContent className="flex min-h-0 flex-1 flex-col gap-3 p-3">
+            <div className="min-h-0 flex-1 overflow-y-auto pr-1">
+              {messages.isError ? (
+                <ErrorState
+                  title="The transcript could not be loaded"
+                  message={errorMessage(messages.error)}
+                  onRetry={() => void messages.refetch()}
+                />
+              ) : null}
+
+              {(messages.data ?? []).length === 0 && !messages.isError ? (
+                <EmptyState
+                  title="No messages yet"
+                  message="Send a message below. Use @Name to address a specific agent, or switch the routing mode so every participant is in scope."
+                />
+              ) : null}
+
+              <ChatMessageList
+                messages={messages.data ?? []}
+                participants={current.participants}
+                agents={agents.data ?? []}
+                streaming={streaming}
+              />
+            </div>
+
+            {routingNotice ? (
+              <div
+                className={`rounded-md border px-3 py-2 text-[11px] ${
+                  routingNotice.routing.blocked
+                    ? 'border-amber-800/70 bg-amber-950/40 text-amber-200'
+                    : dispatchNames.length > 0
+                      ? 'border-emerald-800/60 bg-emerald-950/30 text-emerald-200'
+                      : 'border-slate-700 bg-slate-950/60 text-slate-400'
+                }`}
+              >
+                <div className="flex items-start gap-2">
+                  {routingNotice.routing.blocked ? (
+                    <Ban className="mt-0.5 h-3 w-3 shrink-0" />
+                  ) : dispatchNames.length > 0 ? (
+                    <Check className="mt-0.5 h-3 w-3 shrink-0" />
+                  ) : (
+                    <Info className="mt-0.5 h-3 w-3 shrink-0" />
+                  )}
+                  <div>
+                    <p className="font-medium">
+                      {dispatchNames.length > 0
+                        ? `Dispatched to ${dispatchNames.join(', ')}`
+                        : routingNotice.routing.blocked
+                          ? `Not dispatched — ${routingNotice.routing.blocked}`
+                          : 'No participants matched'}
+                    </p>
+                    <p className="mt-0.5 opacity-80">{routingNotice.routing.reason}</p>
+                  </div>
+                </div>
+              </div>
+            ) : null}
+
+            <Composer
+              participants={current.participants}
+              disabled={current.paused || postMessage.isPending}
+              placeholder={
+                current.paused
+                  ? 'This conversation is paused. Resume it to send messages.'
+                  : 'Write a message. Use @Name to address an agent.'
+              }
+              onSend={async (text) => {
+                await postMessage.mutateAsync(text);
+              }}
+            />
+            {postMessage.isError ? (
+              <p className="text-[11px] text-red-400">{errorMessage(postMessage.error)}</p>
+            ) : null}
+          </CardContent>
+        </Card>
+
+        <div className="space-y-3">
+          <Card>
+            <CardHeader className="pb-1">
+              <CardTitle>Routing</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3 pt-1">
+              <RoutingModeSelector
+                value={current.routingMode}
+                disabled={updateConversation.isPending}
+                onChange={(mode: RoutingMode) => updateConversation.mutate({ routingMode: mode })}
+              />
+              <div>
+                <p className="pos-field-label">Coordinator</p>
+                <Select
+                  aria-label="Coordinator"
+                  className="h-8 text-xs"
+                  value={current.coordinatorId ?? ''}
+                  disabled={updateConversation.isPending}
+                  onChange={(event) => {
+                    if (!event.target.value) return;
+                    updateConversation.mutate({ coordinatorId: event.target.value });
+                  }}
+                >
+                  <option value="">None</option>
+                  {agentParticipants.map((participant) => (
+                    <option key={participant.id} value={participant.id}>
+                      {participant.displayName}
+                    </option>
+                  ))}
+                </Select>
+                <p className="mt-1 text-[10px] text-slate-500">
+                  Only used in coordinator mode. It must be an agent that already participates.
+                </p>
+              </div>
+              <div className="grid grid-cols-3 gap-2 border-t border-slate-800 pt-3 text-center">
+                <div>
+                  <p className="text-[10px] uppercase tracking-wide text-slate-500">Turns</p>
+                  <p className="text-sm font-semibold text-slate-200">{current.maxTurns}</p>
+                </div>
+                <div>
+                  <p className="text-[10px] uppercase tracking-wide text-slate-500">Seconds</p>
+                  <p className="text-sm font-semibold text-slate-200">
+                    {current.maxDurationSeconds}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-[10px] uppercase tracking-wide text-slate-500">Spend</p>
+                  <p className="text-sm font-semibold text-slate-200">{current.maxSpendUnits}</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="pb-1">
+              <CardTitle>Participants</CardTitle>
+            </CardHeader>
+            <CardContent className="pt-1">
+              <ParticipantManager
+                participants={current.participants}
+                agents={agents.data ?? []}
+                busy={addParticipant.isPending || removeParticipant.isPending}
+                onAdd={(input) => addParticipant.mutate(input)}
+                onRemove={(participantId) => removeParticipant.mutate(participantId)}
+              />
+            </CardContent>
+          </Card>
+
+          {current.paused ? (
+            <div className="flex items-start gap-2 rounded-md border border-amber-800/60 bg-amber-950/30 px-3 py-2 text-[11px] text-amber-200">
+              <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+              <span>
+                The conversation is paused. Messages are recorded but no agent is woken up.
+              </span>
+            </div>
+          ) : null}
+        </div>
+      </div>
+    </div>
+  );
+}

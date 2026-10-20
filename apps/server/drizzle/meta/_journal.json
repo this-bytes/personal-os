@@ -1,0 +1,48 @@
+{
+  "version": "7",
+  "dialect": "sqlite",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "6",
+      "when": 1792469622926,
+      "tag": "0000_ancient_matthew_murdock",
+      "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "6",
+      "when": 1792470050087,
+      "tag": "0001_aberrant_demogoblin",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1792470242156,
+      "tag": "0002_romantic_rocket_raccoon",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "6",
+      "when": 1792472314627,
+      "tag": "0003_aspiring_jubilee",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "6",
+      "when": 1792474976553,
+      "tag": "0004_event_depth",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "6",
+      "when": 1792475250139,
+      "tag": "0005_agent_tool_grants",
+      "breakpoints": true
+    }
+  ]
+}

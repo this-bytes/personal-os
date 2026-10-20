@@ -1,0 +1,864 @@
+import { and, desc, eq, sql } from 'drizzle-orm';
+import { z } from 'zod';
+import {
+  dashboardSpecSchema,
+  dataSourceSpecSchema,
+  parseAdapterConfig,
+  type AdapterConfig,
+  type AgentAdapter,
+  type AgentConnection,
+  type AgentEvent,
+  type AgentTurnInput,
+  type ContentPart,
+  type MessageOrigin,
+  type Participant,
+} from '@personal-os/contracts';
+import {
+  agentConnections,
+  approvals,
+  automations,
+  automationRuns,
+  conversations,
+  evidence,
+  executions,
+  messages,
+  participants,
+  resources,
+  tasks,
+  type Database,
+} from '@personal-os/server/db';
+import {
+  assertReadableQuery,
+  assertSafeUrl,
+  newId,
+  planAndDispatch,
+  type QueueJob,
+  type Runtime,
+} from '@personal-os/server/runtime';
+
+/**
+ * Job execution.
+ *
+ * The worker owns every side effect that runs an agent: the API server
+ * only decides *what* should run and records the outcome. A failing or
+ * hostile agent therefore cannot take the API server down with it.
+ */
+
+export interface ExecutorContext {
+  runtime: Runtime;
+}
+
+export interface ExecutionOutcome {
+  status: 'completed' | 'failed' | 'cancelled';
+  error?: string;
+}
+
+export async function executeJob(
+  context: ExecutorContext,
+  job: QueueJob,
+): Promise<ExecutionOutcome> {
+  switch (job.type) {
+    case 'chat.turn':
+      return executeChatTurn(context, job);
+    case 'factory.execute':
+      return executeFactoryTask(context, job);
+    case 'automation.run':
+      return executeAutomation(context, job);
+    default:
+      return { status: 'failed', error: `Unknown job type "${job.type}".` };
+  }
+}
+
+interface ChatTurnPayload {
+  conversationId: string;
+  agentConnectionId: string;
+  executionId: string;
+  parentMessageId: string;
+  correlationId: string;
+  depth: number;
+}
+
+async function executeChatTurn(context: ExecutorContext, job: QueueJob): Promise<ExecutionOutcome> {
+  const { runtime } = context;
+  const payload = job.payload as unknown as ChatTurnPayload;
+  const { db, events } = runtime;
+
+  const connection = db
+    .select()
+    .from(agentConnections)
+    .where(eq(agentConnections.id, payload.agentConnectionId))
+    .get();
+
+  if (!connection) {
+    return fail(context, payload.executionId, 'The agent connection no longer exists.');
+  }
+  if (!connection.enabled) {
+    return fail(context, payload.executionId, 'The agent connection is disabled.');
+  }
+
+  const conversation = db
+    .select()
+    .from(conversations)
+    .where(eq(conversations.id, payload.conversationId))
+    .get();
+  if (!conversation) {
+    return fail(context, payload.executionId, 'The conversation no longer exists.');
+  }
+  if (conversation.paused) {
+    return { status: 'cancelled', error: 'The conversation was paused.' };
+  }
+
+  const participant = db
+    .select()
+    .from(participants)
+    .where(
+      and(
+        eq(participants.conversationId, payload.conversationId),
+        eq(participants.agentConnectionId, payload.agentConnectionId),
+      ),
+    )
+    .get();
+
+  const parent = db.select().from(messages).where(eq(messages.id, payload.parentMessageId)).get();
+
+  // Build the prompt from the parent message plus recent conversation.
+  const history = db
+    .select()
+    .from(messages)
+    .where(eq(messages.conversationId, payload.conversationId))
+    .orderBy(desc(messages.createdAt))
+    .limit(30)
+    .all()
+    .reverse();
+
+  const nameOf = (participantId: string): string =>
+    db.select().from(participants).where(eq(participants.id, participantId)).get()?.displayName ??
+    'unknown';
+
+  const contextText = history
+    .map((row) => {
+      const content = row.content as ContentPart[];
+      const text = content
+        .filter((part): part is Extract<ContentPart, { type: 'text' }> => part.type === 'text')
+        .map((part) => part.text)
+        .join('\n')
+        .trim();
+      if (!text) return '';
+      const who =
+        row.origin?.kind === 'agent' ? `${nameOf(row.senderId)} (agent)` : nameOf(row.senderId);
+      return `${who}: ${text}`;
+    })
+    .filter(Boolean)
+    .join('\n');
+
+  const parentText = parent
+    ? (parent.content as ContentPart[])
+        .filter((part): part is Extract<ContentPart, { type: 'text' }> => part.type === 'text')
+        .map((part) => part.text)
+        .join('\n')
+    : '';
+
+  const messageId = newId('msg');
+  const now = new Date().toISOString();
+  const origin: MessageOrigin = {
+    kind: 'agent',
+    actorId: participant?.id ?? payload.agentConnectionId,
+    agentConnectionId: payload.agentConnectionId,
+    depth: payload.depth,
+  };
+
+  db.insert(messages)
+    .values({
+      id: messageId,
+      conversationId: payload.conversationId,
+      senderId: participant?.id ?? payload.agentConnectionId,
+      targetParticipantIds: [],
+      replyToId: payload.parentMessageId,
+      kind: 'text',
+      content: [],
+      status: 'streaming',
+      correlationId: payload.correlationId,
+      origin,
+      executionId: payload.executionId,
+      createdAt: now,
+    })
+    .run();
+
+  db.update(executions)
+    .set({ status: 'running', startedAt: now })
+    .where(eq(executions.id, payload.executionId))
+    .run();
+
+  // Publish the reply while it is still empty, so a client learns about the
+  // in-flight message immediately rather than when it completes.
+  events.publish(
+    {
+      type: 'message.created',
+      message: {
+        id: messageId,
+        conversationId: payload.conversationId,
+        senderId: participant?.id ?? payload.agentConnectionId,
+        targetParticipantIds: [],
+        replyToId: payload.parentMessageId,
+        kind: 'text',
+        content: [],
+        status: 'streaming',
+        correlationId: payload.correlationId,
+        origin,
+        executionId: payload.executionId,
+        createdAt: now,
+      },
+    },
+    { workspaceId: conversation.workspaceId, conversationId: payload.conversationId },
+  );
+
+  const controller = new AbortController();
+  const adapterConfig = await loadAdapterConfig(context, payload.agentConnectionId);
+  const timeoutSeconds = adapterTimeout(adapterConfig);
+  const timeout = setTimeout(() => controller.abort(), timeoutSeconds * 1000);
+
+  let accumulated = '';
+  let failure: string | undefined;
+  let adapter: AgentAdapter | null = null;
+
+  try {
+    adapter = runtime.registry.create(adapterConfig, {
+      resolveSecret: runtime.resolveSecret,
+      logger: {
+        info: () => undefined,
+        warn: () => undefined,
+        error: () => undefined,
+      },
+    });
+
+    const turn: AgentTurnInput = {
+      conversationId: payload.conversationId,
+      message: parentText,
+      context: contextText,
+      executionId: payload.executionId,
+      signal: controller.signal,
+    };
+
+    for await (const event of adapter.send(turn)) {
+      await handleAgentEvent(context, event, {
+        messageId,
+        conversationId: payload.conversationId,
+        workspaceId: conversation.workspaceId,
+        executionId: payload.executionId,
+        agentConnectionId: payload.agentConnectionId,
+        onText: (text) => {
+          accumulated += text;
+        },
+      });
+    }
+
+    // An external orchestrator keeps its own task identifier. Personal OS
+    // stores the reference instead of mirroring the work.
+    const externalRef = await readExternalTaskId(adapter, payload.agentConnectionId);
+    if (externalRef) {
+      db.update(executions)
+        .set({ externalRef })
+        .where(eq(executions.id, payload.executionId))
+        .run();
+    }
+  } catch (error) {
+    failure = error instanceof Error ? error.message : String(error);
+  } finally {
+    clearTimeout(timeout);
+  }
+
+  const failed = failure !== undefined;
+  const finalContent: ContentPart[] =
+    accumulated.length > 0 ? [{ type: 'text', text: accumulated }] : [];
+
+  db.update(messages)
+    .set({
+      content: finalContent,
+      status: failed ? 'failed' : 'complete',
+    })
+    .where(eq(messages.id, messageId))
+    .run();
+
+  db.update(executions)
+    .set({
+      status: failed ? 'failed' : 'completed',
+      error: failure ?? null,
+      finishedAt: new Date().toISOString(),
+    })
+    .where(eq(executions.id, payload.executionId))
+    .run();
+
+  const updated = db.select().from(messages).where(eq(messages.id, messageId)).get();
+  if (updated) {
+    events.publish(
+      {
+        type: 'message.updated',
+        message: {
+          id: updated.id,
+          conversationId: updated.conversationId,
+          senderId: updated.senderId,
+          targetParticipantIds: updated.targetParticipantIds,
+          replyToId: updated.replyToId ?? undefined,
+          kind: updated.kind as never,
+          content: updated.content as ContentPart[],
+          status: updated.status as never,
+          correlationId: updated.correlationId ?? undefined,
+          origin: updated.origin ?? undefined,
+          executionId: updated.executionId ?? undefined,
+          createdAt: updated.createdAt,
+        },
+      },
+      { workspaceId: conversation.workspaceId, conversationId: payload.conversationId },
+    );
+
+    // The reply goes through the same routing rules as any other message.
+    // A mention inside an agent's answer is a delegation, and the depth of
+    // the chain is what stops two agents talking to each other forever.
+    const conversationPeople = db
+      .select()
+      .from(participants)
+      .where(eq(participants.conversationId, payload.conversationId))
+      .all()
+      .map((row) => ({
+        id: row.id,
+        conversationId: row.conversationId,
+        type: row.type as Participant['type'],
+        agentConnectionId: row.agentConnectionId ?? undefined,
+        displayName: row.displayName,
+      }));
+
+    planAndDispatch({
+      db,
+      events,
+      queue: runtime.queue,
+      conversationId: payload.conversationId,
+      message: {
+        id: updated.id,
+        conversationId: updated.conversationId,
+        senderId: updated.senderId,
+        targetParticipantIds: updated.targetParticipantIds,
+        replyToId: updated.replyToId ?? undefined,
+        kind: updated.kind as never,
+        content: updated.content as ContentPart[],
+        status: updated.status as never,
+        correlationId: updated.correlationId ?? undefined,
+        origin: updated.origin ?? undefined,
+        executionId: updated.executionId ?? undefined,
+        createdAt: updated.createdAt,
+      },
+      participants: conversationPeople,
+      correlationId: payload.correlationId,
+      depth: payload.depth,
+    });
+  }
+
+  return failed ? { status: 'failed', error: failure } : { status: 'completed' };
+}
+
+interface EventContext {
+  messageId: string;
+  conversationId: string;
+  workspaceId: string;
+  executionId: string;
+  agentConnectionId: string;
+  onText: (text: string) => void;
+}
+
+async function handleAgentEvent(
+  context: ExecutorContext,
+  event: AgentEvent,
+  eventContext: EventContext,
+): Promise<void> {
+  const { db, events } = context.runtime;
+
+  if (event.type === 'message.delta') {
+    eventContext.onText(event.text);
+    const current = db.select().from(messages).where(eq(messages.id, eventContext.messageId)).get();
+    const existing = (current?.content as ContentPart[] | undefined) ?? [];
+    const next: ContentPart[] = [...existing, { type: 'text', text: event.text }];
+    db.update(messages).set({ content: next }).where(eq(messages.id, eventContext.messageId)).run();
+  }
+
+  if (event.type === 'execution.status' && event.status === 'blocked') {
+    db.update(executions)
+      .set({ status: 'blocked' })
+      .where(eq(executions.id, eventContext.executionId))
+      .run();
+  }
+
+  if (event.type === 'approval.requested') {
+    // A sensitive operation needs the owner's decision. The request is
+    // recorded and the execution is held until it is resolved.
+    const existing = db.select().from(approvals).where(eq(approvals.id, event.approvalId)).get();
+
+    if (!existing) {
+      db.insert(approvals)
+        .values({
+          id: event.approvalId,
+          workspaceId: eventContext.workspaceId,
+          executionId: eventContext.executionId,
+          conversationId: eventContext.conversationId,
+          taskId: null,
+          agentConnectionId: eventContext.agentConnectionId,
+          summary: event.summary,
+          details: (event.details ?? null) as never,
+          status: 'pending',
+          reason: null,
+          requestedBy: eventContext.agentConnectionId,
+          decidedBy: null,
+          createdAt: new Date().toISOString(),
+          decidedAt: null,
+        })
+        .run();
+    }
+
+    db.update(executions)
+      .set({ status: 'blocked' })
+      .where(eq(executions.id, eventContext.executionId))
+      .run();
+  }
+
+  events.publish(
+    {
+      type: 'execution.event',
+      conversationId: eventContext.conversationId,
+      executionId: eventContext.executionId,
+      event,
+    },
+    { workspaceId: eventContext.workspaceId, conversationId: eventContext.conversationId },
+  );
+}
+
+interface FactoryPayload {
+  taskId: string;
+  executionId: string;
+  agentConnectionId: string;
+}
+
+async function executeFactoryTask(
+  context: ExecutorContext,
+  job: QueueJob,
+): Promise<ExecutionOutcome> {
+  const { runtime } = context;
+  const payload = job.payload as unknown as FactoryPayload;
+  const { db } = runtime;
+
+  const task = db.select().from(tasks).where(eq(tasks.id, payload.taskId)).get();
+  if (!task) return fail(context, payload.executionId, 'The task no longer exists.');
+
+  const now = new Date().toISOString();
+  db.update(executions)
+    .set({ status: 'running', startedAt: now })
+    .where(eq(executions.id, payload.executionId))
+    .run();
+
+  const prompt = [
+    `Task: ${task.title}`,
+    task.description ? `\nDescription:\n${task.description}` : '',
+    task.acceptanceCriteria.length > 0
+      ? `\nAcceptance criteria:\n${task.acceptanceCriteria.map((c) => `- ${c}`).join('\n')}`
+      : '',
+    '\nReport what you did and what evidence supports the acceptance criteria.',
+  ]
+    .filter(Boolean)
+    .join('\n');
+
+  let output = '';
+  let failure: string | undefined;
+
+  const controller = new AbortController();
+  const adapterConfig = await loadAdapterConfig(context, payload.agentConnectionId);
+  const timeout = setTimeout(() => controller.abort(), adapterTimeout(adapterConfig) * 1000);
+
+  try {
+    const adapter = runtime.registry.create(adapterConfig, {
+      resolveSecret: runtime.resolveSecret,
+      logger: { info: () => undefined, warn: () => undefined, error: () => undefined },
+    });
+
+    for await (const event of adapter.send({
+      conversationId: '',
+      message: prompt,
+      context: '',
+      executionId: payload.executionId,
+      signal: controller.signal,
+    })) {
+      if (event.type === 'message.delta') output += event.text;
+      if (event.type === 'execution.error') failure = event.message;
+    }
+  } catch (error) {
+    failure = error instanceof Error ? error.message : String(error);
+  } finally {
+    clearTimeout(timeout);
+  }
+
+  db.insert(evidence)
+    .values({
+      id: newId('evd'),
+      workspaceId: task.workspaceId,
+      taskId: task.id,
+      executionId: payload.executionId,
+      kind: 'observation',
+      summary: output.trim().slice(0, 4_000) || failure || 'The agent produced no output.',
+      payload: { output: output.slice(0, 20_000), error: failure ?? null },
+      createdAt: new Date().toISOString(),
+    })
+    .run();
+
+  db.update(executions)
+    .set({
+      status: failure ? 'failed' : 'completed',
+      error: failure ?? null,
+      finishedAt: new Date().toISOString(),
+    })
+    .where(eq(executions.id, payload.executionId))
+    .run();
+
+  // The agent reporting completion is not acceptance. The task moves to
+  // review, where a human decides whether the criteria are satisfied.
+  db.update(tasks)
+    .set({ status: failure ? 'blocked' : 'review', updatedAt: new Date().toISOString() })
+    .where(eq(tasks.id, task.id))
+    .run();
+
+  const updated = db.select().from(tasks).where(eq(tasks.id, task.id)).get();
+  if (updated) {
+    runtime.events.publish(
+      {
+        type: 'task.updated',
+        task: {
+          id: updated.id,
+          workspaceId: updated.workspaceId,
+          goalId: updated.goalId ?? undefined,
+          title: updated.title,
+          description: updated.description,
+          assigneeId: updated.assigneeId ?? undefined,
+          executionOwner: updated.executionOwner as never,
+          status: updated.status as never,
+          acceptanceCriteria: updated.acceptanceCriteria,
+          evidenceResourceIds: updated.evidenceResourceIds,
+          revision: updated.revision,
+          externalRef: updated.externalRef ?? undefined,
+        },
+      },
+      { workspaceId: task.workspaceId },
+    );
+  }
+
+  return failure ? { status: 'failed', error: failure } : { status: 'completed' };
+}
+
+interface AutomationPayload {
+  automationId: string;
+  /** Present when the automation was started by an event trigger. */
+  trigger?: {
+    kind: 'event';
+    seq: number;
+    eventType: string;
+    depth: number;
+    payload: unknown;
+  };
+}
+
+async function executeAutomation(
+  context: ExecutorContext,
+  job: QueueJob,
+): Promise<ExecutionOutcome> {
+  const { runtime } = context;
+  const payload = job.payload as unknown as AutomationPayload;
+  const { db } = context.runtime;
+
+  const automation = db
+    .select()
+    .from(automations)
+    .where(eq(automations.id, payload.automationId))
+    .get();
+  if (!automation) return { status: 'failed', error: 'The automation no longer exists.' };
+
+  const startedAt = new Date().toISOString();
+  const runId = newId('run');
+  let output: unknown = null;
+  let failure: string | undefined;
+
+  // An automation that was started by an event produces its own events at
+  // the next depth, which is what bounds the chain.
+  const depth = payload.trigger?.depth ?? 0;
+
+  try {
+    const action = automation.action;
+    if (action.type === 'agent.prompt') {
+      if (!action.agentConnectionId) throw new Error('The action has no agent connection.');
+      const adapter = runtime.registry.create(
+        await loadAdapterConfig(context, action.agentConnectionId),
+        {
+          resolveSecret: runtime.resolveSecret,
+          logger: { info: () => undefined, warn: () => undefined, error: () => undefined },
+        },
+      );
+
+      let text = '';
+      const controller = new AbortController();
+      const automationConfig = await loadAdapterConfig(context, action.agentConnectionId);
+      const timeout = setTimeout(() => controller.abort(), adapterTimeout(automationConfig) * 1000);
+      try {
+        for await (const event of adapter.send({
+          conversationId: '',
+          message: renderPrompt(action.prompt ?? '', automation, payload.trigger),
+          context: `Automation: ${automation.title}`,
+          executionId: runId,
+          signal: controller.signal,
+        })) {
+          if (event.type === 'message.delta') text += event.text;
+          if (event.type === 'execution.error') failure = event.message;
+        }
+      } finally {
+        clearTimeout(timeout);
+      }
+      output = { text };
+    } else if (action.type === 'resource.refresh') {
+      if (!action.resourceId) throw new Error('The action has no resource.');
+      const resource = db.select().from(resources).where(eq(resources.id, action.resourceId)).get();
+      if (!resource) throw new Error('The resource no longer exists.');
+
+      // A refresh re-reads the data and stores the result, so the resource
+      // really has fresh data afterwards.
+      const snapshot = await refreshResource(context, resource);
+      const updatedAt = new Date().toISOString();
+      db.update(resources)
+        .set({
+          data: { ...(resource.data as Record<string, unknown>), snapshot },
+          updatedAt,
+        })
+        .where(eq(resources.id, action.resourceId))
+        .run();
+
+      // The refresh is a change to a shared resource, so it is announced
+      // like any other change — that is also what lets another automation
+      // react to it.
+      runtime.events.publish(
+        {
+          type: 'resource.updated',
+          resource: {
+            id: resource.id,
+            workspaceId: resource.workspaceId,
+            type: resource.type as never,
+            schemaVersion: resource.schemaVersion,
+            revision: resource.revision,
+            title: resource.title,
+            data: { ...(resource.data as Record<string, unknown>), snapshot },
+            createdBy: resource.createdBy,
+            updatedAt,
+          },
+        },
+        { workspaceId: resource.workspaceId, depth },
+      );
+      output = { refreshed: action.resourceId, snapshot };
+    } else if (action.type === 'http.request') {
+      if (!action.url) throw new Error('The action has no URL.');
+      assertSafeUrl(action.url, {
+        allowPrivateTargets: runtime.config.allowPrivateTargets,
+      });
+      const response = await fetch(action.url, { method: action.method });
+      output = { status: response.status, ok: response.ok };
+    }
+  } catch (error) {
+    failure = error instanceof Error ? error.message : String(error);
+  }
+
+  const finishedAt = new Date().toISOString();
+  db.insert(automationRuns)
+    .values({
+      id: runId,
+      automationId: automation.id,
+      status: failure ? 'failed' : 'completed',
+      startedAt,
+      finishedAt,
+      output: output as never,
+      error: failure ?? null,
+    })
+    .run();
+
+  db.update(automations)
+    .set({ lastRunAt: startedAt, updatedAt: finishedAt })
+    .where(eq(automations.id, automation.id))
+    .run();
+
+  runtime.events.publish(
+    {
+      type: 'automation.run',
+      run: {
+        id: runId,
+        automationId: automation.id,
+        status: failure ? 'failed' : 'completed',
+        startedAt,
+        finishedAt,
+        output: output ?? null,
+        error: failure ?? null,
+      },
+    },
+    { workspaceId: automation.workspaceId, depth },
+  );
+
+  return failure ? { status: 'failed', error: failure } : { status: 'completed' };
+}
+
+/**
+ * Expand the placeholders an automation prompt may use.
+ *
+ * `{{context}}` is the automation title and trigger description, `{{event}}`
+ * is the JSON of the event that triggered the run, and `{{title}}` is the
+ * title of the automation itself.
+ */
+function renderPrompt(
+  template: string,
+  automation: { id: string; title: string },
+  trigger: AutomationPayload['trigger'],
+): string {
+  const vars: Record<string, string> = {
+    title: automation.title,
+    automationId: automation.id,
+  };
+
+  if (trigger) {
+    vars['event'] = JSON.stringify(trigger.payload ?? null);
+    vars['eventType'] = trigger.eventType;
+    vars['context'] = `Event "${trigger.eventType}" (sequence ${trigger.seq}).`;
+  } else {
+    vars['context'] = `Automation: ${automation.title}`;
+  }
+
+  return template.replace(/\{\{\s*([\w.-]+)\s*\}\}/g, (match, key: string) => {
+    const value = vars[key];
+    return value === undefined ? match : value;
+  });
+}
+
+function fail(context: ExecutorContext, executionId: string, message: string): ExecutionOutcome {
+  context.runtime.db
+    .update(executions)
+    .set({ status: 'failed', error: message, finishedAt: new Date().toISOString() })
+    .where(eq(executions.id, executionId))
+    .run();
+  return { status: 'failed', error: message };
+}
+
+/**
+ * Re-read the data behind a resource.
+ *
+ * A data source returns its rows; a dashboard returns the rows of every
+ * data source it binds to.
+ */
+async function refreshResource(
+  context: ExecutorContext,
+  resource: typeof resources.$inferSelect,
+): Promise<unknown> {
+  const { db } = context.runtime;
+  const data = (resource.data ?? {}) as Record<string, unknown>;
+
+  if (resource.type === 'data-source') {
+    const spec = dataSourceSpecSchema.parse(data);
+    return runDataSourceRows(db, spec, context.runtime.config.allowPrivateTargets);
+  }
+
+  if (resource.type === 'dashboard') {
+    const spec = dashboardSpecSchema.parse(data);
+    const snapshot: Record<string, unknown> = {};
+    for (const widget of spec.widgets) {
+      if (!widget.dataSourceId) continue;
+      const source = db.select().from(resources).where(eq(resources.id, widget.dataSourceId)).get();
+      if (!source) continue;
+      const sourceSpec = dataSourceSpecSchema.parse(source.data);
+      snapshot[widget.id] = await runDataSourceRows(
+        db,
+        sourceSpec,
+        context.runtime.config.allowPrivateTargets,
+      );
+    }
+    return snapshot;
+  }
+
+  return null;
+}
+
+/** Execute a data source and return its rows. */
+async function runDataSourceRows(
+  db: Database,
+  spec: z.infer<typeof dataSourceSpecSchema>,
+  allowPrivateTargets: boolean,
+): Promise<unknown> {
+  if (spec.kind === 'json') return spec.payload ?? null;
+
+  if (spec.kind === 'http') {
+    if (!spec.url) throw new Error('The HTTP data source needs a URL.');
+    assertSafeUrl(spec.url, { allowPrivateTargets });
+    const response = await fetch(spec.url, { headers: spec.headers });
+    if (!response.ok) throw new Error(`Data source returned HTTP ${response.status}.`);
+    const contentType = response.headers.get('content-type') ?? '';
+    return contentType.includes('application/json') ? await response.json() : await response.text();
+  }
+
+  if (spec.kind === 'sqlite') {
+    if (!spec.query) throw new Error('The SQLite data source needs a query.');
+    assertReadableQuery(spec.query);
+    return db.all(sql.raw(spec.query));
+  }
+
+  throw new Error('Unsupported data source kind.');
+}
+
+/**
+ * Load the adapter configuration for a connection. The configuration is
+ * stored as an encrypted secret record; the worker reads it through the
+ * shared secret store.
+ */
+async function loadAdapterConfig(
+  context: ExecutorContext,
+  agentConnectionId: string,
+): Promise<AdapterConfig> {
+  const { db } = context.runtime;
+  const connection = db
+    .select()
+    .from(agentConnections)
+    .where(eq(agentConnections.id, agentConnectionId))
+    .get();
+  if (!connection) throw new Error('The agent connection no longer exists.');
+
+  const raw = await context.runtime.resolveSecret(connection.configRef);
+  if (!raw) throw new Error('The agent configuration could not be read.');
+  const stored = JSON.parse(raw) as { adapterType: string; config: Record<string, unknown> };
+  return parseAdapterConfig({ adapterType: stored.adapterType, ...stored.config } as AdapterConfig);
+}
+
+/**
+ * The deadline for one agent turn. It comes from the adapter's own
+ * configuration so that the server and the adapter agree on it.
+ */
+function adapterTimeout(config: AdapterConfig): number {
+  const value = (config as { timeoutSeconds?: number }).timeoutSeconds;
+  return typeof value === 'number' && value > 0 ? value : 600;
+}
+
+/**
+ * Read the external task identifier an adapter can provide. Only some
+ * protocols have one; a missing identifier is not an error.
+ */
+async function readExternalTaskId(
+  adapter: AgentAdapter,
+  agentConnectionId: string,
+): Promise<string | undefined> {
+  const extras = adapter as {
+    externalTaskId?: (connection: AgentConnection) => Promise<string | undefined>;
+  };
+  if (typeof extras.externalTaskId !== 'function') return undefined;
+  try {
+    return await extras.externalTaskId({
+      id: agentConnectionId,
+      name: agentConnectionId,
+      adapterType: adapter.type,
+      configRef: '',
+      enabled: true,
+    });
+  } catch {
+    return undefined;
+  }
+}
