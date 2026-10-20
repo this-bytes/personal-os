@@ -3109,6 +3109,39 @@ re-dispatch and the message both produced one more identical queued task, and
 the queue is where they stay. The tree is green, so a restart costs the
 factory nothing but the idle time it has already spent.
 
+### The third road, and where all three end
+
+**A direct turn in Wren's session was tried, and it queued behind a stuck turn.**
+Chief sent WI-039's brief to Wren's own session
+(`mvs_dff627414f0e47fbbdf7501b11dfdd06`) through the desktop session API,
+because that route does not belong to the mini app's dispatcher. The runtime's
+answer: `status: accepted, mode: queued, position: 1` — _"The target Session
+was busy, so this message was queued and runs after the current Turn."_ And
+the session list calls that session **idle**. So the list's "idle" and the
+runtime's "busy" are two different things, and the runtime's is the one that
+decides.
+
+**What Wren's session is busy with is not a dispatched task.** All three
+sampled tasks are still `queued` — WI-037 (`task_4947c89ca7fe`), WI-039
+(`task_dd95fe7df207`) and WI-030 (`task_dc2aeef86acb`) — so the turn in that
+session is not one of ours.
+
+**Three roads, one queue.** `dispatch_tasks` queues. `message_bot` queues. A
+direct session turn queues behind a turn that does not end. And the mini app's
+own process is **running** (`miniapp list` — `status: running`), so this is not
+a dead process: it is a process whose assignment loop and whose bot sessions
+are both stuck. **Two bot sessions have been sitting in `started` with no task
+running in them** — Probe's (`mvs_f1f513955649480dbfb09fae820cf59f`, since
+09:51) and Cog's (`mvs_e109a52fca0541f196725ffdedd0d316`, since 09:32) — and
+the other Chief session's goal-verifier child is in `error` from 09:35. Two
+wedged sessions and a two-slot dispatcher is a reading that fits the whole
+picture: a wedged session can hold a slot that nothing else can use.
+
+**So the owner's next action is a restart of the local runtime, and the
+evidence says it is safe.** The queue is persisted — two tasks created before
+this morning's stop are still readable with their state intact — the tree is
+green, and nothing in the factory's own hands moves the queue.
+
 ## A review of the strategy document, 2026-10-21 — Vision
 
 `docs/strategy.md` asks three questions in the strategy room: are the three
