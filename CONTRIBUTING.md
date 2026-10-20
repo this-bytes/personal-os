@@ -71,13 +71,32 @@ npm run build                 # every workspace builds
 npx tsx scripts/smoke.ts      # end-to-end, against a throwaway database
 npm run test:e2e              # browser tests (needs the build first)
 npx tsx scripts/verify-build.ts
+npm run verify:bundle         # the client bundle is within its budget
 ```
 
-The last three are conditional: run the smoke test if you touched the server
-or the worker, the browser tests if you touched the web client, and the build
-check if you changed how the compiled output is produced.
+The last four are conditional: run the smoke test if you touched the server
+or the worker, the browser tests and the bundle budget if you touched the web
+client, and the build check if you changed how the compiled output is
+produced.
 
 `npm run test:e2e` needs a browser once: `npx playwright install chromium`.
+
+## Checking a deployment
+
+The gates above prove the code works. To prove a running deployment works —
+the container stack, or one you started yourself — use:
+
+```bash
+npm run verify:stack -- http://127.0.0.1:4317
+```
+
+It signs in, registers an agent, posts a message to it and waits for the
+worker's reply. A health check cannot do that: it says the server answers,
+not that the worker is alive and executing.
+
+It writes to the deployment, so it creates the owner if there is none and it
+always adds an agent and a conversation. Against a deployment that is not
+yours, pass `--allow-remote` to say that you mean it.
 
 ## How a change gets reviewed
 

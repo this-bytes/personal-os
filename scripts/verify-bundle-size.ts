@@ -85,6 +85,16 @@ function readChunks(): Chunk[] {
 }
 
 /**
+ * The capture group of a match, or null when the pattern did not match it.
+ *
+ * The patterns below all capture the file name, but a pattern that stops
+ * matching is a bug in the check rather than a reason to read `undefined`.
+ */
+function captured(match: RegExpMatchArray): string | null {
+  return match[1] ?? null;
+}
+
+/**
  * The chunk names the vite config declares.
  *
  * Read from the config source rather than duplicated here, so the check
@@ -92,7 +102,9 @@ function readChunks(): Chunk[] {
  */
 function declaredVendorChunks(): string[] {
   const source = fs.readFileSync(viteConfigPath, 'utf8');
-  const names = [...source.matchAll(/\['([a-z0-9-]+)',\s*\//g)].map((match) => match[1]);
+  const names = [...source.matchAll(/\['([a-z0-9-]+)',\s*\//g)]
+    .map((match) => captured(match))
+    .filter((name): name is string => name !== null);
   return [...new Set(names)];
 }
 
@@ -113,12 +125,14 @@ function firstPaintChunks(): string[] {
   const names = new Set<string>();
 
   for (const match of html.matchAll(/<script[^>]*src="\/assets\/([^"]+\.js)"/g)) {
-    names.add(match[1]);
+    const name = captured(match);
+    if (name) names.add(name);
   }
   for (const match of html.matchAll(
     /<link[^>]*rel="modulepreload"[^>]*href="\/assets\/([^"]+\.js)"/g,
   )) {
-    names.add(match[1]);
+    const name = captured(match);
+    if (name) names.add(name);
   }
 
   return [...names];
@@ -151,6 +165,9 @@ function main(): void {
   );
 
   const largest = chunks[0];
+  if (!largest) {
+    fail('The build emitted no JavaScript chunks.');
+  }
 
   process.stdout.write(`JavaScript chunks emitted: ${chunks.length}\n`);
   process.stdout.write(`Largest chunk:            ${largest.name} ${kib(largest.bytes)}\n`);

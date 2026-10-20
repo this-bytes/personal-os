@@ -7,7 +7,7 @@ on:
     branches: [main]
   schedule:
     # Weekly, so a newly published advisory is caught even without a push.
-    - cron: "23 5 * * 1"
+    - cron: '23 5 * * 1'
 
 permissions:
   contents: read
@@ -29,7 +29,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        language: ["javascript-typescript"]
+        language: ['javascript-typescript']
 
     steps:
       - uses: actions/checkout@v4
@@ -37,13 +37,13 @@ jobs:
       - name: Initialize CodeQL
         uses: github/codeql-action/init@v3
         with:
-          language: ${{ matrix.language }}
+          languages: ${{ matrix.language }}
           queries: security-and-quality
 
-      - name: Autobuild
-        uses: github/codeql-action/autobuild@v3
+      # No build step: CodeQL analyses JavaScript and TypeScript from the
+      # source itself, so there is nothing to compile.
 
       - name: Perform CodeQL analysis
         uses: github/codeql-action/analyze@v3
         with:
-          category: "/language:${{ matrix.language }}"
+          category: '/language:${{ matrix.language }}'

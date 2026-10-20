@@ -152,5 +152,8 @@ change that matters, so run it before you commit rather than after.
 - `npm run test:e2e` passes if you touched the web client.
 - `npm run verify:bundle` passes if you touched the web client or the build.
 - `npm run build` passes if you touched the web client.
+- `npm run verify:stack` passes if you touched how a deployment runs, or the
+  worker. It proves a running instance executes an agent, which a health
+  check cannot.
 - The documentation matches the code. If you changed a contract, `CONTRACTS.md`
   changed with it.

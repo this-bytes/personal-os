@@ -40,6 +40,14 @@ Entries describe what a user can now do, not which commits landed.
   fails the build: no chunk may exceed 300 kB, every declared vendor chunk
   must actually be emitted, and the first paint may not carry a page chunk.
   `npm run verify:bundle` runs it, and CI runs it on every pull request.
+- **A check that a running deployment actually works.** `npm run
+verify:stack` signs in, registers an agent, posts a message to it and waits
+  for the worker's reply. A health check says the server answers; this says
+  the worker is alive and executing. CI runs it against the container stack.
+- **A lint for the workflow definitions.** actionlint checks that every
+  workflow parses, that every action input exists, and that every shell
+  snippet is sound. It runs in CI, so a broken workflow is caught on the
+  pull request that breaks it rather than the push after.
 
 ### Changed
 
@@ -83,6 +91,11 @@ Entries describe what a user can now do, not which commits landed.
 - **A portable Compose verification.** `scripts/verify-compose.ps1` resolved
   the repository from an absolute path that only existed on one machine. It
   now resolves from its own location, so it runs in any checkout.
+- **The CodeQL workflow now runs at all.** It passed `language` to the CodeQL
+  action, whose input is `languages`; the action rejects an input it does not
+  know, so the workflow would have failed the first time anybody pushed. The
+  build step it carried was also a no-op — CodeQL reads JavaScript and
+  TypeScript from the source — and has been removed.
 
 ### Security
 

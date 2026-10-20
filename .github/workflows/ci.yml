@@ -102,7 +102,7 @@ jobs:
 
       - name: Wait for the server to become healthy
         run: |
-          for i in $(seq 1 60); do
+          for _ in $(seq 1 60); do
             if curl -fsS http://127.0.0.1:4317/api/health; then
               echo ""
               exit 0
@@ -117,6 +117,29 @@ jobs:
       - name: The web client is served
         run: curl -fsS http://127.0.0.1:4317/ | grep -q '<div id="root">'
 
+      # A health check only proves the server answers. The worker is the other
+      # half of the product, and it runs as its own container: if it cannot
+      # reach the database or is missing a capability it needs, only this
+      # check notices.
+      - name: The worker in the stack runs the product
+        run: npx tsx scripts/verify-stack.ts http://127.0.0.1:4317
+
       - name: Tear the stack down
         if: always()
         run: docker compose -f deploy/compose.yaml down -v
+
+  workflow-lint:
+    name: Lint the workflows
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - uses: actions/checkout@v4
+
+      # A workflow that does not parse, or that hands an action an input it
+      # does not accept, fails only once somebody pushes — and the CodeQL
+      # workflow failed exactly that way until this check existed.
+      - name: Check the workflow definitions
+        uses: docker://rhysd/actionlint:latest
+        with:
+          args: -color
