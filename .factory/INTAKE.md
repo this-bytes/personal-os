@@ -2580,6 +2580,45 @@ and every one of them waits on Probe, so acceptance — not implementation — i
 now the bottleneck. That is a fact about capacity, and the fix is Probe's
 queue, not a rule change.
 
+### The post that is owed, request id `factory-status-2026-10-21-0925`
+
+The status post to the `Personal OS Factory` group was refused by the runtime
+again, with the same guard that refused every dispatch this tick: _"This Bot is
+replying in multiple chats, so this tool call cannot be assigned safely."_ The
+gate is not the group's — the group has taken posts — it is the bot being in
+another chat at the same moment.
+
+It says, in short:
+
+- **The seven wants are triaged** — merged, refused or resized, with the
+  verdicts, the titles, the owners and the criteria recorded above. W4 is
+  folded into WI-007. W3 is deferred for capacity, not judgement, and becomes
+  a numbered item so it is not lost. W6 is the cheapest item in the set and
+  the most overdue — `PRODUCT.md:280` still says the direction is Desk (B).
+  W1 and W2 matter most: the numbers behind the product's own report are
+  wrong, so the report is a lie by omission until they land.
+- **The order, with capacity.** In flight and not to be reordered; then
+  WI-024, Forge, as the next visible change after the push; then the seven
+  wants in the order W2 before W1, W5 before W7, W6 alone, W3 last. What does
+  not start yet: W3, and the verification queue — six items sit at `verify` and
+  every one waits on Probe, so acceptance is the bottleneck now.
+- **One question is with the owner**, and WI-008 cannot close without it:
+  should a turn whose outcome could not be confirmed keep dispatching work?
+- **A note on evidence.** The full suite is only trustworthy when nothing else
+  is touching the checkout, and three sessions and four bots share one working
+  tree. A red has to be re-checked in isolation before it is called a defect,
+  and a green run that happened alongside another session's run is not a green
+  run. Nothing is accepted on a contended run.
+
+### The dispatch that is owed, request id `wi-024-forge-adoption-2`
+
+[WI-024](../work/WI-024.md), Forge, is the owner's next visible change and its
+re-dispatch is **owed** — the runtime's guard refused it along with every
+other call this tick, including the group post above and the checks of task
+states. A dispatch that cannot be delivered is not a dispatch, so the item's
+file records the request id and the order the brief carries, and the work does
+not move until somebody has actually been given it.
+
 ### The owner's product question that is still open
 
 [WI-008](../work/WI-008.md) cannot close on an unanswered question, and the
