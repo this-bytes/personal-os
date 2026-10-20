@@ -2630,3 +2630,45 @@ owner is looking at it on the waiting list and nobody can confirm the first
 turn's outcome. Chief's recommendation is **no** — an unknown outcome waits for
 the owner, which is what "check this" means — but it changes what the product
 does with spend and it is the owner's call, not the factory's.
+
+## The six numbers, taken 2026-10-21 09:40
+
+The other Chief session triaged the seven wants at 09:25 and **took no
+number**, because the number space has one owner and it is this session's.
+The verdicts, the titles, the owners and the criteria are recorded there; the
+files are created here.
+
+| Want | Item                        | Owner | Where it sits in the order         |
+| ---- | --------------------------- | ----- | ---------------------------------- |
+| W1   | [WI-033](../work/WI-033.md) | Cog   | after WI-034                       |
+| W2   | [WI-034](../work/WI-034.md) | Wren  | before WI-033                      |
+| W3   | [WI-035](../work/WI-035.md) | Cog   | **deferred** — starts after Forge  |
+| W5   | [WI-036](../work/WI-036.md) | Wren  | before WI-038                      |
+| W6   | [WI-037](../work/WI-037.md) | Wren  | on its own — small and independent |
+| W7   | [WI-038](../work/WI-038.md) | Chief | after WI-036                       |
+
+**W4 has no item and needs none.** It is folded into
+[WI-007](../work/WI-007.md), which is the same subject under a different name
+and is already with Cog. The fold is recorded in the triage rather than in
+WI-007's file, because that file is the other Chief session's live claim.
+
+**The numbers are stable, and the order is not in them.** W1 became WI-033 and
+W7 became WI-038 because the correspondence has to stay legible, not because
+the queue runs in that order: the queue runs WI-034 before WI-033, WI-036
+before WI-038, WI-037 on its own, and WI-035 last. **A number is a handle,
+and handles are not reordered when the queue is.** The queue has been
+reordered three times today, and every item that was cancelled and
+re-dispatched had to change its request id as well; the number did not move,
+and that is the point of it.
+
+**What is not dispatched yet, and why.** Nothing in this set is dispatched.
+**One verifier is the factory's real gate**: the triage records six items
+sitting at `verify` with every one of them waiting on Probe, so acceptance —
+not implementation — is the bottleneck now. Adding nine more cards to a queue
+whose far end is blocked does not make the product better; it makes the
+ledger longer. These items are written, numbered and ready, and they start
+when Probe's queue has room.
+
+**Every number this session has taken, in one place.** WI-030, WI-031,
+WI-032, WI-033, WI-034, WI-035, WI-036, WI-037, WI-038. The other Chief
+session's are WI-024 through WI-029.
