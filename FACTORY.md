@@ -197,6 +197,17 @@ Two rules follow from it:
   dispatch record. When two sessions are the lead in one tree, the older
   claim wins, the newer one waits, and the tiebreak is said out loud in the
   group.
+  **The check belongs at commit time.** The rule above was written at 23:57
+  on 2026-10-20 and was broken nine minutes later, so the claim is not
+  enough on its own. Before a session commits, it reads `git status`. If a
+  file it is committing carries an edit it did not write, it stages only its
+  own hunks — `git apply --cached` against a hand-built patch — and leaves the
+  rest uncommitted, and it says so in the group. A session that finds another
+  session's work in its file does not commit that work, and does not
+  "helpfully" finish it. On 2026-10-21 a clause in `ARCHITECTURE.md` was
+  saved from being committed with another session's unrelated hunks in the
+  same commit, because the session that wrote it staged its own three lines
+  and nothing else.
 - **A dispatch that cannot be delivered is not a dispatch.** When the runtime
   will not assign the work — the tool is busy, another turn holds the gate —
   record it in the work item's dispatch record with its request id, and
