@@ -263,6 +263,44 @@ test.describe('what is waiting on the owner', () => {
     expect(verdicts).toContain(false);
   });
 
+  test('the panel says when a turn was closed rather than continued', async ({ page }) => {
+    await signIn(page);
+    const workspaceId = await firstWorkspaceId(page);
+    await serveWaitingList(page, [approvalItem(workspaceId)]);
+
+    // The server closed the turn rather than continuing it, and said why.
+    // The contract says the panel says so — CONTRACTS.md: "otherwise → the
+    // execution finishes with the decision's outcome, and the panel says the
+    // turn was closed rather than continued."
+    await page.route(
+      (url) => url.pathname.startsWith('/api/approvals/'),
+      (route) =>
+        route.fulfill({
+          status: 200,
+          contentType: 'application/json',
+          body: JSON.stringify({
+            approval: { id: 'apr_waiting', status: 'approved' },
+            outcome: 'closed',
+            detail:
+              'The turn was closed rather than continued: the agent cannot re-enter a session, so the operation was not performed.',
+          }),
+        }),
+    );
+
+    await page.goto('/conversations');
+
+    const row = page.getByRole('listitem').filter({ hasText: 'Delete the production database' });
+    await expect(row).toBeVisible();
+    await row.getByRole('button').first().click();
+
+    // The owner is told what happened to the turn they were waiting on.
+    await expect(
+      page.getByText(/closed rather than continued/i),
+      'the panel did not say that the turn was closed rather than continued, so the owner is left ' +
+        'with a decision that looks like it continued and an operation that was never performed',
+    ).toBeVisible();
+  });
+
   test('an entry says which agent is waiting', async ({ page }) => {
     await signIn(page);
     const workspaceId = await firstWorkspaceId(page);
