@@ -123,9 +123,10 @@ export async function createMcpServer(options: McpServerOptions): Promise<McpSer
   /**
    * An agent touches only its own memory.
    *
-   * An agent-scoped memory is read by the agent it names, on every turn it
-   * takes, and by no other. One agent writing into another's memory would put
-   * words in its mouth, so an agent may reach only its own.
+   * An agent-scoped memory belongs to the agent it names: it is read by that
+   * agent, on every turn it takes, and by no other. One agent reaching into
+   * another's memory would put words in its mouth, so an agent may reach only
+   * its own — and the rule is the same on the way in and on the way out.
    *
    * A write is judged twice: by whose memory the resource is now, and by whose
    * memory the write says it should be. The first question is what a takeover
@@ -135,11 +136,13 @@ export async function createMcpServer(options: McpServerOptions): Promise<McpSer
    * rewriting what is in it. The second question is what a write arriving from
    * outside reaches: a memory created for another agent is refused.
    *
-   * The read side is a question this rule does not answer. `resource.get` is
-   * published as "Read a resource", with no promise about who owns a
-   * resource, so an agent can read another agent's memory today and whether
-   * that holds is Chief's call and the published contract's — it is not
-   * settled here.
+   * A read is judged once, by the same question — the resource's current
+   * owner. The published contract describes `resource.get` as "Read a
+   * resource" and says nothing about who owns a resource, so the rule that
+   * answers that question is this one, and it answers it the same way for all
+   * three resource tools: create, update and get. The owner's own API is out
+   * of this rule's reach — it takes an owner session, and an agent token is
+   * refused there.
    */
   const assertOwnMemory = (
     current: { type: string; data: unknown } | undefined,
@@ -152,7 +155,7 @@ export async function createMcpServer(options: McpServerOptions): Promise<McpSer
       const owner = memoryOwner(candidate.type, candidate.data);
       if (owner === undefined || owner === actor.agentConnectionId) continue;
 
-      throw new AppError('forbidden', 'An agent may only write into its own memory.', 403);
+      throw new AppError('forbidden', 'An agent may only reach its own memory.', 403);
     }
   };
 
@@ -382,7 +385,12 @@ export async function createMcpServer(options: McpServerOptions): Promise<McpSer
       async ({ resourceId }) => {
         try {
           guard('resource.get');
-          return jsonResult(options.capabilities.resourceGet(resourceId));
+          // The same ownership rule as the writes: a memory that belongs to
+          // another agent is not this agent's to read. The resource is fetched
+          // anyway, so the owner is known before anything is handed back.
+          const resource = options.capabilities.resourceGet(resourceId);
+          assertOwnMemory({ type: resource.type, data: resource.data }, undefined);
+          return jsonResult(resource);
         } catch (error) {
           return errorResult(error);
         }
