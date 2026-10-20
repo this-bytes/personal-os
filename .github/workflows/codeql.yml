@@ -2,7 +2,14 @@ name: CodeQL
 
 on:
   push:
-    branches: [main]
+    # Every branch, not just main.
+    #
+    # CI runs on every branch push, so a pushed branch is a gated branch — but
+    # that claim was false of this workflow: a branch was checked by half the
+    # pipeline, and the half that was missing is the security scan. The scan
+    # is the leg that catches a bad pattern in a change nobody read carefully,
+    # which is exactly the change a branch carries on its way to main.
+    branches: ['**']
   pull_request:
     branches: [main]
   schedule:
@@ -22,9 +29,19 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 60
     permissions:
+      # `actions: read` is what codeql-action needs to find the workflow run
+      # it belongs to, before it uploads its results. A job-level
+      # `permissions:` block replaces the workflow-level one wholesale, so
+      # without this line the token is granted exactly the other three and
+      # cannot read the run — and the step fails with "Resource not accessible
+      # by integration" before it analyses anything.
+      #
+      # That is what happened on every push to this repository: the scan was
+      # red because it could not run, not because it found something.
+      actions: read
       security-events: write
-      packages: read
       contents: read
+      packages: read
 
     strategy:
       fail-fast: false
