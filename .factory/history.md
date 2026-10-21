@@ -9482,3 +9482,75 @@ And **capture the whole log before reading it** — the lead's own habit of trim
 gate's output with `-Last` is what turned a two-minute flake into an hour of
 re-measurement, and it is the same habit that hid WI-108's landing failure earlier
 today.
+
+## 2026-10-22 08:45 — Chief: the licence record's verdict, a red that was the instrument, and the number space settled again
+
+**WI-106 is NOT VERIFIED, narrowly, and the verdict is against `1712fd2`, not against
+the branch's tip.** Probe's report (delivered 07:25) measured the branch
+`wi/106-record-four-loose-sentences` at `1712fd2` and found every number in the record
+re-derives exactly: **375 `licence-file` / 16 `package-json-licence-field` / 97
+`published-licence-identifier` / 6 `source: null` = 494**; `summary` reads 375/16/97;
+`agpl.familiesRead` has **11 rows summing to 488**; **494 `lockPath`s, 0 missing, 0
+extra** against the lockfile's 500 entries excluding the root; the 375 licence-file
+quotes each contain the first line of the file they name (375/375) and the 16
+`package.json` entries each carry the recorded field value (16/16). All five gates were
+green there — **602 tests in 60 files, 0 failures**. **Two wording findings stand
+between it and acceptance**, and neither is a re-measurement problem: `reads.evidence`
+still opened **"Every entry carries the file its licence was read from…"** and then said
+**"The six first-party workspaces carry no source"** — contradicting itself inside one
+sentence, against a criterion that asks for the opposite — and `PRODUCT.md` §10 still
+said **"the lines of that file that identify the licence"** (true of **375 of 494**;
+**119 entries carry no such lines**) and **"one entry for every package the lockfile
+installs"** (**397** described, **494** held).
+
+**The branch has moved since the verdict**, so the verdict does not apply to it:
+`origin/wi/106-record-four-loose-sentences` is at **`c2375e4`** = `1712fd2` + three
+commits at 08:00 (`035626f` the JSON, `01ceb37` `PRODUCT.md`, `c2375e4` the item file),
+**64 insertions and 5 deletions across three files**. **The item is unverified at its
+current tip.** The re-verification is **already queued by the peer session**
+(`task_64ed239e7565` to Probe, `task_b49a674c7e40` the notice), **so this session spent
+no request id on WI-106 and dispatched nothing for it.** Probe's merge check was clean:
+**0 conflict lines**. **And there is still no pin** — `git grep -ln 'dependency-licences'
+1712fd2` over the test trees returns **empty**, so no test file in the repository
+mentions licences at all. That check is Probe's file to write and is owed.
+
+**The published tree is not red on the format gate; the red was the instrument.**
+The peer session's round-two brief states that "your `main` is red on the format gate,
+and it is five of your ledger files". Measured three ways, it is green every way:
+`npm run format:check` on this tree **exit 0**; the five files' committed blobs at
+`76ce2a3` extracted byte-for-byte carry **CRLF = 0** and pass `prettier --check` with
+the repository's `.prettierrc.json`; and the same check passes on `origin/main`, on
+`origin/wi/117-branch-pileup-verdict` and on `origin/wi/106-record-four-loose-sentences`.
+**And the instrument that produces the false red is reproduced:** `git show
+76ce2a3:.factory/history.md | Out-File` writes **9,382 CRLF** where the blob has **9,382
+LF and 0 CRLF** (586,734 → 596,116 bytes), and `prettier --check` then **exits 1** on
+that copy — because `.prettierrc.json` sets **`"endOfLine": "lf"`**. The content is
+byte-identical apart from the line endings. **So nothing is blocked: the peer's WI-106
+branch may take today's `main`, and the five ledger files are not a defect.**
+
+**WI-118 is the peer's live item and it is not dispatched** — the strategy document's
+copy of the record's loose sentence, in three places, item file at
+`.factory/work/WI-118.md` on `wi/118-strategy-record-prose` @ `e72304c`, owner Wren,
+verifier Probe, opened from Probe's WI-106 verification. **The lead is not dispatching
+it** — one writer per item, and a second dispatch would put two writers on
+`docs/strategy.md`. It is recorded so it is not lost, and **if it is still undispatched
+at the next round the lead dispatches it from this record**; no request id is spent.
+
+**The number space, settled a second time in one morning.** **WI-116 is published, not
+reserved**: `WI-112.md:182` reads _"It is **owed, and it has a number — WI-116** — and it
+is **HELD**"_, published in `683ad44` at 08:10, and the peer's own tiebreak at 08:22
+says _"**WI-116 is the pin, and it is not renumbered.**"_ **WI-117 is the peer's** — the
+branch pile-up measurement, claimed at **08:09:24**, ten minutes before the lead's
+08:19 block named it free, and the tiebreak says the earlier published claim keeps the
+number where no dispatch binds it. **WI-118 is the peer's** — the live defect work.
+**The next number either session may take is WI-119.**
+
+**The floor at 08:45.** Cog is running **WI-086** on `CONTRACTS.md`, which is what holds
+WI-114 and WI-115. Vision's WI-108 report relay has been running since **07:25:27** and
+its content was already read and WI-108 accepted off it at 07:46 — **it is the wasted
+slot, and it is reported, not cancelled.** Probe's lane is **alive** (the WI-106 verdict
+at 07:25); **Wren's lane still refuses.** The ceiling stays at two. **The peer's two
+record commits are local and ride out with the next push**, by the peer's own record.
+**The restart is still the owner's word**, and on today's evidence its benefit is **the
+wasted slot and Wren's refusal** — Probe's lane came back on its own — while its price
+is **the turn it lands in**, which right now is Cog's live WI-086.
