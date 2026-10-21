@@ -384,12 +384,12 @@ second dispatch.
 | `wi-022-citation-refresh-verify-2026-10-21`                | WI-022 — the waiting list's refreshed citations, verified               | Probe  | `task_018a6018b18f` | **queued** — **the verification of WI-022's successor**, dispatched the moment the implementation landed. Five questions: the four citations point at the lines that carry the claims, the claims behind them are still true, **WI-026's criterion 6 now holds in the tree**, nothing else in the entry changed, and the gates pass. **The doubled sentence is a recorded decision and is not a defect**                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |     |
 
 | `wi-031-contract-status-correction-2026-10-21` | WI-031 — the entry says the code does not implement it yet, and it does | Wren | `task_be25e082ae5c` | **FAILED — and a failed task is not a dispatch.** `task_be25e082ae5c` was created for this correction and **came back `failed`**, so the row that said "queued" was wrong for hours and is corrected here. **The work has not been done and nothing is owed by it.** **The re-dispatch has gone out — by the peer session, which got there first — under `wi-031-contract-status-correction-r2-2026-10-21`, `task_70be52bdefa9`, batch `batch_faa4525ade7f`, to Wren, with the defect measured before the brief was written.** **A new id and a new title, because this one is spent.** **Until it lands, WI-031 is not accepted** |
-| `wi-010-verify-repaired-document-2026-10-21` | WI-010 — the repaired direction document, verified | Probe | `task_2f3e137d63ee` | **queued** — the live dispatch on WI-010, under the request id and title the peer session reserved and could not dispatch; the work is the D1 to D6 repair at `e560165`, and Probe's earlier verification ran before it |
+| `wi-010-verify-repaired-document-2026-10-21` | WI-010 — the repaired direction document, verified | Probe | `task_2f3e137d63ee` | **done — ended 22:39:20, 2,995 characters.** The live dispatch on WI-010, under the request id and title the peer session reserved and could not dispatch; the work is the D1 to D6 repair at `e560165`, and Probe's earlier verification ran before it. **It was the task the 22:40 check reported as over the threshold with a live turn, and it finished on its own — nothing was cancelled. The acceptance is the lead's, and it is not taken here.** |
 | `wi-007-verify-fixed-tree-successor-2026-10-21` | WI-007 — the fixed tree, verified again | Probe | `task_797badb7e918` | **cancelled** at **18:24:50** — WI-007 is **accepted** on Probe's report, so the re-verification was redundant, and **one verifier, one item, one verification** is the rule. The cancel could not be issued from the turn that accepted the item (the `minimax-bot` tools were withdrawn then); it was issued at **18:24:50**, once they returned, and the slot went back to the queue |
 | `wi-025-verify-adr-record-pass-successor-2026-10-21` | WI-025 — the ADR after the record pass, verified again | Probe | `task_5cf2b97b54ce` | **queued** — the live dispatch on WI-025; Probe's earlier verification found three defects, Wren fixed them at 11:58, and the re-verification was never dispatched |
 | `wi-069-refusal-names-nobody-code-2026-10-21` | WI-069 — a delegation that names nobody is refused unreadably | Cog | — | **NOT DISPATCHED — held on purpose.** The finding is Probe's, from WI-021's verification. **Two reasons, both said out loud:** the owner's line at 15:40 — _"when a slot frees, lean on verification"_ — and the contract half needs the owner's answer. **Numbered so it is not lost**, with the brief written out in full in `.factory/work/WI-069.md` |
 | `wi-045-unconfirmed-turn-verify-2026-10-21` | WI-045 — an unconfirmed turn routes no further work, verified | Probe | `task_1df39fd407ea` | **queued** — **the verification of the owner's own answer**, dispatched the moment the implementation landed (`a4010bb`, merged into `main` at `66c86ad`). Six questions: the guard stops the routing, a confirmed turn is unaffected, **the stop is recorded where the unknown-outcome machinery is recorded**, the waiting list is unchanged, a test proves both halves, and what the contract publishes. **Chief's word is on the audit entry's target, and the doubt is named in the brief rather than hidden** |
-| `wi-074-stack-test-cleanup-budget-2026-10-21` | WI-074 — the stack test's cleanup can outrun its own budget | Probe | `task_289ede939140` | **queued** — **a red on `main` with every assertion green**: `verifyStack.test.ts` failed to complete at `:133:34` (`fs.rmSync`) after 49 990 ms, while 230 tests passed. **The teardown, not the proofs.** It did not reproduce in two runs, and the machine was under load. **The check is named: a suite that passed every assertion must never be reported as failed.** And **CI runs on ubuntu, where the budget can also be exceeded** — that is why this is an item and not a shrug |
+| `wi-074-stack-test-cleanup-budget-2026-10-21` | WI-074 — the stack test's cleanup can outrun its own budget | Probe | `task_289ede939140` | **done — ended 22:46:01, 3,494 characters, and the fix is in `main` (`31a38e7`).** **A red on `main` with every assertion green**: `verifyStack.test.ts` failed to complete at `:133:34` (`fs.rmSync`) after 49 990 ms, while 230 tests passed. **The teardown, not the proofs.** It did not reproduce in two runs, and the machine was under load. **The check is named: a suite that passed every assertion must never be reported as failed.** And **CI runs on ubuntu, where the budget can also be exceeded** — that is why this is an item and not a shrug. **The task held a slot for 92.7 minutes, over the trigger, and it was reported and not cancelled: the chat was silent, but the files were being written at 22:04. The acceptance is the lead's, and it is not taken here.** |
 | `wi-062-measures-citation-refresh-2026-10-21` | WI-062 — four citations in the measures section point at lines that moved | Wren | `task_169f434c05d9` | **queued** — **a citation refresh, not a change of content**: every claim in the measures section is true and only the line numbers are stale. Found by Probe while verifying WI-062. It queues behind WI-065 in Wren's serial lane, and **it must not touch the template record or WI-031's entry** — one file, one live item |
 
 | `wi-076-reset-password-lock-retry-2026-10-21` | WI-076 — the owner's password recovery dies with a raw stack trace | Cog | — | **NOT DISPATCHED — held on purpose.** The finding is Probe's, from WI-007's verification, and it is the product's half of a gate fix Probe made. **One reason, said out loud:** the owner's line at 15:40 — _"when a slot frees, lean on verification"_ — and the accept queue is ten deep with one running. **Numbered so it is not lost**, with the brief written out in full in `.factory/work/WI-076.md`. The request id is reserved and unspent |
@@ -9651,3 +9651,32 @@ The one that would be is a turn that stopped.
 lines) and `verifyStack.test.ts` (+42). **The teardown can no longer be the
 reason a green suite is reported failed — and the file's mtime at 22:04 said
 so twenty minutes before the chat did.**
+
+## The watchdog at 22:49 — the two long tasks finished on their own, and the check reports either way
+
+**What it measured:** every `running` task in the fleet state, the chat each one
+holds, the chat's last message from that bot, that bot's session status, and the
+repository's log.
+
+**Two tasks were running: `task_5cf2b97b54ce` (WI-025's verification, Probe) at
+3.2 minutes, and `task_234ce8535eb1` (WI-044, Wren) at 10.7 minutes. The longest
+had held its slot for 10.7 minutes.** Nothing is over the 45-minute trigger, so
+the check cancels nothing — **and it reports anyway, because a report-free run
+is indistinguishable from a run that did not happen.**
+
+**And the two tasks that were over the threshold have both finished on their own,
+with nothing cancelled.** `task_2f3e137d63ee` — WI-010's verification — **ended
+at 22:39:20 with 2,995 characters**; `task_289ede939140` — WI-074 — **ended at
+22:46:01 with 3,494 characters**, and **WI-074's fix is in `main` (`31a38e7`)**.
+WI-010 was the task the 22:40 check reported as live (Probe's `task_review`
+continuation `msg_7d0b4eb2b73f`, `streaming`, 11.4 minutes old), and WI-074 was
+the one whose **file mtime at 22:04** said "live work" while its chat was silent.
+**Both are the same finding twice: the task's age and the turn's age are two
+numbers, and neither of them is ever a reason to cancel.** The row above that
+said WI-074's task "is queued again" was true when it was written at 22:40; it
+is `done` now, and the two rows in the dispatch table above say so.
+
+**And the previous check did complete.** The schedule's last prompt in this chat
+before this one (22:16:35, `msg_601b8cc32593`) is `done`, not `error` — so there
+is no failed check to carry forward, and the ledger says "nothing was wrong" for
+tonight's window rather than "the check did not run".
