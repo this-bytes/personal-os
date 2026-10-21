@@ -3755,3 +3755,85 @@ own work**, so the item stays in `review` until Probe's verdict lands. **WI-121 
 **WI-116 — the pin — is HELD behind Probe's lane.** And the owner's restart, authorised once
 Cog's WI-086 turn landed, is the repair for the floor's **39 dead Chief turns** and for Wren's
 lane; **this session has no non-destructive lever for it, and it is the owner's to call.**
+
+## 2026-10-22 2026-10-22 10:36 — Chief: WI-086 and WI-115 are accepted, WI-122 is opened for the gate hole, and WI-114's own subject was wrong
+
+**One — WI-086 is ACCEPTED, on Probe's verification.** **VERDICT: VERIFIED** — request
+`wi-086-verify-probe-chief-2026-10-22`, task `task_4b2fc4b5eb9f`, session
+`mvs_f1f513955649480dbfb09fae820cf59f`. **Probe wrote none of the work; Cog did.** Probe
+measured on published main `7ffa4e4` in a detached worktree with the `@personal-os/*`
+packages linked to that worktree, **so no peer commit could move the tree under a
+measurement** — main moved four times while Probe worked, and each time the files this item
+touches were checked and had not moved. **The nine gates: exit 0 — 632 tests in 62 files, 0
+failures.** The mutation proof was **reproduced**, not read: three mutations, each reverted,
+**exactly the four named cases red and nothing else**, baseline 13/13 again. The old branch
+`d4926f0` was **not measured** — it is not an ancestor of main and is **279 commits** behind
+the tip, not the brief's 73.
+
+**What the product can now do: a decision's evidence can be read in code** — the approval's
+execution, what the agent did, what it produced and what it cost, served at
+`/api/approvals/:id/evidence` in the shape the contract publishes and the contract's claim
+table now watches.
+
+**Two — and the finding the verifier made is the reason this item was worth verifying.** **The
+note's three citations could drift with BOTH contract gates green.** The pointer gate proves a
+cited line holds _code_; the status gate proves a string is _somewhere in a file_. **Probe
+pushed one line of ordinary code above the route — the route moved to `:38`, the contract
+still said `:37` — and the pointer gate exited 0 (126 checked, 0 failures) and the status
+gate exited 0.** The note had silently stopped naming the route and nothing noticed.
+
+**Three — WI-122 is OPENED, and it is the pin.** Probe wrote it — `196ff4a` on
+`wi/086-evidence-note-pin`, pushed, not merged — and it binds each of the note's three
+citations to the claim it names and **holds itself to failing**: two of its three tests point
+the check at copies of the tree whose citations have drifted. **It is its own item, and the
+reason is said out loud: Probe is WI-086's verifier, and a verifier who writes the gate that
+judges the work is no longer independent of it.** WI-086's acceptance rests on Probe judging
+Cog's landing, which Probe did not write; **the pin is judged by Vision, who wrote none of
+it**, and its acceptance is owed on that report. "Take it or drop it" was Probe's word; the
+lead takes it.
+
+**Four — WI-115 is ACCEPTED, by the lead, as this item's own verifier.** The item names Chief
+as its verifier — "this one is a reading, not a measurement, and it is checked by reading the
+lines it names" — **and that is what was done.** The work was written by the peer session
+(`5b0aa77`, one file, +22/-14); **the lead wrote the item and the measurements, and none of
+the work.** Every cited line was re-read on the published tree: `:234` `createdBy:
+row.createdBy,`, `:347` `factory.taskAuthor(id) ?? RESOURCE_AUTHOR_SYSTEM`, `:515` the
+projection's write, `:351-360` the task provider's `validate` that parses and refuses,
+`:624-634` `inspect`, `resource.ts:25` `RESOURCE_AUTHOR_SYSTEM`, `:671-699` `authorshipCounts`.
+**27 paths swept, every real path EXISTS**, and the sweep for `0008-_`, `0008-*`, `_.md`,
+`TODO` and `XXX` returns nothing. **And the half that is still true is kept and is true:**
+`mcp/server.ts` holds **zero** occurrences of `audit`.
+
+**Five — and this item's own file was wrong, and the lead copied the number instead of
+measuring it.** The item said _"WI-020 — 'the author's own name, on the row' — is what fixed
+it."_ **Measured: `832fae2` added `RESOURCE_AUTHOR_SYSTEM` and `lib/author.ts`, and that is
+WI-090, "The substrate the product's own two measures stand on" — the recording of the author
+is WI-090's. `c2853ac` added `authorshipCounts`, and that is WI-020, "The product reports on
+itself" — the measure is WI-020's.** **The landed guide says "WI-090 (commit `832fae2`) is
+what closed that half", and that is right.** The lead's item file named WI-020, taken from
+the peer session's 07:55 post, which said "WI-020 closed that defect" — **the peer was right
+about the defect and wrong about the item, and the lead repeated the item.** The correction is
+appended beside the claim.
+
+**Six — WI-114 is re-measured a THIRD time, and the item's own subject was wrong.** WI-115's
+landing grew the guide, so **the guide's line numbers moved**: `:355` is now `:360`, and
+**`:97` is a fifth correction the sweep found** — the same stale range, cited a second time,
+in the sentence that names `templateGet` outright. **And the `:32` row's range is settled:
+`service.ts:640-656`, not any of the three candidates this lead offered at 09:37.** The row's
+claim is about **templates** being "refused at the point it is read", and **`templateGet` is
+where a template is refused** (`:648` calls the owning provider's `validate`; `:650` refuses).
+**The lead's three candidates were all about resources** — `execute` runs a resource and
+`inspect` judges a resource's spec — **and WI-114's own table was wrong about the subject
+too: `:581-591` never held "the automation provider's `execute`".** **Five corrections now,
+and the code changes in none of them.**
+
+**Seven — the number space: WI-122 is taken, and the next free number is WI-123.** WI-122 was
+read immediately before it was taken — the published block reads "The next free number is
+WI-122" — and it appeared in no item file, no dispatch record and no commit. **WI-123 is the
+next free number.**
+
+**Eight — the floor.** Probe delivered WI-086's VERIFIED verdict and its report to the factory
+group; **the report to the group is queued, and this lead's own 09:45 post is still queued
+behind it.** **Cog is working WI-121** (its turn is in flight). **Wren is still down** — her
+last five messages are `status=error`, 0 characters. **WI-120 is published and verified by
+the peer; WI-115 is published and verified here.** **The ceiling stays at two.**

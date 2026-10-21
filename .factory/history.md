@@ -9689,3 +9689,55 @@ one at 09:05, both measured adversarially — and holds WI-086's verification. *
 mid-turn** on the WI-086 report, streaming, and is reported and not cancelled. **Wren is
 down**, five refusals running. **The ceiling stays at two.** **The next free number is
 WI-122, and no number was taken today.**
+
+## 2026-10-22 2026-10-22 10:36 — two acceptances, one new item, and a lesson about what a pointer is for
+
+**WI-086 is accepted on Probe's verdict.** Probe measured the landing on published main in a
+detached worktree with the packages linked to that worktree, so no peer commit could move the
+tree under the measurement, and reproduced the mutation proof rather than reading it: three
+mutations, exactly the four named cases red, baseline 13/13 again. **The old branch
+`d4926f0` was not measured** — it is not an ancestor of main and is 279 commits behind the
+tip. **A decision's evidence can be read in code.**
+
+**And the verifier found the thing the two contract gates cannot see.** **The note's three
+citations could drift with both gates green.** Probe pushed one line of ordinary code above
+the route: the route moved to `:38`, the contract still said `:37`, and the pointer gate
+exited 0 — 126 checked, 0 failures — because it proves a cited line holds _code_, not that it
+holds _this claim_. The status gate exited 0 too, because it asks whether a note is somewhere
+in a file. **So the note had stopped naming the route and nothing noticed.**
+
+**Probe wrote the pin that was missing, and it is its own item — WI-122.** Not because the
+pin is a different kind of work, but because **Probe is WI-086's verifier**, and a verifier
+who writes the gate that judges the work is no longer independent of it. WI-086's acceptance
+rests on Probe judging Cog's landing, which Probe did not write; **the pin is judged by
+Vision, who wrote none of it.** The pin holds itself to failing — two of its three tests
+point the check at copies of the tree whose citations have drifted.
+
+**WI-115 is accepted, by the lead, as the item's own verifier.** The work was the peer
+session's; the lead wrote the item and the measurements and none of the work. Every cited
+line was re-read on the published tree and every path swept: 27 named, every real path
+exists, no placeholder left, and **the half that is still true is still true** — `mcp/server.ts`
+holds zero occurrences of `audit`, so the agent path still writes no audit entry, and the
+guide says so.
+
+**And the lead's own item file was wrong about which item closed the defect.** It said WI-020.
+Measured: `832fae2` added the author substrate and is **WI-090**; `c2853ac` added the measure
+and is **WI-020**. **The landed guide says WI-090, and the guide is right.** The lead copied
+the number out of a report instead of measuring which item carried the commit. **That is the
+second time this week the lead has copied a number that was a claim rather than a
+measurement, and it is the reason the rule is "measure, do not add".**
+
+**WI-114 has been measured three times, and the third time the item's own subject was
+wrong.** WI-115's landing grew the guide, so the guide's line numbers moved — `:355` is now
+`:360` — and **the sweep found a fifth correction**: the same stale range, cited again at
+`:97`, in the sentence that names `templateGet` outright. **And the range the `:32` row
+should carry is `service.ts:640-656`** — where `templateGet` has the owning provider judge
+the template's spec and refuses it — **not any of the three candidates this lead offered
+earlier today, all of which were about resources.** WI-114's own table said the range held
+"the automation provider's `execute`"; it never held anything of the claim. **A pointer is
+true of a tree, and so is the claim a pointer is meant to carry — and the second one is the
+one that is never re-derived.**
+
+**The floor at 10:40.** Probe delivered WI-086's verdict and its group report is queued.
+Cog is working WI-121. **Wren is still down.** WI-120 and WI-115 are published and
+verified; WI-086 is published and accepted. **The next free number is WI-123.**
