@@ -255,6 +255,7 @@ agents without changes to conversation storage or the factory task model.
 | `a2a`   | Independently operating agents supporting interoperable task delegation. |
 | `http`  | Hermes, OpenClaw and other framework-specific gateways.                  |
 | `model` | Direct model sessions without a full external agent harness.             |
+| `mcp`   | Agents that are an MCP server.                                           |
 | `echo`  | Built-in deterministic agent, for local use and tests.                   |
 
 ACP provides a session-oriented interface and capability negotiation. A2A supports
@@ -263,6 +264,58 @@ artifacts and task states.
 
 The standards are implemented using maintained protocol SDKs where possible, not
 rewritten from scratch.
+
+### The MCP adapter
+
+An MCP server becomes an agent connection. The owner names the server, the tool
+a turn calls, and the tools the connection may call at all; the credentials
+live in a server-held secret record and are never inlined into the
+configuration.
+
+```ts
+interface McpAdapterConfig {
+  transport: 'stdio' | 'http';
+  command?: string; // stdio
+  args: string[];
+  cwd?: string;
+  env: Record<string, string>;
+  url?: string; // http
+  authTokenRef?: string; // a reference, never a value
+  protocolVersion: string;
+  toolName: string;
+  argumentTemplate: string;
+  allowedTools: string[];
+  timeoutSeconds: number;
+}
+```
+
+A turn is one tool call. The adapter initializes the session, lists the
+server's tools, and calls the configured one; the tool's text output is the
+reply.
+
+**The adapter claims only what it can do.** An MCP tool call is atomic: it
+cannot be interrupted, it cannot take input while it runs, and it answers in
+one piece. So the adapter reports `cancel: false`, `streaming: false` and
+`acceptsSteering: false`. A connection whose server does not publish the
+configured tool, or whose tool is outside `allowedTools`, reports `chat: false`
+rather than failing a turn at the moment the owner is waiting for it.
+
+**The server's environment does not leak into the agent's.** A supervised MCP
+server process is started with an explicit allow-list plus the values the owner
+configured — the same rule the `cli` adapter follows, and the same helper
+(`buildSanitizedEnv` in `packages/agent-adapters/src/util.ts`).
+
+**Migration.** The adapter type enum grows by one member and nothing is
+reclassified. A client that switches exhaustively on the adapter type must now
+render `mcp`; a connection that is not an MCP server is unaffected. The
+capabilities shape grows by one optional member, `acceptsSteering`, and absent
+means the connection cannot be steered. A connection recorded before this
+change reports the capabilities it always reported.
+
+This entry is the contract for **WI-053**, and the code implements it — the
+adapter is `packages/agent-adapters/src/mcp.ts`, the configuration schema is
+`packages/contracts/src/adapter-config.ts`, and the panel's connection form
+carries the fields.
 
 ### Common connection contract
 
@@ -284,6 +337,12 @@ interface AgentCapabilities {
   cancel: boolean;
   approvals: boolean;
   artifacts: boolean;
+  /**
+   * Whether the agent can take input while a turn is running. A connection
+   * that does not report it cannot be steered; see
+   * [Contract 7](#contract-7--the-interaction-model).
+   */
+  acceptsSteering?: boolean;
 }
 
 interface AgentAdapter {
@@ -1082,6 +1141,207 @@ result, so the resource really has fresh data afterwards — it is not a no-op.
 
 ---
 
+## Contract 7 — The interaction model
+
+A turn is the unit of one agent's answer. This contract publishes what a turn
+is, what it may be given while it runs, how its history becomes canonical, and
+what happens to the work it delegates.
+
+It adds to Contract 1 (Conversations) and Contract 2 (Agent connections) and
+replaces nothing in them. The factory ledger, the resource contract and the
+routing safeguards are untouched by it.
+
+### The turn
+
+A turn is an execution: a row in `executions` with a `conversationId` and no
+`taskId`. The waiting list already calls this kind of thing a turn
+([The waiting list](#the-waiting-list)); this entry makes it explicit and does
+not introduce a parallel concept.
+
+```ts
+type TurnStatus =
+  | 'queued'
+  | 'running'
+  | 'blocked'
+  | 'completed'
+  | 'committed'
+  | 'failed'
+  | 'cancelled'
+  | 'unknown'
+  | 'lost';
+```
+
+**`completed` and `committed` are different.** `completed` means the adapter
+returned. `committed` means the turn's output is in canonical history and the
+turn can be resumed from. The difference is the whole point of the commit
+protocol below, and a client that renders the two alike cannot tell a turn
+that merely finished from a turn that can be continued.
+
+**`lost` is settled, not retried.** A delegated task whose executor no longer
+exists — the worker that was running it was restarted, say — is settled as
+`lost` after the restart. It is not `failed`, and it is not re-run
+automatically. This is the same honesty the `unknown` state already gives a
+turn: work whose outcome cannot be confirmed is never quietly retried.
+
+### The capability view
+
+A turn's effective tool set and grants are captured when the turn is admitted,
+and cannot change underneath it. A capability or grant change takes effect on
+the next turn.
+
+```ts
+interface TurnCapabilityView {
+  agentConnectionId: string;
+  /** The revision of the connection's capability set at admission. */
+  capabilitiesRevision: number;
+  toolGrants: string[];
+  pinnedAt: string;
+}
+```
+
+A turn recorded before this change has no view, and the API reports it as
+absent rather than as empty. An empty view would say the agent had no tools,
+which is a different claim.
+
+### Canonical history
+
+A turn's output enters canonical history only when the commit is acknowledged.
+The commit is five steps, in this order:
+
+1. capture a semantic snapshot, and validate the session, the turn and the
+   operation's identity;
+2. perform the durable mutation, and read canonical history back within the
+   same session operation lane;
+3. validate the read-back, and obtain the committed revision;
+4. wait for the required `HistoryCommitted` projection — and complete the
+   compaction lifecycle, when compaction is involved;
+5. acknowledge the caller.
+
+**An in-flight event is not canonical history.** The event stream says what is
+happening; canonical history is what a resumed turn reads. A client that
+reconnects mid-turn sees the events; a turn that resumes reads the history.
+
+The reply message's status moves from `streaming` to `complete` only when the
+commit is acknowledged. A crash between the write and the commit leaves the
+message `unknown` — the state the contract already publishes, and the one that
+means _started, outcome unconfirmed_.
+
+### Steer and queue
+
+A message carries a delivery mode.
+
+```ts
+type MessageDelivery = 'steer' | 'queue';
+```
+
+`queue` is the default, and it is what happens today: the message waits for the
+next turn. `steer` delivers the message into the turn that is running.
+
+**Steering is a capability, not a hope.** A connection whose adapter cannot
+take input mid-turn cannot be steered. For such a connection a `steer` is
+degraded to a `queue` message, and the degradation is reported rather than
+silent: the contract's wording is corrected for the adapter that cannot keep
+the promise, and the behaviour is not faked.
+
+```ts
+interface AgentCapabilities {
+  // ...
+  acceptsSteering?: boolean;
+}
+```
+
+A connection that does not report `acceptsSteering` cannot be steered. Absent
+means absent: a connection written before this existed is an agent that cannot
+be steered.
+
+**A steer targets one agent.** A message with `delivery: 'steer'` is delivered
+to the running turn's agent alone. It does not wake other participants, and it
+does not count as a new turn for the duplicate check. This extends
+[Routing behaviour](#routing-behaviour); it weakens none of the
+[Mandatory routing safeguards](#mandatory-routing-safeguards).
+
+**An unconsumed steer is not dropped.** A steer the running turn never
+consumed is delivered to the next turn, and is recorded as having been
+delivered late.
+
+### Fork and rewind
+
+Two additive operations on a conversation.
+
+```
+POST /api/conversations/:id/fork    // fork at a message
+POST /api/conversations/:id/rewind  // continue from an earlier message
+```
+
+A fork creates a new conversation that inherits the participants, the persona
+overrides and the history up to the message it was forked at, and records the
+conversation it came from. A rewind creates a new turn whose canonical history
+starts at an earlier message; the earlier turns are retained, not rewritten.
+
+Both are audited like any other change. This is the conversation counterpart of
+the resource-level history-and-take-back item, which stays scoped to resources:
+the two do not overlap.
+
+### The delegated work tree
+
+Delegated agent work is a visible tree, not a depth counter. `origin.depth`
+stays as it is; the tree adds a parent reference beside it.
+
+```ts
+interface DelegatedTask {
+  id: string;
+  /** The turn that delegated the work. */
+  parentTurnId: string;
+  agentConnectionId: string;
+  status: 'queued' | 'running' | 'stopping' | 'succeeded' | 'failed' | 'cancelled' | 'lost';
+  outputRef?: string;
+  /** When the result reached the parent. */
+  deliveredAt?: string;
+  /** The consumption candidate, recorded when the parent read the output. */
+  consumedAt?: string;
+}
+```
+
+**Delivery is not consumption.** `deliveredAt` records that the result reached
+the parent. A completion notification does not mark the result consumed: the
+host records a consumption candidate only after it has successfully read a
+terminal task's output, and confirms it as consumed only when the parent turn
+ends completed and its terminal state is committed. A parent that reads a
+result and then fails leaves the result unconsumed, so the next continuation is
+reminded of it again.
+
+### The routes and the events
+
+| Route                             | Method | What it does                                                                           |
+| --------------------------------- | ------ | -------------------------------------------------------------------------------------- |
+| `/api/executions/:id`             | GET    | The turn: its status, its capability view, its delegation tree, its committed revision |
+| `/api/conversations/:id/fork`     | POST   | Fork the conversation at a message                                                     |
+| `/api/conversations/:id/rewind`   | POST   | Continue from an earlier message as a new turn                                         |
+| `/api/conversations/:id/messages` | POST   | Gains `delivery: 'steer' \| 'queue'`, default `queue`                                  |
+
+The events are the existing ones, on the existing spine, with the existing
+monotonic sequence: `turn.admitted`, `turn.committed`, `turn.failed`,
+`turn.lost`, `delegation.started`, `delegation.delivered`, `delegation.consumed`.
+
+**Migration.** The status enum grows by two members and nothing is
+reclassified. A client that switches exhaustively on the status must now render
+`committed` and `lost`, and a turn that is `committed` is not `completed` in
+disguise: it is a turn that can be resumed from. The delivery field defaults
+to `queue`, so a client written before this change behaves exactly as it did —
+a message it sends is queued, as it always was. A turn recorded before the
+change has no capability view and no delegation tree, and the API reports both
+as absent rather than empty. No record written before the change is rewritten.
+
+This entry is the contract for **WI-055**, and the code does not implement it
+yet. What exists today: a turn is an execution, `unknown` is published for
+messages, executions and tasks, and `origin.depth` records the delegation
+distance. What this entry adds — `committed`, `lost`, the capability view, the
+five-step commit, steering, fork, rewind and the delegation tree — arrives with
+that item. The published shapes above are the contract that item implements
+against, so the model can be reviewed as a whole before any of it is written.
+
+---
+
 ## The HTTP surface
 
 All routes are prefixed with `/api`. Authentication is a session cookie
@@ -1215,8 +1475,8 @@ first measure is therefore a lower bound**: those resources sit in the
 denominator and can never sit in the count, so the ratio is a share over four of
 the six kinds, reported over all six.
 
-**Twelve of the thirty-four mutating routes write no audit entry at all.** Of the
-34 mutating routes in `apps/server/src/api/`, 20 write an audit entry at the
+**Twelve of the thirty-five mutating routes write no audit entry at all.** Of the
+35 mutating routes in `apps/server/src/api/`, 21 write an audit entry at the
 route level, two more write one from the service layer — `POST
 /api/approvals/:id/decide` at `apps/server/src/modules/approvals/resume.ts:53`,
 and `PATCH /api/tasks/:id` at `apps/server/src/modules/factory/service.ts:275`,
