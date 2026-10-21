@@ -990,7 +990,7 @@ result: 'queued' | 'succeeded' | 'failed' | 'unknown';
 
 **`queued` means the action was accepted and has not finished.** `POST
 /api/resources/:id/execute` records `queued` for an automation run it enqueues
-(`apps/server/src/modules/resources/service.ts:515`): the route accepted the request
+(`apps/server/src/modules/resources/service.ts:525`): the route accepted the request
 and the run has not happened. The same route runs a data source and a dashboard there
 and then, so **the vocabulary is per action, not per route** — one route can record
 `queued` for one kind and `succeeded` for another. **`succeeded` means the outcome was
@@ -1010,13 +1010,13 @@ trail is where it is recorded.
 **Every mutating route writes an entry, and every entry records what the action
 produced.** The route helper wrote `success` for every route that used it
 (`apps/server/src/api/helpers.ts:62`) and the audit service defaulted to it
-(`apps/server/src/modules/audit/service.ts:71`), so an entry said "done" about a run
+(`apps/server/src/modules/audit/service.ts:79`), so an entry said "done" about a run
 that was merely queued. **The twelve routes that wrote no entry at all now write one,
 at the layer that knows the outcome** — they are the twelve in
 [the measures route](#the-measures-route). **A route whose action fails writes an
 entry that says `failed`**: today it writes none, because every route-level entry is
 written after the work and a handler that throws never reaches it, and the error
-handler writes nothing (`apps/server/src/app.ts:185`).
+handler writes nothing (`apps/server/src/app.ts:190`).
 
 **The code does not implement this yet.** The vocabulary, the rule and the twelve are
 published ahead of their implementation, because the contract leads and the code
