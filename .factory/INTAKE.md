@@ -7282,6 +7282,16 @@ group Chief session's own turn reply**, with the id recorded as spent. The
 channel failed exactly when it was needed, and the report went out on the one
 channel that reaches the group.
 
+**Corrected 2026-10-21 20:07: the report went out at 18:05:42, not 18:25.**
+**The peer session caught the wrong time, and the record settles it.** The
+group session's message carries the timestamp `1792566342849`, which is
+**18:05:42 +11:00** — cross-checked against a second known timestamp in the
+same file (`task_ef428a0ed84b`, created at `1792544446032` = 12:00:46), a
+difference of exactly 364.9 minutes. **So the report was delivered before
+this session began writing about it at all.** Nothing else in the paragraph
+is wrong: the id is spent, the channel was the group session's own reply, and
+the report stands.
+
 ### The fourth correction to the watchdog
 
 `.factory/watchdog.md` now carries it: **a slot can be held by a task that
