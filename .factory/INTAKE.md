@@ -8177,6 +8177,41 @@ same re-verification at 19:55, from the peer's own note in the ledger's tail.
 **One finding, two sessions, reached from opposite ends of the same record.**
 That is the ledger working, and it is the reason the note was there.
 
+### And `main` is pushed, under the standing word
+
+**The four gates, measured on the tree that was pushed** — after the merge that
+reconciled the branch-push, and after the AG-UI suites arrived with it:
+
+```
+typecheck      exit 0
+test           exit 0   server 27 files / 282 tests · web 8 / 68 · worker 5 / 31
+                      agent-adapters 2 / 16 · contracts 4 / 28
+format:check   exit 0   All matched files use Prettier code style!
+build          exit 0   ✓ built in 3.63s
+```
+
+**`FACTORY.md:99-107`, all three of its conditions, measured:**
+
+- **the local gates pass on the tree being pushed** — the four above;
+- **the code that would be landed is the code the pipeline has measured green** —
+  `38c14fb`, the head the AG-UI work landed on, is **CI success and CodeQL
+  success**, and `git diff --name-only 38c14fb..main` touches
+  **`.factory/**`and`CONTRACTS.md` only** — **no code path\*\*;
+- **the push is a fast-forward, and `origin/main` is still where the work
+  started** — `git rev-list --left-right --count origin/main...main` read
+  `0 13` before the push and `0 0` after it.
+
+**And the one-push-at-a-time rule held without waiting.** The run that was in
+flight, `308461e`, is on **`wi/062-measures-citation-refresh`** — a different
+ref — and `cancel-in-progress` is keyed on the ref, so the push did not
+supersede it. **The push was `38c14fb..187facd`, and the pipeline started on
+`187facd`.**
+
+**Why this push was more than routine.** `origin/main` had been written from a
+branch, and the repair was to put `main` back on top of everything — the AG-UI
+work, this session's two contract merges, and the records — in one fast-forward.
+**A force-push would have been the wrong repair and was not used.**
+
 ## One timestamp in this file is right and two are wrong — 2026-10-21 20:05
 
 **`task_797badb7e918` was cancelled at 18:58:10.** The authority is the fleet
