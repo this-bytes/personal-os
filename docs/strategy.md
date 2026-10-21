@@ -133,8 +133,7 @@ something has checked it_ (PRODUCT.md §8). The ledger is where the product alre
 does this — goal → task → execution → evidence → acceptance.
 
 **What we have.** WI-017 (the template record, the MCP surface, the validation) and
-WI-030 (the published shape) — WI-030 **done** (`e682224`), WI-017 **verified** and
-waiting on acceptance.
+WI-030 (the published shape) — WI-030 **done** (`e682224`), WI-017 **accepted**.
 
 **What we did not have, and now do.** A template set. WI-017's last acceptance
 criterion says the report states which template set ships; WI-030 says which kind
@@ -145,17 +144,19 @@ recommendation was the owner's to reject; see decision 1.
 **The set that ships, and the state it is in.** WI-017 has built one template per
 kind, all six: `dashboard.metrics`, `document.brief`, `data-source.json`,
 `automation.manual-prompt`, `task.deliverable`, `memory.decision-note` — against
-WI-030's landed contract entry. **The item is built, verified, and not yet
-accepted**: Probe's verification ran on 2026-10-21 and **all seven criteria hold**,
-and the criterion no test met is now met by a test Probe wrote (`052f050`, eleven
-cases), with two of the pins proved to bite and then restored. **What the
-verification found is the contract's status paragraph, which is false in every
-clause** — and that is a separate item, opened because WI-017's implementation
+WI-030's landed contract entry. **The item is accepted** (2026-10-21 17:10), by the
+session that wrote none of the three halves: Probe's verification found **all seven
+criteria hold**, and the criterion no test met is now met by a test Probe wrote
+(`052f050`, eleven cases), with two of the pins proved to bite and then restored.
+
+**What the verification found is the contract's status paragraph, which is false in
+every clause** — and that is a separate item, opened because WI-017's implementation
 landed before the contract's statement about it did: the same drift the pipeline
 caught in the published counts. **That item was opened as WI-063 and renumbered to
-WI-065**, because the number was claimed twice at once. This pillar's gap is
-closing, not closed, and this document should not be read as saying the template
-half is finished.
+WI-065**, because the number was claimed twice at once, and **it is still open**. So
+the template half is finished and accepted, **and the contract's statement about it
+is not yet true** — this pillar's gap is closing, not closed, and this document
+should not be read as saying the pillar is done.
 
 ### Pillar 2 — One truth, one history, and a way back
 
