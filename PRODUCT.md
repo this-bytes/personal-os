@@ -284,12 +284,14 @@ consequence of it.
 **Every dependency is read, and the reading is published.** The dependencies we
 do take are read in place — from the package's own licence file where it ships
 one, and from the `license` field of its own `package.json` where it does not —
-and the reading is published in
+and the 97 platform variants that are in the lockfile but not installed here
+were read from the registry's copy of that package's `package.json`. The
+reading is published in
 [docs/dependency-licences.json](docs/dependency-licences.json). The record holds
-one entry for every package the lockfile installs: the file the licence was read
-from, the lines of that file that identify the licence, the date it was read,
-and the licences this project accepts with the reason for each. **The licences
-are read, not assumed.**
+one entry for every package in the lockfile: for a third-party package, the
+file its licence was read from, the evidence that identifies it and the date it
+was read; and the licences this project accepts with the reason for each.
+**The licences are read, not assumed.**
 
 **An interface is conformed to, never reimplemented.** Personal OS is a client of
 ACP, A2A, MCP and the OpenAI-compatible API shape. "Our spec" means our domain
