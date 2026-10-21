@@ -204,7 +204,8 @@ is taken on. The owner can approve, but not see what they approved.
 **The items.** WI-039 — publish the evidence a decision is taken against — and
 WI-040 — the decision control shows the evidence it decides on. Both were raised by
 Vision's review of this strategy and numbered so they are not lost; the contract
-leads, so WI-040 waits for WI-039, and Cog's lane is four deep.
+leads, so WI-040 waits for WI-039, and Cog's lane already carries WI-017, WI-020
+and WI-024.
 
 ---
 
