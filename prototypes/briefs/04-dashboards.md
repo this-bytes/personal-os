@@ -13,7 +13,8 @@ the contracts already carry it.
 holding the owner's dashboards as grids of widgets.
 
 **Widgets bound to a data source's payload, with the binding shown.** The contracts
-carry the whole shape (`packages/contracts/src/resource.ts:49-93`):
+carry the whole shape (`packages/contracts/src/resource.ts` — `dashboardWidgetSchema`
+at `:85`, `dashboardSpecSchema` at `:103`, `dataSourceSpecSchema` at `:117-129`):
 
 - `dashboardSpec` — widgets, `refreshSeconds`, `published`;
 - `dashboardWidget` — `id`, `type` (`metric | chart | table | text`), `title`,
@@ -69,7 +70,7 @@ re-reads, and `0` means it does not. The room does not invent a cadence of its o
 ## Not in scope
 
 - **Building a dashboard.** The room reads the dashboards the owner has; authoring
-      one is the resources page's business.
+  one is the resources page's business.
 - **A new data-source kind.** `json`, `http` and `sqlite` are the three the
-      contracts name.
+  contracts name.
 - **The server.** The room reads through routes that already exist.

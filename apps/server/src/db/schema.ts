@@ -328,6 +328,9 @@ export const tasks = sqliteTable(
      * default is what the rows that predate the column recorded.
      */
     createdBy: text('created_by').notNull().default('system'),
+    /** The template this task was made from, and the version of it. */
+    templateId: text('template_id'),
+    templateVersion: integer('template_version'),
     createdAt: text('created_at').notNull(),
     updatedAt: text('updated_at').notNull(),
   },
@@ -366,6 +369,9 @@ export const resources = sqliteTable(
     title: text('title').notNull(),
     data: text('data', { mode: 'json' }).notNull(),
     createdBy: text('created_by').notNull(),
+    /** The template this resource was made from, and the version of it. */
+    templateId: text('template_id'),
+    templateVersion: integer('template_version'),
     createdAt: text('created_at').notNull(),
     updatedAt: text('updated_at').notNull(),
   },
@@ -408,6 +414,9 @@ export const automations = sqliteTable(
      * default is what the rows that predate the column recorded.
      */
     createdBy: text('created_by').notNull().default('system'),
+    /** The template this automation was made from, and the version of it. */
+    templateId: text('template_id'),
+    templateVersion: integer('template_version'),
     createdAt: text('created_at').notNull(),
     updatedAt: text('updated_at').notNull(),
   },

@@ -44,16 +44,16 @@ code, **eight of the ten mean caution or interruption rather than liveness**, an
 the tenth is a block that carries two meanings at once. Here is every one of them,
 with the words the code uses at it:
 
-| Site | What it says today | Under Forge |
-| ---- | ------------------ | ----------- |
-| `AppShell.tsx:37` | the stream dot for `reconnecting` (open is emerald, error is red) | interruption, not liveness → **loses amber** |
-| `AppShell.tsx:170` | the badge that reads "live updates interrupted" | interruption → **loses amber** |
-| `StatusBadge.tsx:30` | the connection status `degraded` | caution → **loses amber** |
-| `packages/ui/src/card.tsx:63` | the `warning` badge variant | caution, on the variant's own name → **loses amber** |
-| `TaskBoard.tsx:293-294` | the acceptance block, rendered for `review` **and** `unknown` | **splits**: `review` is waiting on the owner and keeps amber; `unknown` says the agent may already have run and is a caution → loses it |
-| `ConversationDetail.tsx:349` | the routing-blocked notice | caution → **loses amber** |
-| `ConversationDetail.tsx:504` | the conversation-paused notice | caution → **loses amber** |
-| `ResourceEditor.tsx:263-264` | the resource revision conflict | caution → **loses amber** |
+| Site                          | What it says today                                                | Under Forge                                                                                                                             |
+| ----------------------------- | ----------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------- |
+| `AppShell.tsx:37`             | the stream dot for `reconnecting` (open is emerald, error is red) | interruption, not liveness → **loses amber**                                                                                            |
+| `AppShell.tsx:170`            | the badge that reads "live updates interrupted"                   | interruption → **loses amber**                                                                                                          |
+| `StatusBadge.tsx:30`          | the connection status `degraded`                                  | caution → **loses amber**                                                                                                               |
+| `packages/ui/src/card.tsx:63` | the `warning` badge variant                                       | caution, on the variant's own name → **loses amber**                                                                                    |
+| `TaskBoard.tsx:293-294`       | the acceptance block, rendered for `review` **and** `unknown`     | **splits**: `review` is waiting on the owner and keeps amber; `unknown` says the agent may already have run and is a caution → loses it |
+| `ConversationDetail.tsx:349`  | the routing-blocked notice                                        | caution → **loses amber**                                                                                                               |
+| `ConversationDetail.tsx:504`  | the conversation-paused notice                                    | caution → **loses amber**                                                                                                               |
+| `ResourceEditor.tsx:263-264`  | the resource revision conflict                                    | caution → **loses amber**                                                                                                               |
 
 **The eight that lose amber become neutral or `--err`** — there is no second amber
 to move them to, because Forge's own theme sets `--live` and `--warn` to the same
@@ -78,15 +78,15 @@ git grep -c -F '<token>' d343300 -- 'apps/web/src' 'packages/ui/src'
 git grep -o -F '<token>' d343300 -- 'apps/web/src' 'packages/ui/src' | Measure-Object -Line
 ```
 
-| Token | Lines | Files | Occurrences | What moves |
-| ----- | ----- | ----- | ----------- | ---------- |
-| `slate-` | 217 | 34 | 311 | the pixels, not the call sites |
-| `indigo-` | 34 | 14 | 46 | **the call sites** — one bulk rename |
-| `amber-` | 10 | 6 | 20 | eight sites re-treated, one block split |
-| `red-` | 26 | 19 | 60 | nothing |
-| `emerald-` | 9 | 7 | 16 | nothing |
-| `violet-` | 0 | 0 | 0 | new |
-| `cyan-` | 0 | 0 | 0 | new |
+| Token      | Lines | Files | Occurrences | What moves                              |
+| ---------- | ----- | ----- | ----------- | --------------------------------------- |
+| `slate-`   | 217   | 34    | 311         | the pixels, not the call sites          |
+| `indigo-`  | 34    | 14    | 46          | **the call sites** — one bulk rename    |
+| `amber-`   | 10    | 6     | 20          | eight sites re-treated, one block split |
+| `red-`     | 26    | 19    | 60          | nothing                                 |
+| `emerald-` | 9     | 7     | 16          | nothing                                 |
+| `violet-`  | 0     | 0     | 0           | new                                     |
+| `cyan-`    | 0     | 0     | 0           | new                                     |
 
 Lines and occurrences are different numbers. The direction document's own headline
 figure conflated them, and the build's counts are the ones above.

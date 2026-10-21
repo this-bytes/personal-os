@@ -7,6 +7,7 @@ import {
   documentSpecSchema,
   isTriggerableEventType,
   memorySpecSchema,
+  taskSpecSchema,
   triggerableEventTypes,
   RESOURCE_AUTHOR_SYSTEM,
   type AutomationAction,
@@ -32,6 +33,7 @@ import {
   assertTemplatesValid,
   findTemplate,
   listTemplates,
+  mergeTemplateSpec,
   resourceTemplates,
   templateIssues,
 } from './templates.js';
@@ -52,6 +54,9 @@ export interface ResourceInput<T = unknown> {
    * a caller cannot name an author the request did not authenticate.
    */
   author: Author;
+  /** The template this resource was made from, and the version of it. */
+  templateId?: string;
+  templateVersion?: number;
 }
 
 export interface ResourceUpdate<T = unknown> {
@@ -78,6 +83,13 @@ export interface ResourceService {
     data: unknown;
     /** Who made the write. Derived into the recorded author, never taken raw. */
     author: Author;
+    /**
+     * The template this resource was made from.
+     *
+     * The template's spec is already merged into `data`: the merge belongs to
+     * the provider, and the resource records where it came from.
+     */
+    template?: { id: string; version: number };
   }): Resource;
   update(id: string, patch: { expectedRevision: number; title?: string; data?: unknown }): Resource;
   /** Mark a resource live. Dashboards become visible, automations become active. */
@@ -96,15 +108,23 @@ export interface ResourceService {
    * the honest denominator.
    */
   authorshipCounts(workspaceId: string): { agentAuthored: number; total: number };
-  /** The templates published for one kind, newest version of each. */
-  templateList(type: ResourceType): ResourceTemplate[];
+  /** The templates published for one kind — or for every kind. */
+  templateList(type?: ResourceType): ResourceTemplate[];
   /**
    * One template, by reference.
    *
-   * An unknown template is not found; a template of the wrong kind, and a
-   * template whose spec the owning provider refuses, are refused.
+   * An unknown template is not found; a template whose spec the owning
+   * provider refuses is refused.
    */
-  templateGet(ref: ResourceTemplateRef, type: ResourceType): ResourceTemplate;
+  templateGet(ref: ResourceTemplateRef): ResourceTemplate;
+  /**
+   * The template's spec with the caller's values merged into it.
+   *
+   * A template of the wrong kind is refused: the spec of a document is not a
+   * dashboard. The merge itself never refuses — the owning provider judges
+   * the merged spec, and the guide is the advice.
+   */
+  templateMerge(template: ResourceTemplate, type: ResourceType, override: unknown): unknown;
 }
 
 export interface ResourcesServiceOptions {
@@ -139,6 +159,8 @@ export function createResourcesService(options: ResourcesServiceOptions): Resour
     data: row.data,
     createdBy: row.createdBy,
     updatedAt: row.updatedAt,
+    templateId: row.templateId ?? undefined,
+    templateVersion: row.templateVersion ?? undefined,
   });
 
   const tableRow = (id: string) =>
@@ -166,6 +188,8 @@ export function createResourcesService(options: ResourcesServiceOptions): Resour
             title: input.title,
             data,
             createdBy: authorOf(input.author),
+            templateId: input.templateId ?? null,
+            templateVersion: input.templateVersion ?? null,
             createdAt: now,
             updatedAt: now,
           })
@@ -209,6 +233,8 @@ export function createResourcesService(options: ResourcesServiceOptions): Resour
     data: { trigger: row.trigger, action: row.action, enabled: row.enabled },
     createdBy: row.createdBy,
     updatedAt: row.updatedAt,
+    templateId: row.templateId ?? undefined,
+    templateVersion: row.templateVersion ?? undefined,
   });
 
   function automationProvider(): ResourceProvider<{
@@ -249,6 +275,8 @@ export function createResourcesService(options: ResourcesServiceOptions): Resour
             lastRunAt: null,
             nextRunAt: null,
             createdBy: authorOf(input.author),
+            templateId: input.templateId ?? null,
+            templateVersion: input.templateVersion ?? null,
             createdAt: now,
             updatedAt: now,
           })
@@ -289,6 +317,15 @@ export function createResourcesService(options: ResourcesServiceOptions): Resour
     return provider;
   }
 
+  /**
+   * The task provider.
+   *
+   * A task is judged by the task contract, like every other kind: a task
+   * that breaks it is a bad request, not a server fault. The contract is the
+   * one the factory already publishes, so a task template that drifts is
+   * caught when the server starts, and a task resource that does not satisfy
+   * the contract is reported as invalid by an inspection.
+   */
   function taskProvider(): ResourceProvider<unknown> {
     const toResource = (task: ReturnType<FactoryService['getTask']>, author: string): Resource => ({
       id: task.id,
@@ -300,16 +337,27 @@ export function createResourcesService(options: ResourcesServiceOptions): Resour
       data: task,
       createdBy: author,
       updatedAt: new Date().toISOString(),
+      templateId: task.templateId,
+      templateVersion: task.templateVersion,
     });
 
     /** The author the task row records. A task nobody authored says `system`. */
     const authorOfTask = (id: string): string => factory.taskAuthor(id) ?? RESOURCE_AUTHOR_SYSTEM;
 
-    return {
+    const provider: ResourceProvider<unknown> = {
       type: 'task',
-      validate: (data: unknown) => data,
+      validate(data: unknown) {
+        const parsed = taskSpecSchema.safeParse(data);
+        if (!parsed.success) {
+          throw errors.validation(
+            'This task does not satisfy the task contract.',
+            parsed.error.issues,
+          );
+        }
+        return parsed.data;
+      },
       create(input) {
-        const data = (input.data ?? {}) as {
+        const data = provider.validate(input.data) as {
           goalId?: string;
           description?: string;
           assigneeId?: string;
@@ -323,6 +371,8 @@ export function createResourcesService(options: ResourcesServiceOptions): Resour
           assigneeId: data.assigneeId,
           acceptanceCriteria: data.acceptanceCriteria ?? [],
           author: input.author,
+          templateId: input.templateId,
+          templateVersion: input.templateVersion,
         });
         return toResource(task, authorOf(input.author));
       },
@@ -343,6 +393,7 @@ export function createResourcesService(options: ResourcesServiceOptions): Resour
         return toResource(updated, authorOfTask(id));
       },
     };
+    return provider;
   }
 
   /**
@@ -479,6 +530,9 @@ export function createResourcesService(options: ResourcesServiceOptions): Resour
         title: input.title,
         data: input.data,
         author: input.author,
+        ...(input.template
+          ? { templateId: input.template.id, templateVersion: input.template.version }
+          : {}),
       });
       events.publish({ type: 'resource.updated', resource }, { workspaceId: resource.workspaceId });
       return resource;
@@ -581,17 +635,9 @@ export function createResourcesService(options: ResourcesServiceOptions): Resour
       return listTemplates(templates, type);
     },
 
-    templateGet(ref, type): ResourceTemplate {
+    templateGet(ref): ResourceTemplate {
       const template = findTemplate(templates, ref);
       if (!template) throw errors.notFound('Template');
-
-      // A template starts one kind, and the kind it starts has to be the kind
-      // the caller asked for: the spec of a document is not a dashboard.
-      if (template.type !== type) {
-        throw errors.validation(
-          `The template "${template.id}" starts a ${template.type}, not a ${type}.`,
-        );
-      }
 
       // The owning provider judges the spec, exactly as it judges the spec of
       // a resource. A template that describes something the product would
@@ -606,6 +652,18 @@ export function createResourcesService(options: ResourcesServiceOptions): Resour
       }
 
       return template;
+    },
+
+    templateMerge(template, type, override): unknown {
+      // A template starts one kind, and the kind it starts has to be the kind
+      // the caller asked for: the spec of a document is not a dashboard.
+      if (template.type !== type) {
+        throw errors.validation(
+          `The template "${template.id}" starts a ${template.type}, not a ${type}.`,
+        );
+      }
+
+      return mergeTemplateSpec(type, template.spec, override);
     },
 
     authorshipCounts(workspaceId): { agentAuthored: number; total: number } {
