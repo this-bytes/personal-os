@@ -36,7 +36,14 @@ const ROOTS = [path.join(webRoot, 'src'), path.join(repoRoot, 'packages', 'ui', 
 /** A colour family, named the way Tailwind names one: `amber-400`. */
 const AMBER_FAMILY = /amber-\d/;
 
-/** An accent utility, named the way Tailwind names one: `bg-accent-surface`. */
+/**
+ * An accent utility, named the way Tailwind names one: `bg-accent-surface`.
+ *
+ * This is the background, text, border family of utilities. Tailwind also has
+ * an `accent-color` utility, which colours the tick of a form control and is
+ * a different namespace entirely — `accent-indigo-500` on a checkbox is the
+ * control's own colour and is structure, not the panel's accent.
+ */
 const ACCENT_UTILITY =
   /(?:bg|text|border|ring|fill|stroke|from|to|via|shadow|outline|decoration)-accent/;
 
