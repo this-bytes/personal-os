@@ -356,7 +356,7 @@ second dispatch.
 | `wi-041-readme-licence-2026-10-21`                         | WI-041 — the README tells the truth about the licence                | Wren   | `task_644f23312ebc` | **queued** — **the live dispatch on WI-041**; the owner's "the licence is deliberately undecided" answer, in one sentence                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
 | `wi-043-manifest-licence-verify-2026-10-21`                | WI-043 — the manifest no longer claims a licence                     | Probe  | `task_9b1b44c1025f` | **done** — **not verified.** Chief's one-line removal is exactly right and every gate is green, but the repository does not yet say the truth about its licence: the root `LICENSE` file **is** MIT (tracked since the initial commit `d2f4ec6`) and `CONTRIBUTING.md:238-239` claims contributions are MIT-licensed. **Neither file is covered by any item** — WI-041's is the README, WI-043's is the manifest. The finding opens **WI-068**                                                                                                                                                                               |
 | `wi-023-owner-token-step-verify-2026-10-21`                | WI-023 — verify the owner-token step in the container job            | Probe  | `task_6437af4f18f0` | **done** — **all seven criteria met, no defect, nothing owed to Cog.** Probe's matrix: the right token green, a wrong token fails with the 401, no token fails with the 401, and the 401 line cannot be faked because the assert throws. **The acceptance is the other Chief session's**, because this session wrote the implementation                                                                                                                                                                                                                                                                                      |
-| `wi-022-citation-refresh-successor-2026-10-21`             | WI-022 — refresh the waiting list's code citations                   | Wren   | `task_682c73ccbc73` | **queued** — **the live dispatch on WI-022**, a successor: three citations that moved when WI-027's code landed                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
+| `wi-022-citation-refresh-successor-2026-10-21`             | WI-022 — refresh the waiting list's code citations                   | Wren   | `task_682c73ccbc73` | **done** — `CONTRACTS.md` only: two stale citations moved (`waiting.ts:85`→`:95`, `:106-110`→`:140-144`) and the kind's declaration (`:8`) added to WI-026's entry. Branch `wi/022-citation-refresh` (`bd705c2`, `57c1248`), pushed by Wren, and **merged into `main` at `fb236dc`**. **The verification is dispatched** as `wi-022-citation-refresh-verify-2026-10-21`, `task_018a6018b18f`                                                                                                                                                                                                                                 |
 | `wi-024-forge-adoption-2`                                  | WI-024 — the Forge adoption, a second dispatch under a new id        | Cog    | `task_2963d3be0f41` | **cancelled** at 09:55 — **the live dispatch on WI-024 is unchanged: `wi-024-forge-adoption`, `task_5a09991ca5a1`, still queued.** Dispatched by the other Chief session; it is not re-dispatched from here                                                                                                                                                                                                                                                                                                                                                                                                                  |
 | `peer-group-pointer-2026-10-21`                            | A peer request for Probe to carry a message to the group             | Probe  | `task_4867c6237747` | **cancelled** — it never reached Probe                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
 | `peer-correction-wi-024-2026-10-21`                        | The correction retracting that peer request                          | Probe  | `task_4dc3ca58d70a` | **failed: `BUSY`** — created 08:35:05, refused at 10:20:55 because Probe was busy. **A dispatch to a busy verifier is not delivered at all**: the work is still owed, the id is spent, and the correction has to be re-sent with a new id and a new title                                                                                                                                                                                                                                                                                                                                                                    |
@@ -379,6 +379,7 @@ second dispatch.
 | `wi-034-outcome-vocabulary-successor-2026-10-21-1325`      | WI-034 — publish the outcome vocabulary, and the migration           | Wren   | `task_55c33b744ef5` | **queued** — **the live dispatch on WI-034**: the item had **never been dispatched**, and WI-033 (W1) waits on it, because the contract leads the code                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
 | `wi-038-licence-gate-script-2026-10-21`                    | WI-038 — the borrow-rule gate's script                               | Probe  | `task_63e621ad515f` | **queued** — **DELIVERED at 14:32**. Chief's half of WI-038 is done (the CI step and the manifest entry, on `wi/038-borrow-rule-gate` at `a9592a4`); the script is `scripts/verify-licences.ts`, Probe's file by the ownership table. The brief carries the whole specification — the four comparisons, the three exit codes, the `--record` and `--lockfile` options and the proof that the gate can fail. **The branch stays unpushed until the script is in it**                                                                                                                                                          |     |
 | `wi-068-contributing-licence-2026-10-21`                   | WI-068 — the repository still grants MIT in a file no item covers    | Wren   | `task_a4d24aa2dc24` | **queued** — **DELIVERED at 14:35**. One sentence in `CONTRIBUTING.md:236-239`, which says contributions are MIT-licensed. Worktree `G:\code\personal-os-worktrees\068-contributing-licence`, branch `wi/068-contributing-licence`. **Chief's half — the `LICENSE` file and the `FACTORY.md` row that names it — is this session's**                                                                                                                                                                                                                                                                                         |     |
+| `wi-022-citation-refresh-verify-2026-10-21`                | WI-022 — the waiting list's refreshed citations, verified            | Probe  | `task_018a6018b18f` | **queued** — **the verification of WI-022's successor**, dispatched the moment the implementation landed. Five questions: the four citations point at the lines that carry the claims, the claims behind them are still true, **WI-026's criterion 6 now holds in the tree**, nothing else in the entry changed, and the gates pass. **The doubled sentence is a recorded decision and is not a defect**                                                                                                                                                                                                                     |     |
 
 **A cancelled task is not a dispatch — but a cancelled dispatch does not free its
 request id.** That second half was wrong here, and it is corrected now rather
@@ -4834,3 +4835,48 @@ one twice because of a status report. It closes with the two facts the floor
 needs: `main` is **36 commits ahead of `origin/main`** and unpushed, and
 **WI-067's code half is on a file the factory has just been editing**, so two
 changes to one file get sequenced rather than merged by accident.
+
+## WI-022's successor landed, and its verification is dispatched — 2026-10-21 14:49
+
+**Wren's citation refresh is done.** `CONTRACTS.md` only — two stale
+citations moved and one was added:
+
+- `CONTRACTS.md:879` — was (`waiting.ts:85`), now (`waiting.ts:95`) — the
+  route takes the reason straight from the task's status.
+- `CONTRACTS.md:931` — was `waiting.ts:106-110`, now `waiting.ts:140-144` —
+  the order the code assembles the list in.
+- `CONTRACTS.md:907` — **added**, `waiting.ts:8` — the published kind's
+  declaration, in WI-026's entry.
+
+**The third one is the one that matters.** WI-026's verification found a
+defect: its entry cited `waiting.ts:17` — the **reason** type — where the
+criterion asked for the **kind** at `:8`. That was corrected in the item's
+record, but **the citation was never in the published text**, and a criterion
+that a record satisfies and the contract does not is not met. This change puts
+it there, and **the verification now checks that WI-026's criterion 6 holds in
+the tree.**
+
+**The merge.** The branch was branched at `b6aed8a`, and `CONTRACTS.md` had
+not moved on `main` since, so the merge was clean: `fb236dc`, **"Merge WI-022:
+the waiting list's code citations, refreshed"**. Chief merged it; **Wren wrote
+the contract change and Probe verifies it, and Chief wrote neither**, so this
+is not the lead accepting its own work.
+
+**Chief read the citations once before dispatching, and that is a check, not a
+verdict.** All four hold: `:8` is the `WaitingKind` declaration, `:17` the
+`WaitingReason` declaration, `:95` the straight assignment
+`const reason: WaitingReason = task.status;`, and `:140-144` the three
+filters and the assembly. **The verdict is Probe's**, and the brief says so.
+
+**The verification is dispatched** — `wi-022-citation-refresh-verify-2026-10-21`,
+`task_018a6018b18f` — the moment the implementation landed, with five named
+questions, and with the ruling that **the doubled sentence is a recorded
+decision and is not a defect.**
+
+**One question was put to Probe rather than answered here:** a citation drifts
+silently whenever the code moves, and this refresh repaired three of them by
+hand. Probe is asked whether a check should exist that catches a drifted
+citation, and where it would live — `scripts/verify-*.ts` is Probe's by the
+ownership table. **The brief says not to write one unless Probe says it
+belongs**, because Probe's queue is eleven deep and a verdict on the three
+citations is what this item needs.
