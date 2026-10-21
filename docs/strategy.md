@@ -434,6 +434,11 @@ against the actual dependency set, naming the dependency and the licence**, so
 "answered" is a place and not a mood; a note in this document says when the column
 was read.
 
+**The record is written.** It is
+[`docs/dependency-licences.json`](dependency-licences.json), read on 2026-10-21,
+and [The dependency licences](#the-dependency-licences) says what was read, from
+where, and answers the owner's AGPL question against this set.
+
 ### W6 — The product record says Desk (B); the owner chose Forge
 
 **Owner:** Wren. **File:** `PRODUCT.md`.
@@ -497,6 +502,78 @@ as W5 and W7.
 is recorded in `.factory/INTAKE.md`: _the inventory it needs is worth writing
 against a settled repository, and the repository's visibility is the owner's open
 decision._ So the want is neither lost nor pretended done.
+
+---
+
+## The dependency licences
+
+**The record is [`docs/dependency-licences.json`](dependency-licences.json), and it
+was read on 2026-10-21.** One entry for every one of the 494 packages in
+`package-lock.json`, and every entry names the file its licence was read from.
+**There is one copy of the record and it is that file**: this section points at it
+and does not repeat it, because two copies of the same licences is a record that
+can disagree with itself.
+
+**What was read, and from where.** 375 entries were read in place, from the
+licence file the package itself ships. 16 were read from the `license` field of
+the package's own `package.json`, because those packages ship no licence file —
+a published field is what the project publishes, and the entry says which field.
+97 are optional packages for other platforms: they are in the lockfile but are not
+installed on the machine that read them, so the identifier recorded is the one
+the project publishes for that exact version, and the entry says that too. The
+six `@personal-os/*` packages are this repository's own workspaces rather than
+dependencies, and they are marked as such. **Every entry carries the first
+identifying lines of the file it was read from**, so a later reader can tell a
+licence from the name of a licence — which is the whole difference between a
+directory listing and a reading.
+
+**The set, as read on 2026-10-21.** This is a census of the reading, not a second
+copy of the record: the licences themselves are in the JSON, each with what it
+permits, what it requires and what it forbids, read from the licence text. If this
+table ever disagrees with the JSON, the JSON is the record.
+
+| Licence         | Packages |
+| --------------- | -------- |
+| `MIT`           | 423      |
+| `ISC`           | 19       |
+| `Apache-2.0`    | 12       |
+| `MPL-2.0`       | 12       |
+| `BSD-3-Clause`  | 8        |
+| `BlueOak-1.0.0` | 6        |
+| `BSD-2-Clause`  | 3        |
+| `MIT-0`         | 2        |
+| `CC-BY-4.0`     | 1        |
+| `CC0-1.0`       | 1        |
+| `0BSD`          | 1        |
+
+Six more entries in the lockfile are this repository's own `@personal-os/*`
+workspaces, which carry no licence of their own; see below.
+
+**The owner's AGPL question, answered against this set.** _Is anything this
+product depends on AGPL?_ **No.** Every dependency in the lockfile was read, and
+**not one of them is licensed under the GNU Affero General Public License**; none
+is under the GPL or LGPL either. The only copyleft in the set is **MPL-2.0**, and
+it is one package: `lightningcss` and its eleven platform variants
+(`lightningcss@1.32.0` and the `lightningcss-*` binaries), all read from the
+package's own `LICENSE`. That is file-level copyleft, not network-level: it
+obliges a modified MPL-covered file to be published under the MPL, and this
+project does not modify them — `lightningcss` is a build-time dependency of
+Tailwind's CSS pipeline.
+
+Two things that answer should not be read as more than it is. **The six
+`@personal-os/*` packages in the lockfile carry no licence at all**, because the
+owner answered on 2026-10-21 that this repository is private for now with no
+LICENSE yet; that is about this repository, not about what it depends on, and
+"no AGPL in the dependency set" is not "everything here may be redistributed".
+And **the one attribution obligation in the set rides on `caniuse-lite`**
+(`CC-BY-4.0`), a browser-support data set used at build time: whether that data
+reaches the built client is worth settling before the gate is written.
+
+**The approved set is in the same file.** `approvedSet` names the licences this
+project accepts and the reason each is accepted — it is what WI-038's gate
+compares the lockfile against, so a licence outside the set, or a change inside
+it, fails the build. The set as read on 2026-10-21 accepts all eleven licences
+above; the owner may narrow it, and the record is one edit to change.
 
 ---
 
