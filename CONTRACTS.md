@@ -876,7 +876,7 @@ defined in [The unknown outcome](#the-unknown-outcome); this entry publishes the
 list's use of it, and the two are not two definitions. The published type
 carries `pending | review | blocked | unknown`, member for member with
 `apps/server/src/api/waiting.ts:17`, and the route takes the reason straight
-from the task's status (`waiting.ts:85`), so a task that cannot be confirmed
+from the task's status (`waiting.ts:95`), so a task that cannot be confirmed
 arrives as `reason: 'unknown'` and the published type cannot drift away from
 what the route returns.
 
@@ -902,7 +902,9 @@ ended. It is not blocked, not failed, and not something the owner can fix — it
 is something to check. The `unknown` state itself is defined in
 [The unknown outcome](#the-unknown-outcome); this entry publishes the list's
 use of it, and the two are not two definitions. A turn is not an approval and
-not a task, so it is not spelled as either.
+not a task, so it is not spelled as either. The published kind carries
+`approval | task | turn`, member for member with
+`apps/server/src/api/waiting.ts:8`.
 
 This entry is the contract for **WI-027**, and the code implements it — as of
 `c9bb0bc`. A turn on the list is an execution whose outcome could not be
@@ -926,7 +928,7 @@ with this entry. A row recorded before this change keeps the kind it was
 recorded with: no approval becomes a turn, and no task becomes a turn.
 
 The order is the order of urgency, and it is the order the code assembles the
-list in (`apps/server/src/api/waiting.ts:106-110`): an agent that cannot
+list in (`apps/server/src/api/waiting.ts:140-144`): an agent that cannot
 continue comes first, then the work whose outcome could not be confirmed, then
 the work waiting for an acceptance decision, then the work that is stuck.
 
