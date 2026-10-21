@@ -10,6 +10,8 @@ import {
   type Message,
   type Participant,
   type Resource,
+  type ResourceTemplate,
+  type ResourceTemplateRef,
   type ResourceType,
   type Workspace,
 } from '@personal-os/contracts';
@@ -90,6 +92,10 @@ export interface CapabilitiesService {
     id: string,
     patch: { expectedRevision: number; title?: string; data?: unknown },
   ): Resource;
+  /** The templates published for one resource kind. */
+  resourceTemplateList(type: ResourceType): ResourceTemplate[];
+  /** One template, by reference, for the kind the caller is creating. */
+  resourceTemplateGet(ref: ResourceTemplateRef, type: ResourceType): ResourceTemplate;
 
   automationCreate(input: {
     workspaceId: string;
@@ -200,6 +206,14 @@ export function createCapabilitiesService(
 
     resourceUpdate(id, patch): Resource {
       return resources.update(id, patch);
+    },
+
+    resourceTemplateList(type): ResourceTemplate[] {
+      return resources.templateList(type);
+    },
+
+    resourceTemplateGet(ref, type): ResourceTemplate {
+      return resources.templateGet(ref, type);
     },
 
     automationCreate(input): Automation {

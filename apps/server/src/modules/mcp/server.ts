@@ -2,9 +2,15 @@ import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js';
 import type { FastifyReply, FastifyRequest } from 'fastify';
 import { z } from 'zod';
-import { ownerToolGrants, memorySpecSchema, type McpToolName } from '@personal-os/contracts';
+import {
+  ownerToolGrants,
+  memorySpecSchema,
+  resourceTemplateRefSchema,
+  resourceTypeSchema,
+  type McpToolName,
+} from '@personal-os/contracts';
 import type { CapabilitiesService, Actor } from '../capabilities/service.js';
-import { AppError } from '../../lib/errors.js';
+import { AppError, errors } from '../../lib/errors.js';
 
 /**
  * MCP exposure.
@@ -345,12 +351,14 @@ export async function createMcpServer(options: McpServerOptions): Promise<McpSer
     server.registerTool(
       'resource.create',
       {
-        description: 'Create a dashboard, document, data source, memory item, automation or task.',
+        description:
+          'Create a dashboard, document, data source, memory item, automation or task — from a template, or from a spec.',
         inputSchema: {
           workspaceId: z.string().optional(),
-          type: z.enum(['dashboard', 'document', 'automation', 'data-source', 'task', 'memory']),
+          type: resourceTypeSchema,
           title: z.string(),
           data: z.unknown().optional(),
+          template: resourceTemplateRefSchema.optional(),
         },
       },
       async (args) => {
@@ -358,13 +366,30 @@ export async function createMcpServer(options: McpServerOptions): Promise<McpSer
           guard('resource.create');
           const workspaceId = args.workspaceId ?? (await defaultWorkspace());
           await assertWorkspace(workspaceId);
-          assertOwnMemory(undefined, { type: args.type, data: args.data });
+
+          // A resource is created from a spec or from a template, not from
+          // both. There is no published answer to which of the two wins, so a
+          // call that supplies both is refused rather than guessed at.
+          if (args.data !== undefined && args.template !== undefined) {
+            throw errors.validation(
+              'A resource is created from either a spec or a template, not from both.',
+            );
+          }
+
+          // The template's spec is the resource's data. The template is
+          // resolved first, so that the memory rule below is judged on the
+          // data the resource will actually carry.
+          const data = args.template
+            ? options.capabilities.resourceTemplateGet(args.template, args.type).spec
+            : (args.data ?? {});
+
+          assertOwnMemory(undefined, { type: args.type, data });
           return jsonResult(
             options.capabilities.resourceCreate({
               workspaceId,
               type: args.type,
               title: args.title,
-              data: args.data ?? {},
+              data,
               createdBy: actor.kind === 'agent' ? actor.agentConnectionId : 'owner',
             }),
           );
@@ -430,6 +455,24 @@ export async function createMcpServer(options: McpServerOptions): Promise<McpSer
               data: args.data,
             }),
           );
+        } catch (error) {
+          return errorResult(error);
+        }
+      },
+    );
+  }
+
+  if (granted.has('resource.template.list')) {
+    server.registerTool(
+      'resource.template.list',
+      {
+        description: 'List the templates published for one resource kind.',
+        inputSchema: { type: resourceTypeSchema },
+      },
+      async ({ type }) => {
+        try {
+          guard('resource.template.list');
+          return jsonResult(options.capabilities.resourceTemplateList(type));
         } catch (error) {
           return errorResult(error);
         }

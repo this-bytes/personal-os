@@ -12,6 +12,8 @@ import {
   type AutomationTrigger,
   type MemorySpec,
   type Resource,
+  type ResourceTemplate,
+  type ResourceTemplateRef,
   type ResourceType,
 } from '@personal-os/contracts';
 import { z } from 'zod';
@@ -24,6 +26,13 @@ import type { EventsService } from '../events/service.js';
 import type { Queue } from '../../queue/client.js';
 import type { FactoryService } from '../factory/service.js';
 import { computeNextRun } from '../automations/cron.js';
+import {
+  assertTemplatesValid,
+  findTemplate,
+  listTemplates,
+  resourceTemplates,
+  templateIssues,
+} from './templates.js';
 
 /**
  * The shared resource API.
@@ -70,6 +79,15 @@ export interface ResourceService {
   execute(id: string): Promise<{ output: unknown }>;
   /** Validate and describe the resource without changing it. */
   inspect(id: string): { resource: Resource; valid: boolean; issues: string[] };
+  /** The templates published for one kind, newest version of each. */
+  templateList(type: ResourceType): ResourceTemplate[];
+  /**
+   * One template, by reference.
+   *
+   * An unknown template is not found; a template of the wrong kind, and a
+   * template whose spec the owning provider refuses, are refused.
+   */
+  templateGet(ref: ResourceTemplateRef, type: ResourceType): ResourceTemplate;
 }
 
 export interface ResourcesServiceOptions {
@@ -79,6 +97,11 @@ export interface ResourcesServiceOptions {
   factory: FactoryService;
   /** Allow outbound requests to private and loopback addresses. */
   allowPrivateTargets?: boolean;
+  /**
+   * The template registry. Defaults to the templates published in the
+   * repository, which are the same for every workspace.
+   */
+  templates?: readonly ResourceTemplate[];
 }
 
 /**
@@ -346,6 +369,24 @@ export function createResourcesService(options: ResourcesServiceOptions): Resour
     return provider;
   };
 
+  /**
+   * The registry of templates.
+   *
+   * The registry is the same for every workspace, and it is the one written in
+   * the repository unless the caller brings its own.
+   */
+  const templates = options.templates ?? resourceTemplates;
+
+  /**
+   * Every template is checked against the provider that owns its kind, so a
+   * template cannot drift into describing something the product would reject.
+   * The check runs when the service is built, so a drifted template is caught
+   * at the door rather than by an agent that reached for it.
+   */
+  assertTemplatesValid(templates, (type, spec) => {
+    providerFor(type).validate(spec);
+  });
+
   function resolveType(id: string): ResourceType {
     const row = tableRow(id);
     if (row) return row.type as ResourceType;
@@ -509,6 +550,37 @@ export function createResourcesService(options: ResourcesServiceOptions): Resour
         issues.push(error instanceof Error ? error.message : String(error));
       }
       return { resource, valid: issues.length === 0, issues };
+    },
+
+    templateList(type): ResourceTemplate[] {
+      return listTemplates(templates, type);
+    },
+
+    templateGet(ref, type): ResourceTemplate {
+      const template = findTemplate(templates, ref);
+      if (!template) throw errors.notFound('Template');
+
+      // A template starts one kind, and the kind it starts has to be the kind
+      // the caller asked for: the spec of a document is not a dashboard.
+      if (template.type !== type) {
+        throw errors.validation(
+          `The template "${template.id}" starts a ${template.type}, not a ${type}.`,
+        );
+      }
+
+      // The owning provider judges the spec, exactly as it judges the spec of
+      // a resource. A template that describes something the product would
+      // refuse is refused here, and not carried into the resource.
+      try {
+        providerFor(template.type).validate(template.spec);
+      } catch (error) {
+        throw errors.validation(
+          `The template "${template.id}" does not satisfy the ${template.type} contract.`,
+          { template: template.id, version: template.version, issues: templateIssues(error) },
+        );
+      }
+
+      return template;
     },
   };
 

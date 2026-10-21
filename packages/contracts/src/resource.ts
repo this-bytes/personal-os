@@ -46,6 +46,42 @@ export interface ResourceProvider<T> {
   update(id: string, expectedRevision: number, data: T): Promise<Resource<T>>;
 }
 
+/**
+ * A template: a named, versioned example of one resource kind, with its spec,
+ * that an agent can start from.
+ *
+ * A template is not a resource. It has no workspace, no revision and no
+ * `createdBy`, and it is not a row in any table: templates are authored in the
+ * repository and reviewed like code, so the registry is the same for every
+ * workspace.
+ */
+export const resourceTemplateSchema = z.object({
+  /** Stable across versions: a template keeps its id when its spec is revised. */
+  id: idSchema,
+  /** Bumped when the spec changes. Each version is a spec reviewed on its own. */
+  version: z.number().int().min(1),
+  /** The kind this template starts. */
+  type: resourceTypeSchema,
+  title: z.string().min(1).max(300),
+  /** What the template is for, in a sentence. */
+  description: z.string().min(1).max(1_000),
+  /** The example itself, validated by the owning provider for `type`. */
+  spec: z.unknown(),
+});
+export type ResourceTemplate = z.infer<typeof resourceTemplateSchema>;
+
+/**
+ * A reference to one template.
+ *
+ * The version is part of a template's identity, and it is optional here:
+ * omitted means the newest published version.
+ */
+export const resourceTemplateRefSchema = z.object({
+  id: idSchema,
+  version: z.number().int().min(1).optional(),
+});
+export type ResourceTemplateRef = z.infer<typeof resourceTemplateRefSchema>;
+
 export const dashboardWidgetSchema = z.object({
   id: z.string().min(1),
   type: z.enum(['metric', 'chart', 'table', 'text']),
