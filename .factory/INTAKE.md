@@ -1370,6 +1370,33 @@ contested with WI-081 — both branches touch the same test file — so the lead
 to rule on which of the two is the live item on that file before either is
 merged.** That ruling is not taken here.
 
+**And the contest is now measured, and the measurement says WI-075's branch
+cannot land as it stands.** `git merge-tree --write-tree --name-only main
+wi/075-published-status-claims` returns tree `e0b91c9` with **one conflicted file
+— `apps/server/src/__tests__/published-shapes.test.ts`** — and `Auto-merging …
+CONFLICT (content)`, exit 1. The reason is visible in the history: **WI-081's
+gate is in `main`** (`523900e`, "Hold the published note's bound to the code's own
+cap", accepted at `0d4731f`), **and WI-075's branch adds 241 lines to that same
+file from a base that predates it** (`c832ad8`, based on `cd9507e`). **So the live
+item on that file is WI-081's, and WI-075's gate has to be brought forward onto
+it — keeping both assertions — before WI-075 can be verified at all.** That is
+implementation work and not a verification, and **the item's own file is in the
+other Chief session's hands right now** (`.factory/work/WI-075.md` is modified in
+the shared checkout), **so the lead records the measurement and leaves the item to
+its owner: no branch was merged, no conflict was resolved, and no verification
+was dispatched.**
+
+**And the tree this record is pushed on, measured on that tree.** The gates, run
+on `main` with the peer's `95e5165` and this session's ledger commit in it:
+**typecheck 0, format:check 0, build 0, test 0 — server 28 files / 295 tests,
+web 9 files / 82, worker 5 / 31, agent-adapters 2 / 16, contracts 4 / 28** (48
+files, 452 tests). **So the tree is green and the standing word authorises the
+push.** The peer session pushed `a08f206` (03:40) and `95e5165` (03:52) — **and
+`95e5165` is the commit that moved `prototypes/DIRECTION.md`, so the web pin
+suite was re-run over the changed document and stayed green, which is the
+measurement that matters for WI-010's verification.** **This session's push
+carries the ledger record and the record of the tree's own gates, and no code.**
+
 **The owner's open decision, and it is the only thing that restores the lane.**
 **`miniapp restart minimax-bot`** clears the wedged session and is the only thing
 that does. **The cost is measured, not asserted:** it interrupts live turns, and
