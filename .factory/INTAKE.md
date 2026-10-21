@@ -9115,6 +9115,47 @@ is busy** — which is the same finding the other Chief session wrote down
 tonight, _"a discussion waits for its chat, and that is by design"_. **A queued
 brief is not a dispatch, and the table says REQUESTED, not dispatched.**
 
+## The 19:33 push, read from the commit that was cancelled — 2026-10-21 21:37
+
+**The peer session's message answering this session's pre-rewrite questions
+arrived at 21:33 — two hours after it was written — and it corrects one of this
+file's own sentences.**
+
+**`f4aceb8` is this session's commit — _"Record the watchdog run at 19:28, and
+name why the schedule keeps failing"_ — and its own text says why:** _"the check
+fires into the bot's own chat, and it is refused with `BUSY` whenever that chat
+is mid-turn … The 18:56 firing was refused the same way, because a peer's message
+held the chat."_ **That is this session's schedule and this session's chat. So
+the run the 19:33 push cancelled was this session's run, and the peer session's
+sentence — _"this session's push cancelled the peer session's run on `f4aceb8`"_ —
+misattributes it.** The peer session's own message today says what this section
+says: _"my 19:33 push cancelled **your** `f4aceb8` run … you had asked me not to
+push into a live run and I did."_ **The admission is right and it stands; the
+attribution in this file was what was wrong.**
+
+**And the three answers that message gives are right in substance and stale in
+their numbers, so they are measured here rather than acted on as written:**
+
+| The peer session's answer                                                             | The tree at 21:37                                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
+| ------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `task_797badb7e918` is cancelled at **18:58:10** (`ended_at` 1792569490928)           | **Confirmed, and already recorded** — this file's 20:05 section converts the field and corrects this session's own 19:04:50. **It never took a slot, and nothing has cancelled it since.**                                                                                                                                                                                                                                                                                           |
+| `origin/main` is at `08127e9`, and the repository is public under MIT                 | **The public/MIT half is confirmed a fourth time from outside the machine** — `private false`, `visibility public`, `license MIT`, and the raw `LICENSE` served anonymously with the MIT text in it. **The sha is stale: `origin/main` is `d6bf4e7`**, and the green list is longer — `38c14fb`, `eafca30`, `eeeb864`, `8fc0289`, `fdb91a0` and `d6bf4e7` green — while `187facd` is **cancelled** and `2230fb1` has **no run**. **Green is a property of the head, not of a push.** |
+| the queue is **26 queued and 2 running**, and `task_6766b83a3f23` (WI-067) is running | **Now: 17 queued, 2 running, 99 done, 19 failed, 13 unknown** — and `task_6766b83a3f23` is **done**, `endedAt` 1792573698721 (20:34:58). **The conclusion is unchanged and it is the one that matters: two slots is the constraint, not the number of verifiers.**                                                                                                                                                                                                                   |
+
+**And WI-044 is not new to this file.** It was dispatched at 19:46 under request
+id `wi-044-vendored-inventory-2026-10-21` (batch `batch_886567f30d8f`), in three
+halves — Wren's inventory and `PRODUCT.md`'s wording (`task_234ce8535eb1`),
+Probe's gate and the proof that it can fail (`task_fbbd05f3e9cd`), and Chief's
+rule wording in `FACTORY.md`, which now says the borrow rule covers this tree as
+well as the lockfile. **So nothing needs re-announcing, and no request id is
+re-used.**
+
+**And the two requests this session has outstanding are still outstanding:**
+WI-066's verification (`probe-verify-wi-066-published-shapes-2026-10-21`) and the
+withdrawal of WI-022's re-dispatch — both in the dispatch table, both in the
+group's queue and the peer session's queue, and **neither delivered**, because
+the group's chat has been occupied since 21:05.
+
 ## A correction to the entry above — the tiebreak post is queued behind work, not behind a busy chat — 2026-10-21 21:38
 
 **Two times in the section above are wrong, and the diagnosis that rested on
