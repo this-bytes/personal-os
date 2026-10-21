@@ -5029,10 +5029,10 @@ chats, so this tool call cannot be assigned safely"_ — `dispatch_tasks` and
 Chief bot was in more than one chat for the whole of it, which is the same
 guard that held the fleet's assignment for twenty minutes this morning.
 
-| Reserved request id                          | To    | What it is                                                                                                  | State                                               |
-| -------------------------------------------- | ----- | ----------------------------------------------------------------------------------------------------------- | --------------------------------------------------- |
-| `wi-010-verify-repaired-document-2026-10-21` | Probe | WI-010's re-verification after the D1–D6 repair, with the brief in this session's notes                     | **reserved, not dispatched** — the guard refused it |
-| `wi-024-premise-correction-2026-10-21`       | Cog   | A short note that WI-024's criterion 5 changed, so the six briefs are written against the corrected premise | **reserved, not dispatched** — the guard refused it |
+| Reserved request id                          | To    | What it is                                                                                                  | State                                                                                                                    |
+| -------------------------------------------- | ----- | ----------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------ |
+| `wi-010-verify-repaired-document-2026-10-21` | Probe | WI-010's re-verification after the D1–D6 repair, with the brief in this session's notes                     | **dispatched** — the peer session sent it under this reserved id and title (`task_2f3e137d63ee`, queued)                 |
+| `wi-024-premise-correction-2026-10-21`       | Cog   | A short note that WI-024's criterion 5 changed, so the six briefs are written against the corrected premise | **retired, not dispatched** — the correction reached Cog through the briefs at 15:29, and Cog has no live or queued task |
 
 **A reserved id is not a dispatch.** Neither task exists, and no id is spent
 until a task is created under it. The peer session has both briefs and has
@@ -5193,6 +5193,50 @@ slot was released, with no change in how many chats the Chief bot was in. The
 correction is in that section and in the peer's, and the sizing rule now is
 that **at most two items are in flight productively**, and a task that hangs
 holds half the factory.
+
+## The owner's two answers came at 16:40, and both confirm what is already built — 2026-10-21 17:05
+
+**The questionnaire this session opened at 09:25 (`ask_c289c257da1653a1794d2c3a`)
+was answered at 16:40, and both answers are the recommendations.**
+
+1. **Should a turn whose outcome could not be confirmed keep dispatching
+   work?** — **No: an unknown turn waits for you.**
+2. **Do you want Forge ahead of the three released items?** — **No: let the
+   three released items land first.**
+
+**Neither answer changes anything, because both are already built.** The first
+is **WI-045** — "an unconfirmed turn routes no further work" — which landed at
+`a4010bb`, was merged into `main` at `66c86ad`, and **Probe's verification of
+the owner's own answer is queued** (`task_1df39fd407ea`). The second is the
+order **WI-024** already records: WI-031, WI-017 and WI-020 land before Forge,
+and nothing is cancelled to move it. **What the answers do is retire two open
+questions** — including the one that was holding WI-008, which is accepted.
+
+**The second answer is now the owner's word rather than the lead's reading of
+one.** The 08:54 sentence — "Forge lands right after" — was the lead's reading
+of "next among the items that have not started", and WI-024's file said so
+plainly: _"If the owner wants Forge ahead of them, that is one word."_ **The
+word has now been given, in the other way**, and WI-024's file carries it.
+
+**And the two things this session owed are closed.** WI-010's re-verification
+is dispatched — the peer session sent it under the request id and title
+reserved here (`task_2f3e137d63ee`, queued) — and **the premise-correction note
+to Cog is retired rather than dispatched**, on the peer's reasoning, which is
+right: the briefs were corrected at 15:29, Cog has no live task and no queued
+task, and a note telling a worker a premise changed when it has already
+changed is a false statement to a worker. **The correction reached Cog through
+the file, which was the channel this session named as sufficient in the first
+place.**
+
+**Two corrections to this session's own record.** **`main` is pushed** — the
+owner gave a new word at 16:20 and `main` went to `origin` as a fast-forward
+(`e18bfff..8dcf69d`, CI success on all four jobs plus CodeQL), so the notes and
+the messages that said the push word was spent were wrong. **And WI-024 ran**,
+at 11:35 to 12:15, which this session had recorded as queued and had not run;
+the correction is in the file and in the briefs. **The ADR edit stays the
+lead's**, and WI-025's acceptance is the peer session's — the ownership was
+transferred to Chief for exactly this reason, and the remedy is that the edit
+is verified like any lead's edit.
 
 ## WI-027 is verified, and the drift has a second instance — 2026-10-21 16:00
 
