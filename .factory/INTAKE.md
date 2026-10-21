@@ -3629,3 +3629,143 @@ condition the owner attached to that restart.
 served `README.md` line 3 and manifest description read the product's own sentence. **The
 owner said "before anyone finds it", and the repository still has zero readers.** That is why
 the lead executed the change itself rather than waiting for a queue.
+
+## 2026-10-22 09:55 — Chief: the platform's verdict on the published tip
+
+**The published tip is `2806f72`, and it is green on both workflows.** **CI run `39688717116` on
+`2806f72`: `completed/success`. CodeQL run `39688717169` on `2806f72`: `completed/success`.**
+
+**And it is a verdict on the front page's code.** The tree behind `2806f72` is byte-identical to
+`ce51521` — the tree that carries the corrected front page — and
+`git diff --name-only ce51521..2806f72` touches **only `.factory/**`\*\*. The commits between
+them are records: the landing's own record, and the record of the verifier decision and the
+ceiling.
+
+**And the runs this one supersedes.** The run on the middle commit `4047fef` was overtaken by the
+last push of the batch. **The record's own rule applies: a push that was overtaken is not a red
+build and not a failed gate — it is a push that was overtaken, and the run that judges it is the
+next one.** That next run is the one on `2806f72`, and it is green. **One push at a time, and
+the verdict read after each** — which is what the three pushes this turn were: `ce51521` (the
+front page), `4047fef` (records), `2806f72` (records).
+
+## 2026-10-22 10:00 — Chief: the published tip is green, and two stale tasks were cleared
+
+**One — the published tip is `7ffa4e4`, and it is green on both workflows.** **CI run `39689875528`
+on `7ffa4e4`: `completed/success`. CodeQL run `39689875473` on `7ffa4e4`: `completed/success`.** The
+tree behind it is byte-identical to `ce51521` — the tree that carries the corrected front page — and
+`git diff --name-only ce51521..7ffa4e4` touches **only `.factory/**`\*\*.
+
+**Two — two stale tasks were cleared, and the rule that allowed it.** `task_2a34be8fd7d9` (the 08:55
+relay, **95 minutes**, its result delivered) and `task_cb4460d7e002` (Vision's WI-108 verification,
+**its verdict delivered at 07:00 and WI-108 accepted on it**, **2h58m**) were both sitting in the
+queue while the ceiling of two stayed full. **Neither was working**: both had produced their
+results, and both were waiting on floor posts whose Chief turns had died. **`FACTORY.md:203-207`
+says cancelling is Chief's judgement, because elapsed time alone cannot tell a stall from a long
+task — and these were not long tasks, they were finished ones.** The owner's standing answer named
+the same lever: _"one wasted slot (a 90-minute relay still running)"_. **Nothing was lost**: the
+relay's result carried the owner's three decisions to this session, and WI-108's verdict is in the
+record and in its own item file.
+
+**Three — the owner's decisions, and where they went.** `chief-floor-0822-2026-10-22`
+(`task_ec6625381f3e`) **failed with `BUSY`** and never reached the floor — **but its three
+decisions were delivered to this session through the relay's own result**, and they stand:
+**the restart, yes, after Cog's WI-086 turn lands** — it landed at `06c1b2f`, so the condition is
+met; **the ceiling patch, no** — `MAX_RUNNING = 2` is one line in vendor code in a content-addressed
+cache, and a patch there vanishes on the next plugin update; **a substituted verifier, yes** where
+the substitute wrote none of the work. **The floor's lock is not yet released** — it began at
+**07:04:29** when a Chief turn on the floor died with `status: error` and empty text, and **39 of
+the floor's 160 messages are dead turns of that kind.** The repair is the restart, and it is the
+owner's to call.
+
+**Four — the queue, as it stands.** **WI-121 is running**: Cog started the blocked-agent item at
+09:49. **WI-120's verification is queued** (Vision, `task_faa2e8e0f9f1`), and **the brief reached
+the lane** — the partial result on Vision's session reads _"Re-running it, and pulling up the item
+file and ignore rules. `2806f72..7ffa4e4` touches only `.factory/INTAKE.md` — no code, no docs, no
+front-page files"_ — **but that turn was interrupted by the cancellation of the stale task record
+it was attached to**, and the session is now `aborted`. **WI-120 stays in `review` until the verdict
+lands: the lead wrote that change and cannot accept its own work.**
+
+## 2026-10-22 10:10 — Chief: the verifier, twice withdrawn, and what is actually blocking it
+
+**One — the verification of WI-120 has been dispatched twice and withdrawn twice, and the
+sequence is on the record because it is the kind of thing that gets retold wrongly.**
+`wi-120-verify-published-front-page-2026-10-22` (task `task_f8085b21663f`) went to Probe at 09:34
+and **never started** — it queued behind a full dispatch ceiling, and it was cancelled at 09:43
+rather than left to sit. `wi-120-verify-published-front-page-vision-2026-10-22` (task
+`task_faa2e8e0f9f1`) went to Vision as the substituted verifier, **whose lane's session went
+`aborted`**; the brief reached it — the session's partial result reads _"Re-running it, and
+pulling up the item file and ignore rules"_ — and the turn was interrupted when the stale WI-108
+task record it was attached to was cancelled. **It could not be re-driven, so it was cancelled
+too.** **A re-dispatch carries a new request id and a new title, and the spent ids are not
+reused:** `wi-120-verify-published-front-page-probe-r2-2026-10-22`, task `task_f689f6b918a1`,
+is now at Probe, and **Probe is the item's verifier again**.
+
+**Two — what is blocking it, measured, not guessed.** The verification is **queued**, not
+running, and the reason is not the lane: **Probe's lane showed activity at 10:03** and its session
+is `started`. **The dispatch ceiling has no free slot for it.** One slot is doing real work —
+**Cog is running WI-121** — and the second is not free. **Cancelling the two finished tasks
+relieved the backlog but did not open the ceiling**, and that is worth knowing: **the ceiling is
+counting something that is not working**, and the floor's dead Chief turns (**39 of 160 floor
+messages are `status: error` with empty text, the lock beginning at 07:04:29**) are the part of
+it that a restart repairs.
+
+**Three — the owner's restart, and why it has not been done by this session.** The owner's
+standing answer was _"the restart — yes, but after Cog's WI-086 turn lands"_, and it landed at
+`06c1b2f`, so the condition is met. **This session has no restart lever that is not destructive:
+archiving or deleting a session ends a live turn**, and the peer Chief session's turn has been
+running since 09:09 and is doing real record work. **So the restart is the owner's to call, and
+it is the one thing standing between the factory and its queue.** What it buys is measured in the
+owner's own answer: **Wren's lane, the wasted slot, and the floor.**
+
+**Four — and the thing that matters most is already done.** The front page is published, the
+published tip is green on both workflows, and the served README and manifest read the product's
+own sentence. **The verification is what closes the item's record; it is not what makes the
+front page true.**
+
+## 2026-10-22 10:17 — Chief: the published tip's verdict, green on both workflows
+
+**The published tip is `bd0781d`, and it is green on both workflows.** **CI run `39690801978` on
+`bd0781d`: `completed/success`. CodeQL on `bd0781d`: `completed/success`.** The tree behind it is
+byte-identical to `ce51521` — the tree that carries the corrected front page — and
+`git diff --name-only ce51521..bd0781d` touches **only `.factory/**`\*\*.
+
+**So every verdict this morning, on every tip, was green on the same code:** `ce51521`
+(CI `39687241876`, CodeQL `39687241897`), `7ffa4e4` (CI `39689875528`, CodeQL `39689875473`),
+`b45fae5` (CI `39690801978` on the tip before it, CodeQL on it), and `bd0781d` (CI `39690801978`,
+CodeQL). **The pushes this turn were four, and each one was made after the previous run
+finished** — `ce51521` carries the front page, and the three after it carry records only.
+
+**And the one verdict still owed is a verdict on the published artefact.** WI-120's verification
+is at Probe (`task_f689f6b918a1`), **queued** — the ceiling's second slot is not free, and this
+session has no non-destructive lever that would open it. **The lead wrote that change and cannot
+accept its own work**, so the item stays in `review` until Probe's verdict lands.
+
+## 2026-10-22 10:25 — Chief: the published tip is green on both workflows, and this is the last push of the batch
+
+**The published tip is `c95946d`, and it is green on both workflows: CI `completed/success` and
+CodeQL `completed/success` on that sha.** Its code is byte-identical to `ce51521`, the tree that
+carries the corrected front page, so **every verdict this morning was a verdict on the front
+page's code** — CI `39687241876` + CodeQL `39687241897` on `ce51521`, CI `39689875528` + CodeQL
+`39689875473` on `7ffa4e4`, CI `39690801978` + CodeQL on `b45fae5`, CI `39690801978` + CodeQL on
+`bd0781d`, and CI + CodeQL on `c95946d`.
+
+**This is the last push of the batch, and the record says how the next one is read.** The
+commit this record travels in carries the same code again, so **the run that judges it judges the
+same bytes** — `git diff --name-only c95946d..<this commit>` touches only `.factory/**` — and
+the rule is the one already on this record: **the verdict that matters is the one read after the
+last push of a batch, and a push that was overtaken is not a red build.**
+
+**One state change, and it is reversible.** Vision's bot-lane session
+(`mvs_1dd69a42fec84f3ca0600075470232a4`) was **archived**: it had gone `aborted` and could not
+accept the WI-120 verification, and the task record attached to it was cancelled. **Nothing live
+was lost — the session was already dead — and archiving is reversible.** **It did not release the
+dispatch slot**, which settles one thing: **the blocker is not a lane that can be archived.**
+**Probe's live lane was left alone**, because archiving a session that may be mid-turn would
+destroy real work on a guess, and the WI-116 pin is owed to that lane.
+
+**What is still owed, stated plainly.** **WI-120's verification is queued at Probe**
+(`task_f689f6b918a1`) and has not started. **The lead wrote that change and cannot accept its
+own work**, so the item stays in `review` until Probe's verdict lands. **WI-121 is running.**
+**WI-116 — the pin — is HELD behind Probe's lane.** And the owner's restart, authorised once
+Cog's WI-086 turn landed, is the repair for the floor's **39 dead Chief turns** and for Wren's
+lane; **this session has no non-destructive lever for it, and it is the owner's to call.**

@@ -59,18 +59,23 @@ they were._
    template is indistinguishable from one made from a spec, so the panel cannot
    say "made from `dashboard.metrics` v1", and a template revision cannot be
    traced to the resources that were made from the old version.
-4. **The agent path writes no audit entry, two of the six kinds cannot record
-   an author, and one of the six kinds is not validated at all.** The MCP
-   server contains no `audit` call at all, so a resource an agent creates over
-   MCP leaves nothing in the audit trail — and the path this whole design is
-   about is the agent path. Separately, automations and tasks report
-   `createdBy: 'system'` regardless of who created them
-   (`apps/server/src/modules/resources/service.ts:203,293,448`), so for those two
-   kinds the product's own measure of agent authorship is **wrong, not merely
-   uncounted** (PRODUCT.md §7's own words). And the task provider's `validate`
-   is `(data: unknown) => data` (`service.ts:299`) — it returns whatever it is
-   given, so the registry's drift check catches nothing for tasks and
-   `resource.inspect` always reports a task as valid.
+4. **The agent path writes no audit entry, and that is the one part of this gap
+   that is still open.** The MCP server contains no `audit` call at all, so a
+   resource an agent creates over MCP leaves nothing in the audit trail — and the
+   path this whole design is about is the agent path. **The other two parts are
+   closed on the tree this repository carries.** Automations and tasks record the
+   author, read from the row: `createdBy: row.createdBy,` at
+   `apps/server/src/modules/resources/service.ts:234`, and the task's own author
+   at `service.ts:347` and `service.ts:515`, with `system` only as the fallback
+   for a resource nobody authored (`RESOURCE_AUTHOR_SYSTEM` at
+   `packages/contracts/src/resource.ts:25`). The measure counts those two kinds
+   both ways (`service.ts:671-699`), so the product's own measure of agent
+   authorship is no longer wrong for them. WI-090 (commit `832fae2`) is what
+   closed that half. And the task provider's `validate` is no longer
+   `(data: unknown) => data`: it judges a task's spec against `taskSpecSchema`
+   and refuses one that breaks the contract (`service.ts:351-360`), so the
+   registry's drift check catches a broken task template and an inspection
+   reports a task that breaks the contract as invalid.
 
 ---
 
@@ -842,7 +847,10 @@ design stated them.
 
 _This is the plan as it was written. The implementation touched most of these
 files; `CONTRACTS.md` was edited by the item that implemented the design, and
-`docs/decisions/0008-_.md` carries the ADR.\*
+the ADR this design called for was never written —
+`docs/decisions/0008-five-domains.md` is the five-domains decision, and the
+owner's answer on the template concept is recorded in
+`docs/decisions/0007-the-environment-agents-operate-and-extend.md`._
 
 | File                                                   | Change                                                                                                     | Owner |
 | ------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------- | ----- |
@@ -858,7 +866,7 @@ files; `CONTRACTS.md` was edited by the item that implemented the design, and
 | `apps/web/src/pages/Resources.tsx`                     | optional: show _made from `<template>` v`<n>`_                                                             | Cog   |
 | `**/*.test.ts`                                         | the tests named in §11                                                                                     | Probe |
 | `CONTRACTS.md`                                         | every published surface in §7                                                                              | Wren  |
-| `docs/decisions/0008-*.md`                             | the ADR: the guide's shape, the merge rule, and why a template is code                                     | Wren  |
+| `docs/decisions/0008-five-domains.md`                  | the number this plan claimed, taken by the five-domains decision; this design's ADR was never written      | Wren  |
 | `PRODUCT.md`                                           | §4's sentence about the gap — see §12                                                                      | Wren  |
 
 ---
