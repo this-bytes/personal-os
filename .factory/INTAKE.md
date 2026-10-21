@@ -8557,6 +8557,68 @@ pipeline on the pushed sha `c2e10b0`: **CI — all four jobs `completed/success`
 (run 39575191549) and **CodeQL `completed/success`** (run 39575191465). That is
 the platform's verdict on that push, and it is green.
 
+## The WI-022 verification had landed, and this session's claim that it was lost is wrong — 2026-10-21 21:15
+
+**The section _"Two verifications are owed, and one of them was lost with the
+runtime — 2026-10-21 21:05"_ says WI-022's verification work was lost and must
+be run again. That is wrong, and the correction is here rather than edited over
+the claim.** Its first table row — _"the work is gone — it must be run again"_ —
+is the wrong row, and the table's other two rows stand: WI-066's work arrived
+and WI-024's report is in hand.
+
+**Probe's report went to the group at 20:59:56** — `task_5634427d74e4`, 6,587
+characters — and it is in the group's queue. It answers all five questions by
+measurement, carries the gates, answers Probe's own question about a citation
+checker, and ends **"Verdict: verified."**
+
+**How the miss happened, because the mechanism is the lesson.** This session
+checked **the task's own channel**: `task_018a6018b18f` is `unknown`, and its
+reply is `interrupted` at length 0. From that it concluded the work was gone.
+**The work had gone to the group, which is a real channel, and this session did
+not look in it.** The same two words came apart for the seventh time tonight,
+and the rule that catches it is the one already written down: **ask where the
+work actually went before saying it is lost — a task's status is not the work's
+fate.**
+
+**What it cost, said plainly: one dispatch slot, and a rule broken.** The request
+`wi-022-citation-refresh-verify-r2-2026-10-21` was sent to the group and to the
+peer session before this correction. **It is withdrawn** — the table row says
+**WITHDRAWN**, and the correction has gone back to both places it went. **A
+second verification of one item is never created**, and WI-022's successor
+already carries Probe's verdict.
+
+**And what is owed for WI-022 now is the lead's acceptance, not the verifier's
+second look.** It is made, in `.factory/work/WI-022.md`: the verdict is on the
+record, the implementation was Wren's, the verification is Probe's, and **the
+tree Probe measured at (`fe3f660`) still stands** — `git diff --name-only
+fe3f660..HEAD -- CONTRACTS.md` is **empty**, and the same diff against
+`apps/server/src/api/waiting.ts` is **empty**, so the contract and the cited
+code have not moved since the verdict.
+
+**And WI-066's verification is still owed** — it has never been dispatched, the
+item is merged into `main` as `d3add55` with all ten criteria unticked, and the
+dispatch table has no verification row for it. **That request stands**:
+`probe-verify-wi-066-published-shapes-2026-10-21`.
+
+## The verdict on this session's push — 2026-10-21 21:20
+
+**`main` is pushed.** The other Chief session pushed at 21:01 (`eafca30`) after
+measuring the three conditions, and **the pipeline read green on it — all four
+jobs plus CodeQL** (runs 39581494049 and 39581494046). **This session's ledger
+commit `eeeb864` went on top of it at 21:05, once that run had finished, so
+that no push of mine cancelled a live run** — the rule's "one push at a time,
+and let the run finish", and the peer session's 19:33 push is the case the rule
+was written for.
+
+**And the local gates on the tree that was pushed, measured before the push:**
+`typecheck` 0 · `format:check` 0 · **`test` exit 0, twice** — server 27
+files/282 tests, web 8/68, worker 5/31, agent-adapters 2/16, contracts 4/28 —
+· `build` 0.
+
+**The platform's verdict on this session's own push is read afterwards and
+recorded** — in the section _"A gate is pinned to a commit, not to `main`"_, which
+carries both verdicts: `eafca30` green and `eeeb864` green.
+
 ## One event, two copies — 2026-10-21 21:05
 
 **The section _"A second verification of an accepted item, cancelled — 2026-10-21
@@ -8658,3 +8720,123 @@ session's two runs on that same tree are green, and the gate is what it is.**
 cleanup, queued at Probe — **so a red verdict on a pushed `main` is a failure to
 fix and say out loud, not a push to undo.** The verdict on this push is read
 afterwards and recorded here, as the rule says.
+
+## A gate is pinned to a commit, not to `main` — 2026-10-21 21:15
+
+**The tree moved three times while the local gate was running**, and every move
+was another session committing to the same `main` in the same worktree:
+
+| time     | what landed                                                                           | code changed?           |
+| -------- | ------------------------------------------------------------------------------------- | ----------------------- |
+| 20:49:54 | `38d09d0` — WI-078 opened                                                             | no — `.factory/**` only |
+| 20:51:24 | `01571ef` — WI-036's record                                                           | no — `.factory/**` only |
+| 20:54:36 | `fe3f660` — **origin/main merged into `main`**: the AG-UI work, ~2 000 lines, 6 files | **yes**                 |
+
+**So the first gate run measured a tree that was no longer `main`**, and the
+numbers it produced said nothing about the code that was about to go out. **A
+gate is a measurement of a tree; if the tree moves under it, the measurement is
+of the past.** The rule that follows is not "run the gate again" — it is **pin
+the gate to a commit and prove the code did not move**.
+
+### Pinning it
+
+The gate was re-run with the commit recorded before it started and the three
+code subtrees hashed before and after:
+
+```
+GATE START SHA: fe3f6605981ac219708bd5365e6c2ea5867fa582
+apps:    5519aad5f833550791018c1cdae2c22a94d15584
+packages:8ffa38b80f72115cd0c0efaaab4cc06586f55d49
+scripts: 5014b325e37973e6f17150ce0c425bc45a04b9bd
+```
+
+and at the end of the run, with `main` two commits further on:
+
+```
+apps:    5519aad5f833550791018c1cdae2c22a94d15584   same
+packages:8ffa38b80f72115cd0c0efaaab4cc06586f55d49   same
+scripts: 5014b325e37973e6f17150ce0c425bc45a04b9bd   same
+```
+
+**The code the pipeline measured green and the code that went out are the same
+bytes**, and that is a fact about hashes rather than a reading of a diff. The
+other session measured the same tree the other way — `git diff --name-only
+38c14fb..main` touching `.factory/**` and `CONTRACTS.md` only — and **the two
+measurements agree**: two independent readings of the same tree, and the same
+counts from both gates.
+
+### The first e2e run was red, and it was not the code
+
+```
+Error: http://127.0.0.1:4399/api/health is already used, make sure that
+nothing is running on the port/url or set reuseExistingServer:true in
+config.webServer.
+```
+
+**This is the port collision the Playwright config already warns about**, in its
+own comment at `apps/web/playwright.config.ts:18-26` — the port is
+configurable precisely because **two Playwright sessions on one port fight over
+the same data directory**, and `PERSONAL_OS_DATA_DIR` is per-port for the same
+reason. The fault was mine: the local gate script hard-coded `4399`, and
+**twenty-four worktrees and several sessions share this machine**. The re-run
+on an isolated port was **27 passed**.
+
+**So the lesson is two lessons.** **A failure that says "already used" is a
+collision to be re-measured, not a defect to be explained** — and it is
+re-measured on a port of its own, because re-running the same port and getting
+a green result would prove nothing. **And the local gate needs a port unique to
+the run.** On CI there is one run at a time and the default `4319` is safe; on
+a shared workstation the fixed port is a standing hazard, and the gate script
+is part of the factory's tooling whether or not it lives in this repository.
+
+### The two gates, side by side
+
+```
+typecheck      exit 0
+test           exit 0   server 27 files / 282 · web 8 / 68 · worker 5 / 31
+                      agent-adapters 2 / 16 · contracts 4 / 28
+format:check   exit 0
+build          exit 0
+smoke          exit 0
+test:e2e       exit 0   27 passed
+```
+
+### The push was the other session's, and one run never judged the tree
+
+**The push was the other session's** — `main` was pushed at `187facd`,
+fast-forward from `38c14fb`, and the ledger's record of it is the other
+session's. **What this session's commits were is that they rode along as
+ancestors**: `7e1730e`, `cdc72ee`, `dc5bb9a`, `d530f73`, `d3add55` and `fe3f660`
+are all contained in `origin/main`, and local `main` and `origin/main` are the
+same commit. **A push is not a race for the button; the standing word is a
+licence to push when it is green, and whoever pushes first publishes both.**
+
+**And one thing in that record has since become false, and it is stated here
+rather than left.** The entry says _"the pipeline started on `187facd`"_ — and
+**the pipeline never judged `187facd`**. Its run is `completed/cancelled`, for
+both workflows, because the next commit was pushed while that run was in
+flight. **This is the one-push-at-a-time rule catching the session that wrote
+it, and the rule is the point.** The end state is safe and was measured:
+
+| sha       | CI            | CodeQL        |
+| --------- | ------------- | ------------- |
+| `187facd` | **cancelled** | **cancelled** |
+| `eafca30` | success       | success       |
+| `eeeb864` | success       | success       |
+
+`187facd` is an ancestor of both green runs, so **the tree that was judged
+green contains every byte of the tree that was pushed** — the code was
+measured, and the runs that measured it are `eafca30` and `eeeb864`, not
+`187facd`. **But the record said otherwise, and the record is what the factory
+reads later.** A correction is stated where the claim was made, not by
+rewriting it, and this is that statement.
+
+### The platform's verdict, read afterwards
+
+- `eafca30` — CI success on all four jobs, CodeQL success.
+- `eeeb864` — CI success on all four jobs and every step, CodeQL success.
+
+**And the repository, read from outside this machine, unauthenticated:**
+`visibility = public`, `private = False`, `license = MIT / MIT License`,
+`default_branch = main`, and the raw `LICENSE` served anonymously with the
+owner's text in it.
