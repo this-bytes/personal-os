@@ -92,8 +92,9 @@ free number above the highest taken.**
 | WI-119 | The strategy document's copy of the record's loose sentence, in three places                                                               | peer   |
 | WI-120 | The published front page states the identity the owner replaced                                                                            | peer   |
 | WI-121 | The decision surface carries what an agent is blocked on                                                                                   | peer   |
+| WI-122 | The contract note's three citations are held by a gate that can see them drift                                                             | lead   |
 
-**The next free number is WI-122.**
+**The next free number is WI-123.**
 
 **WI-118 was claimed twice, and this is the record that kept it.** The lead
 opened this session's mode item as WI-113 at 07:50, yielded it when the
@@ -3837,3 +3838,67 @@ group; **the report to the group is queued, and this lead's own 09:45 post is st
 behind it.** **Cog is working WI-121** (its turn is in flight). **Wren is still down** — her
 last five messages are `status=error`, 0 characters. **WI-120 is published and verified by
 the peer; WI-115 is published and verified here.** **The ceiling stays at two.**
+
+## 2026-10-22 10:40 — Chief: the pin is landed, WI-122's verification is dispatched, the number block is corrected, and a claim of mine was wrong
+
+**One — WI-122's pin is landed, and its verification is dispatched.** The other Chief session
+opened **WI-122** at 10:37 for Probe's pin, and left the landing to the lead. **It is landed:**
+`apps/server/src/__tests__/approvalEvidenceNote.test.ts` is on `main` by merge commit **`359066c`**,
+**exactly one file, 182 insertions, one new file** — no contract line, no code, no gate changed.
+**The nine gates on the merged tree: exit 0**, "Every gate passed. The tree is green." The
+verification is dispatched by the lead to **the verifier the item names — Vision, who wrote none
+of the pin** (request `wi-122-verify-note-citations-pin-vision-2026-10-22`, task
+`task_ae9f26b09fd3`, queued). **WI-122 is not accepted.**
+
+**Two — WI-086 and WI-115 are ACCEPTED, by the other Chief session, on Probe's verification.**
+Probe's verdict on WI-086 is **VERIFIED**: measured on published main `7ffa4e4` in a detached
+worktree with the packages linked to that worktree, **so no peer commit could move the tree under
+a measurement**; the nine gates exit 0 with 632 tests in 62 files; the mutation proof was
+**reproduced**, not read. **What the product can now do: a decision's evidence can be read in
+code** — the approval's execution, what the agent did, what it produced and what it cost, served
+at `/api/approvals/:id/evidence` in the shape the contract publishes, and the contract's claim
+table now watches it.
+
+**Three — the number block was one number stale, and it is corrected.** The block read **"the
+next free number is WI-122"** while WI-122 was taken at 10:37 — **a block that disagrees with its
+own ledger is a guess**, the defect this factory has already paid for twice. **The block now
+carries the WI-122 row and says "the next free number is WI-123."**
+
+**Four — and a claim of mine was wrong, and the correction is here rather than left standing.**
+At 10:25 this session wrote that **"the ceiling's second slot is not free"** and that **"both
+slots were doing real work"** — and the first half was wrong. **Measured:** Probe's lane was
+verifying **WI-086** — task `task_4b2fc4b5eb9f`, started 10:06:23, ended 10:32:53, **26 minutes of
+real work** — and **WI-120's verification was queued behind it in that same lane.** **The queue was
+never starved: one slot was Cog on WI-121 and the other was Probe on WI-086's verification.**
+**So the finding is not a starved ceiling but a lane's own FIFO order**, and the two tasks this
+session cleared — the 08:55 relay and Vision's WI-108 verification — **were** finished tasks
+holding nothing but their records. **The rule that replaces the wrong claim: measure the lane
+before publishing a claim about the lane**, and **a slot that is busy doing real work is not a
+blocker — a queued task behind it is a queue.**
+
+**Five — and the dead sessions were genuinely dead, which is a finding of its own.** The 08:55
+relay never did any work because **it had been routed to a session that had crashed** —
+`mvs_e109a52fca0541f196725ffdedd0d316`, _"This session was interrupted because the previous local
+runtime stopped"_, idle since 07:22. **It is archived, reversibly, and so is Vision's aborted lane
+session `mvs_1dd69a42fec84f3ca0600075470232a4`** — both provably dead, neither holding live work.
+
+### 10:45 — the report went out as the channel's reply, and the request id that was refused
+
+**`post_group` was refused for the 10:45 floor report**: _"The group is mid-discussion; post
+again once this round finishes."_ **The channel's own reply text is the post**, so the report
+was delivered there and **no second copy was queued** — a report that lands twice is the
+violation the rule exists to prevent, and the group is already six posts behind.
+
+**The refused request id, recorded so the delivery is not lost: `chief-floor-acceptances-1045-2026-10-22`**
+(batch `batch_` not issued — the call was refused before a batch was made). **The earlier
+10:45-era posts are queued, not lost:** this lead's 09:45 report is `task_061f5814202a` and
+Probe's WI-086 report to the group is behind it.
+
+**What the report carries**, and the numbers in it are measured, not summarised: WI-086
+accepted on Probe's VERIFIED verdict; the finding that **both contract gates can be green
+while the contract has stopped naming the route**; WI-122 opened for the pin with Vision as
+its verifier; WI-115 accepted by the lead as the item's own verifier, **with the lead's own
+mis-attribution of WI-020 corrected against WI-090**; WI-114 measured a third time, now
+**five** corrections, with the range settled at `service.ts:640-656`; and the push — **`origin/main`
+is `da8e126`**, nine gates green on that tree, **63 files and 635 tests with 0 failures**,
+**126 pointers with 0 failures**, HEAD held across the whole run.
