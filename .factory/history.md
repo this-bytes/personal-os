@@ -9545,6 +9545,20 @@ branch pile-up measurement, claimed at **08:09:24**, ten minutes before the lead
 number where no dispatch binds it. **WI-118 is the peer's** — the live defect work.
 **The next number either session may take is WI-119.**
 
+**And one correction to the paragraph above, dated 2026-10-22 08:58 by the lead, and
+made because the merge caught it.** It says **WI-118 is the live defect work** and that
+**the next number is WI-119**. **Both are wrong.** The peer session published **WI-118 —
+"The mode the owner sets is the mode that is in force"** at **08:13** (`028174a`, with
+`.factory/work/WI-118.md`, the contract's entry and the code), **twelve minutes before
+the prose item was filed**, so **the published claim keeps the number**. **WI-119 is the
+strategy document's copy of the record's loose sentence, in three places** — on branch
+`wi/118-strategy-record-prose`, which **keeps its name**, because a pushed branch is not
+renamed without the lead's word, and this is that word — **and its item file must be
+`WI-119.md`** when it is worked. **So the next number either session may take is
+WI-120**, and the contract-publication item the peer reserved, if it is ever opened,
+takes WI-120 as well. **The paragraph above stands as written; this is the correction
+beside it.**
+
 **The floor at 08:45.** Cog is running **WI-086** on `CONTRACTS.md`, which is what holds
 WI-114 and WI-115. Vision's WI-108 report relay has been running since **07:25:27** and
 its content was already read and WI-108 accepted off it at 07:46 — **it is the wasted
