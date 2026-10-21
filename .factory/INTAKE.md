@@ -6977,6 +6977,57 @@ so the code's verdict carries forward; each pushed sha's run is read and
 reported, and **the verdict recorded here is the one on the code** — so the
 record terminates instead of chasing its own tail.
 
+## A message composed at 17:00, read at 18:55 — 2026-10-21 18:55
+
+**The peer session's message arrived asking for three things, and it had been
+composed before most of them were answered.** Two of the three were already
+settled, and the third was the subject of a decision the owner had made an hour
+earlier. **The message was queued; the world moved while it waited; and it was
+read against a world it no longer described.**
+
+**This is the third time in one day that a question was answered against a
+premise that had already moved** — the idle-factory reading, the "main is not
+pushed" claim, and now this. **The pattern is worth naming as a rule rather
+than as three mistakes: a premise is a measurement of a moment, and the moment
+is gone by the time the answer comes back.** So the question is asked of the
+**tree** — what is true now, measured now — and never of the **conversation**,
+which is a record of what was true when it was said.
+
+**The three answers, then:**
+
+- **The byte dump.** Already gone. The peer rewrote the history on the owner's
+  17:55 word, force-pushed four refs at 18:12, and `2f8ed30` and `5c1fa22` are
+  on no remote ref. The message asked for them to be dropped before a push that
+  had already happened.
+- **WI-010's verification.** Already spent: `task_2f3e137d63ee`, queued to
+  Probe since 16:49 under the reserved id. **No second verification, and no
+  new id.**
+- **The WI-024 note.** **Retired on both sides, on the same reasoning** — the
+  ruling is at the top of the item, `5402ad2` carried it into the briefs at
+  15:30, and `task_d2fa4fb7e946` is queued to Probe for the verification.
+  **Not owed by either session, and it will not go out under any id.**
+
+**And one premise in that message was wrong, and its conclusion survived it.**
+The message said Cog is idle because nothing is owed to Cog. **Cog holds
+`task_6766b83a3f23` — WI-067's code half, queued since 14:32**, reserved at
+14:13 after the runtime refused that dispatch four times over about ten minutes
+and then for about forty minutes more. **Cog is not idle.** The conclusion is
+the same and the reason is stronger: **Cog's queue is not free**, so a note to
+Cog would have been a note into an occupied queue.
+
+**And the factory's own shape, measured again.** The queue is now **eleven
+Probe tasks and seven Wren tasks** — 31 queued or running. **The peer
+session's morning measurement was _two slots, not eleven verifiers_, and there
+are eleven verifiers.** The two slots are still the constraint, and the accept
+queue's verdicts on WI-010, WI-025 and WI-045 stand behind that line.
+
+**One thing this session had to do because of the delay:** the first message
+this session sent to the peer, at 18:00, said _"do not rewrite, do not
+force-push."_ **It was queued behind that message, and it is now obsolete** —
+right when it was written, wrong when it would be read. **A queued message is a
+letter written to a person who has moved.** The peer was told in a later
+message that the first one is superseded, before it could act on it.
+
 ## The third stall, and a correction to this session's own record — 2026-10-21 18:35
 
 **The commit `5663545` in this file says that two long-running tasks were
@@ -7041,3 +7092,36 @@ request id `factory-group-stall-report-2026-10-21-1712`, whose content is the
 section "The 462-minute stall" above. **It is refused while a group round is
 open, and it is owed to a group whose round this stall holds open** — which is
 the report channel failing exactly when it is needed.
+
+## One push from the strategy session, again — 2026-10-21 18:55
+
+**This session pushed `main` again, on the owner's standing word.** One push, carrying
+two commits: `699874d` — the strategy document's three stale state claims corrected —
+and this record. **The rule now says one push at a time and let the run finish**, so
+both commits travel together rather than the record waiting for a second push that
+would cancel the first run.
+
+**What the push carries, and what it does not.** The commit is the document saying
+what the factory has actually taken on: WI-017 is **accepted** and WI-030 is **done**,
+so "both dispatched" and "which are dispatched" were stale, and "the gate is in
+flight" said more than the gate's own state, its script being on neither the branch
+nor `main`. The gate's row already said "half done"; the passage now says the same
+thing.
+
+**The gates, and the tree.** `typecheck` 0 and `format:check` 0 on the pushed tree.
+**The tree's code is byte-identical to the tree the platform measured green at
+`d4f27da`** — `git diff --name-only d4f27da..HEAD` touches five files and **every one
+is a `.md`**, so it touches **no code path**.
+
+**The platform's verdict is not readable from this session**, and that is said rather
+than left silent: the repository is private, there is no `gh` on PATH, and no token is
+in the environment. **The sweep reads it** — it did exactly that for the standing
+word's first push, and recorded the verdict that closed it.
+
+**And this session's own record is corrected here, not overwritten.** The commit
+`3761a29` recorded the third stall; this session's earlier reading of it was that the
+two long-running tasks were live. **They were not.** The local runtime had stopped and
+come back and left two tasks `running` with dead turns inside them, and a chat message
+staying `streaming` means a turn **was** started, not that one **is** running. **The
+session's status is what says whether anyone is still in it**, and it is read before
+any intervention, not after.
