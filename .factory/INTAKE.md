@@ -404,6 +404,9 @@ second dispatch.
 | `probe-verify-wi-041-readme-licence-2026-10-21-1340` | WI-041 — verify the README tells the truth about the licence | Probe | `task_5b4e02d59413` | **done — and WI-041 is accepted.** Probe measured the tree as it stands at `e676ba9`: **all six criteria, as the item's file stands (corrected 19:08), are met on their face.** `README.md:251-254` reads "MIT. The owner chose it on 2026-10-21, and the full text is in the [LICENSE](LICENSE) file at the root of the repository." The gates: `prettier --check README.md` 0, `npm run format:check` 0; supporting, `typecheck` 0 and `test` 0 — server 25 files/248, web 7/54, worker 5/31, agent-adapters 2/16, contracts 4/28. **Criterion 3's second clause — "the repository is public under it" — was a fact the verifier could not confirm from its own machine, and the lead confirmed it from outside this one:** an unauthenticated read of the repository's endpoint returns `visibility = public`, `license = MIT / MIT License`, `private = False`. **The implementation was taken by the other Chief session under the tiebreak (`f129594`, merged `141f0be`) and the verification is Probe's, so the lead accepts it and no writer accepts its own work** |
 | `wi-036-record-reverification-2026-10-21-1955` | WI-036 — re-verify the licence record against the file as it stands | Probe | `hlp_72d0eace0a08` | **queued** — **the peer's question, asked and not skipped:** WI-036 was accepted on Probe's verification of the record at `edbd105`, and **the file has been edited since** — `45e7b2b`, `ed7b829` and `6cf63b5` each changed six lines of `docs/dependency-licences.json`, because the owner's 19:08 MIT decision made the record's "private for now, with no LICENSE yet" notes false and the other Chief session landed the correction under the tiebreak. **Nobody had asked whether the acceptance survives the edit; that is a question for the verifier and not for a lead.** The brief names the five criteria, quotes what changed, and says plainly: judge **whether the acceptance still holds**, not the record's quality |
 
+| `probe-verify-wi-066-published-shapes-2026-10-21` | WI-066 — the published shapes, verified | Probe | — | **REQUESTED THROUGH THE GROUP at 21:05 — and never dispatched before.** WI-066's **implementation** was dispatched at 13:40 (`wi-066-message-shape-fourth-field-2026-10-21-1340`, `task_0cfbcce20e92`) and is merged into `main` as `d3add55`; **there is no row anywhere for a verification of WI-066**, and the item file sits at `verify` with **all ten criteria unticked**. The brief is the item file — `.factory/work/WI-066.md` — ten criteria, three gates, and the instruction to **measure the code's `Message` schema and write down what it actually carries** rather than take the count from the file (the count is five, not four). Requested through the group because this session has no transport: `mavis mcp list` returns no servers here at 20:43, at 20:52, and again after the 20:45 restart |
+| `wi-022-citation-refresh-verify-r2-2026-10-21` | WI-022 — the waiting list's refreshed citations, verified (again) | Probe | — | **REQUESTED THROUGH THE GROUP at 21:05 — the first one was interrupted, and its work is gone.** `task_018a6018b18f` ran from 20:09:44 and was interrupted by the 20:45 runtime restart; the chat's own record for it is `status: interrupted` with **length 0** — **no report was delivered**, unlike WI-024's and WI-066's tasks, whose messages are `done` with their reports in them. **A re-dispatch needs a new request id and a new title**, so this is deliberately not `wi-022-citation-refresh-verify-2026-10-21` again. The brief is the one already written: five questions about the three citations — do the four pointers point at the lines that carry the claims, are the claims behind them still true, does WI-026's criterion 6 now hold in the tree, did nothing else in the entry change, and do the gates pass — plus Probe's own question, whether a check should exist that catches a drifted citation and where it lives |
+
 **A cancelled task is not a dispatch — but a cancelled dispatch does not free its
 request id.** That second half was wrong here, and it is corrected now rather
 than quietly overwritten. The runtime's idempotency check scans **every** batch
@@ -8449,3 +8452,137 @@ overtaken it.** **A report that cannot be delivered because it has become
 false is not a failed report. It is a correct one that says nothing.**
 
 **And this one is closed in `WI-005.md`, beside the finding it closes.**
+
+## The publish took, and this session's own measurement carries a date — 2026-10-21 21:05
+
+**This session's section headed "19:45" says the door is not open. The door opened
+at 19:41:10.** The heading's time is wrong: the section was committed at
+**19:41:44** (`e59f0e3`) and its four checks ran at **19:38–19:42**. **The
+commit's time is the authority, and a reader checking when that record was made
+would have got the wrong answer.** It is corrected here, by append, because this
+file is append-only and the section is not wrong about what it measured — it is
+wrong about when it was written.
+
+**The 19:41:10 flip is the peer session's measurement, and it is recorded in this
+file as theirs.** This session does not restate it as its own.
+
+**This session's own confirmation, a fourth, at 20:52 — unauthenticated, against
+the repository's own endpoint, from outside this machine:**
+
+```
+private   = false
+visibility = public
+license   = MIT / MIT License   (spdx_id: MIT)
+```
+
+**And the raw `LICENSE` file is served to an unauthenticated client with the MIT
+text in it.** So the ledger's last word on the publish is the door being open,
+and this session's 19:45 section is **a measurement of a moment** — the same
+rule this file applied to the 06:12 red-tree report an hour and a half ago.
+
+**And the standing word's verdict, read afterwards and recorded here.** The
+pipeline on the pushed sha `c2e10b0`: **CI — all four jobs `completed/success`**
+(run 39575191549) and **CodeQL `completed/success`** (run 39575191465). That is
+the platform's verdict on that push, and it is green.
+
+## One event, two copies — 2026-10-21 21:05
+
+**The section _"A second verification of an accepted item, cancelled — 2026-10-21
+20:15"_ appears twice in this file, word for word.** **One cancellation happened:**
+`task_6fc1d2870136`, cancelled at **20:15:01**; one cancelled task; one
+measurement of the README's diff. **A reader must not count two cancellations**,
+and the copy arrived with a later append.
+
+**It is recorded here rather than deleted.** A duplicate is a copy error and not
+a false claim, and this file corrects by appending — but the event count is one.
+
+## Two verifications are owed, and one of them was lost with the runtime — 2026-10-21 21:05
+
+**The Mini App runtime restarted at 20:45:00** — the runtime's own diagnostics:
+`runId 9d0d62cc`, `preparationStartedAtMs` 1792575900235, ready 1792575904476.
+**Three tasks carry that restart's mark, and they are three different outcomes.**
+
+| Task                | Item                    | The chat's own record                          | Verdict                                     |
+| ------------------- | ----------------------- | ---------------------------------------------- | ------------------------------------------- |
+| `task_018a6018b18f` | WI-022's verification   | `status: interrupted`, **length 0**            | **the work is gone — it must be run again** |
+| `task_0cfbcce20e92` | WI-066's implementation | `status: done`, **5,059 characters**, 19:42:28 | **the work arrived** — merged as `d3add55`  |
+| `task_d2fa4fb7e946` | WI-024's verification   | `status: done`, **9,924 characters**, 19:40    | **the report is in hand**                   |
+
+**The first row is the opposite of the watchdog's sixth correction.** There, a
+task read `failed` and the work was not lost. **Here, `unknown` _is_ a loss**:
+the message is `interrupted` at zero length, and the runtime's own README says
+interrupted executions are not replayed automatically.
+
+**And WI-066's verification was never dispatched at all.** The dispatch table is
+the authority: row `wi-066-message-shape-fourth-field-2026-10-21-1340` is the
+**implementation**; **there is no row for a verification of WI-066**; and the
+item file sits at `verify` with **all ten criteria unticked**, its
+implementation merged into `main`. **An item can be merged and still be
+unverified, and the table is what says which one it is.**
+
+**Both are requested now, through the group**, because this session has no
+transport: `mavis mcp list` returns no servers here, at 20:43, at 20:52, and
+again after the 20:45 restart. The request ids are
+`probe-verify-wi-066-published-shapes-2026-10-21` and
+`wi-022-citation-refresh-verify-r2-2026-10-21` — **the second is deliberately a
+new id and a new title, because a re-dispatch reuses neither.**
+
+**And one id that was not used.** This session drafted a brief for WI-078 at
+20:51 and chose the request id `wi-078-note-bound-2026-10-21`. **The peer
+session had already chosen the same id and dispatched it at 21:00.** The draft
+was discarded, **the id is the peer's and was not spent twice**, and the brief in
+the tree is the peer's.
+
+## This session had the same near-miss, four minutes later, and the file is restored — 2026-10-21 21:05
+
+**At 20:51 this session overwrote `.factory/work/WI-078.md` — a file another
+session had committed at 20:49:54** (`38d09d0`). **It was restored from `HEAD`
+inside the same minute, and the tree is clean; nothing of theirs was lost. The
+overwrite happened anyway, and it is recorded here rather than left to be
+discovered.**
+
+**How it happened is the point, because the mechanism is small.** The number was
+checked at **20:47** — the file did not exist then — and the brief was written
+at **20:51**, four minutes later, without the check being repeated. **The other
+session took the number at 20:49.** The strategy session's own rule is the
+answer, and it is now measured rather than quoted: **the space is re-checked
+immediately before the write, not minutes before it.** Four minutes was enough.
+
+**And the only reason it was caught at all is that the write tool says it
+overwrote an existing file.** A brief written in a session's own words, into a
+file the session had checked four minutes earlier, felt safe — **and "one file,
+one live item" is not a rule about intent. It is a rule about the file.**
+
+**The number is now taken: WI-078 is the other session's** — the peer's brief,
+dispatched through the group at 21:00 — **and WI-079 is the next free number.**
+
+## The gate, measured, and the push — 2026-10-21 21:05
+
+**The local gates on the tree being pushed, run twice at 20:57 and 20:58:**
+`typecheck` 0 · `format:check` 0 ("All matched files use Prettier code style!") ·
+**`test` exit 0, twice** — server 27 files/282 tests, web 8/68, worker 5/31,
+agent-adapters 2/16, contracts 4/28 — · `build` 0.
+
+**The pipeline's verdict on the tree the code comes from:** `38c14fb` — **CI all
+four jobs `completed/success`** (run 39580388063) and **CodeQL
+`completed/success`** (run 39580388107). That is the tree the peer's branch
+brought; the other Chief session reconciled it into `main` (`187facd`), and the
+push that put it on the remote was a branch pushed to `refs/heads/main`.
+
+**And the rule's condition (b) holds by measurement:**
+`git diff --name-only 38c14fb..main` touches **no code path** — nine files, every
+one of them `.factory/` prose or `CONTRACTS.md`. **The push is a fast-forward**
+(`rev-list --left-right --count origin/main...main` = `0 13`), **and no run was
+in flight when it went**: the run on `38c14fb` had already finished, green,
+before this push — so this push starts the run that judges it, and **nothing is
+cancelled.**
+
+**The other Chief session recorded at 20:45 that it would not push, because the
+test gate had been red twice tonight.** That was a reading of its own runs, and
+the rule it named is right — the gate is about the tree being pushed. **This
+session's two runs on that same tree are green, and the gate is what it is.**
+
+**And the red it was measured against is WI-074's** — `EBUSY` in a test's own
+cleanup, queued at Probe — **so a red verdict on a pushed `main` is a failure to
+fix and say out loud, not a push to undo.** The verdict on this push is read
+afterwards and recorded here, as the rule says.
