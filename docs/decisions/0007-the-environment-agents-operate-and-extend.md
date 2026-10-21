@@ -161,16 +161,16 @@ it does not restate the cost model.
 > the list is.
 
 _Quoted as it stands in
-[`prototypes/DIRECTION.md`](../../prototypes/DIRECTION.md) at `:51-55`, after
-the D1–D6 repair (`e560165`) and the second repair (`d3ef0d2`). The first made
-the rule state the crossing the paragraph below already described; the second
-gave the rule a second declared exception, the constellation, so **the
-decision did not change** and nothing else in this section was touched. The
-lead re-synced this quote on 2026-10-21 at 15:00, and it was re-synced again
-on 2026-10-22 after the second repair: it had drifted from the document each
-time, and a rule quoted without its load-bearing exception is what put the
-landing page in the wrong room in WI-024 and WI-040. Probe verifies it as it
-verifies any lead's edit._
+[`prototypes/DIRECTION.md`](../../prototypes/DIRECTION.md) at `:53-57` as read
+at `95e5165`, after the D1–D6 repair (`e560165`) and the second repair
+(`d3ef0d2`). The first made the rule state the crossing the paragraph below
+already described; the second gave the rule a second declared exception, the
+constellation, so **the decision did not change** and nothing else in this
+section was touched. The lead re-synced this quote on 2026-10-21 at 15:00, and
+it was re-synced again on 2026-10-22 after the second repair: it had drifted
+from the document each time, and a rule quoted without its load-bearing
+exception is what put the landing page in the wrong room in WI-024 and WI-040.
+Probe verifies it as it verifies any lead's edit._
 
 Under that rule: the constellation and the agent list are in the **orientation
 room** — the constellation _is_ the agent list, spatialised, and building it
