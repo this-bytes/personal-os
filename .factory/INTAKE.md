@@ -4294,3 +4294,54 @@ wrong and nothing noticed.** Probe is asked whether a check should watch it
 too, and where it would live: the same test file already reads that section,
 so it may be a small addition. **The recommendation is the verifier's to make
 and the lead's to act on.**
+
+## The loop contradicted the ownership table, and three items sat in `implement` — 2026-10-21 13:15
+
+**`FACTORY.md` said two things that cannot both be true, and the second one
+made an acceptance criterion unmeetable.**
+
+- **The ownership table** (`:52`): `**/*.test.ts, **/*.test.tsx` → **Probe**.
+- **The loop, step 3** (`:143`): _"Cog writes the test that would have caught
+  the bug as part of the same change, and names Probe for the review."_
+
+**Cog was told to write a test in a file it does not own.** That is how WI-017's
+criterion — _a test proves that a resource created from a template validates,
+and that a template describing an invalid spec is refused_ — came to be
+unmet: **no test in the repository does either**, and the implementer was
+instructed to write one in a file the ownership table gives to the verifier.
+
+**The rest of the factory already says the other thing, and has for a while.**
+`.factory/probe.md:26`: _"**Write the test that proves it.** If a claim in the
+change is untested, write the test. Do not describe the missing test — write
+it."_ And `.factory/work/WI-009.md:305`, in its own record: _"Probe owns every
+test file, so the routing test is Probe's and the implementation is Cog's.
+**That is the normal split for this factory: the owner implements, Probe
+writes the test that would have caught the bug.** The test is written to
+**fail** against today's implementation — if it passes, the test is wrong."_
+
+**So the loop was the only document that disagreed.** It is now amended: Cog
+**names the check the change needs** as an acceptance criterion, in the brief,
+and **Probe writes the test**, in Verify — which is also the split that keeps
+the implementer from authoring the check that accepts its own work.
+
+**And the loop did not say who dispatches the verification, which is why
+three items in a row sat in `implement` with the work done.** Nothing in the
+runtime joins Implement to Verify: an implementation task that ends leaves its
+item in `implement` until somebody sends it to Probe. **WI-036's licence
+record, WI-017's template record, and the correction to the published counts
+all sat there** — the work done, the branch green, and **no verification ever
+dispatched**, so each was an item that could never have been accepted. **The
+loop now says it plainly: Chief dispatches Verify the moment Implement lands,
+and an item that has landed and is not verified is not in the factory — it is
+inventory.** The queue of things waiting for acceptance is the factory's real
+capacity, so the dispatch of the verification is part of finishing the
+implementation, not an afterthought to it.
+
+**This is the lead's own file** (`FACTORY.md, .factory/**` → Chief, `:61`),
+and the correction follows the factory's recorded practice rather than the
+lead's opinion — which is the test the lead's own rules ask for. **The
+contradiction was found because WI-017's criterion could not be met, and it
+would have been found again by the next item with a test in its criteria.**
+`AGENTS.md` is left alone: it is the development contract for the code, it
+points at `FACTORY.md` for who owns what (`:14`), and a developer working in
+this repository writes their own tests.

@@ -141,11 +141,17 @@ staged version is what lands.
 2. **Triage.** Chief assigns the work item to one owner. A work item with two
    owners is two work items.
 3. **Implement.** Cog makes the change, in one worktree, following
-   [AGENTS.md](AGENTS.md). Cog writes the test that would have caught the bug
-   as part of the same change, and names Probe for the review.
+   [AGENTS.md](AGENTS.md). Cog **names the check the change needs** — as an
+   acceptance criterion, in the brief, so Probe cannot miss it — and names
+   Probe for the review. **Cog does not write the test.** Every test file
+   belongs to Probe, and the implementer must not author the check that
+   accepts its own work.
 4. **Verify.** Probe writes or sharpens the tests, runs every gate in
    [Definition of done](#definition-of-done), and reports the actual output.
-   Probe's job is to make the change fail, not to approve it.
+   Probe's job is to make the change fail, not to approve it. **A criterion
+   that asks for a test is Probe's to write, and it is written here** — the
+   implementer named the check, Probe writes it, and Probe's test is the one
+   that decides.
 5. **Review.** Probe reports findings against the acceptance criteria. A
    finding is a defect, an observation, or a question — labelled as such.
 6. **Accept.** Chief decides. Only Chief closes a work item. A change that is
@@ -153,6 +159,18 @@ staged version is what lands.
 
 This mirrors the product's own rule: a factory task moves to `review`, never
 straight to `done`. Only an explicit acceptance closes it.
+
+**Chief dispatches Verify the moment Implement lands, and an item that has
+landed and is not verified is not in the factory — it is inventory.** Nothing
+in the runtime joins the two steps: an implementation task that ends leaves its
+item in `implement` until somebody sends it to Probe. **Three items in a row
+sat there on 2026-10-21** — WI-036's licence record, WI-017's template
+record, and the correction to the published counts — each with the work done
+and the branch green, and each with **no verification ever dispatched**, so
+each was an item that could never have been accepted. **The queue of things
+waiting for acceptance is the factory's real capacity**, so dispatching the
+verification is part of finishing the implementation, not an afterthought to
+it.
 
 ## Definition of done
 
