@@ -39,7 +39,7 @@ covered by an existing work item.
 
 The number space has one owner: the session that leads implementation in a
 tree. During the 48-hour build that is the session running the push below,
-and it holds the block **WI-090 to WI-096** so that two sessions cannot claim
+and it holds the block **WI-090 to WI-097** so that two sessions cannot claim
 the same number.
 
 | Number | Item                                                                                     | Owner  |
@@ -51,8 +51,9 @@ the same number.
 | WI-092 | The bundle-budget test's five-second timeout                                             | peer   |
 | WI-093 | The pin that says the old rule instead of the current one                                | worker |
 | WI-094 | The pin reads the rule out of a phrase — **folded into WI-093**, one file, one live item | peer   |
-| WI-095 | reserved                                                                                 |        |
-| WI-096 | reserved                                                                                 |        |
+| WI-095 | The resolver does not throw on a policy row that lost a field                            | worker |
+| WI-096 | Publish what WI-082 changed, and stop the product denying it                             | worker |
+| WI-097 | The guide, the filling, and where a resource came from                                   | worker |
 
 **WI-089 is not in this block and does not belong to it.** The peer session
 holds WI-089 for the hot-reload item, and held WI-088 before it. Both numbers
