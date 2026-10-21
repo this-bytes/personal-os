@@ -1420,15 +1420,19 @@ each frame's `data` is exactly one AG-UI event as a JSON object, and the
 keep-alive is an SSE comment. The panel's own framing — an `event:` name and an
 `id:` — is not carried, because AG-UI consumers ignore those fields. On connect
 the server replays the fifty most recent events, as the panel's own stream does.
+`GET /api/agui/events?conversationId=<id>` narrows the stream to one
+conversation.
 
 **Runs.** An execution is a run. `threadId` is the conversation the execution
-belongs to, and `runId` is the execution id. A run opens with `RUN_STARTED` and
-closes with `RUN_FINISHED` or `RUN_ERROR`, and everything the run opened — an
-answer, a tool call — is closed before the run closes. A turn that continues
-after an approval is a **new** run, because AG-UI says a run that continues an
-interrupted one is a run of its own; it is named `<executionId>:2`, `:3` and so
-on, counting the runs of that execution. The producer declares its version on
-every `RUN_STARTED` as `protocolVersion: "1.0"`.
+belongs to, and `runId` is the execution id. An execution that belongs to no
+conversation — a factory task's execution — names the execution as its thread.
+A run opens with `RUN_STARTED` and closes with `RUN_FINISHED` or `RUN_ERROR`,
+and everything the run opened — an answer, a tool call — is closed before the
+run closes. A turn that continues after an approval is a **new** run, because
+AG-UI says a run that continues an interrupted one is a run of its own; it is
+named `<executionId>:2`, `:3` and so on, counting the runs of that execution.
+The producer declares its version on every `RUN_STARTED` as
+`protocolVersion: "1.0"`.
 
 **The mapping.** Every event the panel publishes has a stated counterpart, and
 every agent event has one too. An event with no counterpart is named as such

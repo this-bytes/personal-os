@@ -286,6 +286,35 @@ describe('the AG-UI stream', () => {
     ]);
   });
 
+  it('carries one conversation when the caller names one', async () => {
+    const events = app.services.events;
+    events.publish({
+      type: 'execution.event',
+      conversationId: 'cnv_scoped',
+      executionId: 'exe_scoped',
+      event: { type: 'execution.status', executionId: 'exe_scoped', status: 'queued' },
+    });
+    events.publish({
+      type: 'execution.event',
+      conversationId: 'cnv_other',
+      executionId: 'exe_other_2',
+      event: { type: 'execution.status', executionId: 'exe_other_2', status: 'queued' },
+    });
+
+    const frames = await readFrames(
+      `${baseUrl}/api/agui/events?conversationId=cnv_scoped`,
+      (read) => read.some((frame) => frame.includes('exe_scoped')),
+    );
+    const carried = agUiEvents(frames);
+
+    expect(carried.some((event) => (event as { runId?: string }).runId === 'exe_scoped')).toBe(
+      true,
+    );
+    expect(carried.some((event) => (event as { runId?: string }).runId === 'exe_other_2')).toBe(
+      false,
+    );
+  });
+
   it('carries an approval as an interrupt that names the approval', async () => {
     const { approvalId } = seedBlockedTurn();
 
