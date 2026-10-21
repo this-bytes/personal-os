@@ -106,9 +106,14 @@ created it.
 **A resource is what "native" means for an agent-created feature.** An agent's
 feature is a typed, validated resource in these contracts — one of the six kinds
 above, with a spec its owning provider validates — and never a surface invented for
-agents. The third half of that is not built yet: nothing in the product tells an
-agent what a good resource looks like, so an agent creates one from the schema alone,
-and a schema is a type, not an example. That gap is sized and waiting on the owner.
+agents. **The third half of that is built.** The product publishes a template for
+each of the six kinds, and an agent lists them and creates from one: the templates
+are on the MCP surface as `resource.template.list`
+(`packages/contracts/src/mcp.ts:21`), and `resource.create` takes a template and
+builds the resource from the template's own spec
+(`apps/server/src/modules/mcp/server.ts:363`, `:384-386`). A template is an
+example, and the spec it carries is validated by the owning provider exactly as a
+hand-written spec is.
 
 ### Factory
 
@@ -187,20 +192,24 @@ from the data the product already keeps. But an automation and a task record the
 author as `system`, so for those two kinds the answer is **wrong**, not merely
 uncounted.
 
-The audit trail records the actor of most actions. Of the thirty-four routes that
-change something, twenty write an entry at the route, two more write from the
-service layer — an approval decision, and a task that leaves `unknown` — and twelve
-write none: a capability probe, an agent token revoked, a logout, an owner-token
-mint, an automation edited or deleted, a conversation deleted, a participant added
-or removed, a goal, and a workspace created or edited. An entry names who acted and
-what they acted on, and every entry written today records a success whether the
-action succeeded or not — `POST /api/resources/:id/execute` records one for a run
-that was merely queued. The second measure's denominator is therefore a real
-question, and it is part of what the owner has not settled.
+The audit trail records the actor of most actions. Of the thirty-six routes that
+change something, twenty-one write an entry at the route, three more write from
+the service layer — an approval decision, an AG-UI run resume, and a task that
+leaves `unknown` — and twelve write none: a capability probe, an agent token
+revoked, a logout, an owner-token mint, an automation edited or deleted, a
+conversation deleted, a participant added or removed, a goal, and a workspace
+created or edited. An entry names who acted and what they acted on, and every
+entry written today records a success whether the action succeeded or not —
+`POST /api/resources/:id/execute` records one for a run that was merely queued.
+The second measure's denominator is therefore a real question, and it is part of
+what the owner has not settled.
 
-**Nothing counts them yet**, and the panel does not show these numbers today.
-Counting them is sized and waiting on the owner, because a route that returns them
-is a published contract.
+**The two are counted, and the panel shows them.** `GET /api/measures` returns the
+published shape for a workspace (`apps/server/src/api/measures.ts:17`), and the
+panel shows the counts in a band of their own
+(`apps/web/src/components/MeasuresBand.tsx`). Both are counted from the data the
+product already keeps — the authorship a resource carries, and the entries the
+audit trail holds — and not from a counter that is incremented on some code path.
 
 **No ratio whose denominator is zero.** For a long while the honest value of "the
 share of features authored by agents" is zero or undefined, because no agent has
