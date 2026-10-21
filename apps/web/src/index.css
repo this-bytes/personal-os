@@ -34,6 +34,55 @@
   --color-indigo-900: #312e81;
   --color-indigo-950: #1e1b4b;
 
+  /*
+   * Amber, declared in hex like every other family here. Tailwind ships its
+   * own palette in oklch, and a family that is not declared in this file
+   * does not match the rest of it.
+   *
+   * Amber is the accent. It is declared here and nowhere else in the client:
+   * the guard test in apps/web/src/__tests__/accentGuard.test.ts fails if a
+   * component reaches for it by name.
+   */
+  --color-amber-50: #fffbeb;
+  --color-amber-100: #fef3c7;
+  --color-amber-200: #fde68a;
+  --color-amber-300: #fcd34d;
+  --color-amber-400: #fbbf24;
+  --color-amber-500: #f59e0b;
+  --color-amber-600: #d97706;
+  --color-amber-700: #b45309;
+  --color-amber-800: #92400e;
+  --color-amber-900: #78350f;
+  --color-amber-950: #451a03;
+
+  /*
+   * The semantic layer.
+   *
+   * These are names for meanings, not hues. A reader can point at one of
+   * them and say what it is for without asking, and that is the whole point:
+   * PRODUCT.md 11 asks for one accent that always means the same thing, and
+   * a rule cannot be kept in a vocabulary that does not exist.
+   *
+   * The accent has exactly one meaning — live, or waiting on you. There is
+   * no --warn and no --info: a token whose value is the accent's, and whose
+   * name promises a second meaning, is the collision by the back door. A
+   * caution is the neutral scale or the error colour, and nothing else.
+   *
+   * These are ordinary CSS custom properties, so a light theme can redefine
+   * them later without touching a single component.
+   */
+  --color-accent: #fbbf24;
+  --color-accent-surface: #451a03;
+  --color-accent-border: #92400e;
+  --color-accent-text: #fcd34d;
+
+  --color-structure: #6366f1;
+  --color-data: #22d3ee;
+
+  --color-ok: #34d399;
+  --color-err: #fb7185;
+  --color-caution: #94a3b8;
+
   --font-mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
 }
 
@@ -58,7 +107,7 @@
   }
 
   ::selection {
-    @apply bg-indigo-500/40;
+    @apply bg-structure/40;
   }
 
   * {

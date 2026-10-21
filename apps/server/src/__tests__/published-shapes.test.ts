@@ -5,18 +5,20 @@ import { fileURLToPath } from 'node:url';
 import { resourceTypeSchema } from '@personal-os/contracts';
 
 /**
- * The two published shapes.
+ * The published shapes.
  *
- * Two of the claims in those entries are claims about the code, and a claim
- * about the code is a contract only while the code still says it:
+ * The claims in those entries are claims about the code, and a claim about the
+ * code is a contract only while the code still says it:
  *
  *  - the template record publishes the six kinds a template may start, and
  *    the code's own kind enum has to be those six;
  *  - the measures route publishes the twelve mutating routes that write no
- *    audit entry, out of the thirty-five it counts, and the code has to be
- *    writing one on exactly the others.
+ *    audit entry, out of the thirty-six it counts, and the code has to be
+ *    writing one on exactly the others;
+ *  - the closing-an-unknown-outcome entry publishes the owner's note as capped,
+ *    and the code's own schema has to cap it at that same number.
  *
- * Both are checked against CONTRACTS.md and against the code, rather than
+ * All three are checked against CONTRACTS.md and against the code, rather than
  * against a copy of either, so the two cannot drift apart quietly. A change
  * to one that the other does not follow fails here: WI-033 adds the missing
  * audit entries, and the entry that names the twelve has to change with them.
@@ -57,11 +59,32 @@ function publishedUnauditedRoutes(): string[] {
 }
 
 /**
+ * The cap the contract publishes for the owner's note.
+ *
+ * Read out of the published shape's own trailing comment, so that the number in
+ * the contract and the number in the code are two numbers, and not one number
+ * written down twice.
+ */
+function publishedNoteBound(): number {
+  const section = contractsSection('### Closing an unknown outcome');
+  const shape = section.match(/interface ResolveExecutionInput \{[^}]*\}/);
+  expect(shape, 'the contract no longer publishes the ResolveExecutionInput shape').not.toBeNull();
+
+  const note = shape![0]!.split('\n').find((line) => line.trim().startsWith('note?:'));
+  expect(note, 'the contract no longer publishes the note field').not.toBeUndefined();
+
+  const bound = note!.match(/up to\s+([\d,]+)\s+characters/);
+  expect(bound, 'the published note no longer says what it is capped at').not.toBeNull();
+
+  return Number(bound![1]!.replace(/,/g, ''));
+}
+
+/**
  * The mutating routes the code registers, and whether each writes an audit
  * entry in its own handler.
  *
  * The handlers are read from the source, because the claim is about the
- * source: "twelve of the thirty-five mutating routes write no audit entry at
+ * source: "twelve of the thirty-six mutating routes write no audit entry at
  * all" is a statement about what the handlers do, and a client can only be
  * told the truth about it from the handlers.
  */
@@ -85,7 +108,24 @@ function codeMutatingRoutes(): { route: string; audited: boolean }[] {
   return found;
 }
 
-describe('the two published shapes', () => {
+/**
+ * The cap the code enforces for the owner's note.
+ *
+ * Read out of the schema's own `.max()`, which is the cap the request is
+ * refused against — a note over it is refused, not shortened.
+ */
+function enforcedNoteBound(): number {
+  const source = fs.readFileSync(
+    path.join(repoRoot, 'apps', 'server', 'src', 'api', 'executions.ts'),
+    'utf8',
+  );
+  const bound = source.match(/note\s*:\s*z\.string\(\)\.max\(\s*([\d_]+)\s*\)/);
+  expect(bound, 'the code no longer caps the note with z.string().max()').not.toBeNull();
+
+  return Number(bound![1]!.replace(/_/g, ''));
+}
+
+describe('the published shapes', () => {
   it('publishes the template record over the kinds the code has', () => {
     // The owner settled that all six kinds get a template in the first set.
     // The entry publishes the six, and the code's kind enum is the six.
@@ -126,5 +166,18 @@ describe('the two published shapes', () => {
 
     expect(routes.length).toBe(Number(total![1]));
     expect(routes.filter((entry) => entry.audited).length).toBe(Number(atRouteLevel![1]));
+  });
+
+  it('publishes the cap on the note, and the code caps it at the same number', () => {
+    // The entry publishes the cap on the owner's note, and the schema refuses
+    // a longer one. The two numbers are read out of the contract and out of
+    // the code, so one of them moving without the other fails here.
+    const published = publishedNoteBound();
+    const enforced = enforcedNoteBound();
+
+    expect(
+      published,
+      `the contract publishes ${published} characters for the note, and the code caps it at ${enforced}`,
+    ).toBe(enforced);
   });
 });
