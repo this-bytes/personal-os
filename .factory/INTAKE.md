@@ -5700,3 +5700,48 @@ blocked on `CONTRACTS.md`, and `wi/046-domains-interaction-model` holds that
 file.** This sweep does not decide that: it is the lead's call, whether the
 verification waits for that branch or is scoped to the WI-039 entry alone, and
 **a tiebreak made silently is a rule broken silently.**
+
+## The fourth push — 2026-10-21 16:20
+
+**`main` is on the remote at `8dcf69d`.** The owner was asked with the evidence
+in the question and said yes: **17 commits, 22 files, +1662/−132, fast-forward**,
+visibility unchanged at private, nothing rewritten. The pre-push hook ran and
+passed.
+
+**The evidence, and the gap between what was measured and what was pushed.**
+The pipeline ran on **`71c9297`** and **both legs were green: CI success on all
+four jobs (Build and test, Dependency audit, Lint the workflows, Build and run
+the stack), and CodeQL success.** This session measured the same tree
+first-hand: **typecheck 0, `format:check` 0, 346 tests across 39 files, build 0.** **The tip moved two commits past the measured sha** — `597c759` and
+`8dcf69d`, both the other Chief session's — and **both touch documents only**:
+`git diff --name-only 71c9297..8dcf69d` is `.factory/INTAKE.md` and
+`.factory/work/WI-062.md`, and **nothing under `apps/`, `packages/`,
+`scripts/` or `.github/`**. **Every line of code that was pushed is the code
+the pipeline measured.** The format gate was re-run on the pushed tree and
+passed.
+
+**What rode along.** **The stall watchdog** — `.factory/watchdog.md`, the
+schedule `sch_6db03ac6ba13`, and `FACTORY.md`'s pointer to it from the loop.
+**The second-verifier answer**, and the question closed. **WI-027's
+verification** and the second instance of WI-065's drift, attached to WI-031
+where it blocks acceptance. **WI-045's implementation**, merged, and the close
+path's contract note with it. **WI-062 accepted**, by the session that wrote
+neither half of it.
+
+**And the accept queue moved, which is the thing the day was for.** **Four
+verifications closed since 15:27** — WI-027, WI-021, **WI-062**, and WI-036 —
+**the first closures since 09:48.** Before the livelock was cleared the queue
+had not moved in six hours. **The cause is measured, not argued: a turn held
+one of the factory's two slots for 119 minutes, Probe's chat sat idle the
+whole time, and the group's diagnosis — that one verifier was the constraint
+— was wrong.** The watchdog now finds that within 30 minutes without a human
+noticing, and **the check reports rather than cancels**, because five
+legitimate tasks that day ran past two hours and every one of them finished.
+
+**A push is still not an acceptance.** WI-017, WI-024, WI-031 and WI-037's
+verifications are queued and unrun. **What is on the remote is code the
+pipeline approved, not code the factory has accepted.**
+
+**One commit is ahead of the remote, and it is this record.** The tree that was
+pushed is the tree that was measured; adding a record of the push makes it a
+different tree. **`main` waits for the owner's next word.**
