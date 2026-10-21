@@ -1,6 +1,6 @@
 import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
-import { audit, parseBody, parseQuery, requireAuth } from './helpers.js';
+import { audit, parseBody, parseQuery, requestAuthor, requireAuth } from './helpers.js';
 
 const workspaceQuerySchema = z.object({ workspaceId: z.string() });
 
@@ -46,7 +46,8 @@ export function registerFactoryRoutes(app: FastifyInstance): void {
 
   app.post('/api/goals', { preHandler: requireAuth }, async (request, reply) => {
     const body = parseBody(createGoalSchema, request.body);
-    return reply.code(201).send({ goal: app.services.factory.createGoal(body) });
+    const goal = app.services.factory.createGoal(body);
+    return reply.code(201).send({ goal });
   });
 
   app.get('/api/goals/:id', { preHandler: requireAuth }, async (request) => {
@@ -61,7 +62,7 @@ export function registerFactoryRoutes(app: FastifyInstance): void {
 
   app.post('/api/tasks', { preHandler: requireAuth }, async (request, reply) => {
     const body = parseBody(createTaskSchema, request.body);
-    const task = app.services.factory.createTask(body);
+    const task = app.services.factory.createTask({ ...body, author: requestAuthor(request) });
     audit(request, 'task.created', { type: 'task', id: task.id, workspaceId: body.workspaceId });
     return reply.code(201).send({ task });
   });

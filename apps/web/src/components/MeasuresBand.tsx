@@ -6,11 +6,12 @@ import { useWorkspace } from '../state/workspace';
 import { ErrorState, LoadingState } from './ErrorState';
 
 /**
- * The author an automation or a task carries.
+ * The author a resource carries when it has none to name.
  *
- * Their tables have no column to keep an author in, so their projections say
- * 'system'. It is no author at all, and it is why the count of the resources
- * an agent made is a floor rather than a share.
+ * 'system' is what a row written before the author was recorded says, and
+ * what a write with no authenticated actor behind it says. Those rows are in
+ * the denominator and can never be in the count, which is what makes the
+ * count of the resources an agent made a floor rather than a share.
  */
 const NO_AUTHOR = 'system';
 

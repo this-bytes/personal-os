@@ -322,6 +322,12 @@ export const tasks = sqliteTable(
       .notNull(),
     /** External task identifier when the work is delegated to an orchestrator. */
     externalRef: text('external_ref'),
+    /**
+     * Who created the task, in the closed set the measure counts: an agent
+     * connection's id, the owner's user id, or the literal `owner`. The
+     * default is what the rows that predate the column recorded.
+     */
+    createdBy: text('created_by').notNull().default('system'),
     createdAt: text('created_at').notNull(),
     updatedAt: text('updated_at').notNull(),
   },
@@ -396,6 +402,12 @@ export const automations = sqliteTable(
     enabled: integer('enabled', { mode: 'boolean' }).notNull().default(false),
     lastRunAt: text('last_run_at'),
     nextRunAt: text('next_run_at'),
+    /**
+     * Who created the automation, in the closed set the measure counts: an
+     * agent connection's id, the owner's user id, or the literal `owner`. The
+     * default is what the rows that predate the column recorded.
+     */
+    createdBy: text('created_by').notNull().default('system'),
     createdAt: text('created_at').notNull(),
     updatedAt: text('updated_at').notNull(),
   },
