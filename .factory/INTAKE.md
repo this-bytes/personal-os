@@ -6518,3 +6518,44 @@ file, the same suite, green here and red there, minutes apart.** That is
 **WI-074** — the stack test's cleanup can outrun its own budget — and it is the
 second reproduction today. **The green suite is not proof that the stack test
 is fixed**, and a check that passes once is not a check.
+
+## The wants' own execution produced a ninth want — 2026-10-21 17:55
+
+**C-23 is a candidate with two instances and no item behind it, and the ledger's
+own summary of it is wrong.** The row above says both notes "went false within
+half an hour of being written". **That is true of one of them and false of the
+other.** The resolve route's note was published at 11:05:24 (`363428e`) and the
+route landed at 11:32:22 (`414996c`) — **27 minutes**. The template record's note
+was published at 08:25:55 (`e682224`, WI-030's entry) and WI-017's implementation
+landed at 12:41:31 (`8b1fd01`) — **four hours and fifteen minutes**. **The drift
+is most of a morning, not a slip**, and the instance that is still open blocks
+WI-031's acceptance.
+
+**Both notes are false today.** `CONTRACTS.md:578` says the template record is not
+implemented; it is. `CONTRACTS.md:197-204` says there is no `/api/executions`
+route; `apps/server/src/api/executions.ts:21` publishes one. **The ledger already
+says the four hours and fifteen minutes itself**, in the WI-017 acceptance above —
+which is what makes the row's summary the odd one out.
+
+**So the want it names is recorded, and it is the ninth.** W9 — _a published status
+is a claim too, and something checks it_ — is written in `docs/strategy.md`
+(`e55c86d`), with its owner, its acceptance criteria and both instances. **The
+check would be a `scripts/verify-*.ts`, which is Probe's by the ownership table
+(`FACTORY.md:55`), in the shape of WI-038's borrow-rule gate, and it must land
+after WI-065's correction** — a check that is red on `main` is a check nobody
+keeps. Probe's own reading of the general form — every status sentence must
+either name a commit or name an item that is still open — needs a list of open
+items the check can read, **and that is the lead's call**.
+
+**It is not numbered, and no item was opened.** The number space has one owner and
+this session took no number. **The lead judges it**, the way every other want was
+judged.
+
+**And the document's own rule now has a second case.** A defect the factory finds
+twice becomes a want in `docs/strategy.md` — named, owned and judged — before
+anyone numbers it. W8 came out of that document's own review; **W9 came out of the
+wants' own execution**.
+
+**This session could not reach the bot.** The `minimax-bot` server's tools are
+unavailable in this session, so this correction and the want are carried here and
+in the document rather than in a group post. **Nothing was posted to any group.**
