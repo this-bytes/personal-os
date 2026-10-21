@@ -7,6 +7,12 @@
 // A gate nobody exercises is a gate that might never fail. These tests run the
 // real script against a fixture, so the failure paths are proven rather than
 // assumed.
+//
+// Every case here spawns a `tsx` process and waits for it, so every case
+// carries a timeout this file chose — `CASE_TIMEOUT_MS`, below, with the
+// measurements behind it. Vitest's default is five seconds, which is shorter
+// than a busy machine needs, and a gate that goes red because the host is busy
+// is a gate people learn to ignore.
 import { spawnSync } from 'node:child_process';
 import fs from 'node:fs';
 import os from 'node:os';
@@ -25,6 +31,32 @@ const scriptPath = path.join(repoRoot, 'scripts', 'verify-bundle-size.ts');
  * run a `.ts` file on every supported version, so the runner is not optional.
  */
 const tsxCli = path.join(repoRoot, 'node_modules', 'tsx', 'dist', 'cli.mjs');
+
+/**
+ * The timeout every case in this file carries.
+ *
+ * Each case spawns a `tsx` process and waits for it, so what a case costs is
+ * a process start plus a handful of file reads. Measured on this host: the
+ * nine cases together cost about three seconds idle, eight seconds with six
+ * CPU burners running and twenty-seven seconds with twelve; the slowest
+ * single case measured seven point nine seconds with forty-eight burners,
+ * and one full-suite run took a single case twenty-three point six seconds on
+ * a merely busy machine.
+ *
+ * Vitest's default is five seconds. That is shorter than a busy machine
+ * needs, so this file inherited a timeout it never chose — and a gate that
+ * fails because the host is busy is a gate people learn to ignore.
+ *
+ * Sixty seconds is more than twice the slowest single case measured, and a
+ * case that reaches it still ends inside a minute. It is not a lid on a
+ * failure: the cases below that must fail must fail for their own reasons,
+ * and Vitest names the case that ran out of time and says how long it waited.
+ *
+ * The suite carries the same number so that a case added here later cannot
+ * fall back to the default by accident, and every case carries it as well, so
+ * that the timeout is visible on the case rather than inherited by it.
+ */
+const CASE_TIMEOUT_MS = 60_000;
 
 const fixtures: string[] = [];
 
@@ -107,8 +139,8 @@ function fixture(): Fixture {
   };
 }
 
-describe('the bundle budget gate', () => {
-  it('passes a bundle that is within the budget', () => {
+describe('the bundle budget gate', { timeout: CASE_TIMEOUT_MS }, () => {
+  it('passes a bundle that is within the budget', { timeout: CASE_TIMEOUT_MS }, () => {
     const build = fixture();
     build.chunk('index-abcdefgh.js', 150_000);
     build.chunk('vendor-react-abcdefgh.js', 180_000);
@@ -122,7 +154,7 @@ describe('the bundle budget gate', () => {
     expect(result.stdout).toContain('Every chunk is within 300 kB');
   });
 
-  it('fails when a chunk is over the limit', () => {
+  it('fails when a chunk is over the limit', { timeout: CASE_TIMEOUT_MS }, () => {
     const build = fixture();
     build.chunk('index-abcdefgh.js', 400_000);
     build.chunk('vendor-react-abcdefgh.js', 10_000);
@@ -137,7 +169,7 @@ describe('the bundle budget gate', () => {
     expect(result.stderr).toContain('over the 300 kB limit');
   });
 
-  it('fails when a page chunk is part of the first paint', () => {
+  it('fails when a page chunk is part of the first paint', { timeout: CASE_TIMEOUT_MS }, () => {
     const build = fixture();
     build.chunk('index-abcdefgh.js', 10_000);
     build.chunk('vendor-react-abcdefgh.js', 10_000);
@@ -151,24 +183,28 @@ describe('the bundle budget gate', () => {
     expect(result.stderr).toContain('part of the first paint');
   });
 
-  it('fails when the vendor chunks are declared in a shape the gate cannot read', () => {
-    const build = fixture();
-    build.chunk('index-abcdefgh.js', 150_000);
-    build.html(['index-abcdefgh.js']);
-    // The declaration changed shape. The gate cannot see the vendor chunks
-    // any more, so it has to say so rather than quietly check nothing.
-    fs.writeFileSync(
-      path.join(build.root, 'vite.config.ts'),
-      `const VENDOR_CHUNKS = [{ name: 'vendor-react', pattern: /react/ }];\n`,
-    );
+  it(
+    'fails when the vendor chunks are declared in a shape the gate cannot read',
+    { timeout: CASE_TIMEOUT_MS },
+    () => {
+      const build = fixture();
+      build.chunk('index-abcdefgh.js', 150_000);
+      build.html(['index-abcdefgh.js']);
+      // The declaration changed shape. The gate cannot see the vendor chunks
+      // any more, so it has to say so rather than quietly check nothing.
+      fs.writeFileSync(
+        path.join(build.root, 'vite.config.ts'),
+        `const VENDOR_CHUNKS = [{ name: 'vendor-react', pattern: /react/ }];\n`,
+      );
 
-    const result = build.run();
+      const result = build.run();
 
-    expect(result.status).toBe(1);
-    expect(result.stderr).toContain('no vendor chunks could be read');
-  });
+      expect(result.status).toBe(1);
+      expect(result.stderr).toContain('no vendor chunks could be read');
+    },
+  );
 
-  it('fails when no vendor chunk can be read from the config', () => {
+  it('fails when no vendor chunk can be read from the config', { timeout: CASE_TIMEOUT_MS }, () => {
     const build = fixture();
     build.chunk('index-abcdefgh.js', 150_000);
     build.html(['index-abcdefgh.js']);
@@ -183,7 +219,7 @@ describe('the bundle budget gate', () => {
     expect(result.stderr).toContain('no vendor chunks could be read');
   });
 
-  it('fails when a declared vendor chunk is never emitted', () => {
+  it('fails when a declared vendor chunk is never emitted', { timeout: CASE_TIMEOUT_MS }, () => {
     const build = fixture();
     build.chunk('index-abcdefgh.js', 10_000);
     build.html(['index-abcdefgh.js']);
@@ -197,30 +233,34 @@ describe('the bundle budget gate', () => {
     expect(result.stderr).toContain('never emitted');
   });
 
-  it('fails when the first paint is not smaller than the pre-split bundle', () => {
-    const build = fixture();
-    // Six chunks of 100 kB: every one of them is within the per-chunk limit,
-    // but together they are heavier than the single bundle the split replaced.
-    for (let index = 0; index < 6; index += 1) {
-      build.chunk(`vendor-part${index}-abcdefgh.js`, 100_000);
-    }
-    build.html([
-      'vendor-part0-abcdefgh.js',
-      'vendor-part1-abcdefgh.js',
-      'vendor-part2-abcdefgh.js',
-      'vendor-part3-abcdefgh.js',
-      'vendor-part4-abcdefgh.js',
-      'vendor-part5-abcdefgh.js',
-    ]);
-    build.config(['vendor-part0']);
+  it(
+    'fails when the first paint is not smaller than the pre-split bundle',
+    { timeout: CASE_TIMEOUT_MS },
+    () => {
+      const build = fixture();
+      // Six chunks of 100 kB: every one of them is within the per-chunk limit,
+      // but together they are heavier than the single bundle the split replaced.
+      for (let index = 0; index < 6; index += 1) {
+        build.chunk(`vendor-part${index}-abcdefgh.js`, 100_000);
+      }
+      build.html([
+        'vendor-part0-abcdefgh.js',
+        'vendor-part1-abcdefgh.js',
+        'vendor-part2-abcdefgh.js',
+        'vendor-part3-abcdefgh.js',
+        'vendor-part4-abcdefgh.js',
+        'vendor-part5-abcdefgh.js',
+      ]);
+      build.config(['vendor-part0']);
 
-    const result = build.run();
+      const result = build.run();
 
-    expect(result.status).toBe(1);
-    expect(result.stderr).toContain('not smaller than');
-  });
+      expect(result.status).toBe(1);
+      expect(result.stderr).toContain('not smaller than');
+    },
+  );
 
-  it('fails when the client was never built', () => {
+  it('fails when the client was never built', { timeout: CASE_TIMEOUT_MS }, () => {
     const build = fixture();
     build.config([]);
 
@@ -230,7 +270,7 @@ describe('the bundle budget gate', () => {
     expect(result.stderr).toContain('has not been built');
   });
 
-  it('fails when the build emitted no JavaScript at all', () => {
+  it('fails when the build emitted no JavaScript at all', { timeout: CASE_TIMEOUT_MS }, () => {
     const build = fixture();
     build.emptyAssets();
     build.config([]);
