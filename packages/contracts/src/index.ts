@@ -16,3 +16,4 @@ export * from './workspace.js';
 export * from './events.js';
 export * from './mcp.js';
 export * from './measures.js';
+export * from './approvals.js';
