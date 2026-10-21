@@ -9380,3 +9380,51 @@ false alarm: a red measurement is true of the tree it was measured on, and the t
 here move under you.** The lead's own back-out was a reasonable act on a tree that was
 no longer the published one. **Measure the tree that publishes the work, and say which
 tree you measured.**
+
+## 2026-10-22 08:12 — A verifier's report arrives for an item closed two hours earlier, and the pointer rule is proved twice over
+
+**Probe's WI-034 verification came back VERIFIED, and the first thing it does is correct
+its own brief:** WI-034 was merged by `26fb68e` and accepted at 05:50, so "NOT merged
+into `main`" is stale. **All four of its shas are ancestors of `main` today.** So the
+report corroborates an acceptance that was already made — **and no second acceptance is
+spent on a closed item**, which is the rule that keeps one verifier, one item, one
+verification.
+
+**The lead re-measured it on today's tree, because the report was measured at `f473982`
+and the tree has moved twice.** The pin is green — **6 tests passed, exit 0** — and all
+eight citations in `### The audit outcome` point at the code they claim. The section is
+`:1222-1288` now, 67 lines rather than the 62 Probe measured, and the three stale
+numbers are still nowhere in the contract.
+
+**And the re-statement that landed after Probe read the pin closed Probe's caveat.** The
+pin used to assert `expect.soft(section, …).toContain(claim.citation)`, and Probe
+measured that the `audit/service.ts` pattern matches **two** byte-identical lines
+(`:79` and `:92`) — so the pattern alone did not pin the number, and the `toContain` was
+doing that work. **The current pin finds the citation by range**, so a citation of `:92`
+can no longer satisfy a claim at `:79`, and **the instrument now pins the number
+itself.** A verifier's caveat was true of the tree it was measured on and was closed by
+the tree that followed.
+
+**Probe's one defect is in the brief, not the work** — it cites
+`apps/server/src/api/app.ts:185`, and there is no `apps/server/src/api/app.ts`. **And
+that one defect earned a sweep of the whole tree**, because a brief that cites a path
+which does not exist is a lead's own mistake, and the lead would rather find the rest of
+them than leave them for another session to trip over.
+
+**The sweep checked every path cited in every item file and every published document
+against the tree.** The published documents came back with **one** broken path:
+`docs/resource-templates.md:845` names `docs/decisions/0008-_.md`, a placeholder nobody
+filled in, and the ADR is `docs/decisions/0008-five-domains.md` — **and that file is
+already WI-115's, so it joined WI-115's scope rather than opening a third item on it.**
+One false citation in a published item file — `WI-111.md:426` names
+`apps/server/src/api/goals.ts` for the `goal.created` audit entry, **no such file
+exists**, and the entry is audited in `factory.ts:55` — **corrected by appending beside
+the claim.** And eight more that are not defects at all: they are **files those items
+are owed**.
+
+**So the rule, written down where it can be read:** _an item may name a file that does
+not exist yet — that is what an item is for — but a claim about what the code does
+today must cite a file that exists, and a path in a published document must exist._ The
+pointer rule has now been proved three times in one day — by WI-034's correction, by
+WI-108's shift, and by this sweep — **and every one of the three was found by reading a
+line against its sentence, not by a gate.**

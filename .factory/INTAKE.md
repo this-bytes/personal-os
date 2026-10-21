@@ -2636,3 +2636,66 @@ request id there.** Probe's lane: **still refusing**, 30 delegations refused sin
 2026-10-20 21:46:39, the last at 04:25:20. **And the restart still has not happened** —
 `runtime.start_requested` and `runtime.ready` are both at **2026-10-21 23:37:39**, one
 run id `5bc9c2db`, `current: true`.
+
+## 2026-10-22 08:12 — Chief: Probe's WI-034 report corroborates an acceptance, the lead re-measured it on today's tree, and a path sweep found two broken paths
+
+**Probe's WI-034 verification came back VERIFIED — and the item was accepted two hours
+before the report arrived.** The report's own first move is a premise correction: the
+brief's "NOT merged into `main`" is stale. **All four of WI-034's shas are ancestors of
+`main` today — `7e58b8d`, `9ff3616`, `a147d41` and `26fb68e`** — and WI-034 was
+accepted at 05:50. The verdict: the three corrected numbers are right, the other four
+citations land, the section is true in every claim it makes, nothing else in the
+contract contradicts it, and **the pin is two-sided — it reddens if the contract moves
+rather than the code.** **That corroborates an acceptance already made; no second
+acceptance is spent on a closed item.**
+
+**The lead re-measured it on the tree it stands in, because the report was measured at
+`main` = `f473982` and the tree has moved twice since.**
+
+- **The pin is green on today's tree: 1 file passed, 6 tests passed, exit 0.**
+- **All eight citations in `### The audit outcome` point at the code they claim** —
+  `service.ts:596` (`queue.enqueue({`), `service.ts:601` (`{ queued: true, … }`),
+  `executor.ts:112` (`result: 'unknown',`), `dispatch.ts:247` (`result: 'unknown',`),
+  `helpers.ts:76` (`result: 'success'`), `audit/service.ts:79`
+  (`result: input.result ?? 'success',`), `app.ts:193` (`app.setErrorHandler(`) and
+  `audit/service.ts:19` (the outcome set).
+- **The section is now `CONTRACTS.md:1222-1288` — 67 lines, not the 62 Probe measured**
+  — and the stale numbers `service.ts:515`, `audit/service.ts:71` and `app.ts:185` are
+  still nowhere in the contract.
+- **The pin's blob changed after Probe read it** — `0219da1` at `f473982`, `7c7edbe9`
+  on `main` now — because `a51f608` ("Re-state the audit outcome check: the section's
+  own pointer must carry the claim") landed after it.
+- **And that re-statement closed Probe's caveat.** Probe measured the pin's first
+  assertion as `expect.soft(section, …).toContain(claim.citation)` and correctly noted
+  that the `audit/service.ts` pattern matches **two** lines — `:79` and `:92` are
+  byte-identical — so the pattern alone did not pin the number. **The current pin finds
+  the citation by range**
+  (`citationsTo(section, claim.file).find((c) => c.from <= claim.at[1] && c.to >= claim.at[0])`),
+  **so a citation of `:92` can no longer satisfy the claim at `:79`, and the number is
+  now pinned by the instrument.** Probe's caveat was true of the tree it was measured on
+  and is not true now.
+
+**Probe's one defect is in the brief, not the work:** the brief cites
+`apps/server/src/api/app.ts:185`, and **there is no `apps/server/src/api/app.ts`** — the
+real path is `apps/server/src/app.ts`, which both the commit message and the contract
+give. **A brief must cite a path `ls-tree` confirms.**
+
+**And the lead swept every path in the tree, because of that.** Every path cited in the
+`.factory/work/WI-*.md` files and in the published documents, checked against the tree:
+
+- **The published documents come back with exactly one broken path.**
+  `docs/resource-templates.md:845` names **`docs/decisions/0008-_.md`**, which does not
+  exist — the ADR is **`docs/decisions/0008-five-domains.md`**, and the guide's own table
+  at `:861` points at the same placeholder. **That is now in WI-115's scope and its
+  acceptance criteria**, because WI-115 already owns that file and is already held
+  behind WI-086.
+- **One false citation in a published item file:** `WI-111.md:426` claims
+  `apps/server/src/api/goals.ts` writes the `goal.created` audit entry; **no such file
+  exists**, and `goal.created` is audited in `apps/server/src/api/factory.ts:55`.
+  **Corrected by appending beside the claim, not overwriting it.**
+- **Eight more are not defects:** `scripts/verify-licences.ts`,
+  `scripts/verify-citations.ts`, `scripts/verify-vendored-sources.ts`,
+  `docs/vendored-sources.json` and four test files are **files those items are owed**.
+  **An item may name a file that does not exist yet; a claim about what the code does
+  today may not.** And `apps/web/src/api/events.ts`, cited at `WI-024.md:443`, is not a
+  false claim at all — that line says the file is _not_ there.
