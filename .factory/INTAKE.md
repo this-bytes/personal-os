@@ -4009,3 +4009,41 @@ verification, and the comment is corrected there.
 **The push still waits for the owner's word.** The tree is green on the
 count; the pipeline has not yet run on the tip; and the word that authorised
 the last push was spent by that push.
+
+## The push — 2026-10-21 12:28
+
+**`main` is on the remote again, at `f8d808e`.** The owner was asked, with the
+evidence in the question, and said yes: **20 commits, 35 files, +2400/−238,
+fast-forward**, visibility unchanged at private, nothing rewritten.
+
+**The evidence the question carried, measured two ways.** The pipeline had run
+on `50b908d` — the commit that carries the correction — and **both legs were
+green**: CI success on all four jobs (Build and test, Dependency audit, Lint
+the workflows, Build and run the stack), and CodeQL success. The only commit
+after that tree was WI-046's item file and two ledger rows, both documents.
+**And this session measured the tree first-hand**: typecheck exit 0,
+`format:check` exit 0, **343 tests passing across 39 files**, build exit 0.
+
+**What rode along.** WI-031's resolve route — the owner's own conclusion about
+a turn they were told to check, published and audited as
+`execution.outcome.resolved` — WI-045's record, the published-counts
+correction, the two flake fixes in the suites that spawn processes, the Forge
+briefs, and this session's ledger entries.
+
+**The branch the evidence was read from.** `verify/green-at-tip` was pushed on
+the standing authorisation for branch pushes, and it is where the green run
+was read from. **It is evidence, and it can be deleted** — nothing depends on
+it, and `main` now carries the same tree.
+
+**One item in the pushed tree is not accepted yet, and that is honest.**
+**WI-046 is Probe's acceptance of the counts correction**, dispatched as
+`task_27a529dbec89` and queued: the lead implemented that correction, and the
+lead does not accept its own work. **A push is not an acceptance.** The tree
+is green and the pipeline is the evidence; the factory's own verifier has
+still to say yes, and it will land as a later commit.
+
+**One commit is ahead of the remote, and it is this record.** The tree that was
+pushed is the tree that was verified; adding a record of the push makes it a
+different tree, and the owner's word named **a** push, not a licence to push
+whatever comes next. `main` waits for the owner's word, and the next word
+carries this paragraph.
