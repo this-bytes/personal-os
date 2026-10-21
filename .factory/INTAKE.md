@@ -2252,3 +2252,92 @@ and release Probe's chat from a refusal that has run for 54 hours.** **Nobody ha
 dispatched to Probe since 04:25:20, so the release is untested** — and that is the
 one thing the owner can test cheaply, by ordering the restart and watching
 whether a delegation into Probe's chat is accepted.
+
+## 2026-10-22 07:26 — Chief: WI-108 is on `main`, the ceiling is vendor code, and the owner's three decisions, answered with what was measured
+
+**WI-108 is landed, and this ledger's own note about it was wrong.** `9c6444a`
+(07:15:46) "Merge WI-108: a broken spec is refused, not crashed". **My `bf28f0a`
+(06:56:42) recorded WI-108 as "verified and waiting on the vehicle" — it was not
+waiting; the vehicle carried it at 07:15:46, and Vision's verification landed
+after the code, not before it.** The four files that carry the fix are
+**byte-identical between `main` and the branch tip `a65ff32`**: `service.ts`
+`e519b554…`, `templates.ts` `9bcce9cd…`, `resources.test.ts` `032debf4…`,
+`resource-templates.test.ts` `a1515f91…`. So Vision's verification (delivered
+07:05, `task_cb4460d7e002`) measured code that is **already published**, and its
+six checks, the before/after error shape (`internal_error`/500 →
+`validation_failed`/422, with the task provider's exact message and the schema's
+issue list) and its mutation proof (6 red of 36, then green) all hold on the
+published tree. **Its two findings are not fixed by landing:** the item's three
+citations into `CONTRACTS.md` point 52, 39 and 159 lines out, and **the refusal
+message is published nowhere in the contract.**
+
+**WI-098 is landed, and its pointer is true on the published tree.** `3fab75a`
+(06:52:23) merged `wi/098-adr-rule-resync` (`53802d0`) into this session's line;
+the peer's `9a88ebe` (07:08:43) carried that line into the published one.
+Re-measured on `main`: the rule stands at `prototypes/DIRECTION.md` `:53-57`, and
+the ADR's provenance note reads `:53-57` as read at `95e5165` — **the pointer is
+true on the tree that publishes it, not only on the branch it was written on.**
+The record correction owed is **four stale sentences in
+`.factory/work/WI-098.md`** — "character for character", "Probe's pin", "402
+lines", "366 lines" — and that is **Wren's file, in a lane that refuses.**
+
+**The peer's merge resolved the ledger conflict with nothing lost.** `9a88ebe`
+merged `87c7b16` into this session's tree. Measured on the merged file: **all 19
+of this session's section headers and all 19 of the peer's are present**, 30
+dispatch rows with none lost, no conflict markers; the two `WI-112.md` sides were
+the same blob (`034610c2`) before the merge, and the ADR auto-merged with **this**
+session's corrected version — the peer's tree still carried the one-declaration
+quote.
+
+**The ceiling is vendor code, and the recommendation on it changes.** The
+two-slot limit is one line — `const MAX_RUNNING = 2;` in `task-dispatcher.mjs` —
+and that file is **official plugin code in a content-addressed cache**
+(`C:\Users\Aaron\.minimax\v2\plugin-cache\official\`). Measured: **seven version
+directories sit there, six of them written at 2026-10-21 07:06**, and **exactly
+one copy of `task-dispatcher.mjs` exists on disk**. A patch there works until the
+next official plugin update and then **vanishes silently, taking the capacity
+decision with it.** Vision raised this and it is right, and I checked it rather
+than take it. **So: no — do not patch the vendor cache.** The factory is not
+short of slots; it is short of **healthy lanes**.
+
+**The lanes, measured at 07:2x.** Cog **free** (last turn `done` 05:31), Vision
+**free** (report delivered 07:05), **Probe refusing** (last delegation 04:25:20 —
+176 minutes ago, `status=error`), **Wren refusing** (last delegation 06:30 —
+49 minutes ago, `status=error`). **77 of the 109 item files on `main` are not
+yet accepted.** The factory is idle because two lanes refuse, not because it is
+busy.
+
+**No restart has happened.** `runtime.start_requested` and `runtime.ready` are
+both at **2026-10-21 23:37:39**, one run id `5bc9c2db`, `current: true`. The four
+cancellations at 05:50 were **this session's own queue-clearing, not the
+restart** — Vision corrected that cause, and this ledger's own record of them
+(`c63d270`) already names them as this session's.
+
+**The owner's three decisions, answered with what was measured.**
+
+1. **The restart, and when — recommend yes, and the cheapest moment is now.**
+   Nothing is in flight but a report relay whose content has already been read. A
+   restart buys back **both** refusing lanes, and that is the only thing that
+   unblocks WI-103, WI-104, WI-106, WI-098's record correction and every
+   Probe-verified item on the board. **Its price: it cuts this session's own
+   turn** (the runtime logs "Cut off without an error: the Mini App restarted")
+   and any turn in flight at that moment — so order it at the end of a cycle,
+   with nothing started.
+2. **The ceiling patch — recommend no, and the reason changed.** Not because the
+   ceiling is right, but because the mechanism does not survive an update (above).
+   The durable line is **the ceiling stays at two** until the lanes are repaired;
+   a capacity decision that a vendor update can silently erase is not a decision.
+3. **A substituted verifier — settled: yes** where the substitute did not write
+   the work (WI-098, WI-010), **no** for WI-031's contract half, which stays
+   **HELD**.
+
+**Two dispatches, and the number space.** `wi-086-land-and-wi-112-verify-2026-10-22`
+(batch `batch_5f496c9fb4f6`): **Cog** `task_80405e5083e5` — WI-086, the
+approval-evidence read, re-applied onto today's tree with every citation
+re-pointed (its branch is a day old and `CONTRACTS.md` has been republished three
+times since); **Vision** `task_40d13d90f6d5` — WI-112, verified read-only as a
+**substituted** verifier, with the pin the item says is Probe's file left owed.
+**WI-113 is taken** — the contract publishes the refusal, and the tests read the
+message out of the contract instead of repeating it — and it is **held, not
+dispatched**, because `CONTRACTS.md` is WI-086's live file until Cog's dispatch
+lands.
