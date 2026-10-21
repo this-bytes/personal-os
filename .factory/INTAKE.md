@@ -3955,3 +3955,54 @@ WI-038, WI-044 and WI-045. The other: WI-024 through WI-029, and WI-039
 through WI-043. **Neither session edited the other's item files this tick** —
 WI-007's and WI-008's are this session's claim, and the other session left
 them alone for that reason.
+
+## The last red is corrected, and the lead made the edit — 2026-10-21 12:15
+
+**The three numbers moved, and the test that caught them passes.** The
+measures entry now publishes **35** mutating routes and **21** that write an
+audit entry at the route level, and its prose says "thirty-five". **The twelve
+stays twelve**, and the table of routes that write no audit entry does not
+change — the new route audits, so it is not in it. Measured with Probe's own
+method before the edit: 35 routes, 21 auditing at the route level, and 12
+writing none once `POST /api/approvals/:id/decide` and `PATCH /api/tasks/:id`
+are set aside. After the edit: the published-shapes test is **3 of 3**, and
+the whole server suite is **22 files, 216 tests, all passing**.
+
+**The tiebreak, out loud: the lead made this edit by hand, and Wren's queued
+task is cancelled.** The ledger routed it to Wren because `CONTRACTS.md` is
+Wren's file and a hand-edit from this session could collide with Wren's other
+contract work. **That reason was checked against the fleet before the edit,
+and it no longer holds.** Wren's running task (WI-036) says in its own brief
+that it touches `docs/**` only and must not open `CONTRACTS.md`; WI-037
+touches one file, `PRODUCT.md`; and the only queued task that writes
+`CONTRACTS.md` — WI-022's citation refresh — is behind a full slot. **Nothing
+is writing the file.** So the correction is made now, the queued task is
+cancelled — one item, one worker — and **ownership is honoured by
+verification rather than by delay: the lead does not accept this work, Probe
+does.**
+
+**A second red that was not a red: the typecheck failures were another
+session's in-flight edit.** A local `npm run typecheck` failed with four
+errors in `apps/server/src/api/executions.ts` and
+`apps/server/src/modules/executions/service.ts` — `workspaceId` missing from
+a type, `resolutionSentence` called with two arguments. **Those errors are
+not in the committed tree.** They came from the other session's _uncommitted_
+work in the shared worktree, mid-refactor: it moves `workspaceId` out of the
+request body and derives it from the execution record instead, and it had
+half-applied that change. **The committed code at HEAD is self-consistent** —
+`resolve` takes a `workspaceId`, `ExecutionResolution` does not publish one,
+and the route sends it — and `git diff 414996c HEAD` on those two files is
+empty. **Measured, not assumed.**
+
+**The committed tree's typecheck is not asserted here.** This session's run
+was contaminated by that in-flight edit, so the verdict belongs to the
+pipeline: a branch is pushed at the tip and its run is the measurement.
+
+**And one thing that is Probe's.** The test's own comment still says _"twelve
+of the thirty-four mutating routes write no audit entry at all"_ — a stale
+number in a file the lead does not own. It goes to Probe with the
+verification, and the comment is corrected there.
+
+**The push still waits for the owner's word.** The tree is green on the
+count; the pipeline has not yet run on the tip; and the word that authorised
+the last push was spent by that push.
