@@ -8239,3 +8239,46 @@ was closed with a command rather than with a queue slot.
 cancelled because the item is already accepted, **the thing the cancelled
 verification would have measured is still owed — and it may be measurable
 without a verifier at all.** A diff is free. A slot is not.
+
+## A scheduled report carries its premise with it — 2026-10-21 20:41
+
+**A scheduled task fired tonight to report a finding from 06:12 this morning:
+"the committed tree is red on purpose (4 failing tests) and the memory-guard
+fix has no work item."** Both halves of that are now false, and the report was
+never delivered — the group was mid-discussion on three attempts — **so
+delivering it tonight would have published a false claim about the
+repository.**
+
+**So it was not delivered, and the finding was closed where it was raised.**
+
+**What was measured, before deciding that:**
+
+- **The tree is green.** The two files that were red — `agent-memory.test.ts`
+  and `unknown-outcome.test.ts` — are **21 passed, 2 files, 0 failed**. CI is
+  green on every push since `e676ba9`.
+- **The memory guard is implemented and on every path.**
+  `apps/server/src/modules/mcp/server.ts:153` judges both the resource as it
+  is and as the write would leave it, and it is called on `resource.create`,
+  `resource.update` **and** `resource.get`. `1d45543` (07:17) is the fix —
+  _"Judge a memory write by who owns it, not only by what it says"_ — and it
+  came out of the owner's 07:07 ruling.
+- **The test was strengthened, not weakened.** `767fbe3` (13:11) replaced
+  _"looked for `isError` somewhere in the response, which any error would
+  satisfy"_ with a comparison against the contract's own published message.
+
+**And the finding's own history is the lesson.** It was recorded at **06:12**,
+twenty-five minutes after the red test that proved the defect and an hour
+before the fix. **It was live for about an hour, and it was closed inside that
+hour by the owner's ruling.** A report written from that moment is a report
+about a moment.
+
+**So the rule is the one the peer session wrote down this morning, applied to
+a scheduled report rather than to a question:** **a premise is a measurement
+of a moment, so the question has to be asked of the tree and never of the
+conversation.** A scheduled report is the sharpest case of it — the report was
+written hours ago and will be delivered whenever the channel opens, **so it
+has to be re-measured at the moment of delivery, and withdrawn if the tree has
+overtaken it.** **A report that cannot be delivered because it has become
+false is not a failed report. It is a correct one that says nothing.**
+
+**And this one is closed in `WI-005.md`, beside the finding it closes.**
