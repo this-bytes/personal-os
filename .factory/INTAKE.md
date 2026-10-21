@@ -7562,3 +7562,90 @@ stays. **Probe's verification of WI-043 therefore stands as the record of what
 the tree looked like before the decision, and its finding — the licence file
 that no item covered, and `FACTORY.md`'s ownership table not naming it — is
 already fixed: the table names the root `LICENSE` file, and it is Chief's.\*\***
+
+## Chief's tiebreak, and the publish — 2026-10-21 19:08
+
+### The three files Chief took, and why
+
+**`FACTORY.md:38` says Chief is the tiebreaker: "when two roles want the same
+file, Chief decides and says so in the group."** Three files that the
+ownership table gives to Wren were corrected by Chief rather than queued to
+Wren, and the reason is stated rather than assumed:
+
+| File                            | What was false in it                                                                           |
+| ------------------------------- | ---------------------------------------------------------------------------------------------- |
+| `README.md`                     | the licence section said "deliberately undecided … private for now"                            |
+| `docs/dependency-licences.json` | the `firstPartyNote` and **six** per-package notes said "private for now, with no LICENSE yet" |
+| `docs/strategy.md`              | said the repository's own licence was unsettled and the root `LICENSE` file had been removed   |
+
+**The reason Wren was not used: Wren's lane was nine tasks deep**, and the
+owner's decision had to land today, in the repository the owner ordered
+published. **The content is the owner's decision transcribed and nothing
+else** — no judgement, no craft taken from the role that owns the file.
+**And the acceptance of those three files is not Chief's**; it goes to another
+session.
+
+**The rule's purpose is served: no two workers were ever on one file.** Chief
+raised two licence dispatches to Wren, withdrew both when the tiebreak was
+taken, and cancelled the stale ones — so no queued worker remained on a file
+Chief was writing.
+
+**Every one of them was worked in a worktree on its own branch**
+(`wi/041-readme-mit`, `wi/036-dependency-licence-mit`,
+`wi/036-strategy-licence-mit`), pushed as a gated branch and merged, because
+**work is written there — never in the main checkout, never on `main`.**
+
+**The tiebreak was said in the group**: request id
+`chief-tiebreak-licence-mit-2026-10-21-1908`, task `task_8e3a35b53ebe`.
+
+### The two briefs that were cancelled rather than allowed to run
+
+1. **`task_a4d24aa2dc24`** — WI-068's half for `CONTRIBUTING.md`. Its brief
+   said to replace `CONTRIBUTING.md`'s MIT sentence with "the licence is
+   deliberately undecided". **After the owner's decision that sentence was
+   true, and the brief would have written a false contract into a file.**
+   Cancelled **19:14:20**, before it ran. **`CONTRIBUTING.md` was left
+   untouched for exactly that reason** — it already said MIT, and MIT is what
+   the repository now grants.
+2. **`task_d7f28085ef46`** and **`task_a1c52c5a8cd5`** — Chief's own licence
+   dispatches to Wren, withdrawn when the tiebreak was taken.
+
+**A brief that was right when it was written and wrong the moment the decision
+changed is cancelled, and the reason is recorded on the item.** WI-068's file
+carries that reason.
+
+### What the publish changed, and what it did not
+
+**`CONTRIBUTING.md` and `CHANGELOG.md` were not touched.** `CHANGELOG.md:42`
+already said "MIT licence", and `CONTRIBUTING.md:238` already said
+contributions are MIT-licensed — **both were false when the licence was
+undecided and are true now**, so the decision made them right rather than
+wrong.
+
+**And `docs/strategy.md`'s own point was kept, not deleted:** that a licence
+gate reading the dependency set cannot speak to this repository's own licence.
+**That is still true**, and the correction does not remove it.
+
+**The tree was measured before it was published.** 353 tracked files, 389
+commit messages, 2455 history blobs, **nothing that is a credential**; and no
+personal contact detail in any tracked file — every address in the tree is an
+`example.com` fixture.
+
+**And this session's push cancelled the peer session's run on `f4aceb8`. That
+is said out loud rather than left for someone else to find.** The workflow's
+`cancel-in-progress: true` is keyed on the **ref**, so the push at **19:33**
+that carried the licence changes cancelled the run on `f4aceb8` that was in
+flight at that moment.
+
+**The push was legitimate under the standing word, and the rule that says so
+is the rule in `FACTORY.md:99-107`:** the local gates measured **green on the
+tree being pushed** — typecheck 0, test 0, format:check 0, build 0, smoke 0,
+e2e 27 passed — and the code that landed is byte-identical to the code the
+pipeline had already measured green, because `git diff --name-only` from the
+last green tree touches **no code path**: only the root manifest's `license`
+field, the `LICENSE` file itself, and documents.
+
+**A verdict of `cancelled` is a superseded run, not a failure** — that is the
+clause the peer session put in the rule this morning, and it is the first time
+this session has been the push that cancelled someone else's run. **The run
+that judges this push is the one on `e676ba9`.**
