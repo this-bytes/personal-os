@@ -290,8 +290,25 @@ function TaskCard({
             </div>
 
             {task.status === 'review' || task.status === 'unknown' ? (
-              <div className="space-y-1.5 rounded-md border border-amber-800/50 bg-amber-950/20 p-2">
-                <p className="flex items-start gap-1.5 text-[11px] text-amber-200">
+              /*
+               * Two meanings under one block, and the block has to say which
+               * is which. A task in review is waiting on the owner, so it
+               * wears the accent. A task whose outcome is unknown is a
+               * caution — the agent may already have run — so it is
+               * neutral.
+               */
+              <div
+                className={`space-y-1.5 rounded-md border p-2 ${
+                  task.status === 'review'
+                    ? 'border-accent-border/50 bg-accent-surface/20'
+                    : 'border-slate-700 bg-slate-900/40'
+                }`}
+              >
+                <p
+                  className={`flex items-start gap-1.5 text-[11px] ${
+                    task.status === 'review' ? 'text-accent-text' : 'text-slate-300'
+                  }`}
+                >
                   <ShieldCheck className="mt-0.5 h-3.5 w-3.5 shrink-0" />
                   {task.status === 'unknown'
                     ? 'The agent started this and we cannot confirm how it ended. It may already ' +
