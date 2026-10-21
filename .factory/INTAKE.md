@@ -6454,3 +6454,18 @@ WI-020's repair; WI-035, WI-044 and WI-069 wait on the owner.
 held a slot for 462 minutes was cancelled by another session at 17:10, and **the slot
 refilled in twelve seconds**: the factory's daily tick started at 17:10:25 and
 WI-034's dispatch took the other. The queue went 32 → 31.
+
+**A second full-tree run reproduced it, and that sharpens the reading.** The whole
+`npm run test` was run again at 17:34 with no change to the tree, and it failed the
+same way — `EBUSY: resource busy or locked, unlink 'C:\Users\Aaron\AppData\Local\Temp\verify-stack-no-owner-ol8Ron\personal-os.db'`
+at the same `verifyStack.test.ts:133`, again with **230 tests passing and one file
+failed**. So the failure **reproduces in the full-tree run and did not reproduce in
+the single-suite run**: the trigger is contention, not the code. But it also means the
+one green single-suite run is **not** evidence of health, and the brief should treat
+the full-tree run as the measurement.
+
+**And it cannot reproduce on CI, which is exactly why CI is green.** Unlinking an open
+file is legal on Linux and refused on Windows, so the only place this failure can
+appear is a Windows checkout. `Build and test` completed green on `5e0c30a` and on
+`9a8f243` with this same tree. **A green CI is not a green local gate on this
+repository**, and the stack test's teardown is the one place the two disagree.
