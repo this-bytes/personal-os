@@ -9380,3 +9380,105 @@ false alarm: a red measurement is true of the tree it was measured on, and the t
 here move under you.** The lead's own back-out was a reasonable act on a tree that was
 no longer the published one. **Measure the tree that publishes the work, and say which
 tree you measured.**
+
+## 2026-10-22 08:12 — A verifier's report arrives for an item closed two hours earlier, and the pointer rule is proved twice over
+
+**Probe's WI-034 verification came back VERIFIED, and the first thing it does is correct
+its own brief:** WI-034 was merged by `26fb68e` and accepted at 05:50, so "NOT merged
+into `main`" is stale. **All four of its shas are ancestors of `main` today.** So the
+report corroborates an acceptance that was already made — **and no second acceptance is
+spent on a closed item**, which is the rule that keeps one verifier, one item, one
+verification.
+
+**The lead re-measured it on today's tree, because the report was measured at `f473982`
+and the tree has moved twice.** The pin is green — **6 tests passed, exit 0** — and all
+eight citations in `### The audit outcome` point at the code they claim. The section is
+`:1222-1288` now, 67 lines rather than the 62 Probe measured, and the three stale
+numbers are still nowhere in the contract.
+
+**And the re-statement that landed after Probe read the pin closed Probe's caveat.** The
+pin used to assert `expect.soft(section, …).toContain(claim.citation)`, and Probe
+measured that the `audit/service.ts` pattern matches **two** byte-identical lines
+(`:79` and `:92`) — so the pattern alone did not pin the number, and the `toContain` was
+doing that work. **The current pin finds the citation by range**, so a citation of `:92`
+can no longer satisfy a claim at `:79`, and **the instrument now pins the number
+itself.** A verifier's caveat was true of the tree it was measured on and was closed by
+the tree that followed.
+
+**Probe's one defect is in the brief, not the work** — it cites
+`apps/server/src/api/app.ts:185`, and there is no `apps/server/src/api/app.ts`. **And
+that one defect earned a sweep of the whole tree**, because a brief that cites a path
+which does not exist is a lead's own mistake, and the lead would rather find the rest of
+them than leave them for another session to trip over.
+
+**The sweep checked every path cited in every item file and every published document
+against the tree.** The published documents came back with **one** broken path:
+`docs/resource-templates.md:845` names `docs/decisions/0008-_.md`, a placeholder nobody
+filled in, and the ADR is `docs/decisions/0008-five-domains.md` — **and that file is
+already WI-115's, so it joined WI-115's scope rather than opening a third item on it.**
+One false citation in a published item file — `WI-111.md:426` names
+`apps/server/src/api/goals.ts` for the `goal.created` audit entry, **no such file
+exists**, and the entry is audited in `factory.ts:55` — **corrected by appending beside
+the claim.** And eight more that are not defects at all: they are **files those items
+are owed**.
+
+**So the rule, written down where it can be read:** _an item may name a file that does
+not exist yet — that is what an item is for — but a claim about what the code does
+today must cite a file that exists, and a path in a published document must exist._ The
+pointer rule has now been proved three times in one day — by WI-034's correction, by
+WI-108's shift, and by this sweep — **and every one of the three was found by reading a
+line against its sentence, not by a gate.**
+
+## 2026-10-22 08:15 — The peer states the rule this session's back-out needed, and the two sessions converge on the same lines
+
+**A peer session's correction is better than the one this session made about its own
+error, and the lead takes it.** The peer wrote it plainly: **the durable anchor for
+"what is published" is the remote tip, read with `git ls-remote origin refs/heads/main`,
+and not the local tracking ref.** The tracking ref moves on a fetch and lags a push, so
+a claim about what is published can be a whole push stale — and the lead's 07:39
+"WI-108 is NOT on `main`" was wrong for exactly that reason, thirteen minutes and one
+push after the peer had published it. **The lead's own correction stands beside it: a
+red measurement is true of the tree it was measured on.** The two are the same rule seen
+twice. **Read the tree the work stands in, not a ref you assume is current.**
+
+**And the two sessions measured the same nine pointers, independently, and agreed.**
+The peer computed them from the shift rather than off the code — `service.ts` **+2**
+from ~250 and **+40** from ~704, `templates.ts` **+12** from ~465 — and the targets
+land on the same lines the peer's own re-pointing carries and the lead's table in
+WI-114 names. **Three measurements, one set of lines, and the work is already done.**
+
+**One number conceded, and the space after it:** **WI-116 is reserved by the peer** for
+a contract-publication item it has not opened, **so the next number either session may
+take is WI-117.** WI-114 and WI-115 are the lead's, and **both are held behind
+WI-086**, which is `CONTRACTS.md`'s live file and is running right now.
+
+**And Probe's WI-034 verification arrived for an item closed two hours earlier, and
+corroborated it.** The lead re-measured it on today's tree rather than on the tree the
+report was measured at: **the pin is green, 6 tests passed, exit 0, and all eight
+citations in the audit-outcome section point at the code they claim.** **And the re-
+statement that landed after Probe read the pin closed Probe's own caveat** — the pin now
+finds its citation by range, so a citation of `:92` can no longer satisfy a claim at
+`:79`, and **the instrument pins the number itself.**
+
+## 2026-10-22 08:18 — A red gate that was not the tree's fault, and what it cost
+
+**One full test run failed and the lead did not know why.** The failing workspace's
+output had been cut off by the lead's own `Select-Object -Last 14`, so a red gate
+arrived with no visible cause — and a red gate with no known cause is either pushed
+anyway or buried, and neither is acceptable.
+
+**The cause was in the commit timestamps.** The failed run spanned about 08:08 to
+08:14, and **the peer session committed `683ad44` at 08:10:05, inside that window.**
+**Two Chief sessions share one working tree, and a test suite that reads files while
+the other session is writing them is measuring a tree that does not exist.** Re-measured
+in order — the server workspace alone, **39 files, 423 tests, exit 0**; then the full
+suite with every line captured to a file, **`TEST_EXIT=0`, 61 files, 615 tests, 0
+failures**, no failure line anywhere in the log — **the tree is green and the red was a
+race.**
+
+**Two rules, both cheap.** **A gate measured while the other session is committing is
+not a measurement: check the commit timestamps on both sides before believing a red.**
+And **capture the whole log before reading it** — the lead's own habit of trimming a
+gate's output with `-Last` is what turned a two-minute flake into an hour of
+re-measurement, and it is the same habit that hid WI-108's landing failure earlier
+today.
