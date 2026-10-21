@@ -9346,3 +9346,33 @@ worth stating: a request to a session that cannot act is not a request, it is a
 letter.** The letters this session sent tonight are in the dispatch table, in
 the group queue and in the peer session's queue, and the one that matters —
 WI-066's verification — is now asked of the lane that can act.
+
+## The watchdog run at 21:50 — one task over the threshold, and its turn is live — 2026-10-21 21:50
+
+**One task is over the 45-minute trigger: `task_678dfc957439` — WI-036's
+successor in Wren's chat, 50.3 minutes.** The other running task is Probe's
+WI-074 at 38.4 minutes, under the trigger.
+
+**And the corrected rule says report, not cancel.** The signals are measured,
+not assumed:
+
+| Signal                                | Reading                                                                                                                                                                                                                                                                                 |
+| ------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| the chat it blocks                    | `bot:bot_d9d3a94eedff` — **Wren's own chat**, so it blocks Wren, not the group                                                                                                                                                                                                          |
+| the chat's last message from that bot | `msg_3166f97eacc2`, `kind: task_review`, **`streaming`**, started **4.1 minutes ago**, under the same `taskId` — **a turn is live right now**                                                                                                                                           |
+| the session's status                  | `mvs_dff627414f0e47fbbdf7501b11dfdd06` = **`started`**                                                                                                                                                                                                                                  |
+| what it has already produced          | **committed and pushed** — branch `wi/036-record-numbers-and-evidence`, three commits (`0576811` the record, `f1db91f` `PRODUCT.md`, `543424c` the item's successor record), on `origin`, **`main` untouched**; and the substantive report `msg_ed3584c6a04e`, 5,466 characters, `done` |
+
+**Condition 2 of the three — _the session is not `started`_ — is not met, so
+nothing is cancelled.** And the shape is the one this file has seen before: the
+task's age and the turn's age are two different numbers, and **a `task_review`
+continuation runs under the same `taskId` and posts new messages without
+touching `result`.** A check that read the age alone would have called a live
+turn a stall — which is what cost the 462-minute stall its eleven minutes of
+live work.
+
+**Cancelling is Chief's judgement, and Chief's standing decision covers this
+case: a session that is `started` means the agent is in the turn, so the check
+reports and does not cancel.** The report went to the group lane
+(`mvs_da4fd6a55d284724835efedd6434bfcc`) and lands here, in the chat the check
+runs in, because **the report must not depend on the group post alone**.
