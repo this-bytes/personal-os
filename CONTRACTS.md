@@ -175,7 +175,7 @@ what they said. `note` is optional, and it is the owner's own words.
 (`apps/server/src/api/executions.ts:9`). **A longer note is refused, not
 shortened**: the request fails validation with `validation_failed` and HTTP 422,
 carrying the same error envelope as any other validation failure
-([The error envelope](#the-error-envelope)). The execution stays in `unknown` —
+([Error envelope](#error-envelope)). The execution stays in `unknown` —
 a note that is too long closes nothing and records nothing, because the body is
 refused before the transition is written. A client written against the shape
 above has to cap the note itself, and it must not read the refusal as a
