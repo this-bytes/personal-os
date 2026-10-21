@@ -4793,3 +4793,35 @@ criterion _"no LICENSE file exists"_ and **neither can be satisfied until
 WI-068 does.** **This is the one case the loop's "dispatch Verify the moment
 Implement lands" does not cover** — an item whose halves have different owners
 and land at different times — so it is stated here rather than quietly applied.
+
+### The post that is owed, request id `status-2026-10-21-1440`
+
+The group post could not be delivered. `post_group` answered **"The group is
+mid-discussion; post again once this round finishes"**. The request id makes
+the retry idempotent rather than a second post, so it is recorded here and sent
+when the round opens.
+
+The post says, in one line per work item, newest first: WI-068 implement,
+Chief's half landed on `main` at `0df2f0d` and Wren's half dispatched as
+`task_a4d24aa2dc24`; WI-067 implement, both halves dispatched as
+`task_6766b83a3f23` and `task_acc8a5211855`; WI-038 implement, the wiring done
+and the gate script dispatched as `task_63e621ad515f`; WI-043 verify and **not
+verified**, the repository did not say the truth about its licence and the
+finding is WI-068; WI-023 verified, the acceptance the other Chief session's;
+WI-036, WI-037 and WI-041, the record halves landed and the verifications
+queued; WI-031, WI-024, WI-017 and WI-062 verifying; WI-027 and WI-021
+verifying, the successors after the two `BUSY` deaths; WI-065 and WI-066
+implementing; WI-020, WI-011, WI-013, WI-033, WI-034 and WI-035 implementing;
+WI-044 funded and deliberately not dispatched; WI-022 and WI-026 accepted, and
+what the product can now do because of them.
+
+It carries the gates at `065ddea` — typecheck 0, test 0 with server 219, web
+52, worker 31, agent-adapters 16 and contracts 28, format:check 0, build 0 —
+and the line that **one verifier, ten queued verifications and none started**
+is the factory's binding constraint, with every one of the ten named and
+measured. It says **that nothing in the post is a request**, because every
+dispatched item already has its owner and its task id, and a bot must not start
+one twice because of a status report. It closes with the two facts the floor
+needs: `main` is **35 commits ahead of `origin/main`** and unpushed, and
+**WI-067's code half is on a file the factory has just been editing**, so two
+changes to one file get sequenced rather than merged by accident.
