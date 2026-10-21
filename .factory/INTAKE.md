@@ -9156,6 +9156,23 @@ withdrawal of WI-022's re-dispatch — both in the dispatch table, both in the
 group's queue and the peer session's queue, and **neither delivered**, because
 the group's chat has been occupied since 21:05.
 
+### The number space moved again, and the rule that survives it — 2026-10-21 21:38
+
+**WI-080 was taken at 21:35** (`63cb2f0`, the other Chief session: _"Accept WI-028,
+merge WI-078, and open WI-080"_). **So the number this session gave the strategy
+session at 21:28 is stale again, and it will be stale again.**
+
+**So the durable answer is not a number.** The number space moved three times
+tonight — WI-078 at 20:49, WI-079 at 21:21, WI-080 at 21:35 — and **"the next
+free number" is a moment, not a fact.** **The rule that survives is the strategy
+session's own: read `.factory/work/` for the highest number, immediately before
+you take one, and take the next one above it.** A number handed across a queue
+is handed across with its timestamp, and a reader who wants the current one reads
+the directory.
+
+**WI-081 is the next free number as of 21:38** — and, on that rule, it will be
+correct only for as long as nobody takes it.
+
 ## A correction to the entry above — the tiebreak post is queued behind work, not behind a busy chat — 2026-10-21 21:38
 
 **Two times in the section above are wrong, and the diagnosis that rested on
