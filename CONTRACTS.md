@@ -223,7 +223,7 @@ execution's outcome could not be confirmed, so an execution that is no longer
 
 **The transition is written to the audit trail** as `execution.outcome.resolved`,
 beside the task path's `task.outcome.resolved`
-(`apps/server/src/modules/factory/service.ts:279`). It names the owner the way
+(`apps/server/src/modules/factory/service.ts:319`). It names the owner the way
 the task path's does — `actorType: 'human'` and the owner's id — and its
 metadata carries the transition, `from: 'unknown'` and `to` the outcome.
 
@@ -237,7 +237,7 @@ This entry is the contract for **WI-031**, and the code implements it — as of
 (`363428e`), and `3dd490b` brought the route to the published shape after it.
 The route is `POST /api/executions/:id/resolve`, at
 `apps/server/src/api/executions.ts:21`, and it is registered at
-`apps/server/src/app.ts:223`. **Only the owner may call it**, under the same
+`apps/server/src/app.ts:226`. **Only the owner may call it**, under the same
 authentication as every other owner-facing route
 (`apps/server/src/api/helpers.ts:13-17`). **The route's own writer is the
 executions service**, which writes the execution's status and the reply's
@@ -526,6 +526,8 @@ interface Resource<T = unknown> {
   data: T;
   createdBy: string;
   updatedAt: string;
+  templateId?: string; // the template this resource was made from
+  templateVersion?: number; // and the version of it
 }
 
 interface ResourceProvider<T> {
@@ -539,6 +541,20 @@ interface ResourceProvider<T> {
 This is a shared envelope, not a requirement to store every document or file as JSON.
 Each resource type maintains an appropriate internal representation while exposing
 stable operations.
+
+**A resource records where it came from.** `templateId` and `templateVersion` are
+optional, and they are a record rather than a link: a resource made from a template
+carries the template's id and the version of it, a resource written from a spec
+carries neither, and a later version of the same template does not change a resource
+that was made from an earlier one. The resource stays an ordinary resource — the same
+contract, the same validation, the same revision — and the two fields are the only
+trace of the template it was made from.
+
+**Migration.** The two columns are additive and nullable
+(`apps/server/drizzle/0009_kind_lilith.sql`), and **nothing is backfilled**: a
+resource written before the migration has `null` in both, which is what the shape
+above publishes as absent. The same two columns are on `automations` and on `tasks`,
+and the same rule applies to them.
 
 **The author is a closed set.** `createdBy` is a string, and the strings it may
 hold are published as `resourceAuthorSchema`
@@ -568,9 +584,10 @@ Charts render from structured datasets, not agent-generated executable JavaScrip
 
 ### The template record
 
-A template is a **named, versioned example of one resource kind, with its spec, that
-an agent can start from**. It answers a question a schema cannot: a schema is a
-type, and a template is an example that was written, reviewed and shipped.
+A template is a **named, versioned example of one resource kind, with its spec and the
+guide that says what a good one of that kind is, that an agent can start from**. It
+answers a question a schema cannot: a schema is a type, and a template is an example
+that was written, reviewed and shipped.
 
 ```ts
 interface ResourceTemplate {
@@ -580,6 +597,16 @@ interface ResourceTemplate {
   title: string;
   description: string;
   spec: unknown; // validated by the owning provider for `type`
+  guide: ResourceTemplateGuide; // required
+}
+
+interface ResourceTemplateGuide {
+  summary: string;
+  whenToUse: string[];
+  whenNotToUse: string[];
+  fields: { path: string; what: string; mustSet: boolean }[];
+  mistakes: string[];
+  checklist: string[];
 }
 
 interface ResourceTemplateRef {
@@ -594,6 +621,16 @@ belongs to exactly one kind, and `version` is part of its identity: the registry
 may hold several versions of one template, and each version is a spec that was
 reviewed on its own.
 
+**The guide is required.** It is not an optional part of the record: `guide` is
+required in `ResourceTemplate`, and it has six sections. `summary` says what the
+template is for, `whenToUse` and `whenNotToUse` say when to reach for it and when not
+to, `fields` says which fields the caller has to set — each one with the `path` it
+lives at, what it means and whether it `mustSet` — `mistakes` says what a reader
+would get wrong, and `checklist` is the last look before shipping. **This is the one
+change that breaks a client that holds templates of its own**: a template without a
+guide is no longer a template, so anything that reads, writes or ships a template has
+to carry one.
+
 **A template is not a resource.** It has no workspace, no revision, no `createdBy`
 and no audit trail of its own; it is not a row in `resources` and not a row in any
 table. Templates are **authored in the repository and reviewed like code**, so
@@ -605,8 +642,10 @@ The registry is the same for every workspace — a template is not scoped to one
 same audit trail and the same revision, and it starts at revision 1 like every
 other resource. **The template's spec is validated by the owning provider exactly
 as a resource's spec is**, so a template cannot drift into describing something
-the product would reject. The resulting resource carries no reference back to its
-template — it is the resource, not a template instance.
+the product would reject. **The resource records where it came from** — the
+template's id and the version of it, as `templateId` and `templateVersion` — and it
+is a copy rather than a link: a later version of the same template does not change
+a resource that was made from an earlier one.
 
 **The template is reached through the tool surface an agent already uses.** That
 surface is the existing `resource.*` MCP surface — not a second tool surface, and
@@ -615,41 +654,86 @@ not a second way to create a resource:
 | Tool                     | Purpose                                              |
 | ------------------------ | ---------------------------------------------------- |
 | `resource.template.list` | List the templates published for one resource kind.  |
+| `resource.template.get`  | Read one template in full — its spec and its guide.  |
 | `resource.create`        | Create a resource — from a template, or from a spec. |
 
-`resource.template.list` takes the kind and returns the templates published for
-it. `resource.create` gains **one optional input**, `template`:
+`resource.template.list` takes an optional `type` — the kind — and returns the
+templates published for it. **Without a `type` it returns the newest published
+version of every template**, one row per template and none of them twice, sorted by
+id (`apps/server/src/modules/resources/templates.ts:404-415`). The six that ship are
+one for each kind, so a call with no `type` answers with six templates.
+
+`resource.template.get` takes `{ id, version? }` and reads one template in full —
+**its spec and its guide** — so an agent can read what a good one of that kind is
+before it creates anything. A version names one reviewed spec; without one, the
+newest published version is meant
+(`apps/server/src/modules/resources/templates.ts:423-435`). An unknown template id
+is `not_found`.
+
+`resource.create` gains **one optional input**, `template`:
 
 ```ts
 // the resource.create input
 { workspaceId?, type, title, data?, template? }
 ```
 
-`template` names the template to start from: its `spec` is the resource's `data`,
-and its `type` must equal the `type` the call asks for. `data` and `template` are
-**mutually exclusive** — a call that supplies both is refused, because there is
-no published answer to which of the two wins. An unknown template id is
-`not_found`; a template whose kind does not match, and a template whose spec the
-owning provider refuses, are `validation_failed`. Those codes are already
-published in [Error envelope](#error-envelope); this entry adds none. The tool's
-visibility follows the same grant rule as every other tool on that surface,
-published in [MCP exposure](#mcp-exposure).
+**`data` and `template` are not mutually exclusive — they merge.** `template` names
+the template to start from, and its `type` must equal the `type` the call asks for.
+`data` is the caller's own values, and the resource's `data` is the template's
+`spec` with those values merged into it. **A call that carries both is no longer
+refused — it is answered**, and the values the call did not name are the template's.
+A template of another kind, and a template whose spec the owning provider refuses,
+are `validation_failed`
+(`apps/server/src/modules/resources/service.ts:638-655`); an unknown template id is
+`not_found`. Those codes are already published in
+[Error envelope](#error-envelope); this entry adds none. The tool's visibility
+follows the same grant rule as every other tool on that surface, published in
+[MCP exposure](#mcp-exposure).
 
-**The code implements this — as of `8b1fd01`.** WI-017 built the record, the tool
-and the input, and the tree carries all three: `resourceTemplateSchema` and
-`ResourceTemplate` are at `packages/contracts/src/resource.ts:58-71`, with
-`resourceTemplateRefSchema` and `ResourceTemplateRef` beside them at `:79-83`;
-`resource.template.list` is one of the published tool names — it is in
-`mcpToolNames` at `packages/contracts/src/mcp.ts:21`, inside the range `:11-23`,
-and in the default agent grant list at `:45`; and the server registers the tool
-at `apps/server/src/modules/mcp/server.ts:465-481`, only where the connection is
-granted it, the way every other tool on that surface is. `resource.create` takes
-the `template` input at `:361`, refuses a call that carries both a spec and a
-template at `:373-377`, and the template's spec becomes the resource's data at
-`:382-384`.
+**The merge rules are these.** They are implemented by `mergeTemplateSpec`
+(`apps/server/src/modules/resources/templates.ts:522-543`), and the rules per kind
+are at `:496-510`:
+
+- **Objects merge key by key.** A key the caller's values do not name keeps the
+  template's value, and the merge is recursive: a nested object merges the same way.
+- **An array is replaced whole.** The caller's array is the array; the template's
+  does not survive beside it.
+- **A change of the shape key replaces the whole spec.** The shape key is `kind` for
+  a data source and `scope` for a memory. When the caller's values name the shape
+  key and it differs from the template's, the caller's values are the spec: a data
+  source that becomes `http` keeps no inline `payload`, and a memory that becomes
+  agent-scoped keeps none of the workspace memory's shape. A caller who says nothing
+  about the shape keeps the template's.
+- **Some paths are replaced whole, whatever they are.** An automation's `trigger` and
+  `action` are named whole — the caller who names one means that one — and a memory's
+  `value` is the memory itself.
+- **A dashboard's widgets merge by the widget's own `id`.** A widget the caller names
+  by the same id is updated field by field; a widget the caller does not name
+  survives; a widget the caller adds is appended after the template's. A widget whose
+  `type` changes is the caller's, whole.
+- **The merge never refuses.** The owning provider judges the merged spec exactly as
+  it judges a spec that arrived whole.
+
+**The code implements this — as of `20ca643`.** WI-017 built the record, the tool
+and the input, and WI-097 built the guide, the filling and the record of where a
+resource came from; the tree carries all of it. `resourceTemplateGuideSchema` and
+`ResourceTemplateGuide` are at `packages/contracts/src/resource.ts:87-116`, and
+`resourceTemplateSchema` and `ResourceTemplate` — the record, with the guide
+required in it — are at `:128-149`, with `resourceTemplateRefSchema` and
+`ResourceTemplateRef` beside them at `:157-161`. `resource.template.list` and
+`resource.template.get` are both published tool names — they are in `mcpToolNames`
+at `packages/contracts/src/mcp.ts:21-22`, inside the range `:10-26`, and in the
+default agent grant list at `:47-48`. The server registers both tools only where
+the connection is granted them, the way every other tool on that surface is
+(`apps/server/src/modules/mcp/server.ts:532-576`). `resource.create` takes the
+`template` input at `:428`, merges the caller's values into the template's spec at
+`:446-448`, and passes the template's id and version on at `:458`. The merge rules
+themselves are at `apps/server/src/modules/resources/templates.ts:496-543`, and the
+resource records them at
+`apps/server/src/modules/resources/service.ts:191-192` and `:374-375`.
 
 **The six templates that ship are one for each kind**, authored in the repository
-at `apps/server/src/modules/resources/templates.ts:21-124`:
+at `apps/server/src/modules/resources/templates.ts:21-394`:
 
 | Kind          | Template id                |
 | ------------- | -------------------------- |
@@ -660,27 +744,28 @@ at `apps/server/src/modules/resources/templates.ts:21-124`:
 | `task`        | `task.deliverable`         |
 | `memory`      | `memory.decision-note`     |
 
-Each is published at version 1, and every one is checked against the provider
-that owns its kind when the service is built
-(`apps/server/src/modules/resources/service.ts:396`), so a template that drifted
+Each is published at version 1, each carries a guide, and every one is checked
+against the provider that owns its kind when the service is built
+(`apps/server/src/modules/resources/service.ts:459`), so a template that drifted
 is caught at the door rather than by an agent that reached for it.
 
-**A client may now call `resource.template.list` and may send `template` on
-`resource.create`.** The call exists and the input is accepted; a client written
-before this change has to make room for both.
+**A client may now call `resource.template.list` and `resource.template.get`, and may
+send `template` on `resource.create`.** The calls exist and the input is accepted; a
+client written before this change has to make room for all of it.
 
-**Migration.** Nothing is reclassified. `resource.create` without `template`
-behaves exactly as it does today, so no existing client changes what it sends,
-and no resource written before this change is affected — a resource has no
-template field and gains no template reference. **A template is still not a
-resource, and a resource made from a template is still an ordinary resource.**
-**The surface grew, and that is the change a client written before has to allow
-for**: a client that reads the list of MCP tools gains one name,
-`resource.template.list`, and a client that validates an agent's `toolGrants`
-against the known names has to allow for it, because the grant vocabulary grew
-with the surface. A client that renders a resource is unaffected: a resource
-created from a template is an ordinary resource with the same fields it always
-had.
+**Migration.** Nothing is reclassified and no record is rewritten.
+`resource.create` without `template` behaves exactly as it does today, so no
+existing client changes what it sends. **The surface grew, and that is the change a
+client written before has to allow for**: a client that reads the list of MCP tools
+gains two names — `resource.template.list` and `resource.template.get` — and a
+client that validates an agent's `toolGrants` against the known names has to allow
+for them, because the grant vocabulary grew with the surface. **A client that holds
+a template of its own has to carry a guide**, because the guide is required.
+**A client that sends both a spec and a template now gets an answer instead of a
+refusal**: the two merge, and the merged spec is what the resource carries. A
+client that renders a resource is affected in one place: the resource gained two
+optional fields, `templateId` and `templateVersion`, and a resource written before
+the migration carries neither.
 
 ### The agent memory scope
 
@@ -721,7 +806,7 @@ do today.
 
 This entry is the contract for **WI-012**, and the code implements it — as of
 `e764e6a`. `memoryScopeSchema` carries `'agent'` at
-`packages/contracts/src/resource.ts:138`, the spec's `agentConnectionId` at `:148`,
+`packages/contracts/src/resource.ts:216`, the spec's `agentConnectionId` at `:226`,
 and `listAgentMemories` at
 `apps/server/src/modules/resources/agent-memory.ts:29` is what puts the agent's
 memories in the turn context.
@@ -730,9 +815,9 @@ memories in the turn context.
 owner's ruling of 2026-10-21 at 07:07 was that an agent's own memory is private
 to it, on reads as well as on writes, and the sentence above now says so. The rule
 is one call — `assertOwnMemory` at
-`apps/server/src/modules/mcp/server.ts:153`, with `memoryOwner` at `:119` — and it
-answers the same way for the three resource tools: `resource.create` at `:386`,
-`resource.update` at `:447` and `resource.get` at `:417`. A memory's owner is
+`apps/server/src/modules/mcp/server.ts:217`, with `memoryOwner` at `:181` — and it
+answers the same way for the three resource tools: `resource.create` at `:450`,
+`resource.update` at `:514` and `resource.get` at `:484`. A memory's owner is
 `memoryOwner`'s answer, and an agent that is not that owner is refused with
 `forbidden` and the message "An agent may only reach its own memory."
 
@@ -763,6 +848,7 @@ external agents can discover and operate them.
 | `resource.get`           | Read a resource. Not another agent's own memory.        |
 | `resource.update`        | Update a resource with optimistic concurrency.          |
 | `resource.template.list` | List the templates published for one resource kind.     |
+| `resource.template.get`  | Read one template in full — its spec and its guide.     |
 | `automation.create`      | Create an automation.                                   |
 | `automation.inspect`     | Inspect an automation and its runs.                     |
 | `autonomy.read`          | Read the autonomy policy in force for a scope.          |
@@ -777,7 +863,7 @@ granted. **An ungranted tool is not registered at all**, so it does not appear i
 
 **`autonomy.read` is in the default grant list, so every agent connection gets it.**
 A connection with no explicit grants runs on the default set
-(`packages/contracts/src/mcp.ts:36-50`), and that set carries `autonomy.read`: an
+(`packages/contracts/src/mcp.ts:37-52`), and that set carries `autonomy.read`: an
 agent can read the policy that governs it without the owner granting anything else.
 A connection whose grants were narrowed explicitly keeps the list it was given — the
 tool is not added to a stored list. The owner has it too, because the owner's grant
@@ -796,6 +882,34 @@ workspace gets its own.
 answers even when the policy refuses that agent's other actions, because an agent
 that cannot see why it was refused cannot do anything sensible about it
 (`apps/server/src/modules/mcp/server.ts:109-110`).
+
+**`resource.template.get` is in the default grant list, so every agent connection
+gets it.** The same default set carries it beside `resource.template.list`
+(`packages/contracts/src/mcp.ts:47-48`): an agent can read a template's guide — what
+a good one of that kind is, which fields it must set, and what a reader would get
+wrong — without the owner granting anything else. A connection whose grants were
+narrowed explicitly keeps the list it was given, and the owner has it too, because
+the owner's grant list is every tool.
+
+**A refusal on the MCP surface is not the HTTP envelope.** A tool that refuses
+answers with `isError: true`, and the result's text is a **flat** `{ code, message,
+details }` — the code, the message and the details side by side, with **no `error`
+key** around them. The shared envelope in [Error envelope](#error-envelope) is
+published for the HTTP surface, and it is not the shape an MCP refusal carries: a
+client written against the HTTP envelope finds no `error` key in an MCP refusal and
+has to read `code` and `message` off the top level. `details` is there when the
+refusal has details and absent when it does not
+(`apps/server/src/modules/mcp/server.ts:52-61`).
+
+**The refusal names the action; the rest of its wording is not fixed.** A refusal
+the autonomy policy makes says which action was refused, in a sentence the owner can
+act on, and it carries the action and the allowed actions in `details`
+(`apps/server/src/modules/mcp/server.ts:116-122`). **The wording itself is not part
+of the contract**: the sentence is composed from the policy in force, so it changes
+when the policy changes, and a client must not match on it. A client matches on the
+`code` — a refused action is `forbidden` — and on the `action` in `details`. The one
+exception is a refusal whose message is fixed in the code and published in this
+section, such as "An agent may only reach its own memory."
 
 **Who owns a resource is settled before it is handed over.** `resource.get`
 carries the same rule the writes already carried: an agent-scoped memory is
@@ -866,6 +980,8 @@ interface FactoryTask {
   evidenceResourceIds: string[];
   revision: number; // optimistic concurrency, same rule as a resource
   externalRef?: string; // the external orchestrator's own task id
+  templateId?: string; // the template this task was made from
+  templateVersion?: number; // and the version of it
 }
 ```
 
@@ -874,7 +990,28 @@ revision it read; a stale revision is rejected with `409 revision_conflict`. A t
 assigned to an external orchestrator keeps that orchestrator's own task identifier in
 `externalRef` rather than creating a competing internal workflow.
 
+`templateId` and `templateVersion` are additive fields too, and optional: a task
+made from a template carries the template's id and the version of it, and a task
+written from a brief carries neither. **Nothing is backfilled** — the two columns
+are nullable and were added by `apps/server/drizzle/0009_kind_lilith.sql`, so a
+task written before the migration has `null` in both, which is what the shape
+publishes as absent.
+
 `unknown` is defined in [The unknown outcome](#the-unknown-outcome).
+
+**A task is judged by the task contract.** The task provider validates a task
+resource's `data` against `taskSpecSchema` (`packages/contracts/src/factory.ts:74`) —
+the task contract with the fields a caller does not write left out, and nothing else
+allowed in (`apps/server/src/modules/resources/service.ts:349-358`). **A task that
+breaks it is refused**, with `validation_failed` and the issues in `details`; and an
+inspection of a task that breaks it reports it as invalid —
+`GET /api/resources/:id/inspect` answers `valid: false` and the issues it found.
+**This changes what the product reports, not only what it accepts**: a task the
+product used to accept — one carrying a field the task contract does not name, or a
+status the contract does not carry — was accepted because the provider's `validate`
+returned whatever it was given, and it is refused now. A task written before this
+change stays on disk and stays readable; it is the inspection that now says it
+breaks the contract.
 
 Execution attempts, external references and status history are separate records.
 This leaves an opening for more advanced factory behaviour without designing a
@@ -897,11 +1034,31 @@ closed — `message.send`, `tool.call` and `artifact.create` — and an action o
 it is refused rather than passed.
 
 **The limits, the allowed actions and the approvals are enforced.** The worker holds
-a turn to the effective policy: the chain's turn count and its spend before the turn
-starts, the duration as the deadline while it runs, and every action the agent
-announces. The MCP surface refuses an action the policy does not allow, and one the
-policy wants the owner to approve until the owner has decided. A turn that exceeds a
-limit stops, and the outcome is recorded rather than silently truncated.
+a turn to the effective policy: the chain's turn count and its spend, and the
+workspace's spend for the day, before the turn starts
+(`apps/worker/src/executor.ts:1348-1375`), the policy's duration limit caps the turn
+while it runs, and every action the agent announces is checked against what the
+policy allows. The MCP surface refuses an action the policy does not allow, and one
+the policy wants the owner to approve until the owner has decided. A turn that
+exceeds a limit stops, and the outcome is recorded rather than silently truncated.
+
+**A daily cap is a cap on the workspace.** The workspace's spend for the day is the
+sum of the spend units on the executions of that workspace since 00:00 UTC, and it
+is the same day for every workspace — the system stores ISO timestamps everywhere
+and has no per-workspace timezone. A daily cap of zero is no cap, as it is for the
+chain's spend limit. The cap applies across the workspace's conversations and
+goals, and not per chain, which is the whole difference between a daily cap and
+`maxSpendUnits`.
+
+**A cap is only as good as the number it is measured against.** The daily cap is
+measured against the spend units recorded on the executions, and a turn's cost is
+one spend unit — the measure the product already has
+(`apps/server/src/modules/conversations/routing.ts:305-306`). **The product does
+not yet record it against an execution**: every execution is written with no spend
+units (`apps/server/src/modules/conversations/dispatch.ts:171`,
+`apps/server/src/modules/factory/service.ts:368`), and the column defaults to zero
+(`apps/server/src/db/schema.ts:231`). **So the workspace's spend for the day is
+zero today, and the cap cannot bite until the cost is recorded.**
 
 **The mode is resolved, readable, and enforced nowhere.** It is carried through the
 resolver and it is readable wherever the policy is, but no enforcement point reads
@@ -961,7 +1118,7 @@ supports, and the capability to do it is already modelled and negotiated.
 This entry is the contract for **WI-007**, and the code implements it — as of
 `5f019b9`. `resumeSession` is implemented at
 `packages/agent-adapters/src/acp.ts:213` and called at
-`apps/worker/src/executor.ts:375`, and the gate is the capability and the session
+`apps/worker/src/executor.ts:429`, and the gate is the capability and the session
 id together: `canResume = capabilities?.persistentSessions === true &&
 Boolean(execution.externalRef)`.
 
@@ -990,7 +1147,7 @@ result: 'queued' | 'succeeded' | 'failed' | 'unknown';
 
 **`queued` means the action was accepted and has not finished.** `POST
 /api/resources/:id/execute` records `queued` for an automation run it enqueues
-(`apps/server/src/modules/resources/service.ts:525`): the route accepted the request
+(`apps/server/src/modules/resources/service.ts:594-599`): the route accepted the request
 and the run has not happened. The same route runs a data source and a dashboard there
 and then, so **the vocabulary is per action, not per route** — one route can record
 `queued` for one kind and `succeeded` for another. **`succeeded` means the outcome was
@@ -1001,7 +1158,7 @@ not.**
 failure. It is the same word the unknown outcome uses
 ([The unknown outcome](#the-unknown-outcome)), and it is in this vocabulary because
 the product produces it: the worker writes it when a turn's outcome cannot be
-confirmed (`apps/worker/src/executor.ts:104`), and the conversation dispatch writes it
+confirmed (`apps/worker/src/executor.ts:112`), and the conversation dispatch writes it
 when a turn stops for the same reason
 (`apps/server/src/modules/conversations/dispatch.ts:247`). **A vocabulary without
 `unknown` would leave the unknown outcome unrepresentable in the trail**, and the
@@ -1009,21 +1166,23 @@ trail is where it is recorded.
 
 **Every mutating route writes an entry, and every entry records what the action
 produced.** The route helper wrote `success` for every route that used it
-(`apps/server/src/api/helpers.ts:62`) and the audit service defaulted to it
+(`apps/server/src/api/helpers.ts:76`) and the audit service defaulted to it
 (`apps/server/src/modules/audit/service.ts:79`), so an entry said "done" about a run
-that was merely queued. **The twelve routes that wrote no entry at all now write one,
-at the layer that knows the outcome** — they are the twelve in
+that was merely queued. **The twelve routes that used to write no entry at all now
+write one each, at the route** — they are the twelve in
 [the measures route](#the-measures-route). **A route whose action fails writes an
 entry that says `failed`**: today it writes none, because every route-level entry is
 written after the work and a handler that throws never reaches it, and the error
-handler writes nothing (`apps/server/src/app.ts:190`).
+handler writes nothing (`apps/server/src/app.ts:193`).
 
-**The code does not implement this yet.** The vocabulary, the rule and the twelve are
-published ahead of their implementation, because the contract leads and the code
-follows: the implementation is WI-033, and the shape above is what it has to reach. No
-writer in the product produces `queued`, `succeeded` or `failed` today, and the trail's
-`result` carries `success | failure | unknown` until it does
-(`apps/server/src/modules/audit/service.ts:19`).
+**The code does not implement this yet.** The vocabulary is published ahead of its
+implementation, because the contract leads and the code follows: the implementation
+is WI-033, and the shape above is what it has to reach. No writer in the product
+produces `queued`, `succeeded` or `failed` today, and the trail's `result` carries
+`success | failure | unknown` until it does
+(`apps/server/src/modules/audit/service.ts:19`). **The coverage is implemented**:
+every mutating route writes an entry, and the twelve that used to write none write
+one each at the route.
 
 **Migration.** **Nothing is reclassified.** No stored entry is rewritten, and no entry
 is given an outcome it did not have.
@@ -1075,7 +1234,7 @@ defined in [The unknown outcome](#the-unknown-outcome); this entry publishes the
 list's use of it, and the two are not two definitions. The published type
 carries `pending | review | blocked | unknown`, member for member with
 `apps/server/src/api/waiting.ts:17`, and the route takes the reason straight
-from the task's status (`waiting.ts:95`), so a task that cannot be confirmed
+from the task's status (`apps/server/src/api/waiting.ts:95`), so a task that cannot be confirmed
 arrives as `reason: 'unknown'` and the published type cannot drift away from
 what the route returns.
 
@@ -1494,8 +1653,8 @@ only.
 
 **Every kind carries an author now.** The `automation` and `task` kinds keep their
 author on the row — `created_by` on both tables
-(`apps/server/src/db/schema.ts:330`, `:410`) — and the projections read it
-(`apps/server/src/modules/resources/service.ts:210`, `:301`). An agent-created
+(`apps/server/src/db/schema.ts:330`, `:416`) — and the projections read it
+(`apps/server/src/modules/resources/service.ts:234`, `:338`). An agent-created
 automation or task is recorded as authored by the agent that made it.
 
 **Every mutating route writes an audit entry.** Of the 36 mutating routes in
@@ -1503,7 +1662,7 @@ automation or task is recorded as authored by the agent that made it.
 write one from the service layer — `POST /api/approvals/:id/decide` and `POST
 /api/agui/runs/:runId/resume`, both at
 `apps/server/src/modules/approvals/resume.ts:53`, and `PATCH /api/tasks/:id` at
-`apps/server/src/modules/factory/service.ts:308`, and that one only when the task
+`apps/server/src/modules/factory/service.ts:315`, and that one only when the task
 leaves `unknown`. **No mutating route writes none.**
 
 The twelve that used to write none write one each, at the route:
@@ -1547,7 +1706,7 @@ audit entry — there is no audit call anywhere in
 tools call, which reach the resources service directly rather than through the
 auditing route. The only writer of the trail that is not an owner HTTP route is
 the worker — its `unknown` record (`apps/worker/src/executor.ts:105`) and the
-policy refusals it writes (`apps/worker/src/executor.ts:1392`). So every audited
+policy refusals it writes (`apps/worker/src/executor.ts:1430`). So every audited
 operation is an owner operation, except the worker's own entries, which carry
 `actorType: 'agent'`. **The second measure does not count the work an agent does
 through MCP**: an agent can create, update and publish resources all day and the
@@ -1564,7 +1723,7 @@ produce come from the worker: the `unknown` of
 [The unknown outcome](#the-unknown-outcome)
 (`apps/worker/src/executor.ts:112`), and the `failure` it writes when the
 autonomy policy refuses a turn or an action
-(`apps/worker/src/executor.ts:1399`). **An operation that failed at the route is
+(`apps/worker/src/executor.ts:1437`). **An operation that failed at the route is
 counted here as an operation that completed.**
 
 **The route exists.** It answers with the shape above, member for member: the

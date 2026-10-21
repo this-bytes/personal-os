@@ -4,9 +4,15 @@
 **Implementation owner:** Cog, with Probe on the tests. **The ADR:** Wren.
 **Written against:** commit `ceed799` on branch `wi/084-resource-template-design`.
 
-**This is a design. Nothing in it is implemented.** Every contract change it
-implies is stated below with a migration note, and left unimplemented.
-`CONTRACTS.md` is not edited by this item.
+**This design was implemented.** WI-097 (commit `20ca643`) built the guide, the
+filling and the provenance, and the tree this repository carries is the
+implementation. **The citations this document was written with are against
+`ceed799`**, the commit it was written on, and they read as they did then; **the
+citations in §4.2 and in the status notes below are against the tree this
+repository carries.** **Two of the merge rules in §4.2 differ from the
+implementation, and §4.2 now publishes the implementation's rules** — the ones a
+client has to match. `CONTRACTS.md` was edited by the item that implemented
+this, not by this document.
 
 ---
 
@@ -27,7 +33,12 @@ those are, what is still missing, and what the missing parts should be.
 | `resource.template.list` over MCP, grantable per connection          | `packages/contracts/src/mcp.ts:21,45`; `apps/server/src/modules/mcp/server.ts:467-483`                           | A tool that was not granted is not registered at all, so it does not even appear in the tool list.                                    |
 | `resource.create` accepts a template                                 | `apps/server/src/modules/mcp/server.ts:352-402`                                                                  | A resource is created from a spec **or** from a template.                                                                             |
 
-**The four gaps this design closes.**
+**The four gaps this design closes.** _Three are closed by WI-097 — the guide,
+the filling and the provenance — and the fourth is closed in two of its three
+parts. **The audit part of the fourth is still open**: the MCP server module
+contains no `audit` call, so a resource an agent creates over MCP still leaves
+nothing in the audit trail. What follows is the design's account of the four as
+they were._
 
 1. **There is no guide.** The template carries a `description` — one sentence
    saying what it is for (`resource.ts:66-68`). PRODUCT.md §4 names the gap
@@ -243,17 +254,17 @@ the template's values are its own to replace.
 §9: _"The panel's agent-facing surface is MCP and AG-UI"_). Two tools, plus the
 create they feed.
 
-| Tool                     | Status                              | Input                             | Output                                                                                        |
-| ------------------------ | ----------------------------------- | --------------------------------- | --------------------------------------------------------------------------------------------- |
-| `resource.template.list` | **exists**; `type` becomes optional | `{type?}`                         | one row per template: `id`, `version`, `type`, `title`, `description` — **no spec, no guide** |
-| `resource.template.get`  | **new**                             | `{id, version?}`                  | one template in full: everything above **plus** `spec` and `guide`                            |
-| `resource.create`        | **exists**; extended                | `{type, title, template?, data?}` | the resource, with its merged spec                                                            |
+| Tool                     | Status                         | Input                             | Output                                                                                        |
+| ------------------------ | ------------------------------ | --------------------------------- | --------------------------------------------------------------------------------------------- |
+| `resource.template.list` | **exists**; `type` is optional | `{type?}`                         | one row per template: `id`, `version`, `type`, `title`, `description` — **no spec, no guide** |
+| `resource.template.get`  | **exists**                     | `{id, version?}`                  | one template in full: everything above **plus** `spec` and `guide`                            |
+| `resource.create`        | **exists**; extended           | `{type, title, template?, data?}` | the resource, with its merged spec                                                            |
 
-**`resource.template.list` becomes a list, not a filter.** Today `type` is
-required (`mcp/server.ts:472`), so an agent that does not yet know which kinds
-have templates must call it six times to find out that there are six. The kind
-is already in the contract (`resource.ts:4-12`), so making `type` optional —
-omit it for all kinds, give it for one — turns six round trips into one.
+**`resource.template.list` became a list, not a filter.** `type` was required
+(`mcp/server.ts:472`) and is now optional, so an agent that does not yet know
+which kinds have templates asks once instead of six times to find out that there
+are six. The kind is already in the contract (`resource.ts:4-12`), and the tool
+takes the kind — give it for one kind, omit it for all of them.
 
 **The list returns an index; the get returns the thing.** Six templates, each
 with a guide of up to six sections, is a wall of text. An agent that wants to
@@ -290,8 +301,8 @@ grantable, and visible in the panel, with no change to the panel.**
 
 **`resource.template.get` joins the default grants.** Reading a published
 example is harmless, and the whole point of the feature is that an agent can
-find one. `resource.template.list` is already default-granted
-(`packages/contracts/src/mcp.ts:45`); `resource.template.get` goes beside it.
+find one. `resource.template.list` was already default-granted; both are now
+(`packages/contracts/src/mcp.ts:47-48`).
 
 **The tool descriptions are part of the design, not decoration.** An agent
 chooses a tool by its description. `resource.template.list`'s description says
@@ -339,19 +350,37 @@ what the tool does today, and is kept because it is occasionally right.
 **The merge belongs to the provider, because the provider owns the spec.** Six
 kinds have six specs, and a generic merge would get some of them wrong.
 
-**Three rules, and they are the whole of it.**
+**Three rules, and they are the whole of it.** **These are the rules the code
+implements** (`mergeTemplateSpec`,
+`apps/server/src/modules/resources/templates.ts:522-543`; the rules per kind at
+`:496-510`), and **two of them differ from the rules this design first wrote.**
 
 1. **Objects merge key by key, recursively.** A key the override does not name
    keeps the template's value.
-2. **Arrays are replaced wholesale.** A document's `tags`, a data source's
+2. **An array is replaced wholesale.** A document's `tags`, a data source's
    `payload`, a task's `acceptanceCriteria`, a memory's `tags` are single
-   choices, and merging them would produce neither thing.
-3. **A shape is chosen by a key, and changing that key replaces the object
-   rather than merging it.** A data source's `kind`, a trigger's `type`, a
-   widget's `type`, a memory's `scope`. A data source that becomes `http` does
-   not keep an inline `payload`; a memory that becomes `agent`-scoped does not
-   keep a workspace memory's shape. **This rule is not optional: without it
-   the merge produces specs that are valid and wrong.**
+   choices, and merging them would produce neither thing. **A value that is
+   not an object is replaced whole for the same reason** — a document's
+   `content` is a string, and the caller's string is the document's content.
+   **The design named the replaced paths per kind; the code does not.** The
+   code has one general rule — an array or a scalar is replaced whole — and
+   names only three paths outright: an automation's `trigger` and `action`, and
+   a memory's `value` (`:502`, `:506`, `:509`).
+3. **A change of the shape key replaces the whole spec.** The shape key is
+   `kind` for a data source, `scope` for a memory, and a widget's `type` inside
+   a dashboard. A data source that becomes `http` does not keep an inline
+   `payload`; a memory that becomes `agent`-scoped does not keep a workspace
+   memory's shape. **This rule is not optional: without it the merge produces
+   specs that are valid and wrong.** **The design also made a trigger's `type`
+   a shape key. The code does not.** An automation's `trigger` and `action` are
+   **replaced whole whenever they are named**, whatever they are: a call that
+   names `trigger` means that trigger, and the template's is gone. An
+   automation has no shape key, so none is consulted.
+
+**The two differences do not change the outcome for the templates that ship** —
+a document's `content` is a string and its `tags` an array either way, and the
+automation template's trigger is nothing but its `type` — **but they are the
+rules, and the rules are what a client has to match.**
 
 **And one exception, because a dashboard's widgets are keyed by the domain.**
 
@@ -370,14 +399,14 @@ source sends two short objects, and the reviewed structure — a count on top,
 the records underneath — is what lands. A widget whose `type` changes is
 replaced rather than merged, by rule 3.
 
-| Kind        | The shape key                 | Merged                                                                   | Replaced wholesale                            |
-| ----------- | ----------------------------- | ------------------------------------------------------------------------ | --------------------------------------------- |
-| dashboard   | `widgets[].type`              | `widgets[]` by `id`; a widget's `binding` and `options` merge key by key | —                                             |
-| document    | —                             | —                                                                        | `content`, `tags`                             |
-| data source | `kind`                        | `headers`                                                                | `payload`; the whole spec when `kind` changes |
-| automation  | `trigger.type`, `action.type` | —                                                                        | `trigger`, `action`                           |
-| task        | —                             | —                                                                        | `acceptanceCriteria`                          |
-| memory      | `scope`                       | —                                                                        | `value`; the whole spec when `scope` changes  |
+| Kind        | The shape key     | Merged                                                  | Replaced wholesale                            |
+| ----------- | ----------------- | ------------------------------------------------------- | --------------------------------------------- |
+| dashboard   | a widget's `type` | `widgets[]` by `id`; a widget's fields merge key by key | a widget whose `type` changes                 |
+| document    | —                 | —                                                       | an array or a scalar: `content`, `tags`       |
+| data source | `kind`            | the objects — `headers` and the rest                    | `payload`; the whole spec when `kind` changes |
+| automation  | —                 | —                                                       | `trigger`, `action` — whatever they are       |
+| task        | —                 | —                                                       | an array or a scalar: `acceptanceCriteria`    |
+| memory      | `scope`           | —                                                       | `value`; the whole spec when `scope` changes  |
 
 **The merge never refuses.** It merges, and then the provider validates the
 result exactly as it validates a spec that arrived whole. PRODUCT.md §4: _"the
@@ -393,15 +422,23 @@ exists and stays.
 
 ### 4.3 What the instance is
 
-| Property                                       | Where it comes from                                                            | Holds today?                       |
-| ---------------------------------------------- | ------------------------------------------------------------------------------ | ---------------------------------- |
-| A row, with `schemaVersion` and `revision: 1`  | the resource's own create                                                      | **yes**                            |
-| Its spec, validated by the owning provider     | the merged result                                                              | **yes, for five kinds** — see §4.4 |
-| `createdBy` = the agent connection, or `owner` | `mcp/server.ts:395`                                                            | **yes, for four kinds** — see §4.4 |
-| An audit entry                                 | the route writes `resource.created` (`apps/server/src/api/resources.ts:39-46`) | **no, over MCP** — see §4.4        |
-| Its template and version                       | new: `templateId`, `templateVersion`                                           | **no** — new                       |
+| Property                                       | Where it comes from                                                            | Holds today?                |
+| ---------------------------------------------- | ------------------------------------------------------------------------------ | --------------------------- |
+| A row, with `schemaVersion` and `revision: 1`  | the resource's own create                                                      | **yes**                     |
+| Its spec, validated by the owning provider     | the merged result                                                              | **yes, for all six kinds**  |
+| `createdBy` = the agent connection, or `owner` | `mcp/server.ts:395`                                                            | **yes, for all six kinds**  |
+| An audit entry                                 | the route writes `resource.created` (`apps/server/src/api/resources.ts:39-46`) | **no, over MCP** — see §4.4 |
+| Its template and version                       | new: `templateId`, `templateVersion`                                           | **yes**                     |
 
 ### 4.4 Three gaps in "the instance is an ordinary resource"
+
+**Two of the three are closed, and one is still open.** The author is recorded:
+`automations` and `tasks` carry `created_by` and the projections read it. The task
+provider validates: it judges a task's spec against `taskSpecSchema` and refuses
+one that breaks the contract. **The first is still open** — the MCP server module
+contains no `audit` call, so a resource an agent creates over MCP leaves nothing
+in the audit trail. What follows is the design's account of all three as they
+were.
 
 All three are real, all three are in the product's own documents, and none of
 them is **this design's to decide** — each needs a contract change and the
@@ -453,8 +490,10 @@ validates any resource.
 
 **All three gaps are named here because requirement 4 asks for the instance to
 "appear in the audit trail, and it is authored by whoever instantiated it, so
-the product's own measure of 'features authored by agents' counts it" — and
-today, for the path this design is about, none of the three halves is true.**
+the product's own measure of 'features authored by agents' counts it" — and, for
+the path this design is about, **two of the three halves are true now**: the
+author is recorded and the measure counts it. **The third, the audit trail, is
+not**: the agent path still writes no entry.**
 
 ### 4.5 Provenance: the resource records where it came from
 
@@ -676,8 +715,12 @@ the present tense, and no sentence that is only true of the template.
 
 ## 7. The contract changes this design implies
 
-None of these is implemented by this item. Each one is a published boundary, and
-each needs the owner's nod before it is built.
+**These have been built, and one has not.** WI-097 (commit `20ca643`) implemented
+§7.1 to §7.5, §7.7 and §7.8, and `CONTRACTS.md` publishes the surfaces they name.
+**§7.6 — the MCP surface writing audit entries — is the one that has not**: the
+MCP server module contains no `audit` call, so a resource an agent creates over
+MCP still leaves nothing in the audit trail. The changes are listed below as this
+design stated them.
 
 ### 7.1 The guide field
 
@@ -797,6 +840,10 @@ each needs the owner's nod before it is built.
 
 ## 8. The files the implementation will touch
 
+_This is the plan as it was written. The implementation touched most of these
+files; `CONTRACTS.md` was edited by the item that implemented the design, and
+`docs/decisions/0008-_.md` carries the ADR.\*
+
 | File                                                   | Change                                                                                                     | Owner |
 | ------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------- | ----- |
 | `packages/contracts/src/resource.ts`                   | the guide schema; `guide` on the template; `templateId` / `templateVersion` on the envelope                | Cog   |
@@ -849,6 +896,11 @@ each needs the owner's nod before it is built.
 
 ## 10. What needs the owner's answer before implementation starts
 
+_The implementation has been made, and it made the second answer below: the merge
+does not special-case the live flags, and the provider is the only judge. The
+question the owner was asked is still the question — the code carries an answer,
+not a decision._
+
 **One question, and it is a product question the code cannot answer.**
 
 **May a template produce a live resource?**
@@ -896,6 +948,11 @@ flagged rather than decided here:**
 
 ## 11. The tests this implies
 
+_These are the tests WI-097 wrote, and they carry the names the implementation
+gave them. **One of them has no test behind it**: the MCP surface writing an
+audit entry for a resource it creates is not implemented, so neither is that
+test._
+
 Named here so the implementation item can name them too, and so Probe can check
 the design was built rather than approximated.
 
@@ -936,6 +993,10 @@ the design was built rather than approximated.
 ---
 
 ## 12. What the product's own documents say that this design contradicts
+
+_This section is the design's account of a contradiction that has been resolved:
+`PRODUCT.md` §4 now says the third half is built, and the guide is built with it.
+What follows is what the design said about it at the time._
 
 **PRODUCT.md §4, the last sentence of the Resource section:** _"The third half
 of that is not built yet: nothing in the product tells an agent what a good
