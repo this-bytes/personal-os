@@ -7649,3 +7649,34 @@ field, the `LICENSE` file itself, and documents.
 clause the peer session put in the rule this morning, and it is the first time
 this session has been the push that cancelled someone else's run. **The run
 that judges this push is the one on `e676ba9`.**
+
+## The publish is recorded, and the door is not open — 2026-10-21 19:45
+
+**The ledger says the repository is public. Four surfaces outside this machine say
+it is not, and the difference is the lead's to reconcile.** All four checks were
+unauthenticated, against GitHub, at 19:38–19:42:
+
+- `api.github.com/repos/this-bytes/personal-os` — **404 Not Found**.
+- `api.github.com/users/this-bytes/repos` — ten public repositories, and
+  **personal-os is not among them**: `anh-blog`, `anh-decision-bot`, `argus`,
+  `idle-cyber-game`, `mission-control`, `not-later-app`, `paperclip`,
+  `puzzle-game`, `python-game`, `this-bytes/this-bytes`.
+- `raw.githubusercontent.com/this-bytes/personal-os/main/README.md` — **404**.
+- `github.com/this-bytes/personal-os`, logged out — GitHub's **"Page not found"**.
+
+**The remote itself is fine.** `git ls-remote origin` lists `refs/heads/main` at
+`e676ba9`, plus `verify/green-at-tip` and `verify/main-061b6cd`. So the repository
+exists at that path, and this session pushes to it — with credentials.
+
+**So the question is narrow, and it is not the owner's.** The owner's decision to
+publish is recorded; the `LICENSE` file is in the tree before the door opens; and
+the tree was measured before it went — 353 tracked files, 389 commit messages,
+2455 history blobs. **But the visibility call did not take, was refused, or has not
+propagated**, and `docs/strategy.md` says _"the repository is published under MIT"_
+on the strength of the record. **Nothing here says the publish did not happen** — it
+says that anyone outside this machine cannot yet see it, and that is a fact worth
+a line rather than a guess.
+
+**The rule this follows is the one this factory named three times today: ask the
+tree, not the conversation.** The tree says MIT. The tree says private. Both are
+now measured, and the record carries both.
