@@ -1689,7 +1689,7 @@ file that says the contract is broken when the contract is whole is the same
 defect as a contract that lies about the code. **No assertion was loosened and
 no criterion was dropped.**
 
-**And one number has two claimants, and one dispatch has no file at all.**
+**And one number had two claimants, and one dispatch still has no file at all.**
 **WI-103 was numbered and dispatched to Wren** —
 `wi-103-contract-pointers-after-wi-080-2026-10-22`, `task_b0c1dbb8ab05`, batch
 `batch_6158711cfd29`, queued — **and `.factory/work/WI-103.md` does not exist.**
@@ -1697,18 +1697,37 @@ Measured: `git log --all --diff-filter=A -- .factory/work/WI-103.md` returns
 nothing, so **the file has never existed on any branch in this repository.**
 The number space's rule is that an item's file is the specification and the
 dispatch carries it; **a dispatch whose specification exists only in a chat is
-a dispatch the repository cannot hold.** **And the number 103 has a second
-claimant:** the branch `wi/103-publish-template-contract` exists at `48295c2`
-— the same commit as `wi/101-integration-landing` — and it carries **no
-WI-103.md file either**, so it is a pointer to an item that was never written
-down.
-**This shift does not renumber and does not create the file: the number space
-belongs to the session that owns it, and a second claim is recorded rather than
-resolved here.** **The want, for whoever owns the numbers:** _"the contract's
+a dispatch the repository cannot hold.** **And the number 103 did have a second claimant:** the branch
+`wi/103-publish-template-contract` existed at `48295c2` — the same commit as
+`wi/101-integration-landing` — and it carried **no WI-103.md file either**, so
+it was a pointer to an item that was never written down.
+**That claim is now withdrawn by the session that owns the numbers.** The
+branch is gone, the item is re-filed as **WI-106**, and
+`.factory/work/WI-106.md` is written and pushed on
+`wi/106-publish-template-contract` — and that file **says out loud that it was
+first filed as WI-103**, and why WI-106 is the next free number. **So the
+collision this shift measured is resolved, by the right session, in the right
+way: a number is a claim about an item, and the loser of the claim re-files
+rather than renames the winner.**
+**What is left is the item with no file at all.** WI-103 — the peer's, "the
+eight pointers into the code file that WI-080's merge moved", dispatched to
+Wren as `task_b0c1dbb8ab05` and queued — **still has no file, and
+`git log --all --diff-filter=A -- .factory/work/WI-103.md` returns nothing.**
+**This shift does not create the file: the number space belongs to the session
+that owns it.** **The want, for whoever owns the numbers:** _"the contract's
 pointers into `apps/server/src/modules/mcp/server.ts`, which WI-080's merge
 moved by +2 — nine citations, measured line by line by the lead, one of them
 already stale before WI-080"_ — owner Wren, scope `CONTRACTS.md` only, and the
 brief that goes with it is already in the dispatch.
+
+**And it is not the only one.** Measured the same way, over every branch:
+**`.factory/work/WI-105.md` and `.factory/work/WI-107.md` have never existed
+either**, and **WI-105 is running** (`task_cc1bd927efc4`, on Cog). **Three
+live items are specified only in chat.** The item's file is what makes the
+work survive the session that wrote it; **a spec that lives in a chat dies
+with the chat**, and the number block in `.factory/INTAKE.md:47-56` counts a
+branch and a dispatch as a claim, which is not the same thing as a written
+specification.
 
 **The item is NOT accepted, and this shift did not accept it.** Chief wrote the
 item, the correction and the merge, so it does not accept it — **the
