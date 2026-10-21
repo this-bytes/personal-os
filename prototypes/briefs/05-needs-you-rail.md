@@ -28,17 +28,18 @@ is the kind of thing this factory keeps finding.
 
 **The boundary rule the rail is the exception to.** The rule is: _if it is a picture
 of the system, it is in the orientation room; if it is a place where work is
-inspected or decided, it is in the execution room._ The Map's rail is the one
-declared crossing: it carries decisions in the orientation room, because a decision
-is taken where the list is. The rail is not a summary that links away; it is the
-decision surface, and Work is where you go when the rail's summary is not enough.
+inspected or decided, it is in the execution room — with one declared exception,
+the Needs-you rail, which carries decisions in the orientation room because a
+decision is taken where the list is._ The rail is not a summary that links away; it
+is the decision surface, and Work is where you go when the rail's summary is not
+enough.
 
-**And the landing page is not the list any more.** The item's rule is that the
-landing page moves out of the root into the execution room, because the landing
-page is the decision list and a decision list is not what a landing screen
-should be. That is about the *page*, not about the list: the list becomes the
-rail, the rail decides in place, and the owner never leaves the landing screen to
-approve or reject. The owner's loop stays "scan and act" — in one room, in place.
+**And the landing page is not the list any more.** The item's rule, as corrected on
+2026-10-21, is that the **root route is the Map room** and the **Needs-you rail
+sits on it** — the decision list is the rail, the rail decides in place, and the
+owner never leaves the landing screen to approve or reject. What moves into the
+execution room is the **Conversations page** (brief 01), not the decision list. The
+owner's loop stays "scan and act" — in one room, in place.
 
 ## What it changes
 

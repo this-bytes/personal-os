@@ -4985,12 +4985,20 @@ That is the cause, not the symptom.**
 | `.factory/work/WI-024.md` (criterion 5)      | the landing page moves to the execution room       | corrected: the root is the Map, and the rail decides in place                  |
 | `.factory/work/WI-040.md:24-29` and `:31-36` | the same quote, and the same landing-page sentence | corrected; the item is not dispatched, so its brief carries the corrected rule |
 
-**One of the two that applied it wrongly is a live build, and that is why
-this was worth doing at this hour.** WI-024 is queued and has not run, and
-its first deliverable is the six briefs — so the correction lands **before**
-the briefs are written. A premise that says the opposite of the rule would
-otherwise have been written into six briefs, and the briefs are what the build
-is made of.
+**One of the two that applied it wrongly is a live build, and the correction
+had to reach the briefs.** WI-024's dispatch (`task_5a09991ca5a1`) ran
+11:35:05 to 12:15:08 and wrote the six briefs into `prototypes/briefs/`
+(`93ef99b`, corrections at `a5042aa`) — **before** this ruling. The briefs
+were written from the repaired document (`e560165`, at 11:30) **and** the
+item's stale criterion 5, and where the two disagreed the item won: brief 01
+puts the root route on the Map room and names the rail as the rule's one
+declared exception, while brief 05 says outright that _"the item's rule is
+that the landing page moves out of the root into the execution room"_. **The
+briefs' shape was already right; the premise's wording was not**, and the lead
+corrected the three briefs — brief 05's statement of the item's rule, its quote
+of the boundary rule, and brief 01's heading — with the dated note in
+`prototypes/briefs/README.md`. **The code has not been written yet**, so the
+correction lands before the build follows the briefs.
 
 **What was not done.** No task was cancelled or re-dispatched: the correction
 is in the item, and the item is the spec a brief is written from. WI-024's
@@ -5098,3 +5106,49 @@ has been asking.** With two slots, a second verifier buys parallelism **only
 when a slot is free**, and today the slot was the problem. It is still worth
 the owner's answer, on the measurement that today the queue did not move
 because a turn was stuck, not because there was one of anything.
+
+## The briefs were written before the ruling, and the correction reached them — 2026-10-21 15:45
+
+**The lead's own claim of an hour ago was wrong, and it is corrected here
+rather than overwritten.** This session wrote that WI-024 "is queued and has not
+run", and that "the correction lands before the briefs are written". **Both
+were false**: the dispatch (`task_5a09991ca5a1`) ran 11:35:05 to 12:15:08 and
+wrote the six briefs at 11:58, and the ruling was at 15:09. The claim came from
+the ledger's own row, which still said "still queued" — **a stale row read as
+a live fact**, which is the mistake this factory has a rule about.
+
+**What the briefs got right, and what they got wrong.** The direction document
+had been repaired at `e560165` at 11:30, five minutes before the dispatch
+started, and the briefs used it: **brief 01 puts the root route on the Map
+room** and names the rail as the rule's one declared exception, and **brief 05
+already makes the list into the rail that decides in place**. What the briefs
+took from the _item_ instead was criterion 5, still the flat-rule version, and
+brief 05 says so outright: _"The item's rule is that the landing page moves
+out of the root into the execution room."_ **The briefs' shape was already
+right; the premise's wording was not.** The lead corrected the three briefs —
+brief 05's statement of the item's rule, its quote of the boundary rule, and
+brief 01's heading — and `prototypes/briefs/README.md` carries the dated note.
+**The code has not been written yet**, so the correction lands before the build
+follows the briefs.
+
+**Two dispatches are still owed, and the refusal is a different one now.**
+From a scheduled turn every bot-directed call is refused with _"This tool call
+cannot be assigned to an active reply. Retry from the current chat."_ — which
+is not the multi-chat guard from the morning, and which a chat turn does not
+hit. The ids stay reserved:
+`wi-010-verify-repaired-document-2026-10-21` for Probe's re-verification of the
+repaired direction document, and `wi-024-premise-correction-2026-10-21` for the
+note to Cog. **The peer session has both briefs** and has been asked to send
+them; **this session will not dispatch either under a second id.**
+
+**And what the morning section got wrong, now the cause is measured.** The
+other Chief session measured it: the runtime runs **two tasks at once**
+(`MAX_RUNNING = 2`, hard-coded, and no setting in this repository changes it),
+and a livelocked turn held one slot for 119 minutes. **Neither** reading in the
+morning section was right — not the guard holding the assignment, and not a
+wedged bot session — and the test that section set would have confirmed the
+wrong one, because the queue began moving on its own eight seconds after the
+slot was released, with no change in how many chats the Chief bot was in. The
+correction is in that section and in the peer's, and the sizing rule now is
+that **at most two items are in flight productively**, and a task that hangs
+holds half the factory.
