@@ -619,25 +619,52 @@ published in [Error envelope](#error-envelope); this entry adds none. The tool's
 visibility follows the same grant rule as every other tool on that surface,
 published in [MCP exposure](#mcp-exposure).
 
-**The code does not implement this yet.** The record, the tool and the input are
-published ahead of their implementation, because the contract leads and the code
-follows: the implementation is WI-017, and the shapes above are what it has to
-reach. Nothing in the code carries a template today — there is no template record
-in `packages/contracts`, the published tool names
-(`packages/contracts/src/mcp.ts:11-23`) do not include one, and the server has
-none. A client written against this entry must treat the tool as absent until
-WI-017 lands, the same way the [waiting list](#the-waiting-list) publishes a kind
-the server does not send yet.
+**The code implements this — as of `8b1fd01`.** WI-017 built the record, the tool
+and the input, and the tree carries all three: `resourceTemplateSchema` and
+`ResourceTemplate` are at `packages/contracts/src/resource.ts:58-71`, with
+`resourceTemplateRefSchema` and `ResourceTemplateRef` beside them at `:79-83`;
+`resource.template.list` is one of the published tool names — it is in
+`mcpToolNames` at `packages/contracts/src/mcp.ts:21`, inside the range `:11-23`,
+and in the default agent grant list at `:45`; and the server registers the tool
+at `apps/server/src/modules/mcp/server.ts:465-481`, only where the connection is
+granted it, the way every other tool on that surface is. `resource.create` takes
+the `template` input at `:361`, refuses a call that carries both a spec and a
+template at `:373-377`, and the template's spec becomes the resource's data at
+`:382-384`.
+
+**The six templates that ship are one for each kind**, authored in the repository
+at `apps/server/src/modules/resources/templates.ts:21-124`:
+
+| Kind          | Template id                |
+| ------------- | -------------------------- |
+| `dashboard`   | `dashboard.metrics`        |
+| `document`    | `document.brief`           |
+| `data-source` | `data-source.json`         |
+| `automation`  | `automation.manual-prompt` |
+| `task`        | `task.deliverable`         |
+| `memory`      | `memory.decision-note`     |
+
+Each is published at version 1, and every one is checked against the provider
+that owns its kind when the service is built
+(`apps/server/src/modules/resources/service.ts:396`), so a template that drifted
+is caught at the door rather than by an agent that reached for it.
+
+**A client may now call `resource.template.list` and may send `template` on
+`resource.create`.** The call exists and the input is accepted; a client written
+before this change has to make room for both.
 
 **Migration.** Nothing is reclassified. `resource.create` without `template`
 behaves exactly as it does today, so no existing client changes what it sends,
 and no resource written before this change is affected — a resource has no
-template field and gains no template reference. A client that reads the list of
-MCP tools gains one name, `resource.template.list`, and a client that validates
-an agent's `toolGrants` against the known names has to allow for it, because the
-grant vocabulary grows with the surface. A client that renders a resource is
-unaffected: a resource created from a template is an ordinary resource with the
-same fields it always had.
+template field and gains no template reference. **A template is still not a
+resource, and a resource made from a template is still an ordinary resource.**
+**The surface grew, and that is the change a client written before has to allow
+for**: a client that reads the list of MCP tools gains one name,
+`resource.template.list`, and a client that validates an agent's `toolGrants`
+against the known names has to allow for it, because the grant vocabulary grew
+with the surface. A client that renders a resource is unaffected: a resource
+created from a template is an ordinary resource with the same fields it always
+had.
 
 ### The agent memory scope
 
