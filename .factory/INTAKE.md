@@ -1397,6 +1397,18 @@ suite was re-run over the changed document and stayed green, which is the
 measurement that matters for WI-010's verification.** **This session's push
 carries the ledger record and the record of the tree's own gates, and no code.**
 
+**And the platform's verdict on that push, read afterwards and from outside this
+machine.** `af43b08` — **CodeQL `completed/success`** (Analyze
+javascript-typescript) and **CI `completed/success`** (Lint the workflows,
+Dependency audit, Build and test, Build and run the stack) — **VERDICT: GREEN.**
+**Green is a property of the HEAD being pushed: the local gates on that tree, and
+the platform's verdict read afterwards and recorded here.** `origin/main` =
+`af43b08` = local `main`, `rev-list --left-right --count origin/main...main` =
+`0 0`. **This paragraph is the one commit this session leaves unpushed** — the
+verdict above is for `af43b08`, which is on `origin/main`, and the next push
+carries this record; the verdict for that push is read then, and read the same
+way.
+
 **The owner's open decision, and it is the only thing that restores the lane.**
 **`miniapp restart minimax-bot`** clears the wedged session and is the only thing
 that does. **The cost is measured, not asserted:** it interrupts live turns, and
