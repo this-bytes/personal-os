@@ -1252,7 +1252,7 @@ entries, which carry `actorType: 'agent'`. **The second measure does not count
 the work an agent does through MCP**: an agent can create, update and publish
 resources all day and the trail will show none of it. An implementation that
 wants the measure to mean what it says has to widen the audit coverage first,
-and that is WI-020's to decide.
+and that is WI-033's to do, with WI-034 publishing the rules it implements.
 
 **Nothing records a failure.** The audit trail's `result` carries
 `success | failure | unknown` (`apps/server/src/modules/audit/service.ts:19`),
@@ -1264,10 +1264,27 @@ writer produces is the `unknown` of
 (`apps/worker/src/executor.ts:104`). An operation that failed is counted here as
 an operation that completed.
 
-**The code does not implement this yet.** The route and its shape are published
-ahead of their implementation, because the contract leads and the code follows:
-the implementation is WI-020, and the shapes above are what it has to reach. No
-route answers this today, and nothing named `measures` exists in the server.
+**The route exists.** It answers with the shape above, member for member: the
+workspace, and the two measures. The counts are queries over the data the
+product keeps — the `createdBy` column of the workspace's resources, and the
+audit trail — and not counters that are incremented on some code path. `ratio`
+is `null` when the denominator is zero, and the count is still returned.
+
+**What the two numbers can defend.** The first measure is a **floor**: a
+resource that records no agent author — the `'system'` of the automation and
+task projections, and everything the owner created — is in the denominator and
+can never be in the count, so the ratio can only understate what the agents
+authored. The second measure is **not a share of completed work**, and it is
+published with two different facts behind it. The first is a count of routes:
+the twelve listed above write no audit entry at all, and the MCP surface
+writes none either. The second is a rule about outcomes: every audited route
+records `result: 'success'` whatever happened, no writer in the product
+records `failure`, and the count has no filter on the result — so the
+denominator counts attempts, not confirmed completions. And because the
+owner's own routes record `human` and the MCP surface writes no entry at all,
+the only `actorType: 'agent'` entries a workspace's measure can see today are
+the worker's own `unknown` records: the ratio is the share of the trail the
+worker wrote, not the share of the work an agent did.
 
 **Migration.** Nothing is reclassified and no record is rewritten. The route is
 new and read-only, so a client that does not call it is unaffected, and a client
