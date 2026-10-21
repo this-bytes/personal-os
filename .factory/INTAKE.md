@@ -361,7 +361,7 @@ second dispatch.
 | `peer-group-pointer-2026-10-21`                            | A peer request for Probe to carry a message to the group             | Probe  | `task_4867c6237747` | **cancelled** — it never reached Probe                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             |
 | `peer-correction-wi-024-2026-10-21`                        | The correction retracting that peer request                          | Probe  | `task_4dc3ca58d70a` | **failed: `BUSY`** — created 08:35:05, refused at 10:20:55 because Probe was busy. **A dispatch to a busy verifier is not delivered at all**: the work is still owed, the id is spent, and the correction has to be re-sent with a new id and a new title                                                                                                                                                                                                                                                                                                                                                                                                                          |
 | `wi-027-verify-fixed-tree-successor-2026-10-21`            | WI-027 — the unknown turn on the waiting list, verified again        | Probe  | `task_874e6fb66b9b` | **done** at 15:27 — **WI-027 is verified: all nine acceptance criteria met**, on `f7ac848` (product code identical on `51c92f8`). Gate output pasted: typecheck 0, format 0, build 0, test 0 (server 219 · web 52 · worker 31 · agent-adapters 16 · contracts 28), **test:e2e 27 passed**. **One defect against another item** — WI-031's entry still says the code does not implement the route — and four observations. **The acceptance is Chief's** — **the live dispatch on WI-027**, a successor: the original failed with `BUSY` at 10:19:58 and produced no verification. The brief asks Probe to stop and say so if the item is already being verified in another session |
-| `wi-021-verify-fixed-tree-successor-2026-10-21`            | WI-021 — the refusal, verified again                                 | Probe  | `task_d817d075a0ce` | **queued** — **the live dispatch on WI-021**, a successor: the original failed with `BUSY` at 10:20:27 and produced no verification. The brief asks Probe to stop and say so if the item is already being verified in another session                                                                                                                                                                                                                                                                                                                                                                                                                                              |     |
+| `wi-021-verify-fixed-tree-successor-2026-10-21`            | WI-021 — the refusal, verified again                                 | Probe  | `task_d817d075a0ce` | **done** at 15:27 — **WI-021 is verified: all five criteria hold**, on `51c92f8` (the product code is byte-identical on the current head). Probe's own gates: typecheck 0, format 0, build 0, test 0 (server 219 · web 52 · worker 31 · agent-adapters 16 · contracts 28), and `npm run smoke` 0 in 9.5 s; the two pinned suites **39 passed (39)**. **WI-021 is accepted.** Findings: the item's own file describes a behaviour the code cannot exhibit, a stale citation, and **a question for Chief — a delegation naming nobody is refused in a way a client cannot read**, which is now **WI-069**                                                                            |
 | `wi-031-refresh-published-counts-2026-10-21`               | WI-031 — refresh the published counts                                | Wren   | `task_03f8f1042155` | **cancelled** — **the lead made the correction itself** (`50b908d`), because the collision that was the reason for routing it to Wren no longer held: nothing was writing `CONTRACTS.md` at the time. One item, one worker                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
 | `probe-verify-published-counts-2026-10-21-1215`            | WI-046 — verify the published counts, and fix the stale number       | Probe  | `task_27a529dbec89` | **cancelled** — the item number was wrong: WI-046 belongs to the strategy session's batch. The work was re-issued as WI-062                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |     |
 | `probe-verify-published-counts-2026-10-21-1240`            | WI-062 — verify the published counts, and fix the stale number       | Probe  | `task_2c7c9f4fd696` | **queued** — **the live dispatch on the correction**, and on the stale "thirty-four" in Probe's own test file. The lead implemented the correction, so the lead does not accept it                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |     |
@@ -380,6 +380,9 @@ second dispatch.
 | `wi-038-licence-gate-script-2026-10-21`                    | WI-038 — the borrow-rule gate's script                               | Probe  | `task_63e621ad515f` | **queued** — **DELIVERED at 14:32**. Chief's half of WI-038 is done (the CI step and the manifest entry, on `wi/038-borrow-rule-gate` at `a9592a4`); the script is `scripts/verify-licences.ts`, Probe's file by the ownership table. The brief carries the whole specification — the four comparisons, the three exit codes, the `--record` and `--lockfile` options and the proof that the gate can fail. **The branch stays unpushed until the script is in it**                                                                                                                                                                                                                |     |
 | `wi-068-contributing-licence-2026-10-21`                   | WI-068 — the repository still grants MIT in a file no item covers    | Wren   | `task_a4d24aa2dc24` | **queued** — **DELIVERED at 14:35**. One sentence in `CONTRIBUTING.md:236-239`, which says contributions are MIT-licensed. Worktree `G:\code\personal-os-worktrees\068-contributing-licence`, branch `wi/068-contributing-licence`. **Chief's half — the `LICENSE` file and the `FACTORY.md` row that names it — is this session's**                                                                                                                                                                                                                                                                                                                                               |     |
 | `wi-022-citation-refresh-verify-2026-10-21`                | WI-022 — the waiting list's refreshed citations, verified            | Probe  | `task_018a6018b18f` | **queued** — **the verification of WI-022's successor**, dispatched the moment the implementation landed. Five questions: the four citations point at the lines that carry the claims, the claims behind them are still true, **WI-026's criterion 6 now holds in the tree**, nothing else in the entry changed, and the gates pass. **The doubled sentence is a recorded decision and is not a defect**                                                                                                                                                                                                                                                                           |     |
+
+| `wi-031-contract-status-correction-2026-10-21` | WI-031 — the entry says the code does not implement it yet, and it does | Wren | `task_be25e082ae5c` | **queued** — **the correction of WI-031's stale status note**, found by Probe while verifying WI-027. `CONTRACTS.md:197-204` says the route is absent; it has been there since `414996c`. **It queues behind WI-065 on `CONTRACTS.md`** — Wren's lane is serialised, so one file carries one live item. **WI-031's acceptance is blocked until it lands** |
+| `wi-069-refusal-names-nobody-code-2026-10-21` | WI-069 — a delegation that names nobody is refused unreadably | Cog | — | **NOT DISPATCHED — held on purpose.** The finding is Probe's, from WI-021's verification. **Two reasons, both said out loud:** the owner's line at 15:40 — _"when a slot frees, lean on verification"_ — and the contract half needs the owner's answer. **Numbered so it is not lost**, with the brief written out in full in `.factory/work/WI-069.md` |
 
 **A cancelled task is not a dispatch — but a cancelled dispatch does not free its
 request id.** That second half was wrong here, and it is corrected now rather
@@ -4699,7 +4702,7 @@ other session **says so in the group** and takes the space, rather than taking
 it quietly."_ **WI-046 was taken quietly, and WI-063 was taken quietly.** Both
 are stated here rather than overwritten. **The allocation as it now stands:
 WI-046 through WI-064 are the strategy session's; WI-030 through WI-038, WI-044,
-WI-045, WI-062, WI-065, WI-066, WI-067 and WI-068 are this session's.**
+WI-045, WI-062, WI-065, WI-066, WI-067, WI-068 and WI-069 are this session's.**
 
 **The group post for it was refused** — the round is mid-discussion — so the
 allocation is recorded here, and the group line goes when the round opens.
@@ -5247,3 +5250,144 @@ that goes in the item's file with the verdict against it. **WI-031's
 verification is queued** (`task_b511f4062477`) and will rule on the close
 path's pin. **WI-065 is live on `CONTRACTS.md`**, so the second instance's
 correction waits for it rather than making two live items on one file.
+
+## Three items close, and the queue moves — 2026-10-21 15:45
+
+**The queue moved for the first time since 09:48.** The livelocked turn that
+held half the factory for two hours was cancelled, and in the sixteen minutes
+after the release **two tasks completed with a 16-minute median** — against two
+in the hour before, with a 278-minute median. **Probe's WI-027 verification and
+Cog's WI-045 implementation took the two slots.**
+
+**And three items are accepted**, because Probe's verdicts are in and the
+gates are green:
+
+| Item   | Verdict                                                                 | The measurement it stands on                                                                                                                   |
+| ------ | ----------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
+| WI-027 | **all nine criteria met**                                               | `f7ac848`; typecheck 0, format 0, build 0, test 0 (server 219 · web 52 · worker 31 · agent-adapters 16 · contracts 28), **test:e2e 27 passed** |
+| WI-021 | **all five criteria met**                                               | `51c92f8`; typecheck 0, format 0, build 0, test 0, **`npm run smoke` 0 in 9.5 s**, the two pinned suites **39 passed (39)**                    |
+| WI-008 | **all four defects closed**, and the owner's question answered at 11:05 | typecheck 0, test 0 at `8b2abfe`; and `git diff --stat 51c92f8..HEAD -- apps packages mcp CONTRACTS.md scripts` is **empty**                   |
+
+**This session wrote none of the three**, so the lead does not accept its own
+work: WI-027's implementation is Cog's (`c9bb0bc`, `4e5db84`), WI-021's fix is
+Cog's (`57606a8`), WI-008's is Cog's (`9ad4f98`, `f0f8661`) with the contract
+half Wren's (WI-013). **All three acceptances are recorded here so that the
+other Chief session does not accept them again.**
+
+**What the product can now do because of them.**
+
+- **WI-008 — an unknown outcome is not a failure.** A turn, execution or task
+  whose outcome cannot be confirmed is recorded as **`unknown`**, and `failed`
+  no longer reads as "safe to retry" — so a side effect that may already have
+  happened is not run twice. **An unknown outcome is never retried or
+  redispatched automatically**; the waiting list shows it as **"check this"**,
+  not "fix this"; and every transition to and from it is in the audit trail.
+- **WI-027 — a turn reaches the owner the way an unknown task does.** It is
+  drawn on the waiting list as its own kind, **`turn`**, with the reason
+  **`unknown`**, in the same urgency band as an unknown task, because the list
+  is ordered over reasons and not over kinds. The owner can close it with
+  **"It ran"** or **"It did not run"**.
+- **WI-021 — a delegation is never silently dropped.** It reaches the
+  participant, or it is refused with a reason that names **both** the sender
+  whose right to delegate was refused and the agent that was not woken, and
+  the routing result carries `targets: []` so a client can tell a refusal from
+  a success without reading the prose.
+
+### WI-031's acceptance is blocked, and the correction is dispatched
+
+**Probe found a live defect against WI-031 while verifying WI-027**, and **a
+defect blocks acceptance**, so it is written into the item rather than left in
+a report nobody reads twice. `CONTRACTS.md:197-204` says the code does not
+implement the resolve route yet and that a client must treat it as absent —
+**false since `414996c` (11:32)**, and it was true when it was written at 11:05,
+so the contract led the code and the contract's statement about the code did
+not follow. **WI-065's drift with a second instance**, recorded as candidate
+**C-23**.
+
+**The correction is dispatched** — `wi-031-contract-status-correction-2026-10-21`,
+`task_be25e082ae5c`, to Wren — in the pattern WI-027's own entry uses:
+_"the code implements it — as of `414996c`"_. **It queues behind WI-065 on
+`CONTRACTS.md`**, because Wren's lane is serialised and one file carries one
+live item. The other Chief session recorded the finding and the deferral; the
+deferral was to wait for WI-065 to clear the file, and **a dispatch into
+Wren's serial queue is how it clears.**
+
+### WI-069 — numbered, and held on purpose
+
+**Probe's second finding on WI-021 was a question for Chief**, and it is now
+numbered: **WI-069, "A delegation that names nobody is refused in a way a
+client cannot read."** A delegation addressed to a participant id that matches
+**nobody** is refused with a generic reason and **no `blocked` key**, so a
+client cannot tell that refusal from "there was nothing to wake". Measured:
+ids are filtered to enabled agent connections at
+`apps/server/src/modules/conversations/routing.ts:131` before the refusal is
+built, so such a delegation never reaches the branch that names the target;
+the reason becomes _"An agent message does not automatically trigger other
+participants in coordinator mode."_ and `blocked` is undefined.
+
+**It is held, and the reasons are said out loud rather than left to be
+guessed.**
+
+1. **The owner's line at 15:40:** _"When a slot frees, lean on verification —
+   six items sit at `verify` and every one of them waits on Probe, and
+   unverified work is inventory rather than product."_ **Acceptance is the
+   constraint, so a new implementation item does not take capacity while ten
+   verifications wait.**
+2. **The contract half needs the owner's answer**, because **WI-021 has no
+   entry in `CONTRACTS.md` at all** — the refusal's shape is published nowhere,
+   so this is a gap in what the product says about itself and not a violation
+   of something it already said. **Chief's recommendation is yes, and in the
+   smallest form**, and it is still the owner's.
+
+**It is numbered so it is not lost**, and the brief is written out in full in
+`.factory/work/WI-069.md`, with the acceptance criteria drafted. The request
+ids are reserved: `wi-069-refusal-names-nobody-code-2026-10-21` for Cog and
+`wi-069-refusal-shape-contract-2026-10-21` for Wren.
+
+### Three records corrected, because a wrong record is how a finding goes unread twice
+
+1. **WI-021's state line named the spent dispatch** — `task_479859728e18`, the
+   one that failed with `BUSY` at 10:20:27. The live one is
+   `task_d817d075a0ce`. Corrected, and the item is now **accepted**.
+2. **WI-021's own file described a behaviour the code cannot exhibit.** It
+   said _"a connection that matches no participant is named by its id."_ The
+   branch exists (`routing.ts`, `participantName`) but **no input reaches it**,
+   because ids are filtered to enabled connections at `:131` before the
+   refusal is built. **It is harmless dead code; the file's account of it was
+   the untrue part**, and the account is corrected.
+3. **WI-021's citation was stale** — the translation at `service.ts:419-429`,
+   now at `:467-476`. **The code did not move; the line range did.**
+
+### The smoke gate is not flaky any more, and this session's record says so wrongly
+
+**This session recorded the Windows smoke gate as flaky and unresolved.** It
+is **fixed, by Probe, in test-side code**: `63aba3a` (12:00, _"Read the process
+table without losing the race"_) replaces the PowerShell start-up with a
+one-question WMI read through `cscript` — **267 ms measured against
+PowerShell's 5.7 s** — and `1c92001` (12:10) fixes two further suite flakes.
+Probe's own run of the gate on the current tree: **exit 0 in 9.5 s**, including
+the three checks that were failing.
+
+**The residual, honestly.** The fallback path — a machine with no script host
+— is still the slow PowerShell read, so there the race can return, and **the
+product-side 5-second budget is unchanged** (`busy_timeout = 5000`,
+`apps/server/src/db/client.ts:29`). **That half is Cog's to change**, and it is
+not what made the gate flaky.
+
+### The owner's Forge correction, which is now on the record
+
+**WI-024's live dispatch is `task_5a09991ca5a1`** — not `task_2963d3be0f41`,
+which was cancelled at 09:35. **The correction that said so failed with `BUSY`
+at 10:20:55**, and the owner's line at 15:40 carries it. It is recorded in the
+dispatch table and it changes nothing: WI-024 is not re-dispatched from here,
+because it is the other session's item and a re-dispatch needs a new id and a
+new title anyway.
+
+### The number space, as it now stands
+
+**WI-069 is this session's**, taken as the next number above all of them. WI-030
+through WI-038, WI-044, WI-045, WI-062, WI-065 through WI-069 are this
+session's; WI-024 through WI-029 and WI-039 through WI-043 are the other Chief
+session's; WI-046 through WI-064 are the strategy session's. **If another
+session has taken WI-069 in the meantime, it is renumbered and the table is
+corrected** — the same way WI-063 became WI-065.
