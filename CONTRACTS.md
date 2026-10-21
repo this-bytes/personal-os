@@ -1145,10 +1145,11 @@ the sum of what its turns actually cost, and the cap bites.**
 
 **The mode is resolved, readable, and enforced nowhere.** It is carried through the
 resolver and it is readable wherever the policy is, but no enforcement point reads
-it: the only reads of a resolved mode are in the resolver's own tests. What
-`autonomous` is to mean — the mode that permits work to begin on an agent's own
-initiative, or only the mode that describes work that has already been authorised —
-is the owner's decision, and it is not settled.
+it: the only reads of a resolved mode are in the resolver's own tests. **`manual`
+does not gate delegation** — an agent may hand work to another agent under
+`manual` exactly as it may under `autonomous`, because the mode is consulted by
+nothing. The mode is a description and not a control: it records the posture the
+owner has set, and it does not decide what runs.
 
 **The mode the owner sets is the mode that is in force.** A workspace carries the
 mode twice — the column the panel shows and the policy the resolver reads — and a
@@ -1156,8 +1157,7 @@ setting that lands in one of them and not the other tells the owner something
 false: a panel that says "autonomous" while the policy in force says "manual".
 **So the two are written together and cannot disagree, whichever way round the
 change arrives.** **That is about the setting being honest, not about the mode
-being in force** — the mode is still enforced nowhere, and what it is to mean is
-still the owner's decision.
+being in force** — the mode is still enforced nowhere.
 
 **The effective policy is readable** over `GET /api/autonomy-policy` and through the
 `autonomy.read` MCP tool. Its shape is published in
@@ -1885,7 +1885,7 @@ policy bounded that value and the shipped default was used.
 **A goal or a conversation belonging to another workspace has no say.** The loader
 checks the workspace each belongs to, so a caller cannot reach across workspaces to
 loosen a policy or to tighten one either
-(`apps/server/src/modules/autonomy/service.ts:66-72`).
+(`apps/server/src/modules/autonomy/service.ts:72-76`).
 
 **The rules the policy is resolved by are published** in
 [the autonomy policy](#autonomy-policy).

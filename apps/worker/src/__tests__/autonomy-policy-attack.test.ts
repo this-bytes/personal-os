@@ -1304,14 +1304,14 @@ describe('the worker', () => {
     });
   });
 
-  describe('manual means the agent may not begin work on its own initiative (decision 4)', () => {
+  describe('manual does not gate delegation (decision 4)', () => {
     /**
      * Let one agent hand the work to another, and run whatever the hand-off
      * produced.
      *
-     * The result is how many messages the SECOND agent produced. Under a mode
-     * that lets an agent begin work on its own initiative that number is at
-     * least one; under `manual` it has to be none.
+     * The result is how many messages the SECOND agent produced. **The number is
+     * at least one under every mode, because no mode is consulted.** The mode is
+     * resolved and published, and nothing reads it.
      */
     async function delegate(mode: string): Promise<number> {
       setWorkspacePolicy({ ...DEFAULT_WORKSPACE_POLICY, mode });
@@ -1390,7 +1390,7 @@ describe('the worker', () => {
         }).length;
     }
 
-    it('lets an agent delegate when the mode permits it', async () => {
+    it('the fixture produces a delegation at all', async () => {
       // The control: the same fixture under `autonomous` must produce the
       // hand-off. If this case fails, the case below fails for the wrong
       // reason, and the fixture is wrong rather than the implementation.
@@ -1403,15 +1403,17 @@ describe('the worker', () => {
       ).toBeGreaterThan(0);
     });
 
-    it('stops the agent beginning work on its own initiative under manual', async () => {
+    it('manual does not gate delegation: the delegated agent worked anyway', async () => {
       const replies = await delegate('manual');
 
       expect(
         replies,
-        'the delegated agent worked anyway: decision 4 says "manual means the agent may not BEGIN ' +
-          'work on its own initiative". The effective mode is resolved and published, and ' +
-          'nothing consults it, so a delegation still begins work under manual.',
-      ).toBe(0);
+        'the delegated agent did NOT work under manual: something now reads the mode. ' +
+          'The owner decided that manual does not gate delegation, so the mode is resolved ' +
+          'and published and nothing consults it. If this number ever falls to zero, an ' +
+          'enforcement point has been added, and that is a change to the published contract ' +
+          "and it needs the owner's word.",
+      ).toBeGreaterThan(0);
     });
   });
 });
