@@ -1999,3 +1999,94 @@ floor; the lead's position on each:
    to the lead's own acceptance.
 
 **c63d270 — VERDICT: GREEN.** CodeQL completed/success (Analyze javascript-typescript) and CI completed/success on all four jobs (Dependency audit, Lint the workflows, Build and test, Build and run the stack), read afterwards and from outside this machine. The gates measured on that tree before the push: typecheck exit 0, format:check exit 0, build exit 0, test exit 0 — 49 files, 458 tests, 0 failures. **This record is committed on main and deliberately left unpushed, so the verdict it carries belongs to the tree that is actually published (c63d270); the next push carries it, and its own verdict is read the same way.** — Chief, 2026-10-22 06:50
+
+---
+
+## 2026-10-22 07:15 — Chief: no restart has happened, WI-098 is verified and one edit short, and a second lane is refusing
+
+**Four facts, each measured, and two of them correct something this session said
+minutes ago.**
+
+**One — no restart has happened, and a report says one did.** The Mini App's own
+runtime diagnostics say otherwise: `runtime.start_requested` and `runtime.ready`
+both at **2026-10-21 23:37:39**, one run id, `current: true`, `truncated: false`.
+**The runtime has been up continuously since 23:37 yesterday, so nothing has been
+restarted since, and the restart is still the owner's to give.** Vision's WI-098
+report states that two queued bot-to-bot messages "were both closed as cancelled
+at 05:50 **by the restart**" and that "a bot-to-bot message queued behind a turn
+did not survive the restart". **That inference is void: no restart occurred.**
+Those two messages, and a third, were cancelled **by this session, deliberately**,
+at **05:50:20, 05:50:21 and 05:50:22** — a stale queued delivery spending a slot
+on work already accepted, and the reasons are in `:1590-1615` and in this
+section's §2. **This section's §2 also says "cancelled 05:47", and the measured
+time is 05:50:20 — the correction is here rather than overwritten.** The
+operational point in that report still stands and is worth keeping: **anything
+that must not be lost belongs in the group floor or in the repository, not only
+in a bot-to-bot message.** Vision is also right that it was never dead — the
+substitution of Cog for WI-010's one-phrase fix was unnecessary, and the fix
+landed anyway.
+
+**Two — WI-098 is verified, and one edit is owed.** Vision's report (delivered
+06:30:06, `task_d446cc3898d3`) measures the branch's own merged head
+`5b9661d` (06:21, unpushed; the remote tip is `3b5d427`): **C3, C4, C5 and C6
+MET** — both crossings named with the reason given once, "one declared
+exception" at 0 hits, the format and test gates exit 0, and the diff exactly two
+files. **C1 is half met:** the quote at `:157-161` is the same 312 characters as
+the rule publishes and the two normalised strings are equal, but the ADR re-wraps
+it to its own measure, so the two slices break at different words — and **the
+cited range is stale: the rule stood at `:51-55` at `d3ef0d2` and at the fork
+point `a236a63`, and `95e5165` added two lines above it, so on current `main`
+and on the branch's own head the rule stands at `:53-57`.** **C2 is half met:**
+the note names both repairs and not the line. **So the item is one edit from
+acceptance: `:51-55` → `:53-57` at `:164`, and pin the commit it was measured
+at**, because a bare line number is the pre-`95e5165` style and will drift
+again. The item file's own record carries three stale sentences, reported and
+not edited.
+
+**That edit is not dispatched, and the reason is the rule that has cost this
+factory five ids.** The ADR and the item file are **Wren's** (`*.md` and
+`docs/**` are hers in `FACTORY.md`'s ownership table), and **Wren's lane is
+refusing**: WI-106's turn ran eighteen minutes and came back with a zero-length
+answer at 06:31, and the WI-111 brief was refused instantly at 06:32, while her
+session keeps advancing (06:37:57). **A dispatch into a refusing lane spends the
+id for nothing** — WI-098's verification alone burned five (`-r1` … `-r5`, all to
+Probe) — **so the correction waits for Wren's lane, and the lead does not spend
+the sixth id on it.** WI-098 is **verified, one edit short, not accepted.**
+
+**Three — WI-108 is landed and its verification is running.** Cog finished
+WI-108 at 06:30:59 after **59 minutes**: branch
+`wi/108-validation-error-for-a-broken-spec`, commit `a65ff32`, pushed to origin,
+built on the landing vehicle at `2e4981e`, `CONTRACTS.md` untouched, and the
+change is one helper plus the four providers' validation wrapping. **Its
+verification is running** (`wi-108-verification-report-vision-2026-10-22`,
+`task_cb4460d7e002`, Vision, started 06:40:01) — **Cog wrote the work, so Cog
+cannot verify it, and Vision did not write it.**
+
+**Four — the lane state at 07:10, which is what the owner's restart buys
+against.**
+
+| Lane   | Measured state                                                                                                                                        | Can it take work? |
+| ------ | ----------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------- |
+| Cog    | WI-108 delivered; the chat's last message is `done` at 06:30:59                                                                                       | **yes**           |
+| Vision | WI-098's verification delivered at 06:30:06; WI-108's verification running since 06:40:01                                                             | **yes, busy**     |
+| Wren   | session advancing (06:37:57) but two delegations refused — an 18-minute turn returned a zero-length answer at 06:31, and WI-111 was refused instantly | **no — refusing** |
+| Probe  | 30 delegations refused since 2026-10-20 21:46:39, the last at 04:25:20; no Probe task created since; the session has not moved since 03:53:48         | **no — refusing** |
+
+**So two of the four lanes are refusing, and one of them is refusing _while its
+session advances_** — which is the measurement that separates Wren from Probe:
+**Wren's lane is busy-refusing, Probe's is the one with no advancement at all.**
+And **WI-111 is being worked right now outside the dispatcher's two slots** — a
+worker session in `G:\code\personal-os-worktrees\111-strategy-rule-fifth-copy`,
+its test run started 06:40 — **so the factory is not idle while one slot sits
+free.**
+
+**And the restart's cost is lower than this ledger has been saying, and its
+benefit is untested.** Cog's WI-108 turn **spanned 05:50** — the window Vision
+attributes to a restart — and finished at 06:30:59 with its full report, so **the
+runtime's in-memory maps are not what this session's §7 assumed**: a restart
+would not necessarily cut a live turn. **What a restart certainly does is clear
+the in-memory `groupLoops` and `runs` (`engine.mjs:153`, `task-dispatcher.mjs:17`),
+and release Probe's chat from a refusal that has run for 54 hours.** **Nobody has
+dispatched to Probe since 04:25:20, so the release is untested** — and that is the
+one thing the owner can test cheaply, by ordering the restart and watching
+whether a delegation into Probe's chat is accepted.
