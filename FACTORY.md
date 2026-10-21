@@ -112,6 +112,14 @@ local gate run contended by another session is not evidence** — the platform's
 run is. **A red verdict on a pushed `main` is a factory failure to fix and say
 out loud**, never a push to undo by force.
 
+**And one push at a time, because a push cancels the run that judges it.** The
+workflow's `cancel-in-progress: true` is keyed on the **ref**, not on the
+content, so a push that carries nothing but a ledger line still cancels the
+pipeline in flight. **A verdict that says `cancelled` is a superseded run, not
+a failure** — and the right response is to let the newest run finish, not to
+push again. **Two sessions may hold this authorisation at once; one push at a
+time, and let the run finish, is how the authorisation stays worth having.**
+
 When the owner has said so, and `origin/main` is still where your branch
 started, `main` is fast-forwarded onto your branch:
 

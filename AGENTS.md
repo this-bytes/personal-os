@@ -182,7 +182,10 @@ needs no approval. Since 2026-10-21 18:07 `main` does not either: the owner
 gave a standing word — _push `main` whenever CI is green_ — and **that word is
 not spent**. **Green is measured, not hoped for**: the local gates pass on the
 tree you are pushing, the code that would be landed is the code the pipeline
-has measured green, and the push is a fast-forward. With that, and
+has measured green, and the push is a fast-forward. **And one push at a time,
+because a push cancels the run that judges it** — `cancel-in-progress` is keyed
+on the ref, so a ledger-only push still cancels the pipeline in flight, and a
+verdict of `cancelled` means superseded, not failed. With that, and
 `origin/main` still where your branch started:
 
 ```bash
