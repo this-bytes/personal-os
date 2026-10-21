@@ -22,8 +22,8 @@ import { fileURLToPath } from 'node:url';
  *  - the writers: the section names the places where an outcome is written,
  *    and this file checks that each pointer still lands on the line that
  *    carries the claim;
- *  - the twelve: the section says the twelve routes that wrote no entry are
- *    the twelve the measures route publishes;
+ *  - the coverage: the section and the measures route must agree about which
+ *    routes write no entry — whatever that number is today;
  *  - the neighbours: the route table's audit row, the measures route's own
  *    outcome set, and the anchors the section links to.
  *
@@ -53,13 +53,36 @@ function contractsSection(heading: string): string {
   return next === -1 ? rest : rest.slice(0, next);
 }
 
-/** The line a citation points at, read out of the file it names. */
-function citedLine(citation: string): string {
-  const match = citation.match(/^(.+):(\d+)$/);
+/**
+ * The code a citation points at, read out of the file it names.
+ *
+ * A citation may name a range — `path:594-599` — and then it points at every
+ * line in it, not only at its first. The lines are joined, so a claim about a
+ * block is checked against the whole block.
+ */
+function citedCode(citation: string): string {
+  const match = citation.match(/^(.+):(\d+)(?:-(\d+))?$/);
   expect(match, `${citation} is not a citation this file can read`).not.toBeNull();
   const file = path.join(repoRoot, match![1]!.replace(/\//g, path.sep));
   const lines = fs.readFileSync(file, 'utf8').split(/\r?\n/);
-  return lines[Number(match![2]) - 1] ?? '';
+  const from = Number(match![2]);
+  const to = match![3] === undefined ? from : Number(match![3]);
+  return lines.slice(from - 1, to).join('\n');
+}
+
+/**
+ * Every citation in the text that names this file, with the lines it names.
+ *
+ * The contract may cite a line (`path:76`) or a range (`path:594-599`); both
+ * name the same place, so both are read here and the claim is checked against
+ * whichever the contract actually published.
+ */
+function citationsTo(text: string, file: string): { from: number; to: number }[] {
+  const escaped = file.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  return [...text.matchAll(new RegExp(`${escaped}:(\\d+)(?:-(\\d+))?`, 'g'))].map((match) => ({
+    from: Number(match[1]),
+    to: match[2] === undefined ? Number(match[1]) : Number(match[2]),
+  }));
 }
 
 /** Every file under a directory, recursively. */
@@ -118,19 +141,33 @@ describe('the audit outcome section', () => {
     }
   });
 
-  it('names the twelve the measures route publishes', () => {
+  it('agrees with the measures route about the routes that write no entry', () => {
     const section = contractsSection('### The audit outcome');
     const measures = contractsSection('### The measures route');
     const rows = [...measures.matchAll(/^\|\s*`(GET|POST|PUT|PATCH|DELETE)`\s*\|\s*`([^`]+)`/gm)];
 
     expect(
       section,
-      'the section no longer says the twelve are the ones the measures route publishes',
+      'the section no longer points at the measures route for the coverage claim',
     ).toContain('[the measures route](#the-measures-route)');
-    expect(
-      rows.length,
-      'the measures route no longer publishes the twelve routes that write no entry',
-    ).toBe(12);
+
+    if (rows.length === 0) {
+      // The measures route publishes that every mutating route writes an entry,
+      // so the section must say the same. The twelve that used to write none is
+      // a true history and stays; what cannot stay is a claim about a list the
+      // measures route does not publish.
+      expect(
+        section,
+        'the measures route publishes that every mutating route writes an entry, and the audit ' +
+          'outcome section does not say the same',
+      ).toMatch(/every mutating route writes an entr/i);
+    } else {
+      expect(
+        section,
+        `the measures route publishes ${rows.length} routes that write no entry, and the audit ` +
+          'outcome section does not name them',
+      ).toMatch(new RegExp(`${rows.length}\\s+routes?`));
+    }
   });
 
   it('does not contradict the neighbours', () => {
@@ -163,46 +200,60 @@ describe('the audit outcome section', () => {
 describe('the code, as the section describes it', () => {
   it('still points at the lines that carry its claims', () => {
     const section = contractsSection('### The audit outcome');
-    const claims: { citation: string; pattern: RegExp; what: string }[] = [
+    const claims: { file: string; at: [number, number]; pattern: RegExp; what: string }[] = [
       {
-        citation: 'apps/server/src/api/helpers.ts:62',
+        file: 'apps/server/src/api/helpers.ts',
+        at: [76, 76],
         pattern: /result:\s*'success'/,
         what: 'the route helper writes success',
       },
       {
-        citation: 'apps/worker/src/executor.ts:104',
+        file: 'apps/worker/src/executor.ts',
+        at: [112, 112],
         pattern: /result:\s*'unknown'/,
         what: 'the worker writes unknown',
       },
       {
-        citation: 'apps/server/src/modules/conversations/dispatch.ts:247',
+        file: 'apps/server/src/modules/conversations/dispatch.ts',
+        at: [247, 247],
         pattern: /result:\s*'unknown'/,
         what: 'the dispatch writes unknown',
       },
       {
-        citation: 'apps/server/src/modules/audit/service.ts:79',
+        file: 'apps/server/src/modules/audit/service.ts',
+        at: [79, 79],
         pattern: /result:\s*input\.result\s*\?\?\s*'success'/,
         what: 'the audit service defaults to success',
       },
       {
-        citation: 'apps/server/src/app.ts:190',
+        file: 'apps/server/src/app.ts',
+        at: [193, 193],
         pattern: /setErrorHandler/,
         what: 'the error handler that writes nothing',
       },
       {
-        citation: 'apps/server/src/modules/resources/service.ts:525',
+        file: 'apps/server/src/modules/resources/service.ts',
+        at: [594, 599],
         pattern: /queue\.enqueue\(/,
         what: 'the enqueue of an automation run',
       },
     ];
 
     for (const claim of claims) {
+      const wanted = `at ${claim.at[0]}${claim.at[1] !== claim.at[0] ? `-${claim.at[1]}` : ''}`;
+      // The section may cite the line or a range that covers it; what it may
+      // not do is cite somewhere else, or not cite the file at all.
+      const hit = citationsTo(section, claim.file).find(
+        (citation) => citation.from <= claim.at[1] && citation.to >= claim.at[0],
+      );
+
+      expect.soft(hit, `the section no longer cites ${claim.file} ${wanted}`).toBeDefined();
+      if (!hit) continue;
+
+      const citation = `${claim.file}:${hit.from}${hit.to !== hit.from ? `-${hit.to}` : ''}`;
+      const code = citedCode(citation);
       expect
-        .soft(section, `the section no longer cites ${claim.citation}`)
-        .toContain(claim.citation);
-      const line = citedLine(claim.citation);
-      expect
-        .soft(line, `${claim.citation} no longer carries ${claim.what}: it reads "${line}"`)
+        .soft(code, `${citation} no longer carries ${claim.what}: it reads "${code}"`)
         .toMatch(claim.pattern);
     }
   });
