@@ -11,6 +11,7 @@ import type { FactoryService } from './modules/factory/service.js';
 import type { AutomationsService } from './modules/automations/service.js';
 import type { CapabilitiesService } from './modules/capabilities/service.js';
 import type { AuditService } from './modules/audit/service.js';
+import type { MeasuresService } from './modules/measures/service.js';
 import type { ApprovalsService } from './modules/approvals/service.js';
 import type { ExecutionsService } from './modules/executions/service.js';
 import type { EventsService } from './modules/events/service.js';
@@ -33,6 +34,7 @@ export interface AppServices {
   automations: AutomationsService;
   capabilities: CapabilitiesService;
   audit: AuditService;
+  measures: MeasuresService;
   approvals: ApprovalsService;
   executions: ExecutionsService;
   events: EventsService;

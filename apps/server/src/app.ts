@@ -17,6 +17,7 @@ import { createResourcesService } from './modules/resources/service.js';
 import { createFactoryService } from './modules/factory/service.js';
 import { createAutomationsService } from './modules/automations/service.js';
 import { createCapabilitiesService } from './modules/capabilities/service.js';
+import { createMeasuresService } from './modules/measures/service.js';
 import { createApprovalsService } from './modules/approvals/service.js';
 import { createExecutionsService } from './modules/executions/service.js';
 import { EventsService } from './modules/events/service.js';
@@ -34,6 +35,7 @@ import { registerApprovalRoutes } from './api/approvals.js';
 import { registerExecutionRoutes } from './api/executions.js';
 import { registerWaitingRoutes } from './api/waiting.js';
 import { registerAuditRoutes } from './api/audit.js';
+import { registerMeasuresRoutes } from './api/measures.js';
 import { registerEventRoutes } from './api/events.js';
 
 export interface BuildAppOptions {
@@ -97,6 +99,7 @@ export async function buildApp(options: BuildAppOptions = {}): Promise<FastifyIn
     automations,
   });
   const audit = runtime.audit;
+  const measures = createMeasuresService({ resources, audit });
   const approvals = createApprovalsService(runtime.db);
   const executions = createExecutionsService({ db: runtime.db });
 
@@ -113,6 +116,7 @@ export async function buildApp(options: BuildAppOptions = {}): Promise<FastifyIn
     automations,
     capabilities,
     audit,
+    measures,
     approvals,
     executions,
     events,
@@ -217,6 +221,7 @@ export async function buildApp(options: BuildAppOptions = {}): Promise<FastifyIn
   registerExecutionRoutes(app);
   registerWaitingRoutes(app);
   registerAuditRoutes(app);
+  registerMeasuresRoutes(app);
   registerEventRoutes(app);
 
   // MCP endpoint. The actor is resolved from the bearer token or the

@@ -15,3 +15,4 @@ export * from './automation.js';
 export * from './workspace.js';
 export * from './events.js';
 export * from './mcp.js';
+export * from './measures.js';

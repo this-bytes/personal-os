@@ -16,7 +16,7 @@ import type { Database } from '../../db/client.js';
 import { agentConnections, secretConfigs } from '../../db/schema.js';
 import { decryptSecret, encryptSecret } from '../../lib/crypto.js';
 import { errors } from '../../lib/errors.js';
-import { newId } from '../../lib/ids.js';
+import { AGENT_ID_PREFIX, newId } from '../../lib/ids.js';
 
 export interface SecretSummary {
   id: string;
@@ -199,7 +199,7 @@ export function createAgentService(options: AgentServiceOptions): AgentService {
     },
 
     create(input): AgentConnectionDetail {
-      const id = newId('agt');
+      const id = newId(AGENT_ID_PREFIX);
       const now = new Date().toISOString();
       const configRef = writeConfig(
         input.workspaceId,
