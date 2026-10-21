@@ -12,6 +12,28 @@ export const resourceTypeSchema = z.enum([
 export type ResourceType = z.infer<typeof resourceTypeSchema>;
 
 /**
+ * The author a resource records.
+ *
+ * A closed set, in four forms: an agent connection's id (`agt_…`), the
+ * owner's user id (`usr_…`), the literal `owner` for a write by the owner
+ * when no user id is known, and the literal `system` for a write with no
+ * authenticated actor behind it. The measure reads the agent form by its
+ * prefix and not by a lookup, so a connection that has since been removed
+ * does not make what it authored owner-authored.
+ */
+export const RESOURCE_AUTHOR_OWNER = 'owner';
+export const RESOURCE_AUTHOR_SYSTEM = 'system';
+export const resourceAuthorSchema = z.union([
+  z.literal(RESOURCE_AUTHOR_OWNER),
+  z.literal(RESOURCE_AUTHOR_SYSTEM),
+  z
+    .string()
+    .max(128)
+    .regex(/^[a-z]{3}_[0-9a-z]+$/, 'An author is an id form, or the literal owner or system.'),
+]);
+export type ResourceAuthor = z.infer<typeof resourceAuthorSchema>;
+
+/**
  * A shared envelope. The payload is type-specific and validated by the
  * owning provider; storage representation is an implementation detail.
  */
@@ -23,7 +45,7 @@ export const resourceSchema = z.object({
   revision: z.number().int().min(1),
   title: z.string().min(1).max(300),
   data: z.unknown(),
-  createdBy: idSchema,
+  createdBy: resourceAuthorSchema,
   updatedAt: isoDateSchema,
 });
 export type Resource<T = unknown> = z.infer<typeof resourceSchema> & { data: T };
