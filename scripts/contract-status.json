@@ -147,14 +147,19 @@
     {
       "id": "the-approval-evidence-wi-039",
       "section": "The approval evidence",
-      "note": "The code does not implement this yet",
-      "claim": "not-implemented",
-      "why": "WI-039's evidence read: there is no route for it yet.",
+      "note": "WI-039, and the code implements it",
+      "claim": "implemented",
+      "why": "WI-039's evidence read: the route is there, and the published shape it answers lives beside it.",
       "expect": [
         {
-          "kind": "absent-text",
+          "kind": "present-text",
           "path": "apps/server/src/api/approvals.ts",
           "value": "/api/approvals/:id/evidence"
+        },
+        {
+          "kind": "present-pattern",
+          "path": "packages/contracts/src/approvals.ts",
+          "value": "export const approvalEvidenceSchema"
         }
       ]
     }

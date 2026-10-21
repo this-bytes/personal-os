@@ -1,6 +1,6 @@
 # Personal OS
 
-**An agent-native control panel and personal software factory.**
+**The environment one person's agents operate and extend.**
 
 Personal OS is a single, self-hosted instance that gives you one place to talk to
 agents, run group conversations, and let agents build the things you need —
