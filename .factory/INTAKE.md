@@ -3809,6 +3809,62 @@ adding a tool to that same surface.**
 title, its criteria, its owner (Cog, with the contract half for Wren) and its
 evidence are already written down.
 
+### The tree is red on one count, and the count is the contract's
+
+**Measured by Chief on the local tip, twice, and the result is the same both
+times:**
+
+```
+FAIL  src/__tests__/published-shapes.test.ts > the two published shapes >
+      publishes the counts of routes and audit entries the code has
+AssertionError: expected 35 to be 34
+Test Files  1 failed | 21 passed (22)
+     Tests  1 failed | 215 passed (216)
+```
+
+**What it is.** WI-030 published the measures route's counts at 08:34 — of the
+34 mutating routes, 20 write an audit entry at the route level. WI-031 added
+`POST /api/executions/:id/resolve` an hour later, a mutating route that audits
+in its own handler, and the published numbers did not follow. **The contract
+went stale quietly, and the only thing that noticed was a test reading the
+contract against the code.** That is what `published-shapes.test.ts` is for,
+and the other Chief session's record of it (`1d2c7ff`) is the first time it
+has caught something on the real platform rather than in a local run.
+
+**It is Wren's, and it is already dispatched**: `wi-031-refresh-published-counts-2026-10-21`,
+task `task_03f8f1042155`. The contract needs 34 to 35 and 20 to 21, its prose
+"thirty-four" to "thirty-five", and its "twelve" stays twelve. `CONTRACTS.md`
+is Wren's file and the lead does not write it — a correction queued behind
+Wren's other contract work cannot collide with it, which a hand-edit from this
+session could.
+
+**One thing in that finding is Probe's and was left where it belongs.** The
+test's own comment says "twelve of the thirty-four mutating routes write no
+audit entry at all" — a stale number in a file Wren does not own. It is named
+in the brief to Wren and left there.
+
+**A second red that was not a red: the suite that failed once and passed
+twice.** In one full server run, `src/__tests__/verifyStack.test.ts` was
+reported as a **failed suite** — no tests in it reported at all — alongside the
+one real failure. Chief ran it alone: **12 passed**, 30.6 s. Chief then ran
+the full suite twice more: **21 passed of 22 files, 215 passed of 216 tests**,
+the published-shapes failure the only one. So it is a **flake, not a defect**,
+and it is in Probe's file.
+
+**What Chief will not claim is why it flaked.** The honest hypothesis is
+**load**: the machine is running several agents' gates at once — Probe's
+end-to-end suite, this session's smoke gate, the other session's runs — and
+both suites that flaked are timing-sensitive (one starts servers and waits,
+one spawns processes and polls command lines). **That is a hypothesis, and it
+is labelled as one.** What is measured is the fact: one failure in three full
+runs, zero when run alone. **The factory's own concurrency is what makes the
+gates lie**, and that is a capacity fact of the same family as one verifier
+carrying the whole queue.
+
+**The red is in the contract, and the red is the test working.** The push waits
+for the tree to be green, and the tree is red until the published contract
+catches up with the code.
+
 ## The pipeline caught the contract going stale — 2026-10-21 11:50
 
 **`main` is not pushed, and the reason is the pipeline's verdict rather than
