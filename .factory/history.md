@@ -9203,3 +9203,80 @@ one-file-one-item rule never held it back.** It went out with a new request id
 (`task_fede9dee2ed9`), and the check that would pin the four sentences is named
 as owed and is Probe's file to write. **A hold that was never about the file
 should not be allowed to outlive the queue.**
+
+## Probe's WI-098 report, and what it changed — 2026-10-22 06:31
+
+**Probe's lane came back.** The adversarial brief on WI-098 arrived at 06:20,
+through a delivery session parented to Probe's own session, and **Probe's
+session is alive again** — `mvs_f1f513955649480dbfb09fae820cf59f` is now
+`idle` with an advancing `updatedAt`, after being `started` and frozen
+for more than ninety minutes. **That changes the owner's restart question: the
+restart is no longer needed to revive Probe's lane.** It is still the only way
+to raise the ceiling, and the order is still patch → restart, but the restart
+no longer buys Probe back — it only buys the ceiling.
+
+**The verdict is NOT VERIFIED, and the lead accepts it.** Probe measured at
+`3b5d427` with base `a236a63`. The substance is right — the quote, the
+re-sync judgement, the crossings paragraph, the fourth place — and criteria 4
+and 6 hold. **Four things are wrong.**
+
+**One is blocking, and it is in the writer's file.** The ADR's provenance note
+at `:164` cites the rule at `prototypes/DIRECTION.md:51-55`. **On the branch
+that is true; on `main` the rule stands at `:53-57`**, because `main` has
+moved `DIRECTION.md` since the branch's base. The lead merged the branch onto
+today's `main` in a scratch tree: **no conflict lines**, and in the merged tree
+the rule is at `:53-57` while the ADR still says `:51-55` — **the cited range
+starts two lines early and ends two lines short, in the very note that records
+the quote's provenance.** The prose is byte-identical (312/312). **The ruling:
+the note carries the commit the range was read at, beside the range** — the
+convention `prototypes/DIRECTION.md` sets for itself at `:12-19`. The correction
+goes to Wren, with the order: **merge `origin/main` into the branch first**
+(measured clean), read the range in that tree, cite it, name the commit.
+
+**Three are the lead's own, and the lead fixed them.** **Criterion 1** was
+written against the stricter reading and could not be met by work that is
+right: the raw blocks are **322 against 328** and are not byte-identical, and
+only the stripped prose bodies — **312 each** — are. **The figures were off by
+one**: the file is **401** lines by newline count, stale by **35**, not 402 and
+36, and **402 is the count that includes the trailing empty element** — so the
+convention is now written down. **And the wrap claim was overstated**: greedy-78
+reproduces 14 of 35 of the base ADR's prose paragraphs, the best width is 79,
+and the existing paragraphs carry lines longer than 78. **A criterion that
+cannot be met by work that is right is a defect in the criterion, and the
+criterion was in the lead's file.**
+
+**And one is a commit message that is literally false.** `678744d` says the
+direction "does not contain the word 'connect' at all". **It does** — on four
+lines at `d3ef0d2^`. The message cannot be repaired: the pre-push hook
+refuses any non-fast-forward push and the escape hatch is
+`PERSONAL_OS_ALLOW_FORCE=1`. **A force-push is the owner's word, and the
+lead's recommendation is to leave the message standing with this correction
+beside it** — which is the house's own rule for a wrong claim.
+
+**One finding became its own item.** `docs/strategy.md:248-250` still carries
+the rule with **no exception clause at all**, while the rule now has two
+declared exceptions. **It under-states the rule rather than repeating it**, and
+no test reads the file. That is **WI-111**, opened and dispatched at 06:31 —
+**and the file is free, measured before the dispatch**: the peer's unlanded
+branch changes `docs/strategy.md` at 108, 154, 179, 326, 359, 450, 562 and 578,
+**not at 248-250**.
+
+**One verification, one item, one verifier.** A second WI-098 verification was
+queued to Vision at 06:08 and **the lead cancelled it at 06:24** — Probe
+flagged the duplicate himself. **That request id is spent.**
+
+## WI-098 accepted, the numbers settled, and two claims retired — 2026-10-22 07:40
+
+**WI-098 is accepted**, because **two independent verifications converged on the same single defect and the same single fix.** Probe's adversarial brief (06:20, measured at `3b5d427` with base `a236a63`) returned **NOT VERIFIED**: the note cited the rule at `prototypes/DIRECTION.md:51-55` and **the rule stands at `:53-57` on `main`**, because `95e5165` added two lines above it after the branch's base. Vision found the same from the other side and asked for the same fix — **the range, and the commit it was read at named beside it.** **The edit is on `main`: the note reads "`:53-57` as read at `95e5165`", nothing else in the ADR changed, and the quote is byte-identical (312/312).**
+
+**Three of Probe's findings were the lead's own, and they are corrected:** the criterion was written against the stricter reading (the raw blocks are 322 against 328 and are **not** byte-identical; only the stripped prose bodies — 312 each — are, and the quote is re-wrapped to the ADR's measure), the line-count figures were off by one (**401** lines by newline count, stale by **35**, not 402 and 36 — and the convention is written down), and the wrap claim was overstated (greedy-78 reproduces 14 of 35 of the base ADR's prose paragraphs; the best width is 79). **A criterion that cannot be met by work that is right is a defect in the criterion, and the criterion was in the lead's file.**
+
+**One finding cannot be repaired by the lead.** `678744d`'s commit message says the direction "does not contain the word 'connect' at all". **It does** — four lines at `d3ef0d2^`. The pre-push hook refuses any non-fast-forward push and the escape hatch is `PERSONAL_OS_ALLOW_FORCE=1`. **A force-push is the owner's word, and the lead's recommendation is to leave the message standing with the correction beside it.**
+
+**The numbers, settled out loud.** **WI-106 = the licence record** (the peer session conceded it in writing). **WI-111 = the publication** (the peer session's). **WI-112 = the rule's fifth copy in the strategy record** (the lead's; filed as WI-111 at 06:31 and renumbered, because the peer's WI-111 was not visible on `main` when the number was read). **The peer's branch must be corrected before it lands: its `WI-111.md` holds a copy of the licence record's file and its `WI-106.md` holds the publication's — the wrong way round — and the lead resolves that at the merge, in favour of `main`.**
+
+**Two claims of this session are retired, and both were wrong.** **"Probe's lane is dead"** — Probe's session is **`idle` with an advancing `updatedAt`, and Probe delivered the full adversarial brief on WI-098 at 06:20 through a delivery session parented to Probe's own. **Probe's lane works.\*\* **"Cog's WI-108 turn is still in flight"** — the dispatcher has it **`done`, ended **06:30:59\***\*, with a 4,991-character report in the chat: branch `wi/108-validation-error-for-a-broken-spec`, commit `a65ff32`, pushed. **A post's timestamp is when it was delivered, not when it was measured\*\* — which is how two sessions measured the same moment and disagreed.
+
+**And the lanes are not the same lane.** Cog takes work. Vision is verifying WI-108. **Wren's session advances while her delegations are refused — busy, not dead** — and the lead's two dispatches into that chat were refused in 28 and 29 seconds, both ids spent. **The lead is not spending another id into a refusing lane**: the request id for WI-106's next attempt is recorded and **unused**, and WI-112's work is already in flight on the peer session's branch with tests running since 06:40.
+
+**The gates on the merged tree:** typecheck 0, format:check 0, build 0, test 0.
