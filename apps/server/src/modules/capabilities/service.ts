@@ -107,6 +107,13 @@ export interface CapabilitiesService {
       type: ResourceType;
       title: string;
       data: unknown;
+      /**
+       * The template this resource was made from.
+       *
+       * The template's spec is already merged into `data`: the merge belongs to
+       * the provider, and the resource records where it came from.
+       */
+      template?: { id: string; version: number };
     },
     /** Who asked for the resource. Recorded as the resource's author. */
     actor: Actor,
@@ -116,10 +123,16 @@ export interface CapabilitiesService {
     id: string,
     patch: { expectedRevision: number; title?: string; data?: unknown },
   ): Resource;
-  /** The templates published for one resource kind. */
-  resourceTemplateList(type: ResourceType): ResourceTemplate[];
-  /** One template, by reference, for the kind the caller is creating. */
-  resourceTemplateGet(ref: ResourceTemplateRef, type: ResourceType): ResourceTemplate;
+  /** The templates published for one resource kind — or for every kind. */
+  resourceTemplateList(type?: ResourceType): ResourceTemplate[];
+  /** One template, by reference. The template names its own kind. */
+  resourceTemplateGet(ref: ResourceTemplateRef): ResourceTemplate;
+  /**
+   * The template's spec with the caller's values merged into it.
+   *
+   * A template of another kind is refused.
+   */
+  resourceTemplateMerge(template: ResourceTemplate, type: ResourceType, override: unknown): unknown;
 
   automationCreate(
     input: {
@@ -258,6 +271,7 @@ export function createCapabilitiesService(
         title: input.title,
         data: input.data,
         author: authorFor(actor),
+        ...(input.template ? { template: input.template } : {}),
       });
     },
 
@@ -273,8 +287,12 @@ export function createCapabilitiesService(
       return resources.templateList(type);
     },
 
-    resourceTemplateGet(ref, type): ResourceTemplate {
-      return resources.templateGet(ref, type);
+    resourceTemplateGet(ref): ResourceTemplate {
+      return resources.templateGet(ref);
+    },
+
+    resourceTemplateMerge(template, type, override): unknown {
+      return resources.templateMerge(template, type, override);
     },
 
     automationCreate(input, actor): Automation {

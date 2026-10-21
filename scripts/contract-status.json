@@ -1,0 +1,162 @@
+{
+  "contract": "CONTRACTS.md",
+  "about": "The claims the contract status gate checks. Each claim names the contract section the note lives in, the fragment of that note which carries the claim, the claim itself, and what the tree must contain for the claim to be true. A note whose claim changes has to change this file in the same commit: the gate fails when a note is false, when the note and this table disagree, and when the note this table describes is no longer in the contract. A note this file says nothing about is reported as unchecked and never fails the gate.",
+  "claims": [
+    {
+      "id": "the-unknown-outcome",
+      "section": "The unknown outcome",
+      "note": "WI-008, and the code implements it",
+      "claim": "implemented",
+      "why": "WI-008's unknown outcome: the message, execution and task statuses all carry 'unknown'.",
+      "expect": [
+        {
+          "kind": "present-pattern",
+          "path": "packages/contracts/src/conversation.ts",
+          "value": "messageStatusSchema\\s*=\\s*z\\.enum\\(\\[[^\\]]*'unknown'"
+        },
+        {
+          "kind": "present-pattern",
+          "path": "packages/contracts/src/agent.ts",
+          "value": "executionStatusSchema\\s*=\\s*z\\.enum\\(\\[[\\s\\S]*?'unknown'"
+        },
+        {
+          "kind": "present-pattern",
+          "path": "packages/contracts/src/factory.ts",
+          "value": "taskStatusSchema\\s*=\\s*z\\.enum\\(\\[[\\s\\S]*?'unknown'"
+        }
+      ]
+    },
+    {
+      "id": "the-persona",
+      "section": "The persona",
+      "note": "WI-006, and the code implements it",
+      "claim": "implemented",
+      "why": "WI-006's persona: the schema, the resolver, the connection's base and the participant's override.",
+      "expect": [
+        {
+          "kind": "present-pattern",
+          "path": "packages/contracts/src/agent.ts",
+          "value": "export const personaSchema"
+        },
+        {
+          "kind": "present-pattern",
+          "path": "packages/contracts/src/agent.ts",
+          "value": "export function resolvePersona"
+        }
+      ]
+    },
+    {
+      "id": "the-agent-memory-scope-wi-012",
+      "section": "The agent memory scope",
+      "note": "WI-012, and the code implements it",
+      "claim": "implemented",
+      "why": "WI-012's agent scope: the scope enum, the spec's agent id, and the turn context's memories.",
+      "expect": [
+        {
+          "kind": "present-pattern",
+          "path": "packages/contracts/src/resource.ts",
+          "value": "memoryScopeSchema\\s*=\\s*z\\.enum\\(\\[[^\\]]*'agent'"
+        },
+        {
+          "kind": "present-pattern",
+          "path": "apps/server/src/modules/resources/agent-memory.ts",
+          "value": "export function listAgentMemories"
+        }
+      ]
+    },
+    {
+      "id": "the-agent-memory-scope-wi-028",
+      "section": "The agent memory scope",
+      "note": "The read side is WI-028, and the code implements it",
+      "claim": "implemented",
+      "why": "WI-028's read side: an agent reaches only its own memory.",
+      "expect": [
+        {
+          "kind": "present-pattern",
+          "path": "apps/server/src/modules/mcp/server.ts",
+          "value": "const assertOwnMemory"
+        }
+      ]
+    },
+    {
+      "id": "mcp-exposure-wi-028",
+      "section": "MCP exposure",
+      "note": "The read side is WI-028, and the code implements it",
+      "claim": "implemented",
+      "why": "The same read-side rule, restated on the tool surface it is enforced on.",
+      "expect": [
+        {
+          "kind": "present-pattern",
+          "path": "apps/server/src/modules/mcp/server.ts",
+          "value": "const assertOwnMemory"
+        }
+      ]
+    },
+    {
+      "id": "approvals-and-audit-wi-007",
+      "section": "Contract 5 — Approvals and audit",
+      "note": "WI-007, and the code implements it",
+      "claim": "implemented",
+      "why": "WI-007's resumed sessions: the adapter resumes a session and the worker calls it.",
+      "expect": [
+        {
+          "kind": "present-pattern",
+          "path": "packages/agent-adapters/src/acp.ts",
+          "value": "async resumeSession"
+        },
+        {
+          "kind": "present-pattern",
+          "path": "apps/worker/src/executor.ts",
+          "value": "resumeSession"
+        }
+      ]
+    },
+    {
+      "id": "the-waiting-list-wi-027",
+      "section": "The waiting list",
+      "note": "WI-027, and the code implements it",
+      "claim": "implemented",
+      "why": "WI-027's unknown turns: the list draws a turn the owner has to close.",
+      "expect": [
+        {
+          "kind": "present-pattern",
+          "path": "apps/server/src/modules/conversations/service.ts",
+          "value": "listUnknownTurns\\(workspaceId"
+        }
+      ]
+    },
+    {
+      "id": "the-audit-outcome-wi-033",
+      "section": "The audit outcome",
+      "note": "The code does not implement this yet",
+      "claim": "not-implemented",
+      "why": "WI-033's audit vocabulary: the trail still carries success, failure and unknown.",
+      "expect": [
+        {
+          "kind": "absent-pattern",
+          "path": "apps/server/src/modules/audit",
+          "value": "'succeeded'"
+        },
+        {
+          "kind": "absent-pattern",
+          "path": "apps/server/src/modules/audit",
+          "value": "'queued'"
+        }
+      ]
+    },
+    {
+      "id": "the-approval-evidence-wi-039",
+      "section": "The approval evidence",
+      "note": "The code does not implement this yet",
+      "claim": "not-implemented",
+      "why": "WI-039's evidence read: there is no route for it yet.",
+      "expect": [
+        {
+          "kind": "absent-text",
+          "path": "apps/server/src/api/approvals.ts",
+          "value": "/api/approvals/:id/evidence"
+        }
+      ]
+    }
+  ]
+}

@@ -34,6 +34,7 @@
     "verify:build": "tsx scripts/verify-build.ts",
     "reset:owner-password": "tsx scripts/reset-owner-password.ts",
     "verify:bundle": "tsx scripts/verify-bundle-size.ts",
+    "verify:contracts": "tsx scripts/verify-contract-status.ts",
     "verify:stack": "tsx scripts/verify-stack.ts",
     "work:item": "tsx scripts/work-item.ts",
     "db:migrate": "npm run db:migrate -w @personal-os/server",
