@@ -91,12 +91,18 @@ Apache-2.0, AGPLv3 and a proprietary enterprise licence. A licence can change wh
 the product is.
 
 **This repository's own licence is unsettled, and the record says so rather than
-implying otherwise.** A root `LICENSE` file (MIT) has been tracked since the initial
-commit; the root manifest's `"license": "MIT"` was removed on 2026-10-21 because the
-licence is deliberately undecided; the README still says MIT (being corrected); and
-the owner's answer at 08:54 was _"Private for now — push it, and decide visibility
-later."_ None of that is settled, and a licence gate that reads the dependency set
-cannot speak to any of it.
+implying otherwise.** The root `LICENSE` file (MIT) was tracked since the initial
+commit and was **removed** on 2026-10-21 — it granted a licence nobody had chosen,
+and it had no owner in the ownership table, which `FACTORY.md` now fixes by naming
+it. That removal rests on a reading the owner has been asked to confirm: _the
+repository carries no licence file_, rather than _it is not adding one now_. The root
+manifest's `"license": "MIT"` was removed earlier the same day, for the same reason.
+The README says the licence is deliberately undecided and that the repository is
+private for now — a correction that tells the truth rather than a licence that was
+never chosen — and `CONTRIBUTING.md` still claims MIT, which WI-068 is correcting.
+And the owner's answer at 08:54 was _"Private for now — push it, and decide
+visibility later."_ None of that is settled, and a licence gate that reads the
+dependency set cannot speak to any of it.
 
 **The owner's hard case, and what can actually catch it.** Vendoring AGPL-3.0 code
 into this repository's own tree changes this project's licence. **A gate over the
@@ -289,6 +295,18 @@ recorded read from its repository, and the build fails when a licence changes or
 unapproved one appears. That splits into two wants, because the record and the gate
 are different files and different owners — W5 records it, W7 checks it.
 
+**The record half is done and accepted; the gate is in flight.** WI-036 wrote the
+record — 494 packages, one copy, in `docs/dependency-licences.json` — and it was
+**accepted** on 2026-10-21: Probe re-derived the numbers its own way rather than
+trusting the record, and **all five criteria hold**.
+**WI-038 (W7) is the half that makes this a check rather than a record, and it has
+started**: the CI step and the root manifest entry are written on
+`wi/038-borrow-rule-gate`, and the gate script is **queued, not written** — its
+first brief was cancelled because it stated one fact about the record wrongly, and
+the corrected brief is waiting. **Until that script lands and the gate runs, the
+borrow rule is a claim with a ground truth attached, and not a fact the build
+proves.**
+
 **What the check does not cover, said before anyone assumes that it does.** It reads
 the **dependency set**. The owner's hard case — vendoring AGPL-3.0 code into this
 repository's own tree — is not a dependency, is not in the lockfile, and is outside
@@ -329,9 +347,9 @@ came out of this document's own review and was numbered later, as WI-044.
 | W2   | accepted, rescoped   | [WI-034](../.factory/work/WI-034.md) | Wren  | The published shape for W1. Lands **before** W1. **Rescoped at 11:10** — it publishes the outcome vocabulary and the migration note, not the authorship definition, which WI-030 already published.                           |
 | W3   | **deferred**         | [WI-035](../.factory/work/WI-035.md) | Cog   | The largest of the seven. Starts after Forge. **The deferral is capacity, not judgement** — Cog's lane is full — and it is numbered so it is not lost.                                                                        |
 | W4   | **folded**           | [WI-007](../.factory/work/WI-007.md) | Cog   | The same subject under a different name. **The fold is recorded in `.factory/INTAKE.md`, not in WI-007's own file** — that item does not yet name the fold, which is a gap in the item, not in this record.                   |
-| W5   | accepted             | [WI-036](../.factory/work/WI-036.md) | Wren  | The record the gate compares against. Lands **before** W7.                                                                                                                                                                    |
-| W6   | accepted             | [WI-037](../.factory/work/WI-037.md) | Wren  | The cheapest item in the set and the most overdue.                                                                                                                                                                            |
-| W7   | accepted             | [WI-038](../.factory/work/WI-038.md) | Chief | The gate. Lands **after** W5 — a gate that compares against nothing catches nothing.                                                                                                                                          |
+| W5   | **accepted**         | [WI-036](../.factory/work/WI-036.md) | Wren  | The record the gate compares against. **Accepted** — Probe re-derived the numbers its own way rather than trusting the record: 494 packages, one copy, in `docs/dependency-licences.json`. Lands **before** W7.               |
+| W6   | accepted, landed     | [WI-037](../.factory/work/WI-037.md) | Wren  | The cheapest item in the set and the most overdue. **Landed — at verify**: the product record now says Forge.                                                                                                                 |
+| W7   | accepted, in flight  | [WI-038](../.factory/work/WI-038.md) | Chief | The gate. Lands **after** W5 — a gate that compares against nothing catches nothing — and W5 has landed, so it can. The CI step and manifest entry are written; the gate script is **queued, not written**.                   |
 | W8   | **funded, deferred** | [WI-044](../.factory/work/WI-044.md) | Chief | The check over this repository's own sources. Numbered so it is not lost, and **not dispatched** — the inventory is worth writing against a settled repository, and the repository's visibility is the owner's open decision. |
 
 **Two of the lead's decisions are worth carrying here, because they are judgements
@@ -427,10 +445,21 @@ so the resume is proved for the first and the published exception for the second
 **Owner:** Wren. **File:** `docs/strategy.md`, and a note in PRODUCT.md §10.
 
 Each dependency in the lockfile has its licence read from the repository and
-recorded here, with what that licence permits and what it forbids — and the
-landscape table above is brought under the same rule, because a comparator's
-licence is part of what it teaches. This is the **record** half of the owner's
-answer that the borrow rule becomes a check; W7 is the gate.
+recorded — and the landscape table above is brought under the same rule, because a
+comparator's licence is part of what it teaches. This is the **record** half of the
+owner's answer that the borrow rule becomes a check; W7 is the gate.
+
+**And the record is written.** WI-036 landed and was **accepted** on 2026-10-21 —
+**494 packages, one entry each, every entry naming the file its licence was read
+from** — 375 read in
+place from the licence file the package itself ships, 16 from the `license` field of
+a package's own `package.json` because it ships no licence file, 97 optional
+packages for other platforms recorded by the identifier the project publishes for
+that exact version, and the six `@personal-os/*` workspaces marked as this
+repository's own. There is **one copy of the record** —
+[`docs/dependency-licences.json`](dependency-licences.json) — and the section
+[below](#the-dependency-licences) points at it rather than repeating it, because
+two copies of the same licences are a record that can disagree with itself.
 
 **It also produces the approved set**, because a check cannot decide what is
 approved unless something says what is: the licences this project accepts, the
@@ -454,10 +483,14 @@ where, and answers the owner's AGPL question against this set.
 
 **Owner:** Wren. **File:** `PRODUCT.md`.
 
-PRODUCT.md §11 still says the direction that would fix the accent is "Desk (B), it
-is recommended rather than decided, and the owner has one word to say about it". The
+PRODUCT.md §11 said the direction that would fix the accent is "Desk (B), it is
+recommended rather than decided, and the owner has one word to say about it". The
 owner said their word on 2026-10-21: **D — Forge**. A product record that states
 the opposite of the decision is the one thing it cannot carry.
+
+**And it has been corrected** — WI-037 landed (`0024f88`, _"Make the product record
+say Forge, with the date and the recommendation"_) and is at verify. §11 now names
+Forge, with the date and the fact that the factory recommended B.
 
 **Acceptance:** §11 names Forge, with the date and the fact that the factory
 recommended B; the accent rule's statement matches ADR 0007; nothing else in the

@@ -36,7 +36,7 @@ list becomes the Work room's left column and its waiting list becomes the Map's
 rail (brief 05). The old routes keep working — a deep link to a conversation, a
 card on the board, a resource — because a URL is not a room.
 
-**Why the landing page leaves the root.** It is the decision list today, and a
+**Why the old landing page leaves the root.** It is the decision list today, and a
 decision list is not what a landing screen should be: the owner opens the panel to
 orient and to work, and a room that greets them with a queue of decisions before
 they can see the system is the wrong first impression. The decision list itself

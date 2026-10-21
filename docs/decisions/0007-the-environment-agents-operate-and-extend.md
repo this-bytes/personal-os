@@ -155,7 +155,18 @@ it does not restate the cost model.
 **The boundary is a rule, not a layout.**
 
 > If it is a picture of the system, it is in the orientation room. If it is a
-> place where work is inspected or decided, it is in the execution room.
+> place where work is inspected or decided, it is in the execution room — with
+> one declared exception, the Needs-you rail, which carries decisions in the
+> orientation room because a decision is taken where the list is.
+
+_Quoted as it stands in
+[`prototypes/DIRECTION.md`](../../prototypes/DIRECTION.md) at `:45-48`, after
+the D1–D6 repair (`e560165`). The repair made the rule state the crossing the
+paragraph below already described, so **the decision did not change** and
+nothing else in this section was touched. The lead re-synced this quote on
+2026-10-21 at 15:00: it had drifted from the document, and a rule quoted
+without its load-bearing exception is what put the landing page in the wrong
+room in WI-024 and WI-040. Probe verifies it as it verifies any lead's edit._
 
 Under that rule: the constellation and the agent list are in the **orientation
 room** — the constellation _is_ the agent list, spatialised, and building it

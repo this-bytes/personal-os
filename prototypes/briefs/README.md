@@ -6,6 +6,17 @@
 settled boundary, and the cost model. Where the document and the tree disagree, the
 tree is right, and Vision's correction of the document is the fix.
 
+**Corrected by the lead, 2026-10-21 15:45 — the landing page's premise.** The
+lead settled WI-024's criterion 5 **after** these briefs were written (the briefs
+are `93ef99b`; the ruling is `60a4561`): **the root route is the Map room, and
+the Needs-you rail sits on it and decides in place. The landing page does not move
+into the execution room; what moves there is the Conversations page.** Brief 05's
+statement of the item's rule and its quote of the boundary rule are corrected to
+match, and brief 01's heading is disambiguated. **The briefs' shape did not
+change** — brief 01 already put the root route on the Map room, and brief 05
+already made the list into the rail that decides in place. The code has not been
+written yet, so the correction lands before the build follows the briefs.
+
 Forge lands as **one visible change**. Six briefs is how that single change is built:
 the briefs are the seams the work is cut along, so that several owners can work in
 sequence and no half a Forge is ever released.

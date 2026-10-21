@@ -1,8 +1,9 @@
 import { and, asc, eq } from 'drizzle-orm';
-import type { Message, Participant } from '@personal-os/contracts';
+import type { Message, MessageStatus, Participant } from '@personal-os/contracts';
 import type { Database } from '../../db/client.js';
 import { conversations, executions, messages } from '../../db/schema.js';
 import { newId } from '../../lib/ids.js';
+import type { AuditService } from '../audit/service.js';
 import type { EventsService } from '../../modules/events/service.js';
 import type { Queue } from '../../queue/client.js';
 import { deriveChainState, planRouting, type RoutingDecision } from './routing.js';
@@ -30,6 +31,8 @@ export interface DispatchInput {
   db: Database;
   events: EventsService;
   queue: Queue;
+  /** The audit trail, where a stopped routing is recorded. */
+  audit: AuditService;
   conversationId: string;
   /** The message that may trigger turns. */
   message: Message;
@@ -48,7 +51,7 @@ export interface DispatchInput {
  * decision into executions and queued jobs.
  */
 export function planAndDispatch(input: DispatchInput): DispatchResult {
-  const { db, events, queue, conversationId, message, participants, correlationId } = input;
+  const { db, events, queue, conversationId, message, participants, correlationId, audit } = input;
 
   const conversation = db
     .select()
@@ -60,6 +63,28 @@ export function planAndDispatch(input: DispatchInput): DispatchResult {
     return {
       dispatches: [],
       routing: { targets: [], reason: 'The conversation no longer exists.' },
+    };
+  }
+
+  // A turn whose outcome could not be confirmed routes no further work.
+  //
+  // The contract says an unknown item is never retried automatically: there is
+  // no reaper, no redispatch and no reconciliation pass. That promise is held
+  // by the worker's reaper, and this is the other path it covers — the one the
+  // conversation itself takes when an agent's answer comes back. A reply whose
+  // outcome nobody can confirm is a question for the owner, and the owner
+  // closes it; the product does not carry on as if the turn had finished.
+  if (!isConfirmedOutcome(message.status)) {
+    recordStoppedDispatch({ audit, conversation, message });
+
+    return {
+      dispatches: [],
+      routing: {
+        targets: [],
+        reason:
+          'The turn stopped because its outcome could not be confirmed, so no further work was routed.',
+        blocked: 'unconfirmed',
+      },
     };
   }
 
@@ -177,4 +202,55 @@ export function planAndDispatch(input: DispatchInput): DispatchResult {
   }
 
   return { dispatches, routing: decision };
+}
+
+/**
+ * Whether a message's status says how the turn ended.
+ *
+ * `complete` and `failed` are both settled answers: the turn finished, and we
+ * know which way it went. `unknown` says the work started and nobody knows
+ * how it ended, and `streaming` says it has not ended yet. Neither of those is
+ * a confirmed outcome, and a message without one does not route work.
+ */
+function isConfirmedOutcome(status: MessageStatus): boolean {
+  return status === 'complete' || status === 'failed';
+}
+
+/**
+ * Record that the routing stopped.
+ *
+ * The stop is written to the audit trail beside the entry that recorded the
+ * unknown outcome itself, so an owner reading the trail can see that the turn
+ * stopped because nobody could confirm how it ended — and not because it
+ * finished.
+ *
+ * The entry names the message that was not routed, because the message is what
+ * the owner reads; the execution it belongs to travels with it in the
+ * metadata.
+ */
+function recordStoppedDispatch(input: {
+  audit: AuditService;
+  conversation: { id: string; workspaceId: string };
+  message: Message;
+}): void {
+  const { audit, conversation, message } = input;
+
+  audit.record({
+    workspaceId: conversation.workspaceId,
+    // The turn belongs to the agent, and the trail names it the way the entry
+    // beside it does: by the connection whose turn could not be confirmed.
+    actorType: 'agent',
+    actorId: message.origin?.agentConnectionId ?? 'unknown',
+    action: 'message.dispatch.stopped',
+    targetType: 'message',
+    targetId: message.id,
+    result: 'unknown',
+    metadata: {
+      reason:
+        'The turn stopped because its outcome could not be confirmed, so no further work was routed.',
+      messageId: message.id,
+      conversationId: conversation.id,
+      executionId: message.executionId ?? null,
+    },
+  });
 }
