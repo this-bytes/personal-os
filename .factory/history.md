@@ -8911,3 +8911,89 @@ workflows, Build and run the stack) **and CodeQL success.** That is the run's
 own word on the sha, read from the run itself and not inferred from the local
 gate. **Green is confirmed by the run on the pushed sha**, which is the rule
 `FACTORY.md` states and the reason this section exists at all.
+
+## A duplicate dispatch for WI-069, and a run cancelled by the next push — 2026-10-22 00:30
+
+**A second dispatch for the same item appeared, and the tiebreak is said out
+loud: one item, one implementer.** The peer session re-dispatched WI-069's code
+half at 00:17 — request id `wi-069-refusal-names-nobody-code-r2-2026-10-21`,
+task `task_4a1e95f795ae`, batch `batch_b273a0104cc3` — **and two implementers
+on one item is two branches and two copies of the same change.** **The peer's
+task is cancelled and this session's stands**, and the reasons are measured, not
+a claim of priority: this session's dispatch was created at **00:11:34**, six
+minutes earlier, so **the dispatcher serves it first in batch order**; its brief
+is **5 683 characters** and carries the item file's own criteria in full **plus
+the state of the branch** (`68de2ca`, no commit of its own), while the peer's is
+**959 characters** and points at the item file; and **the one rule the peer's
+brief carries that the live one does not — that `CONTRACTS.md` is one live item
+at a time, because WI-031's correction and WI-069's contract half are the same
+file — is already stricter in the live one**, which says the code half **must
+not edit `CONTRACTS.md` at all**. **The peer's brief also gives the death time
+as 23:12:38; the dispatcher's own record says 23:32:38.** The peer's request id
+is spent on the cancelled task.
+
+**And the pipeline's verdict on this session's own commit was cancelled by the
+next push, which is the rule the two sessions keep breaking in each other.**
+`c17c46a` was pushed at 00:19 with the gates measured green on the tree being
+pushed; **CodeQL completed success on it, and its CI run came back `cancelled`** —
+not failed, **cancelled** — because the peer session pushed `305447f` at 00:24
+while the run was in flight. **A push cancels the run that judges it**, and this
+is that, measured on both sides. The record of the four heads this session
+touched is therefore: `d971e68` green on both legs; `5b67418` carried; `f45ed94`
+**green on both legs**; `c17c46a` **CodeQL green, CI cancelled by the next
+push**. **And no head of this session's has been judged by a CI run that was
+allowed to finish** — which is the honest record, and not a green claim. The
+rule this breaks is the one the factory wrote for itself: **one push at a time,
+and let the run finish.**
+
+**And the ledger itself changed shape mid-edit, which is worth recording
+because it nearly lost a section.** The peer session committed `3cc9d95`,
+"Move the factory's process record out of INTAKE.md and into
+`.factory/history.md`", at 00:27 — **while this session was editing the
+ledger.** The narrative this session had just written was carried into
+`history.md` intact, and **the dispatch table stayed in `INTAKE.md`**, so the
+two files now hold two different kinds of fact: `INTAKE.md` is the state — the
+queue of wants, the decisions, the rules — and `history.md` is the process
+record. **This session's edits landed after the move, and were checked against
+the new shape before anything was committed**: the WI-031 row and the WI-069
+row are in `INTAKE.md`, and this section is in `history.md`.
+
+## The lead's own commit carried a malformed row, and the format gate did not see it — 2026-10-22 00:40
+
+**The defect, and it is the lead's.** This session's commit `c17c46a` inserted
+three dispatch rows into the table, and **the insertion swallowed the newline
+that ended the WI-031 row**, so the WI-031 row and the WI-034 row came out
+joined by `||`:
+
+```
+Batch `batch_faa4525ade7f` || `wi-034-outcome-vocabulary-verify-again-2026-10-22` | WI-034 — …
+```
+
+**Measured.** The join is in `c17c46a`, in `305447f`, and in `3cc9d95` — **so it
+is on `origin/main` and has been since 00:19.** The peer session's restructure at
+00:27 moved the two older `||` out of `INTAKE.md` and **left this one**, and it
+is right to leave it: **the newest join is the one that is not the peer's to
+recognise, and the one this session owns.** (For the record, the two `||` now
+in `history.md` are **JavaScript** — `task.status !== "queued" || …` — and not
+table joins; the count of malformed rows was one, and it was this session's.)
+
+**What it cost.** The WI-031 row carries **six cells where the table has five**,
+and **the WI-034 row is not a row at all** — it is the tail of the WI-031 row.
+**So the dispatch table did not show that WI-034's verification was dispatched
+at all**, while the dispatcher was serving `task_46d304ac52ef`. A reader
+scanning the table would see WI-031 and would not see WI-034. **That is this
+ledger's own rule turned against its author: a row in the ledger is a claim, and
+a claim about what was dispatched is checked against what was actually
+dispatched** — and this session checked the other sessions' claims and did not
+check its own.
+
+**And the format gate did not see it.** `prettier --check` passes on a table
+row whose cell count does not match the table, and the pre-push hook printed
+**"All matched files use Prettier code style!"** on `c17c46a`. **A gate that
+cannot see this class of defect is not a gate for it**, and the honest
+consequence is written here rather than left to be found: **the format gate does
+not check that a row is a row**, and the pre-push hook inherits that blindness.
+
+**Fixed**, and the fix is measured: the malformed-join count in
+`.factory/INTAKE.md` is **0**, and the WI-034 row is a row of its own again, on
+its own line.
