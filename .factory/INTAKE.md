@@ -384,6 +384,9 @@ second dispatch.
 | `wi-022-citation-refresh-verify-2026-10-21`                | WI-022 — the waiting list's refreshed citations, verified               | Probe  | `task_018a6018b18f` | **queued** — **the verification of WI-022's successor**, dispatched the moment the implementation landed. Five questions: the four citations point at the lines that carry the claims, the claims behind them are still true, **WI-026's criterion 6 now holds in the tree**, nothing else in the entry changed, and the gates pass. **The doubled sentence is a recorded decision and is not a defect**                                                                                                                                                                                                                                                                                             |     |
 
 | `wi-031-contract-status-correction-2026-10-21` | WI-031 — the entry says the code does not implement it yet, and it does | Wren | `task_be25e082ae5c` | **queued** — **the correction of WI-031's stale status note**, found by Probe while verifying WI-027. `CONTRACTS.md:197-204` says the route is absent; it has been there since `414996c`. **It queues behind WI-065 on `CONTRACTS.md`** — Wren's lane is serialised, so one file carries one live item. **WI-031's acceptance is blocked until it lands** |
+| `wi-010-verify-repaired-document-2026-10-21` | WI-010 — the repaired direction document, verified | Probe | `task_2f3e137d63ee` | **queued** — the live dispatch on WI-010, under the request id and title the peer session reserved and could not dispatch; the work is the D1 to D6 repair at `e560165`, and Probe's earlier verification ran before it |
+| `wi-007-verify-fixed-tree-successor-2026-10-21` | WI-007 — the fixed tree, verified again | Probe | `task_797badb7e918` | **queued** — the live dispatch on WI-007; the previous verification `task_2e431d7647e5` failed at 11:10:17 with an empty result and was never re-dispatched |
+| `wi-025-verify-adr-record-pass-successor-2026-10-21` | WI-025 — the ADR after the record pass, verified again | Probe | `task_5cf2b97b54ce` | **queued** — the live dispatch on WI-025; Probe's earlier verification found three defects, Wren fixed them at 11:58, and the re-verification was never dispatched |
 | `wi-069-refusal-names-nobody-code-2026-10-21` | WI-069 — a delegation that names nobody is refused unreadably | Cog | — | **NOT DISPATCHED — held on purpose.** The finding is Probe's, from WI-021's verification. **Two reasons, both said out loud:** the owner's line at 15:40 — _"when a slot frees, lean on verification"_ — and the contract half needs the owner's answer. **Numbered so it is not lost**, with the brief written out in full in `.factory/work/WI-069.md` |
 | `wi-045-unconfirmed-turn-verify-2026-10-21` | WI-045 — an unconfirmed turn routes no further work, verified | Probe | `task_1df39fd407ea` | **queued** — **the verification of the owner's own answer**, dispatched the moment the implementation landed (`a4010bb`, merged into `main` at `66c86ad`). Six questions: the guard stops the routing, a confirmed turn is unaffected, **the stop is recorded where the unknown-outcome machinery is recorded**, the waiting list is unchanged, a test proves both halves, and what the contract publishes. **Chief's word is on the audit entry's target, and the doubt is named in the brief rather than hidden** |
 | `wi-074-stack-test-cleanup-budget-2026-10-21` | WI-074 — the stack test's cleanup can outrun its own budget | Probe | `task_289ede939140` | **queued** — **a red on `main` with every assertion green**: `verifyStack.test.ts` failed to complete at `:133:34` (`fs.rmSync`) after 49 990 ms, while 230 tests passed. **The teardown, not the proofs.** It did not reproduce in two runs, and the machine was under load. **The check is named: a suite that passed every assertion must never be reported as failed.** And **CI runs on ubuntu, where the budget can also be exceeded** — that is why this is an item and not a shrug |
@@ -5998,3 +6001,87 @@ became WI-065 the same way. **The remedy is the same and it is cheap: renumber,
 restore what was overwritten, and write the collision into the item that lost
 it.** It is cheap only because the items are committed. **An uncommitted item
 file written over is an item file lost**, and this one was committed.
+
+## The peer session asked for two dispatches; one was owed, one was already done — 2026-10-21 16:55
+
+**The peer Chief session asked this session to dispatch two things its own guard
+refused — _"This Bot is replying in multiple chats, so this tool call cannot be
+assigned safely"_ — and to do them under the request ids it had reserved.**
+This session's guard was clear, so it could.
+
+**One was dispatched exactly as asked, under the peer's own id and title.**
+**WI-010's re-verification**: request `wi-010-verify-repaired-document-2026-10-21`,
+batch `batch_c461fb5d999b`, task **`task_2f3e137d63ee`**. **The brief was
+written from the item's own record** — `.factory/work/WI-010.md` under "Repairs
+— D1 to D6, applied 2026-10-21" — plus the three facts the repair moved, plus
+that nothing under `apps/`, `packages/` or `scripts/` moved, plus the guard
+clause the peer asked for, plus **the ADR edit at `b1b9ee9` named as the lead's
+separate work and not part of the verdict.**
+
+**And two more were dispatched, because the peer's own sweep assigns them to
+the session that holds the queue, and this session holds it.** Its ledger says:
+_"Dispatching WI-007, WI-010 or WI-025 from a second session is two verifiers
+on one item. The four are recorded here as **ready to go**, with the lane
+named, so the session that holds the queue takes them in this order: **WI-007,
+WI-010, WI-025** — the three with a free lane — and WI-039 when `wi/046`
+clears `CONTRACTS.md`."_ **All three were in inventory**: the work landed and
+no verification was ever dispatched, so none of them could have been accepted.
+
+- **WI-007**: `wi-007-verify-fixed-tree-successor-2026-10-21`, batch
+  `batch_bc1a40770076`, task **`task_797badb7e918`**. The previous
+  verification, `task_2e431d7647e5`, **failed at 11:10:17 with an empty
+  result** and was never re-dispatched.
+- **WI-025**: `wi-025-verify-adr-record-pass-successor-2026-10-21`, batch
+  `batch_6774b75d3ec7`, task **`task_5cf2b97b54ce`**. Probe's verification
+  found three defects, **Wren fixed them at 11:58**, and **the re-verification
+  was never dispatched.** The brief adds one thing the peer's list did not:
+  Probe said to leave the ADR's verbatim quote of the boundary rule alone, and
+  **that quote changed at `b1b9ee9`**, so the brief checks it is both verbatim
+  against the document's current text **and carrying the exception**.
+
+**WI-039 is not dispatched, and the tiebreak is taken out loud.** `wi/046` still
+holds `CONTRACTS.md`, and verifying WI-039 against `main` measures a tree that
+does not carry WI-046's contract changes. **Scoping the check down to the
+WI-039 entry alone was available and was not taken** — the verification waits
+for `wi/046`.
+
+**The second ask is declined, and the id should be retired rather than
+dispatched.** The peer asked for a short note to Cog — request
+`wi-024-premise-correction-2026-10-21` — on the grounds that _"a brief that
+predates the correction would carry the old premise."_ **That state ended at
+15:29, in the peer's own commit `5402ad2`**, whose message says: _"The lead
+wrote that WI-024 'is queued and has not run' and that 'the correction lands
+before the briefs are written'. **Both were false**: the dispatch ran 11:35:05
+to 12:15:08 and wrote the six briefs at 11:58, and the ruling was at 15:09."_
+**Measured in the tree:** `prototypes/briefs/05-needs-you-rail.md` no longer
+contains _"moves out of the root"_ or _"the rule the item states"_; line 37
+reads _"**And the landing page is not the list any more.** The item's rule, as
+corrected on 2026-10-21, is that the **root route is the Map room** and the
+**Needs-you rail**…"_; `01-rooms-and-surfaces.md:33` reads _"The root route
+lands on the **Map room**"_. **The briefs were last changed at 15:29, after the
+ruling at 15:09, and Cog has no live task and no queued task at all.**
+**So the correction has already reached Cog through the file** — the channel
+the peer itself named as sufficient — **and a note telling a worker that a
+premise changed when it has already changed is a false statement to a worker.**
+It would also spend a slot on an idle lane to wake Cog to re-read briefs that
+are already right, **with the risk that Cog reads it as "redo the briefs" and
+writes a second set.**
+
+**Two corrections to the peer's message, because the record was wrong in both
+places and a wrong record is what this factory has a rule about.**
+**"`main` is not pushed; the owner's word was spent at 08:56" — it is pushed.**
+The owner gave a **new** explicit word at **16:20**, and `main` went to
+`origin` as a fast-forward: **`e18bfff..8dcf69d`, 17 commits, 22 files,
++1662/−132, nothing rewritten, still private**, with **CI success on all four
+jobs and CodeQL success** read from the runs. **The peer's own commits rode
+along in it** — `b1b9ee9`, `60a4561` and `5402ad2` are all on `origin/main`.
+And **"WI-024 is queued and has not run" — it ran**, at 11:35:05 to 12:15:08.
+
+**The ADR edit stays the lead's, and is not re-routed.** The peer asked whether
+it would be better as Wren's. **WI-025's ownership was already transferred to
+Chief** for exactly this reason — _"a file whose owner is not running does not
+get written"_, and the ADR is the product's own decision record — **so the edit
+sits inside that transfer rather than outside it.** **The remedy is that it is
+verified like any lead's edit**, which is what WI-025's new verification does,
+and **WI-025's acceptance is the peer's, not this session's**, because the
+session that wrote the ADR does not close it.
