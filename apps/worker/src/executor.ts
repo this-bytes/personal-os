@@ -1,4 +1,4 @@
-import { and, desc, eq, sql } from 'drizzle-orm';
+import { and, desc, eq, gte, sql } from 'drizzle-orm';
 import { z } from 'zod';
 import {
   actionNeedsApproval,
@@ -229,10 +229,15 @@ async function executeChatTurn(context: ExecutorContext, job: QueueJob): Promise
       .all(),
   );
 
+  // The workspace's spend today, which the daily cap is measured against. It
+  // is counted only when a policy caps it, so the common case costs nothing.
+  const dailySpend =
+    policy.dailySpendUnits > 0 ? dailySpendUnits(db, conversation.workspaceId, new Date()) : 0;
+
   // A turn with no budget left does not start. The refusal names the limit
   // and the policy that set it, and it is written to the execution rather
   // than left as a turn that quietly did not happen.
-  const limit = limitRefusal(policy, chain);
+  const limit = limitRefusal(policy, chain, dailySpend);
   if (limit) {
     recordPolicyRefusal(runtime, {
       workspaceId: conversation.workspaceId,
@@ -1343,6 +1348,7 @@ function raiseApproval(
 function limitRefusal(
   policy: EffectiveAutonomyPolicy,
   chain: { turnCount: number; spendUnits: number },
+  dailySpend: number,
 ): string | undefined {
   if (chain.turnCount >= policy.maxTurns) {
     return (
@@ -1358,7 +1364,39 @@ function limitRefusal(
       `${autonomyPolicyLevelPhrase(policy.sources.maxSpendUnits)}.`
     );
   }
+  if (policy.dailySpendUnits > 0 && dailySpend >= policy.dailySpendUnits) {
+    return (
+      `The turn did not start: the autonomy policy's daily spend limit of ` +
+      `${policy.dailySpendUnits} units is reached for this workspace since 00:00 UTC today. ` +
+      `The limit comes from ${autonomyPolicyLevelPhrase(policy.sources.dailySpendUnits)}.`
+    );
+  }
   return undefined;
+}
+
+/**
+ * The workspace's spend since the start of the UTC day.
+ *
+ * **A day is a UTC day.** The system stores ISO timestamps everywhere and has
+ * no per-workspace timezone, so the boundary is UTC midnight and the day is
+ * the same day for every workspace.
+ *
+ * The spend is a query over the executions the product already keeps, not a
+ * counter incremented on some code path: a measure is a query over the data
+ * the product keeps, and the daily cap is a measure of the workspace's spend.
+ * The executions of every conversation and every goal in the workspace count,
+ * because a daily cap is a cap on the workspace and not on one chain.
+ */
+function dailySpendUnits(db: Database, workspaceId: string, now: Date): number {
+  const dayStart = new Date(
+    Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()),
+  ).toISOString();
+  const row = db
+    .select({ total: sql<number>`coalesce(sum(${executions.spendUnits}), 0)` })
+    .from(executions)
+    .where(and(eq(executions.workspaceId, workspaceId), gte(executions.createdAt, dayStart)))
+    .get();
+  return Number(row?.total ?? 0);
 }
 
 /**
