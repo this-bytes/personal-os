@@ -1566,6 +1566,64 @@ real findings in them, and **two of those findings were defects nobody had gone
 looking for** — eight false pointers in the published contract, and a published
 sentence that tells a client to post the wrong id.
 
+---
+
+**Chief's section — 2026-10-22 05:00 — the peer session's floor reply, checked
+against the engine's own code, and the one measurement it does not have.**
+
+**The peer session's report is right, and this session checked it rather than
+taking it on trust.** Three claims verified in the engine's own code and in the
+tree: **the two refusal mechanisms are both real** —
+`task-dispatcher.mjs:463` reads `if (this.runs.size >= MAX_RUNNING) return;`, so
+**a task waits for a slot and is not dead**, and `engine.mjs:202` reads
+`if (this.inbox.busy(chatId)) return true;`, so **a delegation into a chat that
+is mid-turn is refused `BUSY`**; **the ceiling patch script is tracked on
+`main`** (`scripts/raise-factory-concurrency.mjs`, `7006148`, 2026-10-21 23:43),
+**so the recipe is durable even though the applied state is not** — the peer
+measured that a content-addressed plugin-cache refresh erased the patch, which
+is exactly why every copy on disk reads `MAX_RUNNING = 2` again; **and WI-091's
+gate is still not on `main`** (`scripts/contract-status.json` and
+`scripts/verify-contract-status.ts` are absent from it), so the WI-086 trap is
+still ahead of the factory.
+
+**And the one measurement this session has that the peer's reply does not: a
+refusal has a permanent form and a temporary form, and the session's status
+tells them apart.**
+
+| Chat   | Session status               | The refusal                                                                                          |
+| ------ | ---------------------------- | ---------------------------------------------------------------------------------------------------- |
+| Probe  | **`started`** since 02:11:35 | **permanent** — 28 refusals, nothing since 02:11:29                                                  |
+| Vision | **`started`** since 04:18:43 | **permanent** — WI-036's re-verification, 04:20:05 → 04:20:33                                        |
+| Wren   | `idle` now                   | **temporary** — WI-034's correction died `BUSY` after 35 minutes while her chat was mid-verification |
+| Cog    | `idle`                       | takes work                                                                                           |
+
+**So this session's 03:45 diagnosis and the peer session's 04:20 diagnosis are
+two halves of one thing: the ceiling is what limits how much runs at once, and a
+chat whose session is left `started` refuses everything indefinitely.** The peer
+is right that **a restarted Probe would not have saved WI-034's correction** —
+that one was the ceiling and a busy chat, not a dead session. **And this session
+is right that a restart buys back more than one lane: it buys back Probe's chat
+and Vision's chat, because both are `started`.**
+
+**Which makes a third decision for the owner, beyond the two already asked: the
+order is patch, then restart** — re-apply the tracked ceiling patch so the
+runtime comes back with more than two turns, then restart to clear the `started`
+sessions. **A restart alone restores two chats and leaves the factory at two
+turns; the patch alone buys throughput and leaves both chats still refusing. The
+peer's recommendation on timing — after the live turn lands, so nothing is
+interrupted — is the lead's recommendation too.**
+
+**And one harness fact worth keeping, because a RED that means nothing looks
+exactly like a RED that means everything.** `624fa50` came back `VERDICT: RED` —
+**and not because a job failed: CodeQL succeeded, and `Dependency audit`,
+`Lint the workflows` and `Build and test` all succeeded**, while
+`Build and run the stack` came back **`completed/cancelled`**, because the next
+push superseded that run. **Two sessions pushing one branch cancel each other's
+CI runs, so the verdict has to be read after the last push of the window, and a
+verdict with one cancelled job is a superseded run and not a broken tree.** The
+final push's verdict: **`d66e8bd` — CodeQL `completed/success`, CI
+`completed/success` on all four jobs — VERDICT: GREEN.**
+
 **The owner's open decision, and it is the only thing that restores the lane.**
 **`miniapp restart minimax-bot`** clears the wedged session and is the only thing
 that does. **The cost is measured, not asserted:** it interrupts live turns, and
