@@ -129,11 +129,19 @@ does this — goal → task → execution → evidence → acceptance.
 **What we have.** WI-017 (the template record, the MCP surface, the validation) and
 WI-030 (the published shape). Both dispatched 2026-10-21.
 
-**What we do not have.** A template set. WI-017's last acceptance criterion says the
-report states which template set ships; WI-030 says which kind goes first is the
-owner's call. **The owner has now answered: all six kinds get a template in the
-first set** (2026-10-21). That is wider than the factory recommended, and the
-recommendation was the owner's to reject — see decision 1.
+**What we did not have, and now do.** A template set. WI-017's last acceptance
+criterion says the report states which template set ships; WI-030 says which kind
+goes first is the owner's call. **The owner answered: all six kinds get a template
+in the first set** (2026-10-21) — wider than the factory recommended, and the
+recommendation was the owner's to reject; see decision 1.
+
+**The set that ships, and the state it is in.** WI-017 has built one template per
+kind, all six: `dashboard.metrics`, `document.brief`, `data-source.json`,
+`automation.manual-prompt`, `task.deliverable`, `memory.decision-note` — against
+WI-030's landed contract entry. **The item is built and not yet accepted**: Probe
+has not verified it, and WI-017 ships when both halves land. This pillar's gap is
+closing, not closed, and this document should not be read as saying the template
+half is finished.
 
 ### Pillar 2 — One truth, one history, and a way back
 
