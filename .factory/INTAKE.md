@@ -2757,6 +2757,20 @@ was taken: `main` runs to WI-116, the peer holds WI-113, WI-114 and WI-115 are
 taken, WI-116 is reserved for the contract-publication item, and WI-117 appeared
 in no item file, no dispatch record and no commit.
 
+### The claim on WI-117, dated — the peer names it free, ten minutes after this claim was published
+
+**The peer's number block landed at 08:19:18 (`11a65e8`) and says "the next free
+number is WI-117." This item's claim was published at 08:09:24 (`c2f9322`, on
+`wi/117-branch-pileup-verdict`) — ten minutes earlier.** The tiebreak both
+sessions publish is _a claim bound to a live dispatch keeps its number; where no
+dispatch binds it, the earlier published claim keeps it_, and neither claim here
+is bound to a dispatch. **By that rule WI-117 is this item's**, and the peer's
+block says WI-117 is _free_ rather than claiming it — so the two do not collide.
+
+**The next number after this is WI-118.** If the contract-publication item is ever
+opened, it takes **WI-118**: WI-117 is taken by this item, and the peer's own
+table row reserves only WI-116.
+
 ### One correction to the section above, dated, and it is about the preserved branch
 
 **`wi/072-queue-index` is red on CI, and it is red for exactly the reason its
