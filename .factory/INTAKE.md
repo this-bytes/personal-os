@@ -22,14 +22,21 @@ Intake is where that is discovered, before anyone spends an hour on it.
 Empty until the owner says something. A want is written here in the owner's
 own words, not a summary of them.
 
-| #   | Want                                                                                                      | Said       | Verdict                                                                                                                                                                                                           |
-| --- | --------------------------------------------------------------------------------------------------------- | ---------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| W-1 | "I see everything waiting on me in one place"                                                             | 2026-10-20 | accepted — [WI-004](../work/WI-004.md)                                                                                                                                                                            |
-| W-2 | Interaction — talking to agents is the job that should get genuinely better                               | 2026-10-20 | accepted — [WI-006](../work/WI-006.md), [WI-007](../work/WI-007.md), [WI-008](../work/WI-008.md), [WI-009](../work/WI-009.md), [WI-012](../work/WI-012.md); the bar for [WI-004](../work/WI-004.md) still applies |
-| W-3 | "Run within a stated scope"                                                                               | 2026-10-20 | accepted — the scope is stated below                                                                                                                                                                              |
-| W-4 | "Only me" — one person runs the instance                                                                  | 2026-10-20 | accepted — no permissions, sharing or onboarding work                                                                                                                                                             |
-| W-5 | "dont rush to implement a feature when we havent discussed it" — and the product vision that came with it | 2026-10-20 | accepted — a strategy session, not a work item; the rule is recorded below                                                                                                                                        |
-| W-6 | Move the MiniMax Bot plugin's conversation-layer guarantees onto Personal OS's factory-grade ledger       | 2026-10-20 | accepted — [WI-006](../work/WI-006.md), [WI-007](../work/WI-007.md), [WI-008](../work/WI-008.md), [WI-009](../work/WI-009.md); the rest is in Candidates                                                          |
+| #    | Want                                                                                                                                      | Said       | Verdict                                                                                                                                                                                                           |
+| ---- | ----------------------------------------------------------------------------------------------------------------------------------------- | ---------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| W-1  | "I see everything waiting on me in one place"                                                                                             | 2026-10-20 | accepted — [WI-004](../work/WI-004.md)                                                                                                                                                                            |
+| W-2  | Interaction — talking to agents is the job that should get genuinely better                                                               | 2026-10-20 | accepted — [WI-006](../work/WI-006.md), [WI-007](../work/WI-007.md), [WI-008](../work/WI-008.md), [WI-009](../work/WI-009.md), [WI-012](../work/WI-012.md); the bar for [WI-004](../work/WI-004.md) still applies |
+| W-3  | "Run within a stated scope"                                                                                                               | 2026-10-20 | accepted — the scope is stated below                                                                                                                                                                              |
+| W-4  | "Only me" — one person runs the instance                                                                                                  | 2026-10-20 | accepted — no permissions, sharing or onboarding work                                                                                                                                                             |
+| W-5  | "dont rush to implement a feature when we havent discussed it" — and the product vision that came with it                                 | 2026-10-20 | accepted — a strategy session, not a work item; the rule is recorded below                                                                                                                                        |
+| W-6  | Move the MiniMax Bot plugin's conversation-layer guarantees onto Personal OS's factory-grade ledger                                       | 2026-10-20 | accepted — [WI-006](../work/WI-006.md), [WI-007](../work/WI-007.md), [WI-008](../work/WI-008.md), [WI-009](../work/WI-009.md); the rest is in Candidates                                                          |
+| W-7  | "one cohesive, self-hosted, agent-native application, not a collection of dependent third-party services"                                 | 2026-10-21 | accepted — [WI-047](../work/WI-047.md), [WI-048](../work/WI-048.md), [WI-049](../work/WI-049.md), [WI-051](../work/WI-051.md)                                                                                     |
+| W-8  | "I'm particularly interested in MiniMax Code's desktop experience as the foundation for our interaction design"                           | 2026-10-21 | accepted — the desktop application is not published, so the primitives are recreated, not copied: [WI-050](../work/WI-050.md), [WI-051](../work/WI-051.md), [WI-052](../work/WI-052.md)                           |
+| W-9  | "resolve how Personal OS can be continuously improved by its own agents without becoming dependent on itself for deployment and recovery" | 2026-10-21 | accepted — [WI-051](../work/WI-051.md), [WI-057](../work/WI-057.md), [WI-058](../work/WI-058.md), [WI-061](../work/WI-061.md)                                                                                     |
+| W-10 | "I favour independent development and release execution, with production Personal OS acting as the control plane for goals and work"      | 2026-10-21 | accepted — the control plane is the ledger, not a second runtime: [WI-053](../work/WI-053.md), [WI-054](../work/WI-054.md), [WI-057](../work/WI-057.md), [WI-058](../work/WI-058.md)                              |
+| W-11 | "Challenge that approach, identify the minimum necessary boundaries"                                                                      | 2026-10-21 | accepted — the challenge and the seven boundaries are ADR 0010, and the runbook is [WI-057](../work/WI-057.md)                                                                                                    |
+| W-12 | "recommend a domain structure that allows features to evolve independently while remaining one cohesive product"                          | 2026-10-21 | accepted — [WI-047](../work/WI-047.md), [WI-048](../work/WI-048.md), [WI-049](../work/WI-049.md)                                                                                                                  |
+| W-13 | "avoid building another agent harness or unnecessary infrastructure"                                                                      | 2026-10-21 | accepted — a constraint on the work, and the reason the harness patterns split by boundary: ADR 0009, [WI-052](../work/WI-052.md), [WI-056](../work/WI-056.md)                                                    |
 
 Verdicts: `open` — not yet judged. `accepted` — became a work item, cited
 here. `declined` — not doing it, with the reason kept. `folded` — already
@@ -54,6 +61,8 @@ the same number.
 | WI-095 | The resolver does not throw on a policy row that lost a field                            | worker |
 | WI-096 | Publish what WI-082 changed, and stop the product denying it                             | worker |
 | WI-097 | The guide, the filling, and where a resource came from                                   | worker |
+| WI-106 | Land the five domains on the integration vehicle — **was WI-104, renumbered**                | worker |
+| WI-107 | The effective policy is composed by the one module that may read across — **was WI-105, renumbered** | worker |
 
 **WI-089 is not in this block and does not belong to it.** The peer session
 holds WI-089 for the hot-reload item, and held WI-088 before it. Both numbers
@@ -66,6 +75,18 @@ minutes, because it cannot see an item that has not been filed yet.
 number was committed on `main` before this session filed its item, and the
 peer's own tiebreak record had already reserved WI-093 for it. The number was
 reused, never: the item moved and the record moved with it.
+
+**WI-104 is the peer session's, and this push's landing item moved to WI-106.**
+The peer opened WI-104 on `main` at 04:50 — "the published id is not the id the
+route takes" — and its own file says: *"If another session has taken WI-104 in
+the meantime, this item is renumbered and the table is corrected."* **This
+session was dispatched at about 04:05 and did not write its item file into the
+ledger until after 05:00**, so the peer's read of the number space was correct
+when it was taken: WI-104 was in no item file, no dispatch record and no commit.
+**WI-105 is the peer's too** — "record what a turn costs, so the daily cap can
+bite", on `wi/105-record-turn-cost`, dispatched and in flight — so the item file
+that was written under WI-105 moved to **WI-107** and says so at the top. **The
+numbers were renumbered, never reused**, and the record moved with them.
 
 **WI-094 was folded into WI-093, and the tiebreak is said out loud.**
 `apps/web/src/__tests__/forge-briefs.test.ts` carries **two independent
@@ -93,6 +114,28 @@ W-2 is the reason the scope names interaction rather than coordination. The
 "what needs me" page is judged against that: it is the panel helping the owner
 talk to agents, not the panel showing a project dashboard. Anything that
 serves the coordination view for its own sake is out of scope.
+
+### The scope widened on 2026-10-21
+
+The owner added three areas on 2026-10-21, and the scope is now:
+
+> Improve **interaction** — the owner talking to agents — and make the panel
+> answer **"what needs me"** on the landing page; **and** publish the
+> **domain structure** the product is made of; **and** keep the **boundaries
+> that let the instance improve itself** without being able to break itself.
+> One owner. No permissions, no sharing, no onboarding, no migration work.
+
+**The reason for the order is capacity, and it is recorded here because
+FACTORY.md asks for it.** The interaction items already in flight own the
+conversation contract, the worker, the adapter and the approvals, and the new
+work touches the same files. So the new work is **funded and numbered** and
+ordered behind them — not because it matters less, and not because it is
+deferred in principle.
+
+**What the widening does not do.** It adds no second runtime, no dependency, no
+desktop application and no workflow engine. The owner's words were "avoid
+building another agent harness or unnecessary infrastructure", and that is a
+constraint on the work inside the scope rather than a wish.
 
 ## The strategy decisions, 2026-10-20
 
@@ -1409,3 +1452,83 @@ group at 03:45** (`chief-verifier-lane-dead-2026-10-22-0345`, batch
 `batch_53dd0398764f`, task `task_08f4f84fa3c5`, queued). **And the lead accepts
 nothing in this section: no item was verified, no item was accepted, and no
 verdict was read from a report that has not landed.**
+
+## The owner's decisions, 2026-10-21 12:20
+
+A strategy session, grilled with the owner over four rounds, on the shape of
+Personal OS: its domains, its interaction design, and how it improves itself.
+The owner's own words are in the queue above as W-7 through W-13. This
+section is the factory's record of what was decided and what it costs.
+
+### What was asked, and what was answered
+
+| #   | The question                                                                                                   | The owner's answer                                                                                                             |
+| --- | -------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------ |
+| D1  | Does the MiniMax Code-style desktop experience become a first-class surface, and does it host its own runtime? | **No desktop app.** Web and PWA; the desktop contributes interaction primitives, rendered by the web client.                   |
+| D2  | Declarative rules first, or a structural move?                                                                 | **Five domains, declarative-first.** Publish the map and the ownership rules; no file moves yet.                               |
+| D3  | Is the instance's own substrate outside what agents may change?                                                | **Yes.** The owner accepts migrations; release is out of band; the instance never applies, merges, deploys or restarts itself. |
+| D4  | MiniMax Code's CLI is MIT — does that open the door to depending on it?                                        | **No.** Read and reimplement against our contracts, attribute what is carried over, zero runtime dependencies.                 |
+| D5  | Which word owns the five-part structure?                                                                       | **"Domains."** "The three pillars" keeps its name, with one line distinguishing them.                                          |
+| D6  | How many items for the interaction model?                                                                      | **One.** The whole MiniMax Code interaction model, adopted at once.                                                            |
+| D7  | Where do the factory roles sit?                                                                                | **Control-plane membership only.** The instance dispatches and records; the roles keep their own host.                         |
+| D8  | How does the big item land without colliding with the interaction items in flight?                             | **Publish the contract revision now; land the code as one work item afterwards.**                                              |
+| D9  | Which harness patterns become published contracts?                                                             | **Split by boundary.** Client-visible in the interaction contract; worker internals as their own item.                         |
+| D10 | Where do these decisions sit in the order?                                                                     | **Funded, ordered behind the in-flight interaction items,** and the stated scope amended to say so.                            |
+| D11 | How does the instance reach the roles that keep their own host?                                                | **Add an `mcp` adapter type,** so any MCP server can be an agent connection.                                                   |
+| D12 | Which ledger is authoritative for which work?                                                                  | **The repository records code work; the instance's ledger records instance work; one link each way.**                          |
+| D13 | How much of the interaction contract does the plan specify?                                                    | **Fully** — every shape, its states, routes, events and the migration note.                                                    |
+
+### What was decided, and where it landed
+
+| Decision                                                 | The record                                                        | The work                                                                              |
+| -------------------------------------------------------- | ----------------------------------------------------------------- | ------------------------------------------------------------------------------------- |
+| Five domains, declared and checked                       | ADR 0008, `docs/domains.md`, `apps/server/src/domains.ts`         | [WI-047](../work/WI-047.md), [WI-048](../work/WI-048.md), [WI-049](../work/WI-049.md) |
+| MiniMax Code is a specification                          | ADR 0009, the landscape row in `docs/strategy.md`, PRODUCT.md §10 | [WI-050](../work/WI-050.md), [WI-051](../work/WI-051.md)                              |
+| The interaction model, published                         | `CONTRACTS.md`, Contract 7                                        | [WI-052](../work/WI-052.md)                                                           |
+| An MCP server is an agent connection                     | `packages/agent-adapters/src/mcp.ts`, Contract 2                  | [WI-053](../work/WI-053.md), [WI-054](../work/WI-054.md)                              |
+| The instance improves itself without depending on itself | ADR 0010, `docs/self-improvement.md`                              | [WI-057](../work/WI-057.md), [WI-058](../work/WI-058.md)                              |
+| The interaction model, implemented                       | —                                                                 | [WI-055](../work/WI-055.md) — **not dispatched**                                      |
+| The worker's context budget and eligibility chain        | —                                                                 | [WI-056](../work/WI-056.md) — **not dispatched**                                      |
+
+### Three findings that changed the plan, and where they went
+
+**The `executions` module.** The plan's module inventory missed it, and the
+domain map would have been wrong without it. `apps/server/src/modules/executions/`
+is Interaction's — it is the owner's authority over a turn whose outcome could
+not be confirmed — while the `executions` table stays Work's, because the
+ledger owns the row. That is one declared shared table write, and it is
+[WI-060](../work/WI-060.md).
+
+**The server migrates on boot.** `apps/server/src/index.ts:55` and
+`apps/server/src/runtime.ts:61` both call `runMigrations`. So boundary B3 —
+the owner accepts migrations — is a procedure and not a mechanism today, and
+B2's rollback is a rollback of the code rather than of the schema. The
+runbook says so in the place where somebody will read it at two in the
+morning, and the gap is [WI-061](../work/WI-061.md).
+
+**One crossing, not zero.** `modules/resources/service.ts` imports
+`FactoryService` to serve the task resource provider, and the plan expected
+the map to be clean. It is declared instead, with an owner and a way out:
+[WI-059](../work/WI-059.md).
+
+### What was not done, and why
+
+**The interaction model's code.** The contract is published and the
+implementation is one work item, but it waits behind WI-006, WI-007, WI-008,
+WI-009, WI-004 and WI-010, which own the files it touches. Publishing a
+contract before code is the repository's own pattern, and the entry says
+plainly that the code does not implement it yet.
+
+**The worker's context budget and the tool eligibility chain.** Real gaps, and
+a separate item: they are inside the worker, so they are not client-visible and
+they are not contract. [WI-056](../work/WI-056.md).
+
+**A second runtime, a desktop application, a dependency.** The owner's last
+sentence was "avoid building another agent harness or unnecessary
+infrastructure", and nothing in this session added one.
+
+### The numbers
+
+**This session: WI-046 through WI-061.** Taken by the session that owns the
+number space, and the other Chief session's numbers — WI-024 through WI-029
+and WI-039 through WI-043 — were left alone.

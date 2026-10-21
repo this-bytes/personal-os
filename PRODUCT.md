@@ -294,6 +294,21 @@ are read, not assumed.**
 ACP, A2A, MCP and the OpenAI-compatible API shape. "Our spec" means our domain
 model, not our dialect of someone else's protocol.
 
+**The MiniMax Code boundary, and what was taken from it.** The CLI and harness
+are open source under MIT (first-party code defaults to MIT; the sandbox
+runtime is Apache-2.0; the Pi-derived terminal code keeps its own
+declarations), and the **desktop application is not published at all** — that
+repository hosts issue reporting for it. The harness was read as a
+specification, and six of its behaviours were reimplemented against our own
+contracts: per-turn capability pinning, the five-step canonical history
+commit, delivery versus consumption, `lost` for delegated work whose executor
+has gone, steer and queue, and the parent-child work tree. They are published
+as Contract 7 of the interaction model; the context budget and the tool
+eligibility chain stay inside the worker. **No dependency was added, and
+`package.json` and the lockfile are unchanged by any of it.** The licence
+record, read on 2026-10-21, is the row in the landscape table in
+[docs/strategy.md](docs/strategy.md) and the decision is ADR 0009.
+
 **Where the boundary falls exactly is still open.** The reading in front of the
 owner is recorded in ADR 7: the panel's agent-facing surface conforms to MCP and
 AG-UI, ACP and A2A are the agent-connection side, and our resources, tasks and goals

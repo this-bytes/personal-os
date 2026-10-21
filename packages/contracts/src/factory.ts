@@ -140,5 +140,13 @@ export const createTaskInputSchema = z.object({
   assigneeId: idSchema.optional(),
   executionOwner: executionOwnerSchema.default('personal-os'),
   acceptanceCriteria: z.array(z.string()).default([]),
+  /**
+   * The external orchestrator's own task identifier, when it owns the work.
+   *
+   * This is the link that lets the repository record a code work item and the
+   * instance record the task that carries it without either being a copy of
+   * the other.
+   */
+  externalRef: z.string().optional(),
 });
 export type CreateTaskInput = z.infer<typeof createTaskInputSchema>;

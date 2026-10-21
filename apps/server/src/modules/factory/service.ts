@@ -60,6 +60,8 @@ export interface FactoryService {
     /** The template this task was made from, and the version of it. */
     templateId?: string;
     templateVersion?: number;
+    /** The external orchestrator's own identifier for this work. */
+    externalRef?: string;
   }): FactoryTask;
   updateTask(
     id: string,
@@ -260,7 +262,7 @@ export function createFactoryService(options: FactoryServiceOptions): FactorySer
           revision: 1,
           acceptanceCriteria: input.acceptanceCriteria ?? [],
           evidenceResourceIds: [],
-          externalRef: null,
+          externalRef: input.externalRef ?? null,
           createdBy: authorOf(input.author),
           templateId: input.templateId ?? null,
           templateVersion: input.templateVersion ?? null,
@@ -360,7 +362,9 @@ export function createFactoryService(options: FactoryServiceOptions): FactorySer
           workspaceId: task.workspaceId,
           taskId,
           conversationId: null,
-          externalRef: null,
+          // The execution carries the work item's own reference, so the link
+          // is visible from either side of the ledger.
+          externalRef: task.externalRef ?? null,
           agentConnectionId,
           executionOwner: 'personal-os',
           status: 'queued',

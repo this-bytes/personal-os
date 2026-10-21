@@ -13,7 +13,7 @@ const ctx = {
 describe('adapter registry', () => {
   it('knows every built-in adapter type', () => {
     const registry = createDefaultRegistry();
-    expect(registry.list().sort()).toEqual(['a2a', 'acp', 'cli', 'echo', 'http', 'model']);
+    expect(registry.list().sort()).toEqual(['a2a', 'acp', 'cli', 'echo', 'http', 'mcp', 'model']);
   });
 
   it('refuses to create an adapter it does not know', () => {

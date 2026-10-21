@@ -6,7 +6,7 @@ import { mcpToolNameSchema } from './mcp.js';
  * Adapter categories. A new agent type must be addable without changing
  * conversation storage or the factory task model.
  */
-export const adapterTypeSchema = z.enum(['cli', 'acp', 'a2a', 'http', 'model', 'echo']);
+export const adapterTypeSchema = z.enum(['cli', 'acp', 'a2a', 'http', 'model', 'echo', 'mcp']);
 export type AdapterType = z.infer<typeof adapterTypeSchema>;
 
 export const adapterTypeLabels: Record<AdapterType, string> = {
@@ -16,6 +16,7 @@ export const adapterTypeLabels: Record<AdapterType, string> = {
   http: 'Gateway / HTTP API',
   model: 'Model API (no harness)',
   echo: 'Built-in echo (local test)',
+  mcp: 'MCP server',
 };
 
 /**
@@ -111,6 +112,15 @@ export const agentCapabilitiesSchema = z.object({
   cancel: z.boolean(),
   approvals: z.boolean(),
   artifacts: z.boolean(),
+  /**
+   * Whether the agent can take input while a turn is running.
+   *
+   * A connection that does not report it cannot be steered: the owner's
+   * message waits for the next turn instead, and says so. Absent means
+   * absent, not "probably" — a connection written before this existed is an
+   * agent that cannot be steered.
+   */
+  acceptsSteering: z.boolean().optional(),
 });
 export type AgentCapabilities = z.infer<typeof agentCapabilitiesSchema>;
 
