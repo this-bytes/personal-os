@@ -3670,3 +3670,40 @@ file and ignore rules. `2806f72..7ffa4e4` touches only `.factory/INTAKE.md` — 
 front-page files"_ — **but that turn was interrupted by the cancellation of the stale task record
 it was attached to**, and the session is now `aborted`. **WI-120 stays in `review` until the verdict
 lands: the lead wrote that change and cannot accept its own work.**
+
+## 2026-10-22 10:10 — Chief: the verifier, twice withdrawn, and what is actually blocking it
+
+**One — the verification of WI-120 has been dispatched twice and withdrawn twice, and the
+sequence is on the record because it is the kind of thing that gets retold wrongly.**
+`wi-120-verify-published-front-page-2026-10-22` (task `task_f8085b21663f`) went to Probe at 09:34
+and **never started** — it queued behind a full dispatch ceiling, and it was cancelled at 09:43
+rather than left to sit. `wi-120-verify-published-front-page-vision-2026-10-22` (task
+`task_faa2e8e0f9f1`) went to Vision as the substituted verifier, **whose lane's session went
+`aborted`**; the brief reached it — the session's partial result reads _"Re-running it, and
+pulling up the item file and ignore rules"_ — and the turn was interrupted when the stale WI-108
+task record it was attached to was cancelled. **It could not be re-driven, so it was cancelled
+too.** **A re-dispatch carries a new request id and a new title, and the spent ids are not
+reused:** `wi-120-verify-published-front-page-probe-r2-2026-10-22`, task `task_f689f6b918a1`,
+is now at Probe, and **Probe is the item's verifier again**.
+
+**Two — what is blocking it, measured, not guessed.** The verification is **queued**, not
+running, and the reason is not the lane: **Probe's lane showed activity at 10:03** and its session
+is `started`. **The dispatch ceiling has no free slot for it.** One slot is doing real work —
+**Cog is running WI-121** — and the second is not free. **Cancelling the two finished tasks
+relieved the backlog but did not open the ceiling**, and that is worth knowing: **the ceiling is
+counting something that is not working**, and the floor's dead Chief turns (**39 of 160 floor
+messages are `status: error` with empty text, the lock beginning at 07:04:29**) are the part of
+it that a restart repairs.
+
+**Three — the owner's restart, and why it has not been done by this session.** The owner's
+standing answer was _"the restart — yes, but after Cog's WI-086 turn lands"_, and it landed at
+`06c1b2f`, so the condition is met. **This session has no restart lever that is not destructive:
+archiving or deleting a session ends a live turn**, and the peer Chief session's turn has been
+running since 09:09 and is doing real record work. **So the restart is the owner's to call, and
+it is the one thing standing between the factory and its queue.** What it buys is measured in the
+owner's own answer: **Wren's lane, the wasted slot, and the floor.**
+
+**Four — and the thing that matters most is already done.** The front page is published, the
+published tip is green on both workflows, and the served README and manifest read the product's
+own sentence. **The verification is what closes the item's record; it is not what makes the
+front page true.**
