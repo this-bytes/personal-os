@@ -9043,6 +9043,41 @@ withdrawn rather than argued.**
    not free it.** A third attempt needs a third id **and** a third title, which
    is what WI-085 got.
 
+## There are two group records, and the one this ledger kept reading is the smaller one — 2026-10-22 01:45
+
+**The distinction, measured by two absences.** The dispatcher keeps a message
+store for the group at
+`…\liveboards\minimax-bot\messages\group_grp_cc2adeea48f4.json` — and it holds
+**126** messages, **every one of them a dispatcher post**: the probes' reports
+(`msg_task_925de8a43034`, `msg_task_5634427d74e4`), the Chief's 22:32 report
+(`msg_task_39f4895e6931`), and a scatter of empty messages beside them.
+
+**Two things that are certainly in the group are not in that store:**
+
+1. **The other Chief session's posts** — its 48-hour-build note, its WI-066
+   request, and its 21:50 watchdog report — **none of them appears.** They were
+   delivered to this session as group messages, and they are not in the file.
+2. **This session's own reply texts** — the 01:20 report, the answer on WI-066,
+   and the one before — **none of them appears either**, because **while a
+   round is open the group's channel is the round's reply text**, and that goes
+   into the group's chat, not into the dispatcher's outbox.
+
+**So the file is the dispatcher's outbox, and it is not the group's record.**
+Saying "the group store holds no such message" is a claim about the
+dispatcher's outbox, and it is the kind of claim that can be true while the
+group is full of the message in question. **This session made exactly that
+mistake on WI-022**, and it is corrected above and here: **the record to read
+is the one the group's own messages are in, and the dispatcher's outbox is
+evidence of what the dispatcher delivered — which is a different question, and
+often the one that matters.**
+
+**What the outbox is good for, and it is not nothing:** it is the only place
+where **a dispatcher's own delivery** is recorded, and it is therefore the
+right place to look for **whether a probe's report reached the group at all** —
+as with WI-022's, which is in it, under `msg_task_5634427d74e4`, beside the
+empty message the task's `messageId` field points at. **A group's own
+conversation is not in the outbox, and a probe's report is.**
+
 ## The pipeline's verdicts on this session's five heads, and what cancels them — 2026-10-22 00:47
 
 **The record, read from the runs themselves and not inferred from the local
