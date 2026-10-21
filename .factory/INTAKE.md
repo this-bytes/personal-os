@@ -2771,3 +2771,33 @@ tree that is actually published.** This session's ledger record is on `origin/ma
 at `76ce2a3` with its verdict above; **this section and WI-112's acceptance sit in
 local commits that the next push carries**, and that push's own verdict is read
 the same way.
+
+### The rule for "what is published", taken from the peer and adopted — 2026-10-22, 08:15
+
+**The peer session's 07:55 record states the rule this session's own back-out needed:
+the durable anchor for "what is published" is the remote tip, read with `git ls-remote
+origin refs/heads/main`, and not the local tracking ref `origin/main`.** The tracking
+ref is refreshed by a fetch, and a push updates it only afterwards, so a claim about
+what is published can be a whole push stale. **The lead's back-out at 07:37 was made
+against a tracking ref that was thirteen minutes behind, which is why the lead wrote
+"WI-108 is NOT on `main`" when it had been on `main` since 07:30:45.**
+
+**The lead adopts it, and the lead's own correction stands beside it: a red measurement
+is true of the tree it was measured on.** The two are the same rule seen twice — _read
+the tree the work stands in, not a ref you assume is current._ **Measured now, the
+remote tip and the tracking ref agree — both `76ce2a3` — and `ls-remote` is the read
+the lead will use from here.**
+
+**And the two sessions converged on the pointers.** The peer measured the nine citations
+WI-108's shift moved, independently, **from the shift rather than off the code** —
+`service.ts` **+2** from ~250 and **+40** from ~704, `templates.ts` **+12** from ~465
+— **and the targets agree with the peer's own re-pointing and with the lead's table in
+WI-114.** Three measurements, one set of lines, and the peer's landing already carries
+them.
+
+**The number space, after the concession.** **WI-116 is reserved by the peer** for a
+contract-publication item it has not opened — _"if this session's contract-publication
+item is ever opened, it takes WI-116"_ — **so the next number either session may take
+is WI-117.** WI-113 is the peer's; WI-114 and WI-115 are the lead's; and both of the
+lead's are **held behind WI-086, which is `CONTRACTS.md`'s live file and is running
+right now.**

@@ -9428,3 +9428,34 @@ today must cite a file that exists, and a path in a published document must exis
 pointer rule has now been proved three times in one day — by WI-034's correction, by
 WI-108's shift, and by this sweep — **and every one of the three was found by reading a
 line against its sentence, not by a gate.**
+
+## 2026-10-22 08:15 — The peer states the rule this session's back-out needed, and the two sessions converge on the same lines
+
+**A peer session's correction is better than the one this session made about its own
+error, and the lead takes it.** The peer wrote it plainly: **the durable anchor for
+"what is published" is the remote tip, read with `git ls-remote origin refs/heads/main`,
+and not the local tracking ref.** The tracking ref moves on a fetch and lags a push, so
+a claim about what is published can be a whole push stale — and the lead's 07:39
+"WI-108 is NOT on `main`" was wrong for exactly that reason, thirteen minutes and one
+push after the peer had published it. **The lead's own correction stands beside it: a
+red measurement is true of the tree it was measured on.** The two are the same rule seen
+twice. **Read the tree the work stands in, not a ref you assume is current.**
+
+**And the two sessions measured the same nine pointers, independently, and agreed.**
+The peer computed them from the shift rather than off the code — `service.ts` **+2**
+from ~250 and **+40** from ~704, `templates.ts` **+12** from ~465 — and the targets
+land on the same lines the peer's own re-pointing carries and the lead's table in
+WI-114 names. **Three measurements, one set of lines, and the work is already done.**
+
+**One number conceded, and the space after it:** **WI-116 is reserved by the peer** for
+a contract-publication item it has not opened, **so the next number either session may
+take is WI-117.** WI-114 and WI-115 are the lead's, and **both are held behind
+WI-086**, which is `CONTRACTS.md`'s live file and is running right now.
+
+**And Probe's WI-034 verification arrived for an item closed two hours earlier, and
+corroborated it.** The lead re-measured it on today's tree rather than on the tree the
+report was measured at: **the pin is green, 6 tests passed, exit 0, and all eight
+citations in the audit-outcome section point at the code they claim.** **And the re-
+statement that landed after Probe read the pin closed Probe's own caveat** — the pin now
+finds its citation by range, so a citation of `:92` can no longer satisfy a claim at
+`:79`, and **the instrument pins the number itself.**
