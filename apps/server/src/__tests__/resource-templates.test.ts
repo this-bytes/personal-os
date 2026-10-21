@@ -761,4 +761,61 @@ describe('a template tells an agent what a good resource looks like', () => {
       if (index !== -1) resourceTemplates.splice(index, 1);
     }
   });
+
+  it('refuses a spec that breaks its contract through the tool an agent uses', async () => {
+    // The dashboard, document, data-source and automation providers answer a
+    // spec that breaks its contract with the published refusal — the same
+    // `validation_failed` envelope the task provider has always answered
+    // with. The tool is where an agent sends its spec, so this is where the
+    // answer has to be the product's.
+    const before = await listResources();
+
+    const created = await callTool(agentToken, 'resource.create', {
+      type: 'dashboard',
+      title: 'A dashboard that breaks the contract',
+      // A widget with no type: the widget is not a widget.
+      data: { widgets: [{ id: 'summary', title: 'Records' }] },
+    });
+
+    expect(created.isError, 'a spec that breaks the contract was accepted').toBe(true);
+    expect(created.value.code).toBe('validation_failed');
+    expect(created.value.message).toBe('This dashboard does not satisfy the dashboard contract.');
+    // The details are the schema's own issues, so a client can say which part
+    // of the spec broke.
+    expect(Array.isArray(created.value.details)).toBe(true);
+    const issues = created.value.details as { path: unknown[]; message: string }[];
+    expect(issues.length).toBeGreaterThan(0);
+    expect(issues[0]?.path).toEqual(['widgets', 0, 'type']);
+    expect(issues[0]?.message).toBeTruthy();
+
+    // Nothing was created.
+    expect((await listResources()).length).toBe(before.length);
+  });
+
+  it('answers a spec that breaks its contract with the published error envelope', async () => {
+    // The envelope the contract publishes: `{ error: { code, message,
+    // details } }`, with `validation_failed` and HTTP 422 for a spec that
+    // breaks its contract.
+    const response = await app.inject({
+      method: 'POST',
+      url: '/api/resources',
+      headers: { cookie: sessionCookie },
+      payload: {
+        workspaceId,
+        type: 'dashboard',
+        title: 'A dashboard that breaks the contract',
+        data: { widgets: [{ id: 'summary', title: 'Records' }] },
+      },
+    });
+
+    expect(response.statusCode).toBe(422);
+    expect(response.json().error.code).toBe('validation_failed');
+    expect(response.json().error.message).toBe(
+      'This dashboard does not satisfy the dashboard contract.',
+    );
+    expect(Array.isArray(response.json().error.details)).toBe(true);
+    const issues = response.json().error.details as { path: unknown[]; message: string }[];
+    expect(issues.length).toBeGreaterThan(0);
+    expect(issues[0]?.path).toEqual(['widgets', 0, 'type']);
+  });
 });

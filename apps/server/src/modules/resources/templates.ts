@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import type { ResourceTemplate, ResourceTemplateRef, ResourceType } from '@personal-os/contracts';
-import { errors } from '../../lib/errors.js';
+import { errors, AppError } from '../../lib/errors.js';
 
 /**
  * The template registry.
@@ -463,6 +463,18 @@ export function assertTemplatesValid(
 export function templateIssues(error: unknown): unknown {
   if (error instanceof z.ZodError) {
     return error.issues.map((issue) => ({ path: issue.path.join('.'), message: issue.message }));
+  }
+  // A provider that refuses a broken spec reports the schema's own issues in
+  // the error's details, so the refusal carries the same list whether the
+  // provider threw a schema error or the product's own validation error.
+  if (error instanceof AppError && Array.isArray(error.details)) {
+    return error.details.map((issue) => {
+      const detail = issue as { path?: unknown; message?: unknown };
+      return {
+        path: Array.isArray(detail.path) ? detail.path.join('.') : String(detail.path ?? ''),
+        message: typeof detail.message === 'string' ? detail.message : String(detail.message),
+      };
+    });
   }
   return error instanceof Error ? error.message : String(error);
 }
