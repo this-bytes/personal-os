@@ -152,11 +152,13 @@ export function registerAgUiRoutes(app: FastifyInstance): void {
 
       // An abandoned interrupt is a refusal: the operation was not approved,
       // and the decision says so.
-      const approved = entry.status === 'resolved' ? decisionOf(entry.payload).approved : false;
-      const reason =
+      const answer =
         entry.status === 'resolved'
-          ? (decisionOf(entry.payload).reason ?? '')
-          : 'The interrupt was abandoned, so the operation was not approved.';
+          ? decisionOf(entry.payload)
+          : {
+              approved: false,
+              reason: 'The interrupt was abandoned, so the operation was not approved.',
+            };
 
       const decision = decideApproval({
         db: app.services.runtime.db,
@@ -164,8 +166,8 @@ export function registerAgUiRoutes(app: FastifyInstance): void {
         audit: app.services.audit,
         approvals: app.services.approvals,
         approvalId: entry.interruptId,
-        approved,
-        reason,
+        approved: answer.approved,
+        reason: answer.reason ?? '',
         decidedBy: request.user?.id ?? 'owner',
         actorType: request.actorType ?? 'human',
       });
