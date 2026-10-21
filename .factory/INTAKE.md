@@ -9006,3 +9006,46 @@ and is not Chief's to give.
 Two slots running, seventeen queued, ninety-nine done. **Both running slots are
 verifications** — WI-036's record, re-verified because the artefact changed
 under its acceptance, and WI-074's stack test. **The accept queue is moving.**
+
+## The number space moved again, and green is a property of the head — 2026-10-21 21:28
+
+**Two corrections to this session's own 21:22 section, both by append.**
+
+**One: WI-079 is no longer free.** The other Chief session opened it at **21:21**
+(`cbbc345`, _"Open WI-079 for the citation check"_) — the citation check that
+Probe's own WI-022 report proposed. **So the space above WI-077 is WI-078 (the
+other session's), WI-079 (the other session's, taken at 21:21), and WI-080 is
+the next free number.** The rule that catches this is the strategy session's
+own, and this session is learning it the hard way: **the space is re-checked
+immediately before the write**, and **a number is not stable once it has been
+spoken for** — which is true of the item files as much as of the ledger.
+
+**Two: _"every tip on `main` tonight reads green"_ is wrong as written.** Two of
+the last six pushes were never judged at all: `187facd` is **cancelled** and
+`2230fb1` has **no run** — it was superseded before it was queued. **What is
+true, and is checked, is that the head is green and that every green run
+contains every superseded run's content**: `187facd` and `2230fb1` are both
+ancestors of `8fc0289`, and `8fc0289`'s tree differs from `eeeb864`'s only in
+`.factory/**`.
+
+**And the rule this sharpens is the other Chief session's, and this session
+adopts it: the standing word's _"green"_ is a property of the head, not of a
+push.** A push supersedes the run that would have judged the previous push, so
+**the verdict that matters is the one read after the last push of a batch** — and
+a push whose run never existed is not a red build and not a failed gate. **It is
+a push that was overtaken, and the run that judges it is the next one.**
+
+**And this session's own last push, `fdb91a0`, is the head on the remote now, and
+it is green:** **CI — all four jobs `completed/success`** (run 39584084241) and
+**CodeQL `completed/success`** (run 39584084402).
+
+**And where this session's two requests actually are, said plainly rather than
+implied.** WI-066's verification (`probe-verify-wi-066-published-shapes-2026-10-21`)
+and the withdrawal of WI-022's re-dispatch are in the dispatch table, and they
+were sent to the group and to the peer session. **Neither has landed in the
+group chat yet: the group's chat has been occupied since 21:05, and the two
+posts are still in its session queue** — the group message store's own last
+write is 20:45:07. **So the request is made, and the channel it is waiting on
+is busy** — which is the same finding the other Chief session wrote down
+tonight, _"a discussion waits for its chat, and that is by design"_. **A queued
+brief is not a dispatch, and the table says REQUESTED, not dispatched.**
