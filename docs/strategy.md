@@ -311,10 +311,11 @@ record — 494 packages, one copy, in `docs/dependency-licences.json` — and it
 trusting the record, and **all five criteria hold**.
 **WI-038 (W7) is the half that makes this a check rather than a record, and it has
 started**: the CI step and the root manifest entry are written on
-`wi/038-borrow-rule-gate`, and the gate script is **queued, not written** — its
-first brief was cancelled because it stated one fact about the record wrongly, and
-the corrected brief is waiting. **Until that script lands and the gate runs, the
-borrow rule is a claim with a ground truth attached, and not a fact the build
+`wi/038-borrow-rule-gate`, and the gate script is **not written**: its first brief
+was cancelled because it stated one fact about the record wrongly, and the
+corrected brief was queued at 16:34 — **the script is on neither the branch nor
+`main`**. **Until that script lands and the gate runs, the borrow rule is a claim
+with a ground truth attached, and not a fact the build
 proves.**
 
 **What the check does not cover, said before anyone assumes that it does.** It reads
@@ -355,17 +356,17 @@ came out of this document's own review and was numbered later, as WI-044. **W9 c
 out of the wants' own execution and is not numbered at all** — this document does
 not open an item, so its row carries no item and the lead judges it first.
 
-| Want | Verdict              | Item                                 | Owner | Note                                                                                                                                                                                                                             |
-| ---- | -------------------- | ------------------------------------ | ----- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| W1   | accepted, resized    | [WI-033](../.factory/work/WI-033.md) | Cog   | The change behind the product's own report. Lands **after** W2 — the contract leads.                                                                                                                                             |
-| W2   | accepted, rescoped   | [WI-034](../.factory/work/WI-034.md) | Wren  | The published shape for W1. Lands **before** W1. **Rescoped at 11:10** — it publishes the outcome vocabulary and the migration note, not the authorship definition, which WI-030 already published.                              |
-| W3   | **deferred**         | [WI-035](../.factory/work/WI-035.md) | Cog   | The largest of the seven. Starts after Forge. **The deferral is capacity, not judgement** — Cog's lane is full — and it is numbered so it is not lost.                                                                           |
-| W4   | **folded**           | [WI-007](../.factory/work/WI-007.md) | Cog   | The same subject under a different name. **The fold is recorded in `.factory/INTAKE.md`, not in WI-007's own file** — that item does not yet name the fold, which is a gap in the item, not in this record.                      |
-| W5   | **accepted**         | [WI-036](../.factory/work/WI-036.md) | Wren  | The record the gate compares against. **Accepted** — Probe re-derived the numbers its own way rather than trusting the record: 494 packages, one copy, in `docs/dependency-licences.json`. Lands **before** W7.                  |
-| W6   | **accepted**         | [WI-037](../.factory/work/WI-037.md) | Wren  | The cheapest item in the set and the most overdue. **Accepted** — all four criteria hold and nothing else in the product record changed: the product record now says Forge.                                                      |
-| W7   | accepted, in flight  | [WI-038](../.factory/work/WI-038.md) | Chief | The gate. Lands **after** W5 — a gate that compares against nothing catches nothing — and W5 has landed, so it can. The CI step and manifest entry are written; the gate script is **queued, not written**.                      |
-| W8   | **funded, deferred** | [WI-044](../.factory/work/WI-044.md) | Chief | The check over this repository's own sources. Numbered so it is not lost, and **not dispatched** — the inventory is worth writing against a settled repository, and the repository's visibility is the owner's open decision.    |
-| W9   | **proposed**         | — not numbered —                     | Probe | The check that keeps a published status true. **Raised by the wants' own execution** — two of the wants that ran exposed the same defect class twice (C-23), and no item carries it. **Not numbered: the lead judges it first.** |
+| Want | Verdict              | Item                                 | Owner | Note                                                                                                                                                                                                                                                                                             |
+| ---- | -------------------- | ------------------------------------ | ----- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| W1   | accepted, resized    | [WI-033](../.factory/work/WI-033.md) | Cog   | The change behind the product's own report. Lands **after** W2 — the contract leads.                                                                                                                                                                                                             |
+| W2   | accepted, rescoped   | [WI-034](../.factory/work/WI-034.md) | Wren  | The published shape for W1. Lands **before** W1. **Rescoped at 11:10** — it publishes the outcome vocabulary and the migration note, not the authorship definition, which WI-030 already published.                                                                                              |
+| W3   | **deferred**         | [WI-035](../.factory/work/WI-035.md) | Cog   | The largest of the seven. Starts after Forge. **The deferral is capacity, not judgement** — Cog's lane is full — and it is numbered so it is not lost.                                                                                                                                           |
+| W4   | **folded**           | [WI-007](../.factory/work/WI-007.md) | Cog   | The same subject under a different name. **The fold is recorded in `.factory/INTAKE.md`, not in WI-007's own file** — that item does not yet name the fold, which is a gap in the item, not in this record.                                                                                      |
+| W5   | **accepted**         | [WI-036](../.factory/work/WI-036.md) | Wren  | The record the gate compares against. **Accepted** — Probe re-derived the numbers its own way rather than trusting the record: 494 packages, one copy, in `docs/dependency-licences.json`. Lands **before** W7.                                                                                  |
+| W6   | **accepted**         | [WI-037](../.factory/work/WI-037.md) | Wren  | The cheapest item in the set and the most overdue. **Accepted** — all four criteria hold and nothing else in the product record changed: the product record now says Forge.                                                                                                                      |
+| W7   | accepted, half done  | [WI-038](../.factory/work/WI-038.md) | Chief | The gate. Lands **after** W5 — a gate that compares against nothing catches nothing — and W5 has landed, so it can. The CI step and manifest entry are written; the gate script is **not written** — its corrected brief was queued at 16:34 and the script is on neither the branch nor `main`. |
+| W8   | **funded, deferred** | [WI-044](../.factory/work/WI-044.md) | Chief | The check over this repository's own sources. Numbered so it is not lost, and **not dispatched** — the inventory is worth writing against a settled repository, and the repository's visibility is the owner's open decision.                                                                    |
+| W9   | **proposed**         | — not numbered —                     | Probe | The check that keeps a published status true. **Raised by the wants' own execution** — two of the wants that ran exposed the same defect class twice (C-23), and no item carries it. **Not numbered: the lead judges it first.**                                                                 |
 
 **Two of the lead's decisions are worth carrying here, because they are judgements
 about this direction rather than about the code.** W4 was folded rather than
@@ -586,13 +587,14 @@ a candidate, **C-23**, and no item carries it.
 **Why a count check cannot catch this and a status check can.** The published counts
 drifted too, and the pipeline caught them — because a count is a number somebody can
 compare. **A status note is prose, and nothing asks it to be true.** Neither note was
-true at the moment it was read, and **the ledger's own summary of this understates
-it**: C-23 records that both notes "went false within half an hour of being
-written", and that is true of the resolve route — its note was published at 11:05
-(`363428e`) and the route landed at 11:32 (`414996c`), **27 minutes** later — but
-**not** of the template record, whose note was published at 08:25 (`e682224`) and
-went false at 12:41 (`8b1fd01`), **four hours and fifteen minutes** later. The
-drift is not a slip of the pen. It is most of a morning.
+true at the moment it was read, and **the ledger's own summary of this understated
+it** — it said both notes "went false within half an hour of being written". That is
+true of the resolve route — its note was published at 11:05 (`363428e`) and the
+route landed at 11:32 (`414996c`), **27 minutes** later — but **not** of the
+template record, whose note was published at 08:25 (`e682224`) and went false at
+12:41 (`8b1fd01`), **four hours and fifteen minutes** later. **The row now carries
+the corrected timeline.** The drift is not a slip of the pen. It is most of a
+morning.
 
 **Acceptance:** the check reads the contract's implementation-status notes and fails
 when a note says the code does not do something the code does — **naming the
