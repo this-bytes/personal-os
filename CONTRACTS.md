@@ -1230,8 +1230,8 @@ result: 'queued' | 'succeeded' | 'failed' | 'unknown';
 
 **`queued` means the action was accepted and has not finished.** `POST
 /api/resources/:id/execute` records `queued` for an automation run it enqueues
-(`apps/server/src/modules/resources/service.ts:594`), and answers `queued: true`
-(`apps/server/src/modules/resources/service.ts:599`): the route accepted the request
+(`apps/server/src/modules/resources/service.ts:596`), and answers `queued: true`
+(`apps/server/src/modules/resources/service.ts:601`): the route accepted the request
 and the run has not happened. The same route runs a data source and a dashboard there
 and then, so **the vocabulary is per action, not per route** — one route can record
 `queued` for one kind and `succeeded` for another. **`succeeded` means the outcome was
