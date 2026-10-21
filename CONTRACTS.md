@@ -842,6 +842,68 @@ Every entry in the audit trail answers three questions: **who requested an actio
 which agent performed it, and what the result was.** Entries are append-only and
 readable at `GET /api/audit`.
 
+### The audit outcome
+
+An entry in the audit trail records **what the action produced**, not that a request
+was handled. The trail's `result` carries one of four values:
+
+```ts
+result: 'queued' | 'succeeded' | 'failed' | 'unknown';
+```
+
+**`queued` means the action was accepted and has not finished.** `POST
+/api/resources/:id/execute` records `queued` for an automation run it enqueues
+(`apps/server/src/modules/resources/service.ts:515`): the route accepted the request
+and the run has not happened. The same route runs a data source and a dashboard there
+and then, so **the vocabulary is per action, not per route** — one route can record
+`queued` for one kind and `succeeded` for another. **`succeeded` means the outcome was
+observed and the action worked; `failed` means the outcome was observed and it did
+not.**
+
+**`unknown` means the outcome could not be confirmed** — neither a success nor a
+failure. It is the same word the unknown outcome uses
+([The unknown outcome](#the-unknown-outcome)), and it is in this vocabulary because
+the product produces it: the worker writes it when a turn's outcome cannot be
+confirmed (`apps/worker/src/executor.ts:104`), and the conversation dispatch writes it
+when a turn stops for the same reason
+(`apps/server/src/modules/conversations/dispatch.ts:247`). **A vocabulary without
+`unknown` would leave the unknown outcome unrepresentable in the trail**, and the
+trail is where it is recorded.
+
+**Every mutating route writes an entry, and every entry records what the action
+produced.** The route helper wrote `success` for every route that used it
+(`apps/server/src/api/helpers.ts:62`) and the audit service defaulted to it
+(`apps/server/src/modules/audit/service.ts:71`), so an entry said "done" about a run
+that was merely queued. **The twelve routes that wrote no entry at all now write one,
+at the layer that knows the outcome** — they are the twelve in
+[the measures route](#the-measures-route). **A route whose action fails writes an
+entry that says `failed`**: today it writes none, because every route-level entry is
+written after the work and a handler that throws never reaches it, and the error
+handler writes nothing (`apps/server/src/app.ts:185`).
+
+**The code does not implement this yet.** The vocabulary, the rule and the twelve are
+published ahead of their implementation, because the contract leads and the code
+follows: the implementation is WI-033, and the shape above is what it has to reach. No
+writer in the product produces `queued`, `succeeded` or `failed` today, and the trail's
+`result` carries `success | failure | unknown` until it does
+(`apps/server/src/modules/audit/service.ts:19`).
+
+**Migration.** **Nothing is reclassified.** No stored entry is rewritten, and no entry
+is given an outcome it did not have.
+
+**What a client written before this change may assume, and what it must now check.** It
+may assume that `unknown` means the outcome could not be confirmed, and that the trail
+is append-only. It must now handle four words where it handled three, and two of the
+old ones are gone: **`success` is `succeeded`, and `failure` is `failed`.** A client
+that reads `entry.result === 'success'` reads a word that no longer exists.
+
+**A record written before the change carries `success`, `failure` or `unknown` and no
+`queued`, and it keeps its word.** An old `success` means an entry was written and the
+outcome was not observed — it is not evidence that the action worked. An old `failure`
+means the trail never carried it, because no writer produced it, so a client that reads
+one treats it as unobserved too. An old `unknown` is the unknown outcome, and it means
+exactly what it means after the change.
+
 ### The waiting list
 
 `GET /api/waiting?workspaceId=…` returns everything waiting on the owner as one
@@ -1151,7 +1213,7 @@ is not left deleting the database.
 | `GET`              | `/api/approvals/:id/evidence`                        | The evidence a decision is taken against. See [the entry](#the-approval-evidence).      |
 | `POST`             | `/api/approvals/:id/decide`                          | Approve or reject a sensitive operation.                                                |
 | `GET`              | `/api/waiting`                                       | Everything waiting on the owner, in one list. See below.                                |
-| `GET`              | `/api/audit`                                         | Read the audit trail.                                                                   |
+| `GET`              | `/api/audit`                                         | Read the audit trail. See [the entry](#the-audit-outcome).                              |
 | `GET`              | `/api/measures`                                      | The product's two measures of itself. See below.                                        |
 | `GET`              | `/api/events`                                        | Server-sent event stream.                                                               |
 | `GET`              | `/api/agui/events`                                   | The same stream in AG-UI. See [the AG-UI stream](#the-ag-ui-stream).                    |
@@ -1257,22 +1319,39 @@ entries, which carry `actorType: 'agent'`. **The second measure does not count
 the work an agent does through MCP**: an agent can create, update and publish
 resources all day and the trail will show none of it. An implementation that
 wants the measure to mean what it says has to widen the audit coverage first,
-and that is WI-020's to decide.
+and that is WI-033's to do, with WI-034 publishing the rules it implements.
 
 **Nothing records a failure.** The audit trail's `result` carries
 `success | failure | unknown` (`apps/server/src/modules/audit/service.ts:19`),
 but no writer in the product writes `failure`: the route helper hardcodes
 `success` (`apps/server/src/api/helpers.ts:62`), the audit service defaults to
-it (`apps/server/src/modules/audit/service.ts:71`), and the only other value any
+it (`apps/server/src/modules/audit/service.ts:79`), and the only other value any
 writer produces is the `unknown` of
 [The unknown outcome](#the-unknown-outcome)
 (`apps/worker/src/executor.ts:104`). An operation that failed is counted here as
 an operation that completed.
 
-**The code does not implement this yet.** The route and its shape are published
-ahead of their implementation, because the contract leads and the code follows:
-the implementation is WI-020, and the shapes above are what it has to reach. No
-route answers this today, and nothing named `measures` exists in the server.
+**The route exists.** It answers with the shape above, member for member: the
+workspace, and the two measures. The counts are queries over the data the
+product keeps — the `createdBy` column of the workspace's resources, and the
+audit trail — and not counters that are incremented on some code path. `ratio`
+is `null` when the denominator is zero, and the count is still returned.
+
+**What the two numbers can defend.** The first measure is a **floor**: a
+resource that records no agent author — the `'system'` of the automation and
+task projections, and everything the owner created — is in the denominator and
+can never be in the count, so the ratio can only understate what the agents
+authored. The second measure is **not a share of completed work**, and it is
+published with two different facts behind it. The first is a count of routes:
+the twelve listed above write no audit entry at all, and the MCP surface
+writes none either. The second is a rule about outcomes: every audited route
+records `result: 'success'` whatever happened, no writer in the product
+records `failure`, and the count has no filter on the result — so the
+denominator counts attempts, not confirmed completions. And because the
+owner's own routes record `human` and the MCP surface writes no entry at all,
+the only `actorType: 'agent'` entries a workspace's measure can see today are
+the worker's own `unknown` records: the ratio is the share of the trail the
+worker wrote, not the share of the work an agent did.
 
 **Migration.** Nothing is reclassified and no record is rewritten. The route is
 new and read-only, so a client that does not call it is unaffected, and a client

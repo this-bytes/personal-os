@@ -71,6 +71,7 @@ closed — the group should learn what the product can now do.
   item waits for that review.
 - Do not publish, tag a release, change the repository's visibility or delete
   anything external without the human's explicit approval. Pushing a work
-  item's own branch is standing authorization — see
+  item's own branch is standing authorization, and so is landing a green
+  `main` on the owner's standing word of 2026-10-21 18:07 — see
   [FACTORY.md](../FACTORY.md#working-in-parallel).
 - Do not weaken a gate to make a work item pass.

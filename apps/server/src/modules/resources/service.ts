@@ -21,7 +21,7 @@ import type { Database } from '../../db/client.js';
 import { automations, resources as resourcesTable } from '../../db/schema.js';
 import { errors } from '../../lib/errors.js';
 import { assertSafeUrl, assertReadableQuery } from '../../lib/guards.js';
-import { newId } from '../../lib/ids.js';
+import { AGENT_ID_FORM, newId } from '../../lib/ids.js';
 import type { EventsService } from '../events/service.js';
 import type { Queue } from '../../queue/client.js';
 import type { FactoryService } from '../factory/service.js';
@@ -79,6 +79,16 @@ export interface ResourceService {
   execute(id: string): Promise<{ output: unknown }>;
   /** Validate and describe the resource without changing it. */
   inspect(id: string): { resource: Resource; valid: boolean; issues: string[] };
+  /**
+   * How many of the workspace's resources record an agent as their author.
+   *
+   * The total is every resource in the workspace, across all six kinds. Two of
+   * the kinds — automations and tasks — hardcode `createdBy: 'system'` and have
+   * no column to keep an author in, so they are counted in the total and can
+   * never be counted as agent-authored. The count is therefore a lower bound,
+   * and the total is the honest denominator.
+   */
+  authorshipCounts(workspaceId: string): { agentAuthored: number; total: number };
   /** The templates published for one kind, newest version of each. */
   templateList(type: ResourceType): ResourceTemplate[];
   /**
@@ -581,6 +591,32 @@ export function createResourcesService(options: ResourcesServiceOptions): Resour
       }
 
       return template;
+    },
+
+    authorshipCounts(workspaceId): { agentAuthored: number; total: number } {
+      const rows = db
+        .select({ createdBy: resourcesTable.createdBy })
+        .from(resourcesTable)
+        .where(eq(resourcesTable.workspaceId, workspaceId))
+        .all();
+
+      // The test is the id form, not a lookup: a connection that has since
+      // been removed does not make the resources it authored owner-authored.
+      const agentAuthored = rows.filter((row) => row.createdBy.startsWith(AGENT_ID_FORM)).length;
+
+      // Automations and tasks keep no author at all: their projections say
+      // 'system'. They are in the total, and they can never be in the count.
+      const automationRows = db
+        .select({ id: automations.id })
+        .from(automations)
+        .where(eq(automations.workspaceId, workspaceId))
+        .all();
+      const taskRows = factory.listTasks(workspaceId);
+
+      return {
+        agentAuthored,
+        total: rows.length + automationRows.length + taskRows.length,
+      };
     },
   };
 

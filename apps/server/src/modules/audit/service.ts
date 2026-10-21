@@ -1,4 +1,4 @@
-import { desc, eq, sql } from 'drizzle-orm';
+import { and, desc, eq, sql } from 'drizzle-orm';
 import type { ActorType } from '@personal-os/contracts';
 import type { Database } from '../../db/client.js';
 import { auditLog } from '../../db/schema.js';
@@ -33,6 +33,14 @@ export interface AuditService {
     metadata?: unknown;
   }): AuditEntry;
   list(workspaceId: string, limit?: number): AuditEntry[];
+  /**
+   * How many entries the trail holds for a workspace.
+   *
+   * The count is over the entries that exist, not over the ones a list
+   * happens to show: the trail is append-only and grows, and a measure built
+   * on a truncated list would be a measure of the list.
+   */
+  count(workspaceId: string, actorType?: ActorType): number;
 }
 
 /**
@@ -99,6 +107,19 @@ export function createAuditService(db: Database): AuditService {
           .all()
           .map(toEntry)
       );
+    },
+
+    count(workspaceId, actorType): number {
+      const condition =
+        actorType === undefined
+          ? eq(auditLog.workspaceId, workspaceId)
+          : and(eq(auditLog.workspaceId, workspaceId), eq(auditLog.actorType, actorType));
+      const row = db
+        .select({ value: sql<number>`count(*)` })
+        .from(auditLog)
+        .where(condition)
+        .get();
+      return row?.value ?? 0;
     },
   };
 }

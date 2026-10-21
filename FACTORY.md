@@ -89,14 +89,36 @@ one machine's working tree is work that a restart, a crash or a mistaken
 a push that never happens. CI runs on every branch push, so a pushed branch
 is a gated branch.
 
-**Landing on `main` needs the owner's word.** A bot may push its own work
-item's branch to `origin` without asking anyone — that is the standing
-authorization above, and it is enough: CI runs on every branch push, so the
-work is gated where it is written. **`main` is not covered by it.** `main` is
-pushed when the owner says so, and the owner said so on 2026-10-21 08:54 for
-the push of the first green tree: _push as soon as it is green, with the panel
-as it stands._ That word is spent when the push is made; the next one waits
-for the next word.
+**Landing on `main` is authorized when the tree is green.** The owner gave a
+standing word on 2026-10-21 18:07: _push `main` whenever CI is green._ **That
+word is not spent** — it stands until the owner changes it, and it authorizes
+the push of a green `main` without asking again. A bot may still push its own
+work item's branch to `origin` without asking anyone — that standing
+authorization is unchanged; `main` is now covered by the owner's.
+
+**"Green" is measured, not hoped for.** Before the push:
+
+- the local gates pass on the tree being pushed — `npm run typecheck`,
+  `npm run test`, `npm run format:check`, `npm run build`;
+- the code that would be landed is the code the pipeline has measured green —
+  the pipeline has run on that tree, or the tree's code is byte-identical to a
+  tree it did (`git diff --name-only <green-sha>..<sha>` touches no code path);
+- the push is a fast-forward, and `origin/main` is still where the work
+  started.
+
+**And the platform's verdict is read afterwards, and recorded.** Green is
+confirmed by the run on the pushed sha, not assumed from the local gate. **A
+local gate run contended by another session is not evidence** — the platform's
+run is. **A red verdict on a pushed `main` is a factory failure to fix and say
+out loud**, never a push to undo by force.
+
+**And one push at a time, because a push cancels the run that judges it.** The
+workflow's `cancel-in-progress: true` is keyed on the **ref**, not on the
+content, so a push that carries nothing but a ledger line still cancels the
+pipeline in flight. **A verdict that says `cancelled` is a superseded run, not
+a failure** — and the right response is to let the newest run finish, not to
+push again. **Two sessions may hold this authorisation at once; one push at a
+time, and let the run finish, is how the authorisation stays worth having.**
 
 When the owner has said so, and `origin/main` is still where your branch
 started, `main` is fast-forwarded onto your branch:
@@ -343,10 +365,11 @@ Two rules follow from it:
 - **No autonomous action on an external system** without explicit human
   approval — publishing a release, changing the repository's visibility, or
   deleting a branch.
-- **Push your own branch; ask before anything else.** An agent may push the
-  branch of the work item it is working on without asking. **`main` waits for
-  the owner's word** — a branch is pushed freely, `main` is pushed when the
-  owner says so. Everything else external is the human's decision. A push that
+- **Push your own branch; `main` when it is green.** An agent may push the
+  branch of the work item it is working on without asking. **`main` is pushed
+  when it is green**, on the owner's standing word of 2026-10-21 18:07 — a
+  branch is pushed freely, `main` is pushed when the pipeline says it is green.
+  Everything else external is the human's decision. A push that
   rewrites what is already on the remote is refused by the hook in
   [`.githooks/`](../.githooks/), because it takes
   every commit that landed since with it, and that is not a thing good
