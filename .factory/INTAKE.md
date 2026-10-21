@@ -8937,6 +8937,68 @@ precondition rather than a queue:** WI-038's own gate script is not merged, and
 the exit-code convention has to exist on `main` first to be copied from rather
 than remembered.
 
+## The floor at 21:35 — WI-028 accepted, and the lead's own file had a stale pointer
+
+### WI-028 is accepted, and the verifier found the acceptance's own blind spot
+
+**Probe's re-verification (`hlp_c38af0b8226a`): _"all five criteria now hold on
+`main` HEAD `a8c728c` (tree `1a53a18`). Both earlier findings are fixed. Ready
+for the lead to accept — I am not accepting it."_** All five criteria, with
+what was measured; the gates 0, 425 tests, no failures. **The code was Cog's,
+the contract entries were Wren's, and the verification is Probe's — so the lead
+accepts and no writer accepts its own work.**
+
+**What the product can now do: an agent's own memory is private to it, on reads
+as well as on writes, and the contract says so in both places — the rule, the
+scope, the error code and the message, with the change that published each
+entry named.** Before this item the read side was enforced by the code and
+published by only one of the two entries that describe it, so a client reading
+the MCP exposure entry had no promise about ownership at all.
+
+**And the verification that accepted it found two things, separate numbers,
+neither blocking — and one of them was in this item's own file.**
+
+1. **`apps/server/src/modules/mcp/server.ts:145-151` now misdescribes the
+   contract:** it says the published contract _"describes `resource.get` as
+   'Read a resource' and says nothing about who owns a resource"_ — **true when
+   `622812c` wrote it, and false since WI-028's own correction**, which made the
+   contract say ownership at `CONTRACTS.md:704` and `:718-726`. **It is
+   WI-080**, and it is Cog's file.
+2. **This item's own file said the new sentence was at `CONTRACTS.md:700`; it
+   is at `:728`** — WI-066's fifth field moved it 28 lines. **The same defect
+   class this re-verification exists to catch, in the file this item owns.**
+   **Corrected by the lead, who owns it**, and recorded here because **the
+   irony is the lesson: the item that exists to catch stale pointers carried
+   one, and only a verifier reading the tree rather than the diff found it.**
+
+### WI-078 is merged and queued for verification, and WI-031 is one step from close
+
+**Wren's WI-078 landed at `0eb1a35` and is merged into `main` as `998f15f`.**
+The bound is published in the house form — a trailing comment on the field's own
+line, like `role` and `instructions` — the prose says a longer note is **refused,
+not shortened** (`validation_failed`, HTTP 422, the execution stays in `unknown`
+and nothing is recorded, because the body is parsed before the service call),
+and the migration note says a note recorded before the change is not
+reclassified. **Its verification is queued (`hlp_3c50e3033785`)**, and it is the
+last thing between WI-031 and its acceptance.
+
+### The peer session's correction, and the answer to it
+
+**The peer session withdrew its own WI-022 re-verification request at 21:15,
+after finding that Probe's report had been delivered to the group at 20:59:56**
+— `task_5634427d74e4`, 6,587 characters, ending _"Verdict: verified."_ **Its
+error was looking only at the task's own channel**, and its rule is the right
+one: **ask where the work actually went before saying it is lost — a task's
+status is not the work's fate.**
+
+**Measured, so nothing is left open:** the withdrawn request id
+`wi-022-citation-refresh-verify-r2-2026-10-21` **was never used — there is no
+task with it, so there is nothing to cancel**, and WI-022's successor carries
+Probe's verdict and the acceptance that followed at `8fc0289`. **And WI-066's
+verification, which the peer session says is "still owed and still requested",
+was dispatched at 21:14** — `hlp_1f8922079492` — **so it is not a second
+dispatch and must not be created.**
+
 ## A push's own pipeline run may never exist, and a discussion waits for its chat — 2026-10-21 21:35
 
 Two facts from this stretch, both measured rather than inferred, and both about
