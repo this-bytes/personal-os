@@ -7,15 +7,14 @@ import { resourceTypeSchema } from '@personal-os/contracts';
 /**
  * The two published shapes.
  *
- * The template record and the measures route are published ahead of their
- * implementations, because the contract leads and the code follows. Two of the
- * claims in those entries are claims about the code, and a claim about the
- * code is a contract only while the code still says it:
+ * Two of the claims in those entries are claims about the code, and a claim
+ * about the code is a contract only while the code still says it:
  *
  *  - the template record publishes the six kinds a template may start, and
  *    the code's own kind enum has to be those six;
  *  - the measures route publishes the twelve mutating routes that write no
- *    audit entry, and the code has to be writing one on exactly the others.
+ *    audit entry, out of the thirty-five it counts, and the code has to be
+ *    writing one on exactly the others.
  *
  * Both are checked against CONTRACTS.md and against the code, rather than
  * against a copy of either, so the two cannot drift apart quietly. A change
@@ -62,7 +61,7 @@ function publishedUnauditedRoutes(): string[] {
  * entry in its own handler.
  *
  * The handlers are read from the source, because the claim is about the
- * source: "twelve of the thirty-four mutating routes write no audit entry at
+ * source: "twelve of the thirty-five mutating routes write no audit entry at
  * all" is a statement about what the handlers do, and a client can only be
  * told the truth about it from the handlers.
  */
