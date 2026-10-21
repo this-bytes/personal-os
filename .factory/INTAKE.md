@@ -398,7 +398,9 @@ second dispatch.
 | `wi-077-author-shape-house-form-2026-10-21-1920` | WI-077 — the contract publishes the author of every kind, in the house form | Wren | `task_5c00453d1f61` | **queued** — opened and dispatched this turn. WI-034 deliberately did not publish the authorship storage shape, so **WI-033's fourth criterion referred the contract to an entry that did not exist**. This is the entry, in the house form, and it is **on the critical path to WI-033** |
 | `probe-verify-wi-037-product-record-forge-2026-10-21-1325` **(reused — a defect)** | WI-034 — the outcome vocabulary, written | Wren | `task_55c33b744ef5` | **done** — the contract's `### The audit outcome` entry and its migration note, `be10169` plus `ccfb3c2` for the item's own `State:` line, pushed and merged into `main` at `2cb8ba7`. **And the record is wrong about how it was dispatched:** this request id belongs to **WI-037's verification** (row above), and it was used a second time for a different item. **A request id is spent when it is used, and a reused id makes the table lie.** It is recorded here rather than hidden, and the id is spent for good |
 | `wi-028-name-the-change-and-fix-pointers-2026-10-21-1940` | WI-028 — the two published entries: name the change, and point the pointers | Wren | `hlp_fcab95870b97` | **running** — **WI-028 goes back to Wren for one edit.** Probe's verification is in hand (`task_458901e810d7`, measured at `767fbe3`) and reads _"on substance verified … one edit in Wren's file away from acceptance"_. **Criterion 1's last clause fails on the second entry** — the MCP exposure entry states the rule and names no commit and no item, while the memory-scope entry names both twice. **And seven code pointers have drifted** under `8b1fd01`; the claims are true, the pointers no longer point. **The `message_bot` path was refused** — "This tool call cannot be assigned to an active reply" — because this session sits in a crash-recovery `started` state, so the brief went as an isolated execution for Wren and **this request id is reserved and unspent** |
-| `wi-066-published-shapes-member-for-member-2026-10-21-1950` | WI-066 — the published shapes, member for member | Wren | — | **HANDED OVER IN THE GROUP, not through the task API** — the dispatcher refused the assignment three times while Wren's chat was busy with WI-028's helper, so the brief goes out by the group's own hand-off. **The premise was corrected before it was sent:** the item said _"the fourth field the code carries"_, and measured against the code the contract's prose says **three**, its own block lists **four**, and the code carries **five** — `detail` is the fifth, not the fourth. **It also carries a second shape now:** `ResolveExecutionInput.note`'s 2 000-character cap is unpublished. **Both are gaps against WI-031's criterion 7, and WI-031 cannot be accepted until both close** |
+| `wi-066-published-shapes-member-for-member-2026-10-21-1950` | WI-066 — the published shapes, member for member | Wren | — | **WITHDRAWN — and the mistake is the point.** This session was about to hand WI-066 to Wren in the group at 20:45, **and WI-066 had already been dispatched at 13:40 by the peer session** (`wi-066-message-shape-fourth-field-2026-10-21-1340`, `task_0cfbcce20e92`) **and Wren had already implemented it** (`f63c978`, "Publish the message shape's fifth field"). **The item's own file carried no task id, and this session read that as "not dispatched" — the dispatch table is the record of what is dispatched, and it was not consulted.** A second worker on one item is the thing these rules exist to prevent, and it was stopped before it went out. **Wren's implementation independently corrected the count the same way this session did — "the item's own count was four and the tree's is five … the tree wins" — and the lead's corrected title and criteria are now merged with her record.** Merged into `main` as `d3add55`; **WI-066 is in `verify` and Probe's verification is still to be dispatched** |
+| `wi-078-published-note-bound-2026-10-21-2045` | WI-078 — the published note has no bound the code has | Wren | — | **OPENED, and the hand-off is in the group** — Probe's WI-031 verification found that `CONTRACTS.md` publishes `ResolveExecutionInput.note` with **no bound** while the code caps it at 2 000 characters (`apps/server/src/api/executions.ts:9`), and routed it rather than letting it go unrecorded. **It is a gap against WI-031's own criterion 7, and it is the last thing standing between WI-031 and its acceptance.** Branch `wi/078-published-note-bound`, worktree `G:\code\personal-os-worktrees\078-published-note-bound` — created by `scripts/work-item.ts`, so the item file was written on `main` afterwards and the worker is told to bring `main` into the branch first. **WI-031's own status paragraph correction is queued ahead of it on the same file** |
+| `wi-028-verify-after-correction-2026-10-21-2048` | WI-028 — re-verify the two published entries after the correction | Probe | — | **HANDED OVER IN THE GROUP, not through the task API** — the Mini App runtime stopped mid-turn and took the task tools with it; the repair is a restart, and the restart does not restore this session's tool registry. **The brief is in the item file and in this turn's group post.** The change is `22ef5ba`, merged into `main` as `d530f73`: the MCP exposure entry now names its change, and all seven drifted pointers point where they say |
 | `probe-verify-wi-041-readme-licence-2026-10-21-1340` | WI-041 — verify the README tells the truth about the licence | Probe | `task_5b4e02d59413` | **done — and WI-041 is accepted.** Probe measured the tree as it stands at `e676ba9`: **all six criteria, as the item's file stands (corrected 19:08), are met on their face.** `README.md:251-254` reads "MIT. The owner chose it on 2026-10-21, and the full text is in the [LICENSE](LICENSE) file at the root of the repository." The gates: `prettier --check README.md` 0, `npm run format:check` 0; supporting, `typecheck` 0 and `test` 0 — server 25 files/248, web 7/54, worker 5/31, agent-adapters 2/16, contracts 4/28. **Criterion 3's second clause — "the repository is public under it" — was a fact the verifier could not confirm from its own machine, and the lead confirmed it from outside this one:** an unauthenticated read of the repository's endpoint returns `visibility = public`, `license = MIT / MIT License`, `private = False`. **The implementation was taken by the other Chief session under the tiebreak (`f129594`, merged `141f0be`) and the verification is Probe's, so the lead accepts it and no writer accepts its own work** |
 | `wi-036-record-reverification-2026-10-21-1955` | WI-036 — re-verify the licence record against the file as it stands | Probe | `hlp_72d0eace0a08` | **queued** — **the peer's question, asked and not skipped:** WI-036 was accepted on Probe's verification of the record at `edbd105`, and **the file has been edited since** — `45e7b2b`, `ed7b829` and `6cf63b5` each changed six lines of `docs/dependency-licences.json`, because the owner's 19:08 MIT decision made the record's "private for now, with no LICENSE yet" notes false and the other Chief session landed the correction under the tiebreak. **Nobody had asked whether the acceptance survives the edit; that is a question for the verifier and not for a lead.** The brief names the five criteria, quotes what changed, and says plainly: judge **whether the acceptance still holds**, not the record's quality |
 
@@ -8044,6 +8046,99 @@ delivery channel, not a noticeboard. Probe's WI-031 report says _"The group
 took the report this time (`task_a93656399224`)"_ — a post to the group creates
 a task. **So the floor has two doors, and the task API is the one that can be
 refused.**
+
+## The floor at 20:45 — two merges, one near-miss, and a runtime that stopped
+
+### WI-028 is corrected, merged, and back in the queue
+
+**Wren's helper finished and pushed.** Branch `wi/028-contract-names-the-change`,
+two commits (`22ef5ba`, `d92e5e5`), **`main` never touched** — and the report
+says the pointers were **re-measured on the tree that carries the fix, not
+copied from the brief**, which is the only way a citation fix is worth
+anything. **The MCP exposure entry now carries the sentence _"The read side is
+WI-028, and the code implements it — as of `622812c`."_**, in the house form of
+the memory-scope entry's own read-side sentence, and all seven pointers point
+where they say. **Merged into `main` as `d530f73`.** The item file's conflict
+was resolved by hand, keeping the verification record and the correction record
+together.
+
+### WI-066 is merged — and this session nearly put a second worker on it
+
+**Wren had already implemented WI-066 at 19:39**, on branch
+`wi/066-message-shape-fourth-field`: `f63c978`, "Publish the message shape's
+fifth field, and what it is for". **Merged into `main` as `d3add55`.**
+
+**And this session was about to hand WI-066 to Wren a second time.** It wrote
+a full brief, corrected the item's premise, and was one step from delivering it
+through the group — **because WI-066's item file carried no task id, and that
+was read as "not dispatched".** The dispatch table says otherwise: **the peer
+session dispatched WI-066 at 13:40** (`task_0cfbcce20e92`) and **Wren had
+already done the work**. The hand-off was withdrawn before it went out, and
+the ledger row now says so with the mistake in it.
+
+**The rule that would have caught it is mechanical: _the dispatch table is the
+record of what is dispatched, and an item file with no task id in it is not
+evidence that nothing was dispatched._** An item file is the brief; it is not
+the queue.
+
+**And one thing came out of the near-miss worth keeping: Wren corrected the
+count independently, the same way this session did.** Her commit says it
+plainly — _"The item's own count — four, not three — was taken from that
+prose; the tree says five, and the tree wins."_ **Two sessions measured the
+same tree and reached the same number, and the item's title was wrong in both
+of them.** The lead's rewritten title and criteria are merged with her record
+rather than replacing it.
+
+### WI-078 is opened, and it is WI-031's last blocker
+
+**Probe's WI-031 verification found a gap this session had not seen:** the
+contract publishes `ResolveExecutionInput` with `note?: string` and **no
+bound**, while the code caps it — `note: z.string().max(2_000).optional()`
+(`apps/server/src/api/executions.ts:9`). **A client written against the
+published shape may send a longer note and be refused with
+`validation_failed`.** That is a gap against **WI-031's own criterion 7**,
+which asks that the published shape match the code member for member.
+
+**WI-078 is that gap, opened and given its branch and worktree**
+(`wi/078-published-note-bound`,
+`G:\code\personal-os-worktrees\078-published-note-bound`). **It is the last
+thing standing between WI-031 and its acceptance** — WI-031's implementation
+is verified on substance, and the other half is the correction of WI-031's own
+status paragraph, already queued at Wren.
+
+### The runtime stopped again, and this time it took the tools with it
+
+**The Mini App runtime went from running to stopped between two calls**, and
+the MCP tool registry went with it: `start_helper` and `list_team` both
+answered **"Tool not found"**. **`miniapp restart` brought the runtime back —
+`status: running` — and the tools are still not reachable from this session.**
+**So the repair that restores the factory is not the repair that restores the
+session**: the registry this session holds was resolved before the restart, and
+nothing re-resolves it mid-session.
+
+**The consequence is a delivery channel, not a dead end: the group.** The
+briefs that could not be handed over through the task API — WI-028's
+re-verification to Probe, and WI-078 to Wren — are in this turn's group post,
+and the group is the channel that reaches the group. **This is the second time
+tonight the task API refused a dispatch, and the first time it refused because
+the transport was gone rather than because the target's chat was busy.**
+
+### The gate is red intermittently, twice tonight, and the push waits
+
+**Two reds in five root runs on one tree, with every assertion green** — the
+signature is WI-074's and the cause is measured (`EBUSY`, and the lever is
+`maxRetries`, not the timeout). **The failing file's name was not captured
+either time**, because the output window was filtered to the summary lines.
+**That is a gap in the measurement and it is recorded as one.**
+
+**So `main` is not pushed, and the reason is the rule and not caution.**
+`FACTORY.md:99-107` says the local gates must **pass on the tree being
+pushed**, and the test gate did not. **Nine commits sit unpushed**, all of them
+documentation and contract prose, and the code is byte-identical to the tree
+the pipeline measured green at `e676ba9` — **but the rule is about the tree,
+not about the code.** **The gate is what it is until WI-074 lands, and a push
+made on a tree whose gate has been red twice tonight is a push the next person
+has to re-check.**
 
 ## One timestamp in this file is right and two are wrong — 2026-10-21 20:05
 
