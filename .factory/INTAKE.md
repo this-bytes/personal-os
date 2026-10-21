@@ -8933,3 +8933,76 @@ directory in this repository. **Numbered, briefed in full, and held on a
 precondition rather than a queue:** WI-038's own gate script is not merged, and
 the exit-code convention has to exist on `main` first to be copied from rather
 than remembered.
+
+## A push's own pipeline run may never exist, and a discussion waits for its chat — 2026-10-21 21:35
+
+Two facts from this stretch, both measured rather than inferred, and both about
+the fleet's own machinery rather than about the product.
+
+### A push can erase the next push's verdict
+
+**This session pushed `2230fb1` at 21:16 — the ledger entry above.** **The
+other session pushed `8fc0289` forty seconds later.** And the pipeline has
+**no run at all for `2230fb1`**, while `187facd`'s run is `completed/cancelled`
+for both workflows. The whole history on `main`, read from the platform:
+
+| sha       | CI            | CodeQL        | note                            |
+| --------- | ------------- | ------------- | ------------------------------- |
+| `38c14fb` | success       | success       | the AG-UI work landed here      |
+| `187facd` | **cancelled** | **cancelled** | superseded by the next push     |
+| `eafca30` | success       | success       |                                 |
+| `eeeb864` | success       | success       |                                 |
+| `2230fb1` | **no run**    | **no run**    | superseded before it was queued |
+| `8fc0289` | success       | success       | the head                        |
+
+**So the honest statement about any single push is not "CI was green on it".**
+Two of the last six pushes were never judged at all. **What is true, and is
+checked, is that the head is green and that every green run contains every
+superseded run's content** — `187facd` and `2230fb1` are both ancestors of
+`8fc0289`, and `8fc0289`'s tree differs from `eeeb864`'s only in `.factory/**`.
+
+**The rule this sharpens.** `FACTORY.md`'s standing word is _"push `main`
+whenever CI is green"_, and the trap is reading that as a property of the
+push. **It is a property of the head.** A push supersedes the run that would
+have judged the previous push, so **the verdict that matters is the one read
+after the last push of a batch of them** — and a push whose run never existed
+is not a red build and not a failed gate. **It is a push that was overtaken,
+and the run that judges it is the next one.**
+
+### A discussion waits for its chat, and that is by design
+
+**The tiebreak post is admitted and queued** — `task_b7f3bbf0d43e`,
+`kind: discussion`, created 21:01:25 — **and it has not reached the group in
+thirty-four minutes.** It is not lost, and the reason is in the dispatcher:
+
+```js
+// task-dispatcher.mjs:463-468
+if (this.runs.size >= MAX_RUNNING) return;
+if (task.status !== "queued" || this.runs.has(task.id)) continue;
+// Leave occupied chats queued without consuming a task worker.
+const key = task.kind === "discussion" ? `group:${batch.groupId}` : `bot:${task.botId}`;
+if (this.engine.isBusy(key) || ...) continue;
+if ([...this.runs.values()].some((run) => run.key === key)) continue;
+```
+
+**and `isBusy` is true while the chat is in use at all** (`engine.mjs:201-207`):
+the inbox owns it, a turn is running on it, a ticket is open on it, or a group
+loop is live on it. **The group's chat has been occupied since 21:05**, and
+every message in that stretch lands as `done` with a following `error` —
+**"Too many Bots are running at once"**, `errorCode: BUSY`.
+
+**So the post is waiting for a chat that is in use, and it will go out when the
+chat frees.** That is the dispatcher being careful — **an occupied chat is left
+queued rather than given a worker** — and it is why there is no repair to make.
+**A restart was considered and rejected**: it would release the two running
+verifications to `unknown` to make room for a notification, which is the wrong
+trade. **The decision itself is not waiting on the post** — it is in the
+repository, in `## Chief's tiebreak, and the publish — 2026-10-21 19:08`, and
+the acceptance of the three files Chief took is Probe's and the peer session's
+and is not Chief's to give.
+
+### The floor, measured
+
+Two slots running, seventeen queued, ninety-nine done. **Both running slots are
+verifications** — WI-036's record, re-verified because the artefact changed
+under its acceptance, and WI-074's stack test. **The accept queue is moving.**
