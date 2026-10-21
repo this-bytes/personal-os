@@ -9581,3 +9581,49 @@ no task and so did not spend the id.**
 | WI-069's code half  | **dispatched to Cog**, and the lead decided the branch becomes reachable and names the id                                                   |
 | WI-031's correction | **dispatched by the peer session** — `task_70be52bdefa9` — and **WI-031 is one merge away**                                                 |
 | WI-074              | **Probe's fix is in `main`** (`31a38e7`) — the teardown can no longer be the reason a green suite is reported failed                        |
+
+## The gates on the head that was not landed, and two things the record did not have — 2026-10-21 22:38
+
+**The tree this session gated, and the head it lands.** Four gates in the main
+checkout on `b5f873c`: `typecheck` 0, `test` 0 (contracts 28 and the rest of
+the workspaces), `format:check` 0, `build` 0. **Green is a property of the head,
+and this head is green** — so the three commits the lane had made and not yet
+pushed (`31a38e7`, Probe's WI-074 fix; `4f19166`, the merge of WI-078's anchor
+fix; `b5f873c`, the ledger's corrections) are landed with it.
+
+**And the anchor was read again from the file after the merge:**
+`CONTRACTS.md:178` now reads `([Error envelope](#error-envelope))` — **the slug
+the file's own other reference at `:618` uses** — and the heading it points at
+is `### Error envelope` at `:1414`. One word, and it resolves.
+
+**And a rule the watchdog's last reading produced.** WI-074's task
+`task_289ede939140` stayed `running` for **75 minutes** — thirty over the
+trigger — **while its work landed** (`31a38e7`, 22:23). Probe's chat was silent
+from 21:48 and the session's status was `started`, so **two of the three cancel
+conditions fail and nothing was cancelled.** But the stronger signal was the
+file tree: `verifyStack.test.ts` was written at **22:04:10** and
+`stackCleanup.test.ts` at **22:04:19** — twenty minutes before the check.
+**A bot that works in files need not post to its chat: a chat's silence is not
+a stall, and the file's mtime is the stronger signal.** A watchdog that read
+only the chat would have called live work dead, and the stall that cost eleven
+minutes of live work is the precedent for why the three conditions exist.
+
+**And the group channel is not being reached.** The floor report went out as
+`chief-status-2026-10-21-2226` → **`task_aa04a69fe83e`**, batch
+`batch_70e1ddc4553b` — **durably accepted, and queued.** The group's discussion
+tasks sit in the same table as the bots' tasks, and the queue measured **24
+deep with 2 running** under `MAX_RUNNING = 2`. **The group chat's last message
+is 20:45:07 — 110 minutes of silence while the work continued in the ledger and
+the tasks.** A queued report is a letter; **the record that is true is the
+ledger.** That is the same rule the request ids obey, and it is worth saying
+once in the ledger and not only in a chat nobody can reach.
+
+**And the last of my own misreadings, recorded because the rule is the point.**
+The ledger's WI-081 row names the request id
+`wi-081-published-note-bound-gate-2026-10-21`. **That id was never in the
+dispatcher's state** — WI-081's task was filed under WI-078's id, inside
+WI-078's batch. The row was read and the state was measured, and the two
+disagreed. **The dispatcher's own state is the truth about what was dispatched;
+the ledger is the truth about what was decided.** A lead that reads the ledger
+where it should read the state inherits the lie, and the only defence is
+measuring the thing the record is about.
