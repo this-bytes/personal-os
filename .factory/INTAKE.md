@@ -337,7 +337,7 @@ second dispatch.
 | `wi-025-verify-adr`                                        | WI-025 — verify the direction answer in ADR 0007                     | Probe  | `task_2b5c9020bf00` | **done** at 09:48 — **not verified**: three defects (a pointer, a figure the ADR should not carry, and the count of travelling rules). The record pass is with Wren; the re-verification is owed after it                                                                                                                                                                                                                                                                                                                                                                                                                    |
 | `wi-012-verify-fixed-tree-2026-10-21`                      | WI-012 — the memory guard, the fixed tree verified                   | Probe  | `task_d9cfcc0b665f` | **done** at 09:45 — **all eight criteria met; WI-012 is accepted**                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
 | `wi-010-return-d1-d5-2026-10-21`                           | WI-010 — the direction document, returned for repair                 | Vision | `task_900cda1c2202` | **cancelled** at 10:40 by Chief, before it started, so that one finding could be added — re-dispatched as `wi-010-return-d1-d6-2026-10-21`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
-| `wi-010-return-d1-d6-2026-10-21`                           | WI-010 — the same work, D1 to D6                                     | Vision | `task_9107d7d623d6` | **queued** — **the live dispatch on WI-010**                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
+| `wi-010-return-d1-d6-2026-10-21`                           | WI-010 — the same work, D1 to D6                                     | Vision | `task_9107d7d623d6` | **done** — D1 to D6 repaired and committed at `e560165`; the verification is owed, and it is upstream of WI-024's build                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
 | `wi-008-close-reply-classification-2026-10-21`             | WI-008 — the classification of `closeReply`                          | Cog    | `task_1404e5875644` | **done** — the classification is in the table and criterion 2 is met                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
 | `wi-031-contract-2026-10-21`                               | WI-031 — the contract half, the route that closes a turn             | Wren   | `task_8ef054ed68d0` | **queued**                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
 | `wi-031-implementation-2026-10-21`                         | WI-031 — the implementation, the same route                          | Cog    | `task_a22eeda307db` | **queued**                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
@@ -4949,3 +4949,55 @@ accepted by the factory.** That is the honest state of it.
 **One commit is ahead of the remote, and it is this record.** The tree that was
 pushed is the tree that was verified; adding a record of the push makes it a
 different tree. **`main` waits for the owner's next word.**
+
+## The landing page's premise is settled, and the rule it was read from — 2026-10-21 15:00
+
+**Vision's return on WI-010 found a defect in WI-024's criterion 5, and the
+defect is the lead's to settle.** The repair of the direction document landed
+at `e560165` (D1 to D6), and it changed the rule the build follows: the rule
+now carries its declared exception, so the **Needs-you rail carries decisions
+in the orientation room** (`prototypes/DIRECTION.md:45-48`), the rail is the
+decision surface (`:58-66`), and the owner's W-1 is satisfied by **one rail on
+the landing screen** (`:83-86`).
+
+**The ruling.** The root route is the **Map**. The Needs-you rail sits on it
+and carries the decision controls — Approve and Reject
+(`apps/web/src/components/WaitingList.tsx:274-284`) — with acceptance staying
+on the factory board, on the card, at
+`apps/web/src/components/TaskBoard.tsx:315-318`, reached by a link that opens
+the exact card. **The landing page does not move into the execution room, and
+the decision list does not move with it.**
+
+**Why this is the lead's call and not a new decision.** The owner chose
+**D — Forge** at 06:01, from a prototype whose front door is the map
+(`prototypes/README.md:24`: `d-forge/index.html` is **home (the map)**). The
+rule is the factory's instrument for settling the boundary Forge left open, so
+where the rule and the prototype disagree the rule yields and the exception is
+written into the rule — rather than the prototype being quietly redrawn.
+
+**The flat rule was quoted in three places, and two of them applied it wrongly.
+That is the cause, not the symptom.**
+
+| Where                                        | What it said                                       | Now                                                                            |
+| -------------------------------------------- | -------------------------------------------------- | ------------------------------------------------------------------------------ |
+| `prototypes/DIRECTION.md:45-48`              | the rule, as repaired                              | the rule, with the exception in it                                             |
+| `docs/decisions/0007-*.md:157-158`           | the rule quoted without its exception              | re-synced by the lead and dated; **the decision did not change**               |
+| `.factory/work/WI-024.md` (criterion 5)      | the landing page moves to the execution room       | corrected: the root is the Map, and the rail decides in place                  |
+| `.factory/work/WI-040.md:24-29` and `:31-36` | the same quote, and the same landing-page sentence | corrected; the item is not dispatched, so its brief carries the corrected rule |
+
+**One of the two that applied it wrongly is a live build, and that is why
+this was worth doing at this hour.** WI-024 is queued and has not run, and
+its first deliverable is the six briefs — so the correction lands **before**
+the briefs are written. A premise that says the opposite of the rule would
+otherwise have been written into six briefs, and the briefs are what the build
+is made of.
+
+**What was not done.** No task was cancelled or re-dispatched: the correction
+is in the item, and the item is the spec a brief is written from. WI-024's
+dispatch (`task_5a09991ca5a1`) belongs to the other Chief session and is
+untouched. The ADR was re-synced by the lead rather than routed to Wren,
+because nothing held the file and Wren's lane is deep; the edit is one quoted
+rule, the decision behind it is untouched, and Probe verifies it as it
+verifies any lead's edit. **Vision's work was not accepted by this session**:
+WI-010's verifier is Probe, and the acceptance is Chief's to make on Probe's
+verdict, not on a report.
