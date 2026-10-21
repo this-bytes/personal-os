@@ -4481,3 +4481,16 @@ inherited from `main` and unmodified**. **So the two ranges do not overlap**:
 WI-064 is theirs, WI-065 and WI-066 are this session's, and nothing has to be
 written over. The rename bought the space that the other session's own item
 needed.
+
+**One thing raised and not fixed, because it is not this session's.**
+`.factory/work/WI-067.md` — the strategy session's — is **not
+prettier-clean**, so `npm run format:check` fails on it, and the pre-push
+hook runs that check. **It is untracked at the time of writing, so the
+committed tree is clean and the pipeline is unaffected**; the moment it is
+committed the formatting gate goes red on the whole run, and the failure will
+read as the repository's rather than as one file. **This session did not touch
+it**: the file is not this session's, a fix found along the way belongs to its
+own item, and a bot that needs a file owned by someone else asks Chief rather
+than taking it. **The group post naming it was refused twice** — the round is
+mid-discussion — so it is recorded here, and it goes to the group when the
+round opens.
