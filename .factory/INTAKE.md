@@ -6469,3 +6469,52 @@ file is legal on Linux and refused on Windows, so the only place this failure ca
 appear is a Windows checkout. `Build and test` completed green on `5e0c30a` and on
 `9a8f243` with this same tree. **A green CI is not a green local gate on this
 repository**, and the stack test's teardown is the one place the two disagree.
+
+## The fifth push — and this session did not make it
+
+**`origin/main` is at `cf94c92`, and the peer session pushed it.** This session
+did not push `main`, and will not without the owner's word.
+
+**The platform's verdict on that tree, read from the run itself:** CI **success
+on all four jobs** — Lint the workflows, Dependency audit, Build and test, Build
+and run the stack — and **CodeQL success**, at `cf94c92`.
+
+**This session's work is on it:**
+
+| Commit    | What                                                               |
+| --------- | ------------------------------------------------------------------ |
+| `46d494b` | the watchdog's discriminator, and what a schedule turn can survive |
+| `bd3f24b` | the ledger's record of the 462-minute stall                        |
+| `59b25f2` | the removal of two lines of garbage this session wrote             |
+
+**And the ledger was stale about the push.** Its last recorded push was the
+fourth — 16:20, `8dcf69d`, the owner's word. **The pushes of `5e0c30a` and
+`cf94c92` were not recorded as pushes at all.** A push that the ledger does not
+carry will be read as _"main was never pushed past `8dcf69d`"_, and the next
+session will re-derive it from the platform. **It is recorded here.**
+
+**`main` is one commit ahead of the remote**, at `e55c86d` — _"Record the ninth
+want: a published status is a claim too, and something checks it"_, which
+touches `docs/strategy.md` only and is prettier-clean. **It is not pushed, and
+this session will not push it without the owner's word.**
+
+**And the garbage is in the pushed history, not just in the working tree.** Two
+commits — `2f8ed30` and `5c1fa22` — carry two lines of decimal byte dump that
+this session wrote into the ledger by passing a byte array to
+`File.AppendAllText`. **The tip is clean** (`59b25f2` removed the lines, and
+`git grep` finds nothing at `cf94c92`), but the two commits are on the remote,
+so the lines are in its history. **Removing them means a rewrite and a
+force-push, while the peer session is committing to the same branch** — that is
+the owner's decision, not this session's, and it is left for the owner rather
+than taken.
+
+**One more fact, for the record and because it changes what the red means:**
+this session's local gate is **green on the tip** — `typecheck` 0, `test` 0
+(**241, 52, 31, 16 and 28 tests across five workspaces, all passing**),
+`format:check` 0, `build` 0 — while the peer session measured
+`apps/server/src/__tests__/verifyStack.test.ts` **failing at 17:45** on
+`5e0c30a`, with 230 tests passing and the file still failing. **The same test
+file, the same suite, green here and red there, minutes apart.** That is
+**WI-074** — the stack test's cleanup can outrun its own budget — and it is the
+second reproduction today. **The green suite is not proof that the stack test
+is fixed**, and a check that passes once is not a check.
