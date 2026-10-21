@@ -1,5 +1,38 @@
 /** Small shared helpers used by the built-in adapters. */
 
+/**
+ * Build a minimal environment for a supervised child process.
+ *
+ * Server secrets are never inherited; only an explicit allow-list plus the
+ * values the owner configured. The CLI adapter and the MCP adapter both start
+ * a child process, so the rule lives in one place — a second copy is a second
+ * chance to leak.
+ */
+export function buildSanitizedEnv(extra: Record<string, string>): NodeJS.ProcessEnv {
+  const keep = [
+    'PATH',
+    'HOME',
+    'USERPROFILE',
+    'TMPDIR',
+    'TEMP',
+    'TMP',
+    'LANG',
+    'LC_ALL',
+    'SystemRoot',
+    'ComSpec',
+    'PATHEXT',
+  ];
+  const env: NodeJS.ProcessEnv = {};
+  for (const key of keep) {
+    const value = process.env[key];
+    if (value !== undefined) env[key] = value;
+  }
+  for (const [key, value] of Object.entries(extra)) {
+    env[key] = value;
+  }
+  return env;
+}
+
 /** Read a dotted path out of an unknown JSON value: `a.b.0.c`. */
 export function getByPath(source: unknown, path: string): unknown {
   if (!path) return source;

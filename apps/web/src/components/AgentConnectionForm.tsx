@@ -70,6 +70,12 @@ interface FormState {
   delayMs: string;
   apiKey: string;
   authToken: string;
+  mcpTransport: 'stdio' | 'http';
+  mcpUrl: string;
+  mcpToolName: string;
+  mcpArgumentTemplate: string;
+  mcpAllowedTools: string;
+  mcpProtocolVersion: string;
 }
 
 const EMPTY: FormState = {
@@ -106,6 +112,12 @@ const EMPTY: FormState = {
   delayMs: '0',
   apiKey: '',
   authToken: '',
+  mcpTransport: 'stdio',
+  mcpUrl: '',
+  mcpToolName: '',
+  mcpArgumentTemplate: '{"message":"{{message}}"}',
+  mcpAllowedTools: '',
+  mcpProtocolVersion: '2025-06-18',
 };
 
 /** One entry per line. */
@@ -196,6 +208,23 @@ export function buildAdapterConfig(type: AdapterType, form: FormState): Record<s
         apiKeyScheme: form.apiKeyScheme.trim() || 'Bearer',
         timeoutSeconds: toNumber(form.timeoutSeconds, 600),
       };
+    case 'mcp':
+      return {
+        transport: form.mcpTransport,
+        ...(form.mcpTransport === 'stdio'
+          ? {
+              command: form.command.trim(),
+              args: parseLines(form.args),
+              ...(form.cwd.trim() ? { cwd: form.cwd.trim() } : {}),
+              env: parseKeyValues(form.env),
+            }
+          : { url: form.mcpUrl.trim() }),
+        protocolVersion: form.mcpProtocolVersion.trim() || '2025-06-18',
+        toolName: form.mcpToolName.trim(),
+        argumentTemplate: form.mcpArgumentTemplate.trim() || '{"message":"{{message}}"}',
+        allowedTools: parseLines(form.mcpAllowedTools),
+        timeoutSeconds: toNumber(form.timeoutSeconds, 600),
+      };
     case 'echo':
     default:
       return {
@@ -208,7 +237,7 @@ export function buildAdapterConfig(type: AdapterType, form: FormState): Record<s
 /** Which credential field a given adapter type accepts. */
 function secretFieldFor(type: AdapterType): 'apiKey' | 'authToken' | null {
   if (type === 'model') return 'apiKey';
-  if (type === 'a2a' || type === 'http') return 'authToken';
+  if (type === 'a2a' || type === 'http' || type === 'mcp') return 'authToken';
   return null;
 }
 
@@ -294,6 +323,20 @@ export function AgentConnectionForm({
       if (form.adapterType === 'model' && !form.model.trim()) {
         setLocalError('A model name is required for this adapter.');
         return;
+      }
+      if (form.adapterType === 'mcp') {
+        if (form.mcpTransport === 'stdio' && !form.command.trim()) {
+          setLocalError('A command is required to start the MCP server.');
+          return;
+        }
+        if (form.mcpTransport === 'http' && !form.mcpUrl.trim()) {
+          setLocalError('A URL is required to reach the MCP server.');
+          return;
+        }
+        if (!form.mcpToolName.trim()) {
+          setLocalError('A tool name is required: a turn calls one tool.');
+          return;
+        }
       }
       config = buildAdapterConfig(form.adapterType, form);
     }
@@ -528,6 +571,117 @@ export function AgentConnectionForm({
                     </div>
                   ) : null}
                 </>
+              ) : null}
+
+              {form.adapterType === 'mcp' ? (
+                <div className="space-y-4">
+                  <div className="grid gap-4 sm:grid-cols-2">
+                    <Field label="Transport" htmlFor="mcp-transport">
+                      <Select
+                        id="mcp-transport"
+                        value={form.mcpTransport}
+                        onChange={(event) =>
+                          set('mcpTransport', event.target.value as 'stdio' | 'http')
+                        }
+                      >
+                        <option value="stdio">stdio (a command the server starts)</option>
+                        <option value="http">http (a URL the server answers on)</option>
+                      </Select>
+                    </Field>
+                    <Field label="Tool a turn calls" htmlFor="mcp-tool-name">
+                      <Input
+                        id="mcp-tool-name"
+                        value={form.mcpToolName}
+                        onChange={(event) => set('mcpToolName', event.target.value)}
+                        placeholder="message_bot"
+                      />
+                    </Field>
+                  </div>
+
+                  {form.mcpTransport === 'http' ? (
+                    <Field label="Server URL" htmlFor="mcp-url">
+                      <Input
+                        id="mcp-url"
+                        value={form.mcpUrl}
+                        onChange={(event) => set('mcpUrl', event.target.value)}
+                        placeholder="https://mcp.example.com/mcp"
+                      />
+                    </Field>
+                  ) : (
+                    <>
+                      <Field label="Command" htmlFor="mcp-command">
+                        <Input
+                          id="mcp-command"
+                          value={form.command}
+                          onChange={(event) => set('command', event.target.value)}
+                          placeholder="npx"
+                        />
+                      </Field>
+                      <Field label="Arguments" htmlFor="mcp-args" hint="One argument per line.">
+                        <Input
+                          id="mcp-args"
+                          value={form.args}
+                          onChange={(event) => set('args', event.target.value)}
+                          placeholder="-y&#10;@modelcontextprotocol/server-example"
+                        />
+                      </Field>
+                      <Field
+                        label="Environment"
+                        htmlFor="mcp-env"
+                        hint="KEY=VALUE entries, one per line. The server's own environment is not inherited."
+                      >
+                        <Input
+                          id="mcp-env"
+                          value={form.env}
+                          onChange={(event) => set('env', event.target.value)}
+                        />
+                      </Field>
+                    </>
+                  )}
+
+                  <Field
+                    label="Argument template"
+                    htmlFor="mcp-argument-template"
+                    hint="JSON. {{message}} is the owner's message, {{context}} the conversation so far."
+                  >
+                    <Input
+                      id="mcp-argument-template"
+                      value={form.mcpArgumentTemplate}
+                      onChange={(event) => set('mcpArgumentTemplate', event.target.value)}
+                    />
+                  </Field>
+
+                  <Field
+                    label="Allowed tools"
+                    htmlFor="mcp-allowed-tools"
+                    hint="One per line. Empty means the tool named above, and nothing else."
+                  >
+                    <Input
+                      id="mcp-allowed-tools"
+                      value={form.mcpAllowedTools}
+                      onChange={(event) => set('mcpAllowedTools', event.target.value)}
+                    />
+                  </Field>
+
+                  <div className="grid gap-4 sm:grid-cols-2">
+                    <Field label="Protocol version" htmlFor="mcp-protocol-version">
+                      <Input
+                        id="mcp-protocol-version"
+                        value={form.mcpProtocolVersion}
+                        onChange={(event) => set('mcpProtocolVersion', event.target.value)}
+                      />
+                    </Field>
+                    <Field label="Timeout (seconds)" htmlFor="mcp-timeout">
+                      <Input
+                        id="mcp-timeout"
+                        type="number"
+                        min={1}
+                        value={form.timeoutSeconds}
+                        onChange={(event) => set('timeoutSeconds', event.target.value)}
+                      />
+                    </Field>
+                  </div>
+                </div>
               ) : null}
 
               {form.adapterType === 'a2a' ? (

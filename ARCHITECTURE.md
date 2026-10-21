@@ -94,6 +94,15 @@ Modules are separated by concern inside one process — `conversations`, `agents
 them is a service in the microservice sense. They are plain modules over one
 database handle.
 
+**The modules belong to five domains, and the map is checked.** Interaction
+(conversations, executions), Work (factory, approvals), Resources (resources,
+automations), Runtime (agents, mcp) and Substrate (auth, workspaces, events,
+audit, capabilities). A domain owns its tables, its contracts and its tests; a
+domain may use Substrate; the shared capability API is the one place that reads
+across. The map is in [docs/domains.md](docs/domains.md), the machine-readable
+truth is `apps/server/src/domains.ts`, and a test fails the build when a module
+reaches into another domain without a declared crossing. It is ADR 0008.
+
 ### The worker (`apps/worker`)
 
 Claims jobs from the queue, runs adapters, writes results back. Three job types:

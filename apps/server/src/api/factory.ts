@@ -17,6 +17,11 @@ const createTaskSchema = z.object({
   description: z.string().default(''),
   assigneeId: z.string().optional(),
   acceptanceCriteria: z.array(z.string()).default([]),
+  /**
+   * The external orchestrator's own identifier for this work — the work item
+   * in the repository, when this task carries one.
+   */
+  externalRef: z.string().optional(),
 });
 
 const updateTaskSchema = z.object({
