@@ -4,6 +4,7 @@ import {
   type AutomationRun,
   type ContentPart,
   type Conversation,
+  type EffectiveAutonomyPolicy,
   type Evidence,
   type FactoryTask,
   type Goal,
@@ -16,13 +17,16 @@ import {
   type Workspace,
 } from '@personal-os/contracts';
 import { errors } from '../../lib/errors.js';
+import type { Database } from '../../db/client.js';
 import type { AuthenticatedUser } from '../auth/service.js';
 import type { ConversationsService, PostMessageResult } from '../conversations/service.js';
 import type { AgentService } from '../agents/service.js';
 import type { FactoryService } from '../factory/service.js';
 import type { ResourceService } from '../resources/service.js';
 import type { AutomationsService } from '../automations/service.js';
+import type { ApprovalsService } from '../approvals/service.js';
 import type { WorkspaceService } from '../workspaces/service.js';
+import { loadEffectiveAutonomyPolicy } from '../autonomy/service.js';
 
 /**
  * The shared capability API.
@@ -106,21 +110,53 @@ export interface CapabilitiesService {
   automationInspect(id: string): { automation: Automation; runs: AutomationRun[] };
 
   goalList(workspaceId: string): Goal[];
+
+  /**
+   * The policy in force for a scope.
+   *
+   * The strictest of the workspace's policy, the goal's policy and the
+   * conversation's own safeguards. Every enforcement point consumes this one
+   * result rather than reading a policy row itself.
+   */
+  effectiveAutonomyPolicy(scope: {
+    workspaceId: string;
+    goalId?: string;
+    conversationId?: string;
+  }): EffectiveAutonomyPolicy;
+
+  /**
+   * The owner's decision on an action, and a request for one when there is
+   * none.
+   *
+   * An action the policy wants the owner to approve may not be taken until
+   * the owner has decided. The request is raised in the same shape as the one
+   * an agent raises for itself, so the owner decides it the same way.
+   */
+  requestActionApproval(input: {
+    workspaceId: string;
+    agentConnectionId: string;
+    action: string;
+    summary: string;
+    details: unknown;
+  }): { state: 'granted' | 'refused' | 'pending'; approvalId: string | null };
 }
 
 export interface CapabilitiesServiceOptions {
+  db: Database;
   workspaces: WorkspaceService;
   conversations: ConversationsService;
   agents: AgentService;
   factory: FactoryService;
   resources: ResourceService;
   automations: AutomationsService;
+  approvals: ApprovalsService;
 }
 
 export function createCapabilitiesService(
   options: CapabilitiesServiceOptions,
 ): CapabilitiesService {
-  const { workspaces, conversations, agents, factory, resources, automations } = options;
+  const { db, workspaces, conversations, agents, factory, resources, automations, approvals } =
+    options;
 
   return {
     workspaceList(): Workspace[] {
@@ -227,6 +263,43 @@ export function createCapabilitiesService(
 
     goalList(workspaceId): Goal[] {
       return factory.listGoals(workspaceId);
+    },
+
+    effectiveAutonomyPolicy(scope): EffectiveAutonomyPolicy {
+      return loadEffectiveAutonomyPolicy(db, scope);
+    },
+
+    requestActionApproval(input): {
+      state: 'granted' | 'refused' | 'pending';
+      approvalId: string | null;
+    } {
+      // The approvals for this action. An approval that carries no action is
+      // not about this one, so it does not decide it.
+      const forAction = approvals.list(input.workspaceId).filter((approval) => {
+        if (approval.agentConnectionId !== input.agentConnectionId) return false;
+        const details = approval.details as { action?: string } | null;
+        return details?.action === input.action;
+      });
+
+      const decided = forAction.find((approval) => approval.status !== 'pending');
+      if (decided) {
+        return {
+          state: decided.status === 'approved' ? 'granted' : 'refused',
+          approvalId: decided.id,
+        };
+      }
+
+      const pending = forAction.find((approval) => approval.status === 'pending');
+      if (pending) return { state: 'pending', approvalId: pending.id };
+
+      const requested = approvals.request({
+        workspaceId: input.workspaceId,
+        agentConnectionId: input.agentConnectionId,
+        summary: input.summary,
+        details: input.details,
+        requestedBy: input.agentConnectionId,
+      });
+      return { state: 'pending', approvalId: requested.id };
     },
   };
 }
