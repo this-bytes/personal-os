@@ -634,7 +634,7 @@ do today.
 
 This entry is the contract for **WI-012**, and the code implements it — as of
 `e764e6a`. `memoryScopeSchema` carries `'agent'` at
-`packages/contracts/src/resource.ts:102`, the spec's `agentConnectionId` at `:112`,
+`packages/contracts/src/resource.ts:138`, the spec's `agentConnectionId` at `:148`,
 and `listAgentMemories` at
 `apps/server/src/modules/resources/agent-memory.ts:29` is what puts the agent's
 memories in the turn context.
@@ -643,9 +643,9 @@ memories in the turn context.
 owner's ruling of 2026-10-21 at 07:07 was that an agent's own memory is private
 to it, on reads as well as on writes, and the sentence above now says so. The rule
 is one call — `assertOwnMemory` at
-`apps/server/src/modules/mcp/server.ts:147`, with `memoryOwner` at `:113` — and it
-answers the same way for the three resource tools: `resource.create` at `:361`,
-`resource.update` at `:422` and `resource.get` at `:392`. A memory's owner is
+`apps/server/src/modules/mcp/server.ts:153`, with `memoryOwner` at `:119` — and it
+answers the same way for the three resource tools: `resource.create` at `:386`,
+`resource.update` at `:447` and `resource.get` at `:417`. A memory's owner is
 `memoryOwner`'s answer, and an agent that is not that owner is refused with
 `forbidden` and the message "An agent may only reach its own memory."
 
@@ -696,6 +696,8 @@ three resource tools — `resource.create`, `resource.update` and `resource.get`
 reading a resource is not a way around it. A read that names another agent's
 agent-scoped memory is refused with `forbidden` and the message "An agent may
 only reach its own memory." The owner's own access is not touched by any of this.
+
+**The read side is WI-028, and the code implements it — as of `622812c`.**
 
 An agent token is **MCP-only**. It is accepted by `/mcp` and rejected by the owner's
 HTTP API, including `/api/auth/owner-token`. The owner HTTP API requires a human
