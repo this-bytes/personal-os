@@ -28,14 +28,14 @@ numbered they move to `.factory/work/`.
 
 ## The briefs
 
-| Brief | Piece | Lands | Owner |
-| ----- | ----- | ----- | ----- |
-| [01 — Rooms and surfaces](01-rooms-and-surfaces.md) | The room switch and the three surfaces | 2 | Cog |
-| [02 — The material](02-material.md) | The palette pass | 1 | Cog |
-| [03 — The execution trace](03-execution-trace.md) | The Work room's companion gutter | 4 | Cog |
-| [04 — The dashboards screen](04-dashboards.md) | The third surface, Forge-only | 5 | Cog |
-| [05 — The Needs-you rail](05-needs-you-rail.md) | WI-004's control, wrapped | 3 | Cog |
-| [06 — The constellation and the agent hues](06-constellation-and-hues.md) | The hardest piece, and the paint it wears | 6 | Cog |
+| Brief                                                                     | Piece                                     | Lands | Owner |
+| ------------------------------------------------------------------------- | ----------------------------------------- | ----- | ----- |
+| [01 — Rooms and surfaces](01-rooms-and-surfaces.md)                       | The room switch and the three surfaces    | 2     | Cog   |
+| [02 — The material](02-material.md)                                       | The palette pass                          | 1     | Cog   |
+| [03 — The execution trace](03-execution-trace.md)                         | The Work room's companion gutter          | 4     | Cog   |
+| [04 — The dashboards screen](04-dashboards.md)                            | The third surface, Forge-only             | 5     | Cog   |
+| [05 — The Needs-you rail](05-needs-you-rail.md)                           | WI-004's control, wrapped                 | 3     | Cog   |
+| [06 — The constellation and the agent hues](06-constellation-and-hues.md) | The hardest piece, and the paint it wears | 6     | Cog   |
 
 **The numbering is the item's piece order; the landing order is a different axis.**
 The rail is piece 5 in the item and lands third, because it is waiting for a room to
@@ -49,6 +49,20 @@ the cut.
 **One branch, one merge.** The six briefs are six commits on one branch. The merge to
 `main` is one visible change, which is what the owner asked for.
 
+## The rule
+
+Every brief below is built against one rule, quoted here exactly as
+[`prototypes/DIRECTION.md`](../DIRECTION.md) states it:
+
+> _If it is a picture of the system, it is in the orientation room. If it is a place where work is inspected or decided, it is in the execution room — with two declared exceptions, the Needs-you rail and the constellation, which carry decisions in the orientation room because a decision is taken where the list is._
+
+**The two declared exceptions are brief 05 and brief 06.** The rail carries the
+approvals' decision controls in place, and the constellation carries the connect
+decision in place. The second exception is the lead's ruling of 2026-10-22: the
+constellation **is** the agent list, so a connect control on it is a decision
+taken where the list is, and moving it to the execution room would re-create the
+defect WI-004 was returned for.
+
 ## The cost, measured from the tree
 
 `git grep -c -F '<token>' d343300 -- 'apps/web/src' 'packages/ui/src'`, and
@@ -56,15 +70,15 @@ the cut.
 for the occurrences. Lines and occurrences are different numbers and the document's
 own headline figure conflated them; these are the two, apart.
 
-| Token | Lines | Files | Occurrences | Under Forge |
-| ----- | ----- | ----- | ----------- | ----------- |
-| `slate-` | 217 | 34 | 311 | The neutral scale. Re-hued in place — the occurrences do not move. |
-| `indigo-` | 34 | 14 | 46 | Becomes violet (`--accent`). One bulk rename of one token family. |
-| `amber-` | 10 | 6 | 20 | The only semantic collision. See brief 02. |
-| `red-` | 26 | 19 | 60 | Maps to `--err`. Survives. |
-| `emerald-` | 9 | 7 | 16 | Maps to `--ok`. Survives. |
-| `violet-` | 0 | 0 | 0 | New. |
-| `cyan-` | 0 | 0 | 0 | New. |
+| Token      | Lines | Files | Occurrences | Under Forge                                                        |
+| ---------- | ----- | ----- | ----------- | ------------------------------------------------------------------ |
+| `slate-`   | 217   | 34    | 311         | The neutral scale. Re-hued in place — the occurrences do not move. |
+| `indigo-`  | 34    | 14    | 46          | Becomes violet (`--accent`). One bulk rename of one token family.  |
+| `amber-`   | 10    | 6     | 20          | The only semantic collision. See brief 02.                         |
+| `red-`     | 26    | 19    | 60          | Maps to `--err`. Survives.                                         |
+| `emerald-` | 9     | 7     | 16          | Maps to `--ok`. Survives.                                          |
+| `violet-`  | 0     | 0     | 0           | New.                                                               |
+| `cyan-`    | 0     | 0     | 0           | New.                                                               |
 
 The document measured the same palette at `3479c31` and found 216 lines and 310
 occurrences of `slate-`; the tree has moved by one line since, which is why the
