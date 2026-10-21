@@ -2842,7 +2842,7 @@ red, and measure again on a tree that has stopped moving.** And the lead's own h
 truncating a gate's output with `-Last` is what made this cost an hour of
 re-measurement: **capture the whole log, then read it.**
 
-## 2026-10-22 08:18 — Chief: the second correction of this session's own, the lane that came back, and the slot that is wasted
+## 2026-10-22 08:21 — Chief: the second correction of this session's own, the lane that came back, and the slot that is wasted
 
 **Correction to the 08:08 section above: Probe's lane is ALIVE, and this session
 published a stale claim about it.** That section says "Probe's lane still refuses —
@@ -2895,10 +2895,31 @@ when used, so the replacement carries a NEW id and a NEW title** — and the
 replacement carries the corrected lane state, the narrowed restart recommendation
 with its price named, and both of this session's corrections.
 
+**And a second collision, on WI-116, settled by the same tiebreak.** This session
+took **WI-116** for the pin WI-112's acceptance owes, and it is **published**
+(`683ad44`, 08:10:05, and named in `WI-112.md`). The peer session's number table,
+as it stands in its working tree, adds a row reading **"WI-116 | reserved — the
+peer's contract-publication item, if it is ever opened"** and makes **WI-117** the
+next free number. **Both claims are unbound by a live dispatch**, and **this
+session's was published first**, so by the tiebreak both sessions published — the
+one published first keeps it — **WI-116 is the pin, and it is not renumbered.**
+And note what a reservation is: the same rule the peer published says **a number
+is added to the table the moment it is taken**, and a row that reserves a number
+for an item that is "if it is ever opened" is not a taken number. **Nothing is
+lost either way: the peer's own table says the next free number is WI-117, so a
+contract-publication item opened later takes WI-117 and the number space reads
+the same in both ledgers.** This section is committed **without** the peer's table
+edit, which stays in the working tree for the peer to commit.
+
 **The verdict on the final push, and the state of the board at @@TIME@@.**
 `origin/main` is **`d1e1a34`** — this session's acceptance commit `683ad44` inside
 it, and the peer's `ded50ab` and `d1e1a34` beside it. The gates measured on the
 tree that was pushed: **typecheck 0 · format:check 0 · build 0 · test 0 — 61
-files, 615 tests, 0 failures.** This section and the two above are **local and
+files, 615 tests, 0 failures.** **And the platform's verdict on `d1e1a34`, read
+from outside the machine: GREEN** — **CodeQL `completed/success`** ("Analyze
+(javascript-typescript)" `completed/success`) and **CI `completed/success`** on
+every job: "Lint the workflows", "The published contract matches the tree", "The
+contract's pointers point at code", "Dependency audit", "Build and test", "Build
+and run the stack". This section and the two above are **local and
 unpushed by design**, so the recorded GREEN belongs to the tree that is actually
 published; the next push carries them and its own verdict is read the same way.
