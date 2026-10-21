@@ -291,7 +291,7 @@ acceptance is reached by a link that opens the exact card. Putting an
 acceptance control on the rail is a separate item, and it needs the owner.
 
 **Forge is a large build for one implementer whose lane held fifteen open
-items at the pinned commit** (WI-003, WI-007, WI-008, WI-017, WI-018, WI-020,
+items at `3479c31`** (WI-003, WI-007, WI-008, WI-017, WI-018, WI-020,
 WI-021, WI-024, WI-027, WI-028, WI-031, WI-032, WI-033, WI-035, WI-040). The
 live count moves as the factory moves, so this is a count at a commit and not a
 standing total. That is the honest cost of this direction and it belongs in the
