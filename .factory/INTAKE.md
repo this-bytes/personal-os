@@ -355,7 +355,7 @@ second dispatch.
 | `wi-039-evidence-contract-2026-10-21`                      | WI-039 — publish the evidence a decision is taken against            | Wren   | `task_dd95fe7df207` | **queued** — **the live dispatch on WI-039**; the contract half of the gap Vision found in the decision control, and it goes before WI-040                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
 | `wi-041-readme-licence-2026-10-21`                         | WI-041 — the README tells the truth about the licence                | Wren   | `task_644f23312ebc` | **queued** — **the live dispatch on WI-041**; the owner's "the licence is deliberately undecided" answer, in one sentence                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
 | `wi-043-manifest-licence-verify-2026-10-21`                | WI-043 — the manifest no longer claims a licence                     | Probe  | `task_9b1b44c1025f` | **queued** — Chief's one-line removal of `"license": "MIT"`, and Probe's verification of it                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
-| `wi-023-owner-token-step-verify-2026-10-21`                | WI-023 — verify the owner-token step in the container job            | Probe  | `task_6437af4f18f0` | **queued** — Chief's own CI change goes to Probe like anyone else's; the whole sequence is proved locally against real Docker, and the item's criteria are met before it is pushed, not after                                                                                                                                                                                                                                                                                                                                                                                                                                |
+| `wi-023-owner-token-step-verify-2026-10-21`                | WI-023 — verify the owner-token step in the container job            | Probe  | `task_6437af4f18f0` | **done** — **all seven criteria met, no defect, nothing owed to Cog.** Probe's matrix: the right token green, a wrong token fails with the 401, no token fails with the 401, and the 401 line cannot be faked because the assert throws. **The acceptance is the other Chief session's**, because this session wrote the implementation                                                                                                                                                                                                                                                                                      |
 | `wi-022-citation-refresh-successor-2026-10-21`             | WI-022 — refresh the waiting list's code citations                   | Wren   | `task_682c73ccbc73` | **queued** — **the live dispatch on WI-022**, a successor: three citations that moved when WI-027's code landed                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
 | `wi-024-forge-adoption-2`                                  | WI-024 — the Forge adoption, a second dispatch under a new id        | Cog    | `task_2963d3be0f41` | **cancelled** at 09:55 — **the live dispatch on WI-024 is unchanged: `wi-024-forge-adoption`, `task_5a09991ca5a1`, still queued.** Dispatched by the other Chief session; it is not re-dispatched from here                                                                                                                                                                                                                                                                                                                                                                                                                  |
 | `peer-group-pointer-2026-10-21`                            | A peer request for Probe to carry a message to the group             | Probe  | `task_4867c6237747` | **cancelled** — it never reached Probe                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
@@ -4051,6 +4051,105 @@ the lead as much as to anyone. So:
 correction was refused at 10:20:55, and now the lead's own dispatch channel
 is refusing while the queue behind it grows. **The factory's constraint is
 not the code and it is not the lead's judgement. It is delivery.**
+
+### WI-023 is verified, and the acceptance is not this session's
+
+**Probe's review of Chief's own CI change is in, and it is a clean pass: all
+seven criteria met, no defect, nothing owed to Cog.** Its matrix is worth
+having on the record, because it is the difference between "the 401 line was
+in the output" and "the 401 could not have come from anywhere else":
+
+| The script's credential                      | Result                                                                        |
+| -------------------------------------------- | ----------------------------------------------------------------------------- |
+| the right token                              | **green** — `ok the owner token is accepted (got 200)`                        |
+| a **wrong** token                            | **fails** — `Assertion failed: the owner token is accepted (got 401)`, exit 1 |
+| no token, and the owner has another password | **fails** — `Assertion failed: the owner can sign in (got 401)`, exit 1       |
+
+**And the 401 line cannot be faked.** The message interpolates the real status
+(`scripts/verify-stack.ts:173`), and the assert helper **throws** (`:90`), so
+the 401 line is the **last** thing the script printed — nothing after it could
+have produced it.
+
+**The gates Probe measured:** `actionlint` → exit 0 · typecheck → exit 0 ·
+format:check → exit 0 · build → exit 0 · **the test suite → exit 0**: server
+219 (22 files), web 52, worker 31, agent-adapters 16, contracts 28 ·
+**the whole container sequence, locally, against real Docker** → the account
+path green, the 401 where it must be, the token path green, the teardown
+clean. **And the shared stack was left alone**: Probe's stack was
+`-p personal-os-probe` on port 4398, and the other stack was still up
+afterwards, untouched.
+
+**And the acceptance is the other Chief session's.** The rule the factory has
+been keeping: **the session that wrote an implementation does not accept it.**
+This session wrote the four steps, so the acceptance goes the other way — the
+same way WI-012's did, and the same way WI-022's and WI-026's went this way
+round. **The item is closed on the evidence and open on the signature.**
+
+### WI-038 — the borrow rule is wired, and the gate is named
+
+**WI-036's record has landed, so WI-038's blocker is gone** — and the record
+says what it was written for. Its `approvedSet` carries the note: _"This is
+what WI-038's gate compares the lockfile against: a licence outside this set,
+or a change inside it, fails the build."_ **The ground truth was built for the
+gate**, with 494 entries each carrying the file its licence was read from, and
+the 11 licences this project accepts.
+
+**Chief's half is written and committed** — branch `wi/038-borrow-rule-gate`,
+worktree `G:\code\personal-os-worktrees\038-borrow-rule-gate`, commit
+`a9592a4`: the step in `.github/workflows/ci.yml` in the `Dependency audit`
+job, immediately after the vulnerability audit, because it is the same concern
+over the same dependency set and the same install; and the entry in the root
+`package.json` beside the other `verify:` ones. `prettier --check` → exit 0,
+`actionlint` → exit 0.
+
+**The gate script is Probe's file, and it is not written.**
+`scripts/verify-*.ts` is Probe's by the ownership table, and the three scripts
+already there — `verify-build.ts`, `verify-bundle-size.ts`,
+`verify-stack.ts` — are standing policy checks rather than tests of a change.
+**The licence gate is one of those and is written in Verify.** So the
+specification of it is in WI-038's file, in enough detail to be written
+without asking anything:
+
+- **What the record gives:** `packages` — 494 entries with `lockPath`,
+  `name`, `version`, `spdxId` and `source.kind` saying which file each
+  licence was read from — and `approvedSet.licences`, the 11 accepted, each
+  with its reason.
+- **The four comparisons:** the set (every declared licence must be in the
+  approved set, and an SPDX expression passes only if **every** member is); the
+  change (where the record's `source.kind` is `package-json-field` the two
+  are directly comparable, and the failure names the dependency and the
+  licence it changed **from and to**; for a licence _file_ or a _published
+  identifier_ the comparison is the **version**, because a gate cannot re-read
+  a licence file's meaning); the arrival and the departure (a package the
+  record does not have, or one the lockfile no longer has); and **the
+  first-party six, skipped on purpose** — the record carries the six
+  workspaces as `spdxId: "first-party (no licence yet)"`, the owner said
+  "private for now — no LICENSE yet", and **the gate is about what this
+  repository borrows**.
+- **Three exit codes:** 0 the lockfile and the record agree; 1 a licence
+  problem; **2 the gate could not read its ground truth — a broken gate must
+  never look like a clean one.**
+- **`--record` and `--lockfile` options**, so a check can point the gate at a
+  record with one licence deliberately changed and watch it fail. **Criterion
+  4 is that proof, and it is why the options exist.**
+- **What it prints:** the number of packages compared, how many licences were
+  read from which kind of file, the approved set, and every failure with the
+  dependency named. **Criterion 5 is a reader of the Actions tab seeing that.**
+
+**The branch is not pushed until the script is in it.** A branch that is red
+is a branch that waits a second round, and this one can be green.
+
+### WI-067 — one question left, and it has a one-word answer
+
+**The other Chief session's record says WI-067 is "opened, numbered and
+dispatched", and nothing on disk says so.** The two rows in this ledger still
+read **NOT DELIVERED** — this session's own record, written when the runtime
+refused four times — **no task id for WI-067 appears anywhere in the
+ledger**, and WI-067's own file carries no `Dispatched` line. **One of those
+two records is wrong, and the difference is a second worker on a live file.**
+So the group is asked the only question that matters here: **is WI-067 in a
+queue?** If it is, leave it; if it is not, both briefs are in
+`.factory/work/WI-067.md` and the request ids are reserved.
 
 ## The pipeline caught the contract going stale — 2026-10-21 11:50
 
