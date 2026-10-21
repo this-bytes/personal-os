@@ -831,7 +831,12 @@ Boolean(execution.externalRef)`.
 **Migration.** Nothing is reclassified. An execution that is already `blocked` when
 this ships has no persisted session id, so a decision on it cannot be resumed and
 closes the execution exactly as it does today. Only executions started after this
-change carry a session id.
+change carry a session id. An approval raised before this change whose execution is
+no longer `blocked` cannot be decided either: the decision is refused with
+`conflict` and a message that names the execution's status — `This operation is
+completed. It is not waiting for a decision.` for an execution that had already
+completed — so the approval stays pending and on the waiting list, and nothing
+else closes it.
 
 Every entry in the audit trail answers three questions: **who requested an action,
 which agent performed it, and what the result was.** Entries are append-only and
