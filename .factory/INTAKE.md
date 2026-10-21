@@ -5677,3 +5677,26 @@ all**, so the refusal's shape is published nowhere, and publishing it is a
 contract change, and a contract change is the owner's. The code half does not
 wait for the answer, and **the item is numbered and written so it can go the
 moment the answer comes.**
+
+### A note against this sweep, and a tiebreak that is not taken
+
+**This sweep's commit carried one row that is not its own, and the fact is
+recorded rather than left in the commit.** `5982db8` took the working-tree
+content of `.factory/INTAKE.md`, and the other Chief session's correction to
+the `probe-verify-published-counts-2026-10-21-1240` row — WI-062's dispatch,
+corrected from **queued** to **done** — was in that working tree when the
+commit ran. **The check before committing looked at the diff's file names and
+not at its content, which is the check that would have caught it.**
+
+**It is not being rewritten.** The correction is right — WI-062's verification
+finished at 15:58 and the item is accepted — it is where it was going, and
+rewriting `main`'s history while another session commits on top of it is a
+worse trade than a container carrying one extra row. The group post that would
+have said this out loud was **refused — the round is mid-discussion** — so it is
+here.
+
+**And the tiebreak this sweep did not take.** **WI-039's verification is
+blocked on `CONTRACTS.md`, and `wi/046-domains-interaction-model` holds that
+file.** This sweep does not decide that: it is the lead's call, whether the
+verification waits for that branch or is scoped to the WI-039 entry alone, and
+**a tiebreak made silently is a rule broken silently.**
