@@ -58,6 +58,7 @@ scripts/verify-*.ts         Probe
 .github/workflows/**        Chief
 package.json (root)         Chief
 package-lock.json           Chief
+LICENSE (root)              Chief
 FACTORY.md, .factory/**     Chief
 ```
 
