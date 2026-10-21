@@ -41,6 +41,15 @@ declared in the same file, in hex, because Tailwind's own palette is oklch and
 the panel's is hex — a family that is not declared here does not match the
 rest of the file.
 
+**One name means two things in Tailwind, and it is worth knowing which.** The
+`accent-color` utility colours the tick of a form control, and two sites use
+it: the "replace the stored configuration" checkbox and the agent picker on
+the conversations page. They are `accent-indigo-500`, which is structure and
+not the panel's accent — a form control's tick is not live work and not
+something waiting on you. The guard test looks for the accent in the
+background, text and border family, because that is where the panel's accent
+actually lives.
+
 ## The inventory
 
 Measured on `wi/070-free-window-streams` at `c3eef9c`, before this change.
