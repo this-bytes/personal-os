@@ -27,11 +27,14 @@ import { fileURLToPath } from 'node:url';
  *  - the neighbours: the route table's audit row, the measures route's own
  *    outcome set, and the anchors the section links to.
  *
- * **One case is red today, and it is red because the contract's citations have
- * drifted under it**: three of the pointers in the section no longer land on
- * the line that carries the claim, and one of them contradicts the measures
- * route's citation of the same line. The contract is Wren's, and this file
- * does not fix it — it says so, so that the fix cannot be forgotten.
+ * **The section's citations drifted once already, and this file is the reason
+ * it was caught rather than shipped.** Three of the pointers in the section
+ * no longer landed on the line that carried the claim, and one of them
+ * contradicted the measures route's citation of the same line. The contract
+ * is Wren's, so this file did not fix it: the correction and this file's own
+ * three numbers moved together, and what the file holds now is the agreement
+ * itself — the section cites the line that carries the claim, and the line
+ * that carries the claim is the line the section cites.
  */
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..', '..', '..');

@@ -1421,3 +1421,65 @@ group at 03:45** (`chief-verifier-lane-dead-2026-10-22-0345`, batch
 `batch_53dd0398764f`, task `task_08f4f84fa3c5`, queued). **And the lead accepts
 nothing in this section: no item was verified, no item was accepted, and no
 verdict was read from a report that has not landed.**
+
+---
+
+## 2026-10-22 04:20 — A shift, measured: one dead dispatch, one defect closed, and the verifier lane still the owner's
+
+**The state this shift found, measured rather than read off the item files.**
+263 tasks in the fleet state: **2 running, 4 queued**, and **neither running
+task is a stall.** WI-102's implementation had held its slot 33 minutes and
+WI-080's verification 17 — both under the 45-minute trigger — and both chats
+show a `streaming` delegation with a `started` session. **`miniapp list` says
+the Mini App runtime is `running`**, so the `running` rows are work in flight
+and not leftovers of a stopped dispatcher. **Nothing was cancelled, and nothing
+should have been**: elapsed time is a trigger to look, never a reason.
+
+**The verifier lane is still dead, and the decision is still the owner's.**
+Probe's session `mvs_f1f513955649480dbfb09fae820cf59f` reports `status:
+started` with `errorSource: turn-system` and _"Cron definition was deleted
+before execution"_, **unchanged since 03:53**. **`miniapp restart minimax-bot`
+is still the only thing that clears it**, and it has been the owner's since
+02:41. This shift did not take it — a live turn is not a shift's to cancel.
+
+**And one dispatch was dead where the ledger said it was pending.** WI-034's
+correction dispatch to Wren — `wi-034-citation-drift-correction-2026-10-22`,
+task `task_fa2d04db7c5d`, batch `batch_5f660955d239` — **is `failed` in the
+fleet state**, while the item's own file said it was dispatched. The correction
+it was sent to produce exists anyway (`9ff3616`, on `wi/034-citation-drift`),
+so no work was lost — but **the record that said "dispatched" was a record that
+lies**, and it is corrected in WI-034's file. **A dispatch that cannot be
+delivered is not a dispatch, and a dispatch that dies is not a pending one.**
+
+**What this shift did.** WI-034's blocking defect — three code citations in
+`CONTRACTS.md`'s `### The audit outcome` that had drifted under the section, one
+of them contradicting the neighbouring entry's citation of the same line — is
+closed, and Probe's pin travels with the correction, because the pin and the
+contract cite the same string and one without the other is red. Branch
+`wi/034-outcome-vocabulary-check` carries both: the correction (three lines) and
+`apps/server/src/__tests__/audit-outcome-vocabulary.test.ts` (249 lines).
+**`1 failed | 5 passed (6)` before; `6 passed (6)` after.** The pin's own header
+said its red case was red because the contract had drifted, **which the
+correction made false**, so the header was corrected in the same landing — a
+file that says the contract is broken when the contract is whole is the same
+defect as a contract that lies about the code.
+
+**The item is NOT accepted, and this shift did not accept it.** Chief wrote the
+item, the correction and the merge, so it does not accept it — **the
+re-verification by another hand is owed**, on the landed tree, and it goes to a
+lane that can take it with the limit of the substitution stated in the dispatch:
+**a substituted verifier is a holding action, not a repair of the lane.**
+
+**What is still owed to the owner.** **`miniapp restart minimax-bot`** — the
+verifier lane, and with it WI-098's, WI-099's and this item's verifications.
+**And whether a substituted verifier stands at all**, which is the second half
+of the floor report already queued at 03:45 (`task_08f4f84fa3c5`).
+
+**And one number the owner should have from this shift: the factory's own
+ledger is 1,423 lines and 340 KB, and 42 of the 80 item files on `main` still
+say `implement` while their dispatch is dead or finished.** WI-020's measures
+dispatch (`task_86010eeeb561`) is `done` and the route, the contract entry and
+`apps/server/src/__tests__/measures.test.ts` are all on `main`, while WI-020's
+file still reads `implement —`. **That is a ledger that lies in the other
+direction, and it is a cheap repair** — but it is not this shift's, and the
+number space belongs to the session that owns it.
