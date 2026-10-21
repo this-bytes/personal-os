@@ -19,28 +19,28 @@ const STATUS_STYLES: Record<
     variant: 'success' | 'warning' | 'danger' | 'default';
     label: string;
     dot: string;
-    warning: boolean;
+    alert: string | null;
   }
 > = {
-  connected: { variant: 'success', label: 'connected', dot: 'bg-ok', warning: false },
+  connected: { variant: 'success', label: 'connected', dot: 'bg-ok', alert: null },
   degraded: {
     variant: 'warning',
     label: 'degraded',
     dot: 'border border-dashed border-caution bg-transparent',
-    warning: true,
+    alert: 'text-caution',
   },
   disconnected: {
     variant: 'default',
     label: 'disconnected',
     dot: 'border border-slate-600 bg-transparent',
-    warning: false,
+    alert: null,
   },
-  error: { variant: 'danger', label: 'error', dot: 'bg-err', warning: true },
+  error: { variant: 'danger', label: 'error', dot: 'bg-err', alert: 'text-err' },
   unknown: {
     variant: 'default',
     label: 'unknown',
     dot: 'border border-slate-600 bg-transparent',
-    warning: false,
+    alert: null,
   },
 };
 
@@ -54,7 +54,7 @@ export function StatusBadge({
   const style = STATUS_STYLES[status] ?? STATUS_STYLES.unknown;
   return (
     <Badge variant={style.variant} className={className}>
-      {style.warning ? <AlertTriangle className="h-2.5 w-2.5" /> : null}
+      {style.alert ? <AlertTriangle className={cn('h-2.5 w-2.5', style.alert)} /> : null}
       <span className={cn('h-2 w-2 rounded-full', style.dot)} />
       {style.label}
     </Badge>

@@ -43,20 +43,30 @@ const NAV_ITEMS = [
  * is healthy, not that the owner is needed, and an accent that is on screen
  * all the time in a healthy panel stops meaning anything.
  */
-const STREAM_STATES: Record<StreamStatus, { label: string; dot: string; warning: boolean }> = {
-  idle: { label: 'idle', dot: 'border border-slate-600 bg-transparent', warning: false },
+const STREAM_STATES: Record<
+  StreamStatus,
+  { label: string; dot: string; icon: 'radio' | 'alert'; tone: string }
+> = {
+  idle: {
+    label: 'idle',
+    dot: 'border border-slate-600 bg-transparent',
+    icon: 'radio',
+    tone: 'text-slate-500',
+  },
   connecting: {
     label: 'connecting',
     dot: 'border border-dashed border-caution bg-transparent',
-    warning: true,
+    icon: 'alert',
+    tone: 'text-caution',
   },
-  open: { label: 'live', dot: 'bg-ok', warning: false },
+  open: { label: 'live', dot: 'bg-ok', icon: 'radio', tone: 'text-ok' },
   reconnecting: {
     label: 'reconnecting',
     dot: 'border border-dashed border-caution bg-transparent',
-    warning: true,
+    icon: 'alert',
+    tone: 'text-caution',
   },
-  error: { label: 'offline', dot: 'bg-err', warning: true },
+  error: { label: 'offline', dot: 'bg-err', icon: 'alert', tone: 'text-err' },
 };
 
 function StreamIndicator(): React.JSX.Element {
@@ -67,10 +77,10 @@ function StreamIndicator(): React.JSX.Element {
       className="inline-flex items-center gap-1.5 rounded-full border border-slate-800 bg-slate-900 px-2 py-0.5 text-[11px] text-slate-400"
       title={`Event stream: ${state.label}`}
     >
-      {state.warning ? (
-        <AlertTriangle className="h-3 w-3 text-caution" />
+      {state.icon === 'alert' ? (
+        <AlertTriangle className={cn('h-3 w-3', state.tone)} />
       ) : (
-        <Radio className={cn('h-3 w-3', status === 'open' ? 'text-ok' : 'text-slate-500')} />
+        <Radio className={cn('h-3 w-3', state.tone)} />
       )}
       <span className={cn('h-2 w-2 rounded-full', state.dot)} />
       {state.label}
