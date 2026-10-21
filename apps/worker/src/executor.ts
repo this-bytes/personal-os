@@ -18,6 +18,7 @@ import {
   type Persona,
 } from '@personal-os/contracts';
 import { listAgentMemories } from '@personal-os/server/runtime';
+import type { AdapterRegistry } from '@personal-os/agent-adapters';
 import {
   agentConnections,
   approvals,
@@ -51,6 +52,11 @@ import {
 
 export interface ExecutorContext {
   runtime: Runtime;
+  /**
+   * The adapter registry. The worker owns it: the registry is what runs an
+   * agent, and only the worker runs agents.
+   */
+  registry: AdapterRegistry;
 }
 
 export interface ExecutionOutcome {
@@ -147,8 +153,126 @@ export async function executeJob(
       return executeFactoryTask(context, job);
     case 'automation.run':
       return executeAutomation(context, job);
+    case 'agent.probe':
+      return executeAgentProbe(context, job);
     default:
       return { status: 'failed', error: `Unknown job type "${job.type}".` };
+  }
+}
+
+interface AgentProbePayload {
+  agentConnectionId: string;
+  executionId: string;
+}
+
+/**
+ * Discover what a connection can do.
+ *
+ * The probe is the adapter domain's turn: the server decides that a
+ * connection should be discovered, and the worker does it. The ACP adapter
+ * starts the agent's process to answer, and that process must not be a child
+ * of the API server.
+ *
+ * The answer is written to the connection and published as an `agent.status`
+ * event, which is how the client learns it. A connection that cannot be
+ * reached is recorded as an error on the connection, not as a failed job the
+ * owner has to read in the queue: the answer to "can this agent talk?" is
+ * "no", and that is what the owner sees.
+ */
+async function executeAgentProbe(
+  context: ExecutorContext,
+  job: QueueJob,
+): Promise<ExecutionOutcome> {
+  const { runtime } = context;
+  const { db, events } = runtime;
+  const payload = job.payload as unknown as AgentProbePayload;
+  const { agentConnectionId, executionId } = payload;
+
+  const connection = db
+    .select()
+    .from(agentConnections)
+    .where(eq(agentConnections.id, agentConnectionId))
+    .get();
+
+  if (!connection) {
+    return fail(context, executionId, 'The agent connection no longer exists.');
+  }
+
+  const now = new Date().toISOString();
+
+  try {
+    const adapterConfig = await loadAdapterConfig(context, agentConnectionId);
+    const adapter = context.registry.create(adapterConfig, {
+      resolveSecret: runtime.resolveSecret,
+      logger: { info: () => undefined, warn: () => undefined, error: () => undefined },
+    });
+    const capabilities = await withDeadline(
+      adapter.connect({
+        id: connection.id,
+        name: connection.name,
+        adapterType: connection.adapterType as AgentConnection['adapterType'],
+        configRef: connection.configRef,
+        enabled: connection.enabled,
+        persona: connection.persona ?? undefined,
+      }),
+      adapterTimeout(adapterConfig) * 1000,
+      'The agent did not answer the capability probe before the deadline.',
+    );
+
+    const status = capabilities.chat ? 'connected' : 'degraded';
+    const lastError = capabilities.chat
+      ? null
+      : 'The adapter did not report chat capability. Check the configuration.';
+
+    db.update(agentConnections)
+      .set({ capabilities, status, lastError, lastConnectedAt: now, updatedAt: now })
+      .where(eq(agentConnections.id, agentConnectionId))
+      .run();
+
+    db.update(executions)
+      .set({ status: 'completed', error: null, finishedAt: now })
+      .where(eq(executions.id, executionId))
+      .run();
+
+    events.publish(
+      {
+        type: 'agent.status',
+        connectionId: agentConnectionId,
+        status,
+        capabilities,
+        lastError,
+      },
+      // The workspace travels with the event: an automation may trigger on an
+      // agent's status, and the watcher only acts on events that name one.
+      { workspaceId: connection.workspaceId },
+    );
+
+    return { status: 'completed' };
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+
+    db.update(agentConnections)
+      .set({ status: 'error', lastError: message, lastConnectedAt: now, updatedAt: now })
+      .where(eq(agentConnections.id, agentConnectionId))
+      .run();
+
+    db.update(executions)
+      .set({ status: 'failed', error: message, finishedAt: now })
+      .where(eq(executions.id, executionId))
+      .run();
+
+    events.publish(
+      {
+        type: 'agent.status',
+        connectionId: agentConnectionId,
+        status: 'error',
+        capabilities: null,
+        lastError: message,
+      },
+      { workspaceId: connection.workspaceId },
+    );
+
+    return { status: 'failed', error: message };
   }
 }
 
@@ -355,7 +479,7 @@ async function executeChatTurn(context: ExecutorContext, job: QueueJob): Promise
   let suspended = false;
 
   try {
-    adapter = runtime.registry.create(adapterConfig, {
+    adapter = context.registry.create(adapterConfig, {
       resolveSecret: runtime.resolveSecret,
       logger: {
         info: () => undefined,
@@ -706,7 +830,7 @@ async function executeFactoryTask(
   }, timeoutSeconds * 1000);
 
   try {
-    const adapter = runtime.registry.create(adapterConfig, {
+    const adapter = context.registry.create(adapterConfig, {
       resolveSecret: runtime.resolveSecret,
       logger: { info: () => undefined, warn: () => undefined, error: () => undefined },
     });
@@ -863,7 +987,7 @@ async function executeAutomation(
     const action = automation.action;
     if (action.type === 'agent.prompt') {
       if (!action.agentConnectionId) throw new Error('The action has no agent connection.');
-      const adapter = runtime.registry.create(
+      const adapter = context.registry.create(
         await loadAdapterConfig(context, action.agentConnectionId),
         {
           resolveSecret: runtime.resolveSecret,
@@ -1156,6 +1280,36 @@ async function loadAdapterConfig(
 function adapterTimeout(config: AdapterConfig): number {
   const value = (config as { timeoutSeconds?: number }).timeoutSeconds;
   return typeof value === 'number' && value > 0 ? value : 600;
+}
+
+/**
+ * Wait for work, or give up at the deadline.
+ *
+ * The worker runs one job at a time, so work that never finishes stops every
+ * other piece of work in the product. An agent that accepts a connection and
+ * then says nothing is exactly that: the probe would wait forever, and the
+ * chat turns, the factory tasks and the automations would wait with it.
+ *
+ * The deadline is the adapter's own — the same one its turns get — and the
+ * work that is still running when the deadline passes is left to finish on its
+ * own. The failure is recorded either way.
+ */
+function withDeadline<T>(work: Promise<T>, ms: number, message: string): Promise<T> {
+  return new Promise<T>((resolve, reject) => {
+    const timer = setTimeout(() => reject(new Error(message)), ms);
+    timer.unref?.();
+
+    work.then(
+      (value) => {
+        clearTimeout(timer);
+        resolve(value);
+      },
+      (error: unknown) => {
+        clearTimeout(timer);
+        reject(error instanceof Error ? error : new Error(String(error)));
+      },
+    );
+  });
 }
 
 /**

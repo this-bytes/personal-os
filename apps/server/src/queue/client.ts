@@ -3,7 +3,12 @@ import type { Database } from '../db/client.js';
 import { automationRuns, executions, queueJobs, tasks } from '../db/schema.js';
 import { newId } from '../lib/ids.js';
 
-export type JobType = 'chat.turn' | 'factory.execute' | 'automation.run' | 'resource.refresh';
+export type JobType =
+  | 'chat.turn'
+  | 'factory.execute'
+  | 'automation.run'
+  | 'resource.refresh'
+  | 'agent.probe';
 
 export interface QueueJob {
   id: string;

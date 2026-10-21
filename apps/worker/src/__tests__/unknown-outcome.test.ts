@@ -163,9 +163,6 @@ beforeEach(() => {
     config,
     db: handle.db,
     sqlite: handle.sqlite,
-    registry: {
-      create: () => new HangingAdapter(),
-    } as unknown as Runtime['registry'],
     events: new EventsService(handle.db),
     queue: new Queue(handle.db),
     audit: createAuditService(handle.db),
@@ -178,7 +175,10 @@ beforeEach(() => {
     close: () => handle.close(),
   };
 
-  context = { runtime };
+  context = {
+    runtime,
+    registry: { create: () => new HangingAdapter() } as unknown as ExecutorContext['registry'],
+  };
   seed();
 });
 

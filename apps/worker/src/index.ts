@@ -1,5 +1,6 @@
 import { loadConfig } from '@personal-os/server/runtime';
 import { createRuntime } from '@personal-os/server/runtime';
+import { createDefaultRegistry } from '@personal-os/agent-adapters';
 import { EventWatcher } from './event-watcher.js';
 import { executeJob, type ExecutionOutcome } from './executor.js';
 import { Scheduler } from './scheduler.js';
@@ -11,6 +12,9 @@ import { Scheduler } from './scheduler.js';
  * compromised agent CLI must never be able to take the API server down.
  * The two processes coordinate through the shared SQLite database, so
  * there is no broker to deploy.
+ *
+ * The adapter registry lives here for the same reason. It is what runs an
+ * agent, and this is the process that runs agents.
  */
 
 const POLL_INTERVAL_MS = 150;
@@ -20,6 +24,7 @@ const HEARTBEAT_INTERVAL_MS = 30_000;
 async function main(): Promise<void> {
   const config = loadConfig();
   const runtime = createRuntime(config);
+  const registry = createDefaultRegistry();
   const workerId = `worker_${Math.random().toString(36).slice(2, 10)}`;
 
   const scheduler = new Scheduler(runtime);
@@ -65,7 +70,7 @@ async function main(): Promise<void> {
 
       let outcome: ExecutionOutcome;
       try {
-        outcome = await executeJob({ runtime }, job);
+        outcome = await executeJob({ runtime, registry }, job);
       } finally {
         clearInterval(heartbeat);
       }

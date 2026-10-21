@@ -414,6 +414,46 @@ authentication material to browser clients.
 provider-supported methods rather than extracting or reusing undocumented session
 tokens.
 
+### Adapter execution
+
+**The API server never runs an adapter.** An adapter is the only thing in the
+product that runs somebody else's code: the `acp` adapter starts the agent's
+process, the `cli` adapter runs a command on the host, and the `a2a` adapter
+calls out to a remote agent. None of that happens in the API server, whose
+process must survive a failing or hostile agent.
+
+Capability discovery is a probe, and a probe is work. It runs on the same spine
+as a chat turn:
+
+1. The API server records the request — an `executions` row — and enqueues an
+   `agent.probe` job.
+2. The worker claims the job, builds the adapter, connects it, and writes the
+   capabilities, the status and the error to the connection row.
+3. The worker closes the execution and publishes an `agent.status` event.
+
+The client learns the answer from the event stream, not from the response to the
+request that asked for it. `POST /api/agents` and `POST /api/agents/:id/probe`
+answer with the connection as it stands, and its `capabilities` are `null`
+until the worker has answered. The capabilities already on record are not
+withdrawn while the probe runs: a probe asks for them again, and until the
+worker answers they are still the last thing that was known.
+
+**A connection that cannot be reached is an answer, not a failure.** The status
+becomes `error`, the reason is recorded on the connection, and the
+`agent.status` event carries it. The owner asked "can this agent talk?" and the
+answer is "no" — which is a state of the connection, not a failed job to read
+in a queue.
+
+**A probe has a deadline.** It is the adapter's own `timeoutSeconds` — the same
+one its turns get — because the worker runs one job at a time, and an agent
+that accepts a connection and then says nothing would otherwise stop every
+other piece of work in the product. Past the deadline the connection is
+recorded as an error.
+
+This is the rule the chat domain already follows, and the adapter domain now
+follows it too: the server decides what should run and records the outcome; the
+worker runs it.
+
 ### Adapter events
 
 The common event vocabulary:
@@ -1120,9 +1160,9 @@ is not left deleting the database.
 | `POST`             | `/api/auth/owner-token`                              | Return the configured owner token. Owner only — an agent token is refused.              |
 | `GET/POST`         | `/api/workspaces`                                    | List and create workspaces.                                                             |
 | `GET/PATCH`        | `/api/workspaces/:id`                                | Read and update a workspace.                                                            |
-| `GET/POST`         | `/api/agents`                                        | List and create agent connections.                                                      |
+| `GET/POST`         | `/api/agents`                                        | List and create agent connections. A new connection is probed by the worker.            |
 | `GET/PATCH/DELETE` | `/api/agents/:id`                                    | Read, update, remove a connection. `PATCH` accepts `toolGrants`.                        |
-| `POST`             | `/api/agents/:id/probe`                              | Re-run capability discovery.                                                            |
+| `POST`             | `/api/agents/:id/probe`                              | Ask the worker to re-run capability discovery.                                          |
 | `GET/POST`         | `/api/agents/:id/tokens`                             | Issue and list MCP tokens.                                                              |
 | `DELETE`           | `/api/agents/:id/tokens/:tokenId`                    | Revoke an MCP token.                                                                    |
 | `GET`              | `/api/secrets`                                       | List the secret configurations. Metadata only — a value never leaves the server.        |

@@ -297,7 +297,20 @@ async function main(): Promise<void> {
     },
   });
   assert(agent.status === 201, 'agent connection is created');
-  assert(agent.body.agent.capabilities?.chat === true, 'agent capabilities are probed');
+
+  // The probe runs in the worker, so the capabilities arrive when the worker
+  // has done the discovery. The answer is read back from the connection.
+  let probed = false;
+  const probeDeadline = Date.now() + 30_000;
+  while (Date.now() < probeDeadline) {
+    const current = await api(`/api/agents/${agent.body.agent.id}`);
+    if (current.body.agent?.capabilities?.chat === true) {
+      probed = true;
+      break;
+    }
+    await new Promise((resolve) => setTimeout(resolve, 300));
+  }
+  assert(probed, 'agent capabilities are probed by the worker');
 
   // 4. Create a conversation
   const conversation = await api('/api/conversations', {

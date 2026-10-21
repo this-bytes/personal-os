@@ -212,9 +212,6 @@ beforeEach(() => {
     config,
     db: handle.db,
     sqlite: handle.sqlite,
-    registry: {
-      create: () => adapter,
-    } as unknown as Runtime['registry'],
     events: new EventsService(handle.db),
     queue: new Queue(handle.db),
     audit: createAuditService(handle.db),
@@ -223,7 +220,10 @@ beforeEach(() => {
     close: () => handle.close(),
   };
 
-  context = { runtime };
+  context = {
+    runtime,
+    registry: { create: () => adapter } as unknown as ExecutorContext['registry'],
+  };
 });
 
 afterEach(() => {

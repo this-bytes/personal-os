@@ -4,19 +4,17 @@ import {
   parseAdapterConfig,
   type AdapterConfig,
   type AdapterType,
-  type AgentCapabilities,
-  type AgentConnection,
   type AgentConnectionDetail,
   type AgentConnectionStatus,
   type McpToolName,
   type Persona,
 } from '@personal-os/contracts';
-import type { AdapterRegistry } from '@personal-os/agent-adapters';
 import type { Database } from '../../db/client.js';
-import { agentConnections, secretConfigs } from '../../db/schema.js';
+import { agentConnections, executions, secretConfigs } from '../../db/schema.js';
 import { decryptSecret, encryptSecret } from '../../lib/crypto.js';
 import { errors } from '../../lib/errors.js';
 import { AGENT_ID_PREFIX, newId } from '../../lib/ids.js';
+import type { Queue } from '../../queue/client.js';
 
 export interface SecretSummary {
   id: string;
@@ -61,7 +59,13 @@ export interface AgentService {
     },
   ): AgentConnectionDetail;
   remove(id: string): void;
-  probe(id: string): Promise<AgentConnectionDetail>;
+  /**
+   * Ask the worker to discover what a connection can do.
+   *
+   * The server records the request and enqueues the work; the worker builds the
+   * adapter and connects it. The API server never runs an agent.
+   */
+  requestProbe(id: string): AgentConnectionDetail;
   readConfig(id: string): AdapterConfig;
   listSecrets(workspaceId: string): SecretSummary[];
   /** The effective MCP tool grants of a connection. */
@@ -71,8 +75,7 @@ export interface AgentService {
 export interface AgentServiceOptions {
   db: Database;
   secretKey: Buffer;
-  registry: AdapterRegistry;
-  resolveSecret(ref: string): Promise<string | undefined>;
+  queue: Queue;
 }
 
 /** Config keys whose value is a credential rather than plain configuration. */
@@ -84,7 +87,7 @@ const SECRET_CONFIG_KEYS = ['apiKey', 'authToken'];
  * are never sent to a browser client.
  */
 export function createAgentService(options: AgentServiceOptions): AgentService {
-  const { db, secretKey, registry } = options;
+  const { db, secretKey, queue } = options;
 
   const toDetail = (row: typeof agentConnections.$inferSelect): AgentConnectionDetail => ({
     id: row.id,
@@ -284,42 +287,42 @@ export function createAgentService(options: AgentServiceOptions): AgentService {
       db.delete(secretConfigs).where(eq(secretConfigs.id, current.configRef)).run();
     },
 
-    async probe(id): Promise<AgentConnectionDetail> {
+    requestProbe(id): AgentConnectionDetail {
       const current = service.get(id);
       const now = new Date().toISOString();
 
-      try {
-        const config = service.readConfig(id);
-        const adapter = registry.create(config, {
-          resolveSecret: options.resolveSecret,
-          logger: { info: () => undefined, warn: () => undefined, error: () => undefined },
-        });
-        const capabilities: AgentCapabilities = await adapter.connect(current);
+      // A probe is work, and work is recorded before it is queued. The
+      // execution row is the same record the chat domain writes when it
+      // dispatches a turn: it says the work exists, who it is for, and how it
+      // ended.
+      const executionId = newId('exe');
+      db.insert(executions)
+        .values({
+          id: executionId,
+          workspaceId: current.workspaceId,
+          conversationId: null,
+          taskId: null,
+          externalRef: null,
+          agentConnectionId: id,
+          executionOwner: 'personal-os',
+          status: 'queued',
+          error: null,
+          spendUnits: 0,
+          startedAt: null,
+          finishedAt: null,
+          createdAt: now,
+        })
+        .run();
 
-        db.update(agentConnections)
-          .set({
-            capabilities,
-            status: capabilities.chat ? 'connected' : 'degraded',
-            lastError: capabilities.chat
-              ? null
-              : 'The adapter did not report chat capability. Check the configuration.',
-            lastConnectedAt: now,
-            updatedAt: now,
-          })
-          .where(eq(agentConnections.id, id))
-          .run();
-      } catch (error) {
-        db.update(agentConnections)
-          .set({
-            status: 'error',
-            lastError: error instanceof Error ? error.message : String(error),
-            lastConnectedAt: now,
-            updatedAt: now,
-          })
-          .where(eq(agentConnections.id, id))
-          .run();
-      }
+      queue.enqueue({
+        workspaceId: current.workspaceId,
+        type: 'agent.probe',
+        payload: { agentConnectionId: id, executionId },
+      });
 
+      // The capabilities on record are not withdrawn: a probe asks for them
+      // again, and until the worker answers they are still the last thing that
+      // was known. The answer arrives as an `agent.status` event.
       return service.get(id);
     },
 

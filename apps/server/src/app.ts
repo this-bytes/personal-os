@@ -67,8 +67,7 @@ export async function buildApp(options: BuildAppOptions = {}): Promise<FastifyIn
   const agents = createAgentService({
     db: runtime.db,
     secretKey: config.secretKey,
-    registry: runtime.registry,
-    resolveSecret: runtime.resolveSecret,
+    queue,
   });
   const conversations = createConversationsService({
     db: runtime.db,

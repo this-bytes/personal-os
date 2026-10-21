@@ -1,4 +1,3 @@
-import { createDefaultRegistry, type AdapterRegistry } from '@personal-os/agent-adapters';
 import { eq } from 'drizzle-orm';
 import { createDatabase, type Database, type DatabaseHandle } from './db/client.js';
 import { runMigrations } from './db/migrate.js';
@@ -13,7 +12,6 @@ export interface Runtime {
   config: AppConfig;
   db: Database;
   sqlite: DatabaseHandle['sqlite'];
-  registry: AdapterRegistry;
   events: EventsService;
   queue: Queue;
   /**
@@ -52,15 +50,17 @@ export type { AppConfig } from './config.js';
 /**
  * Build the runtime shared by the API server and the worker.
  *
- * Both processes open the same SQLite file and use the same adapter
- * registry and secret store, which keeps the two in lockstep without a
- * network hop between them.
+ * Both processes open the same SQLite file and use the same secret store,
+ * which keeps the two in lockstep without a network hop between them.
+ *
+ * The adapter registry is deliberately not here: it is the one thing that
+ * *runs* an agent, and only the worker runs agents. The API server decides
+ * what should run and records the outcome.
  */
 export function createRuntime(config: AppConfig): Runtime {
   const handle = createDatabase(config.dbPath);
   runMigrations(handle.db);
 
-  const registry = createDefaultRegistry();
   const events = new EventsService(handle.db);
   const queue = new Queue(handle.db);
   const audit = createAuditService(handle.db);
@@ -69,7 +69,6 @@ export function createRuntime(config: AppConfig): Runtime {
     config,
     db: handle.db,
     sqlite: handle.sqlite,
-    registry,
     events,
     queue,
     audit,

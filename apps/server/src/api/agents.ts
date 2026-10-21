@@ -51,16 +51,10 @@ export function registerAgentRoutes(app: FastifyInstance): void {
         adapterType: body.adapterType,
       },
     );
-    // Probe immediately so the client sees real capabilities, not guesses.
-    const probed = await app.services.agents.probe(agent.id);
-    app.services.events.publish({
-      type: 'agent.status',
-      connectionId: probed.id,
-      status: probed.status,
-      capabilities: probed.capabilities,
-      lastError: probed.lastError,
-    });
-    return reply.code(201).send({ agent: probed });
+    // The probe runs in the worker. The API server records the request and
+    // enqueues the work; it never runs an agent itself.
+    const requested = app.services.agents.requestProbe(agent.id);
+    return reply.code(201).send({ agent: requested });
   });
 
   app.get('/api/agents/:id', { preHandler: requireAuth }, async (request) => {
@@ -86,14 +80,9 @@ export function registerAgentRoutes(app: FastifyInstance): void {
 
   app.post('/api/agents/:id/probe', { preHandler: requireAuth }, async (request) => {
     const { id } = request.params as { id: string };
-    const agent = await app.services.agents.probe(id);
-    app.services.events.publish({
-      type: 'agent.status',
-      connectionId: agent.id,
-      status: agent.status,
-      capabilities: agent.capabilities,
-      lastError: agent.lastError,
-    });
+    // The request is recorded and queued; the worker does the discovery and
+    // publishes the answer on the event stream.
+    const agent = app.services.agents.requestProbe(id);
     return { agent };
   });
 

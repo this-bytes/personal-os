@@ -1,7 +1,8 @@
 import { afterEach, describe, expect, it } from 'vitest';
-import { createDefaultRegistry } from '@personal-os/agent-adapters';
 import { createAgentService } from '../modules/agents/service.js';
 import { createTestDatabase } from './helpers.js';
+import { executions, queueJobs } from '../db/schema.js';
+import { Queue } from '../queue/client.js';
 import type { DatabaseHandle } from '../db/client.js';
 import { randomBytes } from 'node:crypto';
 
@@ -15,19 +16,15 @@ afterEach(() => {
 function createService() {
   handle = createTestDatabase();
   const secretKey = randomBytes(32);
-  const resolved: string[] = [];
+  const queue = new Queue(handle.db);
   return {
     service: createAgentService({
       db: handle.db,
       secretKey,
-      registry: createDefaultRegistry(),
-      resolveSecret: async (ref) => {
-        resolved.push(ref);
-        return 'secret-value';
-      },
+      queue,
     }),
     secretKey,
-    resolved,
+    queue,
   };
 }
 
@@ -100,7 +97,7 @@ describe('agent connections', () => {
     expect(after.apiKeyRef).not.toBe(before.apiKeyRef);
   });
 
-  it('probes capabilities and records the status', async () => {
+  it('asks the worker to probe instead of connecting itself', () => {
     const { service } = createService();
     const agent = service.create({
       workspaceId: 'wsp_1',
@@ -109,22 +106,33 @@ describe('agent connections', () => {
       config: {},
     });
 
-    const probed = await service.probe(agent.id);
-    expect(probed.status).toBe('connected');
-    expect(probed.capabilities?.chat).toBe(true);
+    const requested = service.requestProbe(agent.id);
+
+    // The server records the request; it does not run the adapter.
+    expect(requested.status).toBe('unknown');
+    expect(requested.capabilities).toBeNull();
+
+    const jobs = handle!.db.select().from(queueJobs).all();
+    expect(jobs).toHaveLength(1);
+    expect(jobs[0]?.type).toBe('agent.probe');
+    expect(jobs[0]?.payload).toMatchObject({ agentConnectionId: agent.id });
   });
 
-  it('records a failure instead of throwing when the adapter cannot connect', async () => {
+  it('records the probe as an execution before it is queued', () => {
     const { service } = createService();
     const agent = service.create({
       workspaceId: 'wsp_1',
-      name: 'Broken',
-      adapterType: 'cli',
-      config: { command: 'definitely-not-a-real-binary-xyz' },
+      name: 'Echo',
+      adapterType: 'echo',
+      config: {},
     });
 
-    const probed = await service.probe(agent.id);
-    expect(probed.status).toBe('degraded');
-    expect(probed.lastError).toBeTruthy();
+    service.requestProbe(agent.id);
+
+    const rows = handle!.db.select().from(executions).all();
+    expect(rows).toHaveLength(1);
+    expect(rows[0]?.agentConnectionId).toBe(agent.id);
+    expect(rows[0]?.status).toBe('queued');
+    expect(rows[0]?.conversationId).toBeNull();
   });
 });

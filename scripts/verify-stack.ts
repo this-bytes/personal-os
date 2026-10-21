@@ -190,7 +190,22 @@ async function main(): Promise<void> {
     },
   });
   assert(agent.status === 201, `the agent is registered (got ${agent.status})`);
-  assert(agent.body.agent.capabilities?.chat === true, 'the agent capabilities are probed');
+
+  // 4b. The probe runs in the worker, so the capabilities arrive when the
+  // worker has done the discovery — not in the response to the request. A
+  // deployment whose worker is dead answers this route and then says nothing,
+  // which is the half of the product a health check cannot see.
+  let probed = false;
+  const probeDeadline = Date.now() + REPLY_TIMEOUT_MS;
+  while (Date.now() < probeDeadline) {
+    const current = await api(`/api/agents/${agent.body.agent.id}`);
+    if (current.body.agent?.capabilities?.chat === true) {
+      probed = true;
+      break;
+    }
+    await new Promise((resolve) => setTimeout(resolve, 400));
+  }
+  assert(probed, 'the agent capabilities are probed by the worker');
 
   // 5. A conversation to talk in.
   const conversation = await api('/api/conversations', {

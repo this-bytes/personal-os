@@ -33,7 +33,6 @@
     "@fastify/cors": "11.3.1",
     "@fastify/static": "10.1.6",
     "@modelcontextprotocol/sdk": "1.32.1",
-    "@personal-os/agent-adapters": "0.1.0",
     "@personal-os/contracts": "0.1.0",
     "better-sqlite3": "13.0.3",
     "drizzle-kit": "^0.31.11",
