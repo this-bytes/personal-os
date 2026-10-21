@@ -91,14 +91,18 @@ Apache-2.0, AGPLv3 and a proprietary enterprise licence. A licence can change wh
 the product is.
 
 **This repository's own licence is unsettled, and the record says so rather than
-implying otherwise.** A root `LICENSE` file (MIT) has been tracked since the initial
-commit and is still there; the root manifest's `"license": "MIT"` was removed on
-2026-10-21 because the licence is deliberately undecided; the README now says the
-licence is deliberately undecided and that the repository is private for now (the
-correction landed, and it is a correction that tells the truth rather than a
-licence that was never chosen); and the owner's answer at 08:54 was _"Private for
-now — push it, and decide visibility later."_ None of that is settled, and a licence
-gate that reads the dependency set cannot speak to any of it.
+implying otherwise.** The root `LICENSE` file (MIT) was tracked since the initial
+commit and was **removed** on 2026-10-21 — it granted a licence nobody had chosen,
+and it had no owner in the ownership table, which `FACTORY.md` now fixes by naming
+it. That removal rests on a reading the owner has been asked to confirm: _the
+repository carries no licence file_, rather than _it is not adding one now_. The root
+manifest's `"license": "MIT"` was removed earlier the same day, for the same reason.
+The README says the licence is deliberately undecided and that the repository is
+private for now — a correction that tells the truth rather than a licence that was
+never chosen — and `CONTRIBUTING.md` still claims MIT, which WI-068 is correcting.
+And the owner's answer at 08:54 was _"Private for now — push it, and decide
+visibility later."_ None of that is settled, and a licence gate that reads the
+dependency set cannot speak to any of it.
 
 **The owner's hard case, and what can actually catch it.** Vendoring AGPL-3.0 code
 into this repository's own tree changes this project's licence. **A gate over the
