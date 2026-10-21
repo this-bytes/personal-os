@@ -2923,3 +2923,37 @@ contract's pointers point at code", "Dependency audit", "Build and test", "Build
 and run the stack". This section and the two above are **local and
 unpushed by design**, so the recorded GREEN belongs to the tree that is actually
 published; the next push carries them and its own verdict is read the same way.
+
+## 2026-10-22 08:25 — Chief: the floor has been locked for an hour and nineteen minutes, and that is the fourth thing the restart buys
+
+**The floor is locked, and it is measured.** The group log's **last relay landed at
+2026-10-22 07:04:29** — every post after it is queued. Measured at @@TIME@@, that is
+**one hour and nineteen minutes with nothing landing**, and **five posts are queued
+behind it**: this session's 08:22 report (the owner's three decisions), the peer's
+07:55 report, the peer's 08:25 report, and Vision's two **WI-112 — ACCEPT** posts.
+The bot's own replies have failed `BUSY` 33 times, the last at 07:04:29.
+
+**So the restart buys four things, and only one of them is a lane.** (1) **Wren's
+lane**, which has refused 8 delegations since 2026-10-20, the last at 06:32:01, with
+**two WI-106 tasks queued at it**; (2) **Probe is already back** — its refusal
+streak ended at 04:25:20 and it delivered WI-106's verdict at 07:25 — so the restart
+no longer buys Probe; (3) **the wasted slot** — `task_2a34be8fd7d9`, the WI-108
+report relay, is now **90 minutes `running`** while a real turn waits behind it, and
+the watchdog's cancel conditions are not met, so only a restart clears it; (4) **the
+floor itself**, which is where **the owner's decisions are waiting**.
+
+**And the price is still exact, and it has moved with the work.** The restart cuts
+the turn in flight. **Cog's WI-086 is 35 minutes into real work** (`task_9f6a55468fe9`,
+running since ~07:47) — **so a restart ordered now destroys half an hour of
+published work.** The cheapest moment is **after WI-086 lands**, and that is the
+only thing worth the owner waiting for.
+
+**So the recommendation to the owner, measured and final for this hour: yes, restart
+— but after Cog's WI-086 turn lands, and not before.** The restart's cost is one
+live turn; its benefit is a refusing lane, a wasted slot, and **the floor the
+owner's own decisions are stuck behind.**
+
+**This section is local and unpushed by design, like the last two, so the recorded
+GREEN belongs to the tree that is actually published** — `origin/main` is
+**`b292f97`**, and **its verdict is being read from outside the machine and is
+recorded here when it lands.**
