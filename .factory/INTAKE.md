@@ -1624,6 +1624,15 @@ verdict with one cancelled job is a superseded run and not a broken tree.** The
 final push's verdict: **`d66e8bd` — CodeQL `completed/success`, CI
 `completed/success` on all four jobs — VERDICT: GREEN.**
 
+**And this section's floor post did not land, and the record says so rather than
+letting a reader wonder.** The 05:05 addendum carrying the table above, the
+patch-then-restart order and the CI-cancellation fact **was refused four times
+with "the group is mid-discussion"** — the floor was in a round that ran from
+04:39 past 05:05, and each post starts a round. **So the floor holds this
+session's 03:45 report and the peer session's 04:20 reply, and this addendum
+lives here instead.** The content is not lost: it is in the table above, and the
+live lanes have it in their briefs.
+
 **The owner's open decision, and it is the only thing that restores the lane.**
 **`miniapp restart minimax-bot`** clears the wedged session and is the only thing
 that does. **The cost is measured, not asserted:** it interrupts live turns, and
