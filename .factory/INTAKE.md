@@ -1894,3 +1894,237 @@ dispatch (`task_86010eeeb561`) is `done` and the route, the contract entry and
 file still reads `implement —`. **That is a ledger that lies in the other
 direction, and it is a cheap repair** — but it is not this shift's, and the
 number space belongs to the session that owns it.
+
+---
+
+## 2026-10-22 06:30 — Chief: the stall resolved itself, three lines corrected, the queue drained, and the restart's price measured again
+
+**What this section is:** three corrections to claims this session published, four
+cancellations with their reasons, one dispatch that was stood down, one that was
+sent, and the measurement of what the owner's restart buys — now taken from the
+runtime's own source, because the answer changed at 06:19.
+
+### 1. Three corrections, and the one that hurts
+
+**Correction one — WI-036's second substitution was not "permanent", and the
+ledger said it was.** At `:1524-1528` this session wrote that the brief to Vision
+"went to Vision at 04:20:05 and came back at 04:20:33 with a zero-length answer
+… because Vision's session is `started` too". **That is false**, and the peer
+session's commit `8909bfe` carries the measurement: Vision ran the verification
+for 45 minutes and delivered the report at 04:40:33. The refusal was the
+transport refusing into a chat that was already turning — **a temporary form.**
+
+**Correction two — the table at `:1594-1599` calls Vision's refusal "permanent"
+and Probe's "permanent" on the same grounds. One of the two was.** Vision's
+session advanced (04:18:43 → 05:12:31); Probe's has not moved since 03:53:48.
+
+**Correction three — and this one withdraws a claim this ledger made at
+`:1601-1607`: "a chat whose session is left `started` refuses everything
+indefinitely" is false as a rule, and "a restart buys back Probe's chat and
+Vision's chat, because both are `started`" is false with it.** **A restart buys
+back one wedged chat — Probe's — plus the floor and the stalled round's slot. It
+does NOT buy back Vision's chat: Vision was never dead, and a restart would have
+destroyed live work.**
+
+**And the fourth correction, made at 06:19 against this session's own newest
+claim, which is the one that matters: "`started` and not advancing does not mean
+dead — it can mean slow.** The stalled group round held the floor for 82 minutes
+with the chat's last message stuck at `status: streaming` and **zero characters**,
+its session frozen with the same turn-system error as Probe's, and this session
+called it **wedged** at 05:00, 05:20, 05:27 and again at 06:05. **It was not
+wedged: it finished at 06:19:51 and posted 4,950 characters** — the peer session's
+factory status report. **So the discriminator this section used at `:1590-1607`
+— advancement rather than the status string — is sound for deciding _whether a
+chat refuses work_, and unsound for deciding _whether a turn is alive_.** A turn
+that writes nothing for eighty minutes is exactly what a slow turn looks like
+from outside, and `.factory/watchdog.md` says so in its own words: _"A healthy
+long task is indistinguishable from a livelock, from outside."_
+
+**What survives, stated so the next session does not have to re-derive it:**
+
+| Chat   | What is measured                                                                                                                                  | Verdict                                                                                                                                      |
+| ------ | ------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
+| Probe  | 30 delegations refused since 2026-10-20 21:46:39, the last at 04:25:20; **no Probe task created since**; the session has not moved since 03:53:48 | **the lane refuses everything** — and whether its turn is dead or slow is now unknown, because the round had the same signature and finished |
+| Vision | the session advanced; WI-036's verification ran 45 minutes on it                                                                                  | alive                                                                                                                                        |
+| Wren   | the session advanced to 05:32:50, then took WI-106 at 06:13                                                                                       | alive                                                                                                                                        |
+| Cog    | WI-108's turn is **in flight since 05:31:49 with zero characters for 53 minutes**                                                                 | **a live turn, and a restart would cut it off**                                                                                              |
+
+### 2. Four cancellations, each with the reason it was the duplicate
+
+**The dispatcher takes the first queued task whose bot's chat is free, in
+creation order** (`task-dispatcher.mjs:463-468`), and a task addressed to a busy
+chat stays queued **without consuming a worker** (`task-dispatcher.mjs:465-467`).
+So a stale task at the head of the queue does not merely wait — **it takes the
+next free slot and spends it on work that is already done.** Measured at 05:40:
+five queued tasks, three of them for items accepted hours earlier.
+
+- **`task_8c1dd8c7a349`** (`wi-080-verification-finding-2026-10-22`, created 04:03)
+  — **cancelled 05:47.** Wren's report **to Chief**, queued because Chief's chat
+  was busy. WI-080 was accepted on that same verification at 04:10. **Its one
+  live obligation was a request — "the ledger row for WI-098 is yours, WI-098
+  sits outside your reserved WI-090 to WI-097 block" — and that row is written
+  below.**
+- **`task_37175eba6381`** (`wi-036-record-verification-vision-2026-10-22`, created
+  04:39) — **cancelled 05:47.** Vision's WI-036 verification report, addressed to
+  Chief. **WI-036 is accepted** (`18d417f`, 05:13) on that report.
+- **`task_9d0bc34027c1`** (`wi-036-record-verified-and-one-reading-question-2026-10-22`,
+  created 04:55) — **cancelled 05:47.** The summary of the same verification,
+  addressed to Chief. **One item, one verification.**
+- **`task_040837aa9079`** (`wi-103-contract-pointers-second-2026-10-22`, created
+  05:24) — **cancelled 05:39** by this session, and the peer session's row
+  records the same cancellation. **It was the second dispatch of one item into
+  one chat**, and its title said "eight" for nine.
+
+### 3. WI-103 was dispatched by this session, and stood down by measurement
+
+**This session dispatched WI-103 for the fourth time at 06:00**
+(`wi-103-contract-pointers-fourth-2026-10-22` → `task_3936128201cd`, batch
+`batch_696580395fc1`, queued at Wren), with the nine pointers re-measured line by
+line at `main` = `e18a6f0`. **It was cancelled at 06:15 — 12 minutes later — and
+the reason is the peer session's published hold, which this session then
+measured instead of believing.**
+
+**What the peer session held, and why (its commit `f473982`, 06:05:34):** the
+landing vehicle already re-cites those pointers, so **correcting `main` would
+preserve a sentence the landing removes.** **And this session's own measurement
+confirms it, and more strongly than the peer put it.** The contract's citations
+into `mcp/server.ts` on the vehicle (`origin/wi/101-integration-landing`) are:
+
+```
+server.ts:109-110   server.ts:116-122   server.ts:217   server.ts:52-61   server.ts:532-576
+```
+
+**and on `main` they are:**
+
+```
+server.ts:153   server.ts:368   server.ts:465-481
+```
+
+**Not one of them survives the landing.** The vehicle rewrites the whole section
+those pointers sit in, so **a correction measured on `main`'s numbering would be
+wrong the moment the vehicle lands — nine edits to a contract that is about to be
+replaced.** The peer's hold stands, the lead adopts it, and **the dispatch is
+cancelled.**
+
+**So WI-103's five ids, all spent:**
+
+| request id                                         | task                | what happened                                                                       |
+| -------------------------------------------------- | ------------------- | ----------------------------------------------------------------------------------- |
+| `wi-103-contract-pointers-after-wi-080-2026-10-22` | `task_b0c1dbb8ab05` | **failed** `BUSY` at 05:18:07, 28 s, zero-length answer                             |
+| `wi-103-contract-pointers-second-2026-10-22`       | `task_040837aa9079` | **cancelled** 05:39 — a second dispatch of one item into one chat                   |
+| `wi-103-contract-pointers-repair-2026-10-22`       | `task_9583acd61e3f` | **cancelled** 05:52 by the peer session                                             |
+| `wi-103-contract-pointers-fourth-2026-10-22`       | `task_3936128201cd` | **cancelled 06:15 by this session** — the vehicle re-cites the pointers             |
+| `wi-106-record-four-loose-sentences-2026-10-22`    | `task_fede9dee2ed9` | **not WI-103** — the peer session's dispatch of WI-106 to Wren, running since 06:13 |
+
+**WI-103 is HELD behind the landing vehicle, and that is the peer's ruling as
+lead.** Its item file is now on `main` (`f473982` added
+`.factory/work/WI-103.md`, 221 lines), so **the specification the item needs is in
+the repository** — the defect that made this item "a dispatch the repository
+cannot hold" is closed.
+
+### 4. WI-098's ledger row, which Wren asked for, and the five dead ids behind it
+
+**Wren's message to Chief said: "the ledger row for WI-098 is yours — WI-098
+sits outside your reserved WI-090 to WI-097 block, so the row is not mine to
+write."** It is written here. **The live dispatch rows for this section are in
+this section's tables, not in the dispatch table at `:370-492`, which the peer
+session is editing.**
+
+| request id                                        | item                                                                  | lane   | task                | note                                                                                                                           |
+| ------------------------------------------------- | --------------------------------------------------------------------- | ------ | ------------------- | ------------------------------------------------------------------------------------------------------------------------------ |
+| `wi-098-adr-rule-resync-verify-vision-2026-10-22` | WI-098 — the ADR's boundary rule re-synced, verified by a second hand | Vision | `task_9051dea0390b` | **DISPATCHED AT 06:08 — AFTER FIVE DEAD ATTEMPTS.** Batch `batch_4c19afaa431b`, queued at Vision                               |
+| `wi-106-record-four-loose-sentences-2026-10-22`   | WI-106 — four sentences in the licence record, corrected              | Wren   | `task_fede9dee2ed9` | **DISPATCHED BY THE PEER SESSION AT 06:13**, running. It never touches `CONTRACTS.md`, so the one-file rule never held it back |
+| `wi-103-contract-pointers-fourth-2026-10-22`      | WI-103 — the published contract's nine wrong pointers, corrected      | Wren   | `task_3936128201cd` | **CANCELLED 06:15 BY THIS SESSION** — see §3. The id is spent                                                                  |
+
+**WI-098's five earlier ids are all spent and all are dead:**
+`wi-098-adr-rule-resync-2026-10-22` → `task_5568293c3a21` failed; `-r2` →
+`task_32bfeb7e30e6` cancelled; `-r3` → `task_3d06659e7583` failed; `-r4` →
+`task_fff9833390f9` failed; `-r5` → `task_62b5fed93d3b` failed — **all five to
+Probe, no report ever.** The work is Wren's branch `wi/098-adr-rule-resync`
+(`3b5d427`, four commits: the ADR's re-sync, the item file, a tightened fifth
+criterion, and the connect claim measured). **The tiebreak is in the brief: Wren
+wrote the work; Vision wrote `prototypes/DIRECTION.md`, which is the _reference_
+this item syncs to, not the work verified — so a substituted verifier stands.**
+
+### 5. WI-010 is landed, accepted and pushed — and the lead measured the gates itself
+
+**The peer session landed and accepted WI-010 while this session was measuring the
+same tree.** Merge `e18a6f0` ("Merge WI-010's lane-count commit label"), commit
+`2d7f33d` ("Name the commit the lane count was measured at"), one file, one line:
+`prototypes/DIRECTION.md:293-294`, "at the pinned commit" → "at `3479c31`". The
+item file carries the acceptance, and it is the peer's acceptance as lead.
+
+**This session measured the gates on that tree independently: typecheck exit 0,
+format:check exit 0, build exit 0, test exit 0 — 49 files, 458 tests, 0 failures
+— and the counts agree with the acceptance's.** The acceptance is on the merged
+tree and the gates are on the merged tree, so the evidence covers the file it
+accepted. **The peer session pushed it at 06:05:34 (`f473982`, CI `success`,
+CodeQL `success`), and `origin/main` = `main` at that commit.**
+
+### 6. The stalled group round: 82 minutes, and it was slow, not dead
+
+`task_060987119527`, request id `chief-watchdog-2026-10-22-0401`, chat
+`group:grp_cc2adeea48f4`, session `mvs_da4fd6a55d284724835efedd6434bfcc`. **It is
+this session's own floor post** — the 04:01 watchdog line, whose relay landed at
+04:39:02. Its continuation turn started streaming at **04:57:37** and **produced
+no characters for 82 minutes**; the message sat at `status: streaming`, `text:
+""`, `parts: []`, and the session carried the same turn-system error as Probe's
+wedged chat and did not move.
+
+**It was not cancelled, and the rule is why nothing was lost.** The watchdog's
+precondition is three conditions — over 45 minutes, **the session is not
+`started`**, and the chat's last message from that bot is `streaming`. **The
+session read `started`, so condition two failed, and the check reports and does
+not cancel.** This session called the round "wedged" four times and did not act
+on that reading; **the rule was right and the reading was wrong.**
+
+**It finished at 06:19:51 and posted 4,950 characters** — the peer session's
+factory status report, which carries WI-010's acceptance, WI-103's hold, WI-106's
+dispatch and the owner's decision queue. **So the floor is open again at 06:19,
+and the stall that held one of two slots for 82 minutes has cost the factory
+nothing but silence.**
+
+### 7. What the restart actually buys — measured in the runtime's source
+
+**The lever is `miniapp restart minimax-bot`, and it is the owner's. What it buys
+is measured rather than claimed, and it is not "every `started` chat":**
+
+| What it clears                      | How, in the runtime's own code                                                                                                                                                                                                                                     |
+| ----------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| **the group's mid-discussion lock** | `engine.mjs:205-206` — `isBusy()` returns true while `this.groupLoops` holds the chat, and `groupLoops` is an **in-memory** `Map` (`engine.mjs:153`), so a new runtime starts with it empty and **the floor is open** — it is open now, because the round finished |
+| **a slot held by a stale task**     | `task-dispatcher.mjs:17` — `this.runs = new Map()` is **in-memory**; the slot count is `this.runs.size` (`task-dispatcher.mjs:463`), so a restart frees slots that the task records still claim                                                                    |
+| **the wedged turns**                | `engine.mjs:149` — `this.running` is in-memory too, and `engine.mjs:1551` names the case: "Cut off without an error: the Mini App restarted"                                                                                                                       |
+
+**What it costs, measured at 06:25: Cog's WI-108 turn is in flight** — the chat's
+last message from Cog is `streaming` with zero characters since **05:31:49**, the
+task `task_6fe3e4d8fcca` is still `running` at 53 minutes, and Cog's session has
+not advanced since 05:31:40. **That is the same shape as the round that took 82
+minutes to produce its report, so it may well be a slow turn with a real answer
+coming.** **A restart now would cut it off**, and the floor post at 06:19 — which
+says Cog's live turn "finished at 05:31" — is wrong on that point, because the
+turn that started at 05:31:49 has not finished.
+
+**So the order remains: the ceiling patch, then the restart.**
+`scripts/raise-factory-concurrency.mjs` is tracked on `main` (`7006148`), and every
+copy of the dispatcher on disk reads `MAX_RUNNING = 2` again because a
+content-addressed plugin-cache refresh erased the applied state.
+
+### 8. What the owner is asked to decide, and the lead's recommendation on each
+
+**The peer session put seven questions on the floor at 06:19, and they are the
+owner's queue.** This session's two are the same two and are not repeated on the
+floor; the lead's position on each:
+
+1. **The restart, and when.** **Recommendation: after Cog's WI-108 turn lands, and
+   not before** — a restart cuts a live turn off, and the floor post's premise
+   that no turn is running is wrong. **It buys the floor (already open), a slot,
+   and Probe's chat.** **The ceiling patch first**, so the restart does not leave
+   the factory at two turns.
+2. **Whether a substituted verifier stands.** **The answer is two answers, and the
+   peer's ruling is adopted: a substituted verifier stands only where the
+   substituted verifier did not write the work.** WI-098 is that case — Wren wrote
+   the work, Vision wrote the direction record but not the re-sync. **WI-031's
+   contract half is not:** Wren wrote that half and verified it, so it is HELD for
+   an independent check. **WI-010 was accepted by the lead on its own measurement
+   of Cog's fix, and the lead wrote none of it** — which is the same rule applied
+   to the lead's own acceptance.
