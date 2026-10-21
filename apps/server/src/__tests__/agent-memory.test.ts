@@ -133,6 +133,43 @@ async function mcp(token: string, name: string, args: Record<string, unknown>): 
   return response.body;
 }
 
+/**
+ * What the MCP tool answered.
+ *
+ * The response is an event stream, and the tool's own answer is the text
+ * inside it: the resource on a good call, the error envelope on a refused
+ * one. The envelope is what the contract publishes, so it is read rather
+ * than searched for.
+ */
+function toolAnswer(body: string): { isError: boolean; payload: Record<string, unknown> } {
+  const data = /data:\s*(\{.*\})/s.exec(body)?.[1];
+  if (!data) throw new Error(`no tool result in the response:\n${body}`);
+  const envelope = JSON.parse(data) as {
+    result?: { isError?: boolean; content?: { type: string; text?: string }[] };
+  };
+  const text = envelope.result?.content?.[0]?.text ?? '{}';
+  return {
+    isError: envelope.result?.isError === true,
+    payload: JSON.parse(text) as Record<string, unknown>,
+  };
+}
+
+/** A resource of any kind, written by the owner. */
+async function writeResource(
+  type: string,
+  title: string,
+  data: Record<string, unknown>,
+): Promise<string> {
+  const response = await app.inject({
+    method: 'POST',
+    url: '/api/resources',
+    headers: { cookie: sessionCookie },
+    payload: { workspaceId, type, title, data },
+  });
+  expect(response.statusCode, response.body).toBe(201);
+  return (response.json().resource as { id: string }).id;
+}
+
 describe("an agent's own memory", () => {
   it('shows what the agent remembers, and when it was written', async () => {
     const agent = await createAgent('Rememberer');
@@ -335,12 +372,12 @@ describe("one agent reaching another agent's memory", () => {
   });
 
   it('does not let an agent read another agent’s memory', async () => {
-    // This one is a question, not a breach: `resource.get` is published as
-    // "Read a resource" with no promise about who owns it, so the contract
-    // does not say an agent may not read one. The rule the code states for
-    // writes — an agent touches only its own memory — has no read-side
-    // counterpart, and this test pins the stricter reading until the owner
-    // says which one holds.
+    // The owner ruled at 07:07 that an agent's own memory is private to it,
+    // on reads as well as on writes, and the contract publishes that rule:
+    // `resource.get` reads a resource, "not another agent's own memory". The
+    // refusal is the published one — `forbidden`, and the message the
+    // contract names — so it is read out of the envelope rather than
+    // searched for.
     const reader = await createAgent('Reader');
     const other = await createAgent('Memory owner');
     const memory = await memoryOf(other.id, 'private', 'the other agent only');
@@ -348,6 +385,63 @@ describe("one agent reaching another agent's memory", () => {
     const body = await mcp(reader.token, 'resource.get', { resourceId: memory.id });
 
     expect(body, 'an agent read another agent’s memory').not.toContain('the other agent only');
-    expect(body).toContain('isError');
+
+    const answer = toolAnswer(body);
+    expect(answer.isError, 'the read was not refused').toBe(true);
+    expect(answer.payload.code, 'the refusal is not the published one').toBe('forbidden');
+    expect(answer.payload.message).toBe('An agent may only reach its own memory.');
+  });
+
+  it('lets an agent read its own memory', async () => {
+    const agent = await createAgent('Owner of its own memory');
+    const memory = await memoryOf(agent.id, 'own', 'my own memory');
+
+    const answer = toolAnswer(await mcp(agent.token, 'resource.get', { resourceId: memory.id }));
+
+    expect(answer.isError, 'an agent could not read its own memory').toBe(false);
+    expect(answer.payload.id).toBe(memory.id);
+    expect((answer.payload.data as { value: string }).value).toBe('my own memory');
+  });
+
+  it('leaves the shared scopes and the other resources readable', async () => {
+    const agent = await createAgent('Reader of shared things');
+
+    // The three scopes that are shared by design, and a resource that is not
+    // a memory at all. The rule is about the agent scope and not about
+    // memories in general.
+    const shared: string[] = [];
+    for (const scope of ['workspace', 'conversation', 'goal']) {
+      shared.push(
+        await writeResource('memory', `A ${scope} memory`, {
+          scope,
+          key: 'shared',
+          value: 'everybody may read this',
+          tags: [],
+        }),
+      );
+    }
+    shared.push(
+      await writeResource('document', 'A shared document', {
+        format: 'markdown',
+        content: '# Everyone',
+      }),
+    );
+
+    for (const resourceId of shared) {
+      const answer = toolAnswer(await mcp(agent.token, 'resource.get', { resourceId }));
+      expect(answer.isError, `an agent could not read ${resourceId}`).toBe(false);
+    }
+  });
+
+  it('leaves the owner’s own access untouched', async () => {
+    const agent = await createAgent('Owned memory');
+    const memory = await memoryOf(agent.id, 'private', 'the owner may read this');
+
+    const answer = toolAnswer(
+      await mcp('memory-owner-token', 'resource.get', { resourceId: memory.id }),
+    );
+
+    expect(answer.isError, 'the owner could not read the memory').toBe(false);
+    expect((answer.payload.data as { value: string }).value).toBe('the owner may read this');
   });
 });
