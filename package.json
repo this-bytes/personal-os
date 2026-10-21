@@ -1,6 +1,7 @@
 {
   "name": "personal-os",
   "version": "0.1.0",
+  "license": "MIT",
   "private": true,
   "type": "module",
   "description": "Personal OS — agent-native control panel and personal software factory.",
