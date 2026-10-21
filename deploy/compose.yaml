@@ -68,6 +68,12 @@ services:
       - no-new-privileges:true
     cap_drop:
       - ALL
+    # An agent turn can take minutes. Docker's default stop timeout is ten
+    # seconds, and a worker killed mid-turn leaves a job whose lease expires
+    # — and the queue runs that turn a second time. The worker is asked to
+    # stop, finishes the turn it is running and exits; this is how long it
+    # is given to do that.
+    stop_grace_period: 15m
 
 volumes:
   personal-os-data:

@@ -25,6 +25,7 @@
     "dev": "npm run dev -w @personal-os/server",
     "dev:web": "npm run dev -w @personal-os/web",
     "dev:worker": "npm run dev -w @personal-os/worker",
+    "dev:stack": "tsx scripts/dev.ts",
     "typecheck": "npm run build:deps && npm run typecheck:scripts && npm run typecheck --workspaces --if-present",
     "typecheck:scripts": "tsc -p tsconfig.scripts.json",
     "test": "npm run build:deps && npm run test --workspaces --if-present",
