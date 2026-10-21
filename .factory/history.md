@@ -9203,3 +9203,64 @@ one-file-one-item rule never held it back.** It went out with a new request id
 (`task_fede9dee2ed9`), and the check that would pin the four sentences is named
 as owed and is Probe's file to write. **A hold that was never about the file
 should not be allowed to outlive the queue.**
+
+## Probe's WI-098 report, and what it changed — 2026-10-22 06:31
+
+**Probe's lane came back.** The adversarial brief on WI-098 arrived at 06:20,
+through a delivery session parented to Probe's own session, and **Probe's
+session is alive again** — `mvs_f1f513955649480dbfb09fae820cf59f` is now
+`idle` with an advancing `updatedAt`, after being `started` and frozen
+for more than ninety minutes. **That changes the owner's restart question: the
+restart is no longer needed to revive Probe's lane.** It is still the only way
+to raise the ceiling, and the order is still patch → restart, but the restart
+no longer buys Probe back — it only buys the ceiling.
+
+**The verdict is NOT VERIFIED, and the lead accepts it.** Probe measured at
+`3b5d427` with base `a236a63`. The substance is right — the quote, the
+re-sync judgement, the crossings paragraph, the fourth place — and criteria 4
+and 6 hold. **Four things are wrong.**
+
+**One is blocking, and it is in the writer's file.** The ADR's provenance note
+at `:164` cites the rule at `prototypes/DIRECTION.md:51-55`. **On the branch
+that is true; on `main` the rule stands at `:53-57`**, because `main` has
+moved `DIRECTION.md` since the branch's base. The lead merged the branch onto
+today's `main` in a scratch tree: **no conflict lines**, and in the merged tree
+the rule is at `:53-57` while the ADR still says `:51-55` — **the cited range
+starts two lines early and ends two lines short, in the very note that records
+the quote's provenance.** The prose is byte-identical (312/312). **The ruling:
+the note carries the commit the range was read at, beside the range** — the
+convention `prototypes/DIRECTION.md` sets for itself at `:12-19`. The correction
+goes to Wren, with the order: **merge `origin/main` into the branch first**
+(measured clean), read the range in that tree, cite it, name the commit.
+
+**Three are the lead's own, and the lead fixed them.** **Criterion 1** was
+written against the stricter reading and could not be met by work that is
+right: the raw blocks are **322 against 328** and are not byte-identical, and
+only the stripped prose bodies — **312 each** — are. **The figures were off by
+one**: the file is **401** lines by newline count, stale by **35**, not 402 and
+36, and **402 is the count that includes the trailing empty element** — so the
+convention is now written down. **And the wrap claim was overstated**: greedy-78
+reproduces 14 of 35 of the base ADR's prose paragraphs, the best width is 79,
+and the existing paragraphs carry lines longer than 78. **A criterion that
+cannot be met by work that is right is a defect in the criterion, and the
+criterion was in the lead's file.**
+
+**And one is a commit message that is literally false.** `678744d` says the
+direction "does not contain the word 'connect' at all". **It does** — on four
+lines at `d3ef0d2^`. The message cannot be repaired: the pre-push hook
+refuses any non-fast-forward push and the escape hatch is
+`PERSONAL_OS_ALLOW_FORCE=1`. **A force-push is the owner's word, and the
+lead's recommendation is to leave the message standing with this correction
+beside it** — which is the house's own rule for a wrong claim.
+
+**One finding became its own item.** `docs/strategy.md:248-250` still carries
+the rule with **no exception clause at all**, while the rule now has two
+declared exceptions. **It under-states the rule rather than repeating it**, and
+no test reads the file. That is **WI-111**, opened and dispatched at 06:31 —
+**and the file is free, measured before the dispatch**: the peer's unlanded
+branch changes `docs/strategy.md` at 108, 154, 179, 326, 359, 450, 562 and 578,
+**not at 248-250**.
+
+**One verification, one item, one verifier.** A second WI-098 verification was
+queued to Vision at 06:08 and **the lead cancelled it at 06:24** — Probe
+flagged the duplicate himself. **That request id is spent.**
