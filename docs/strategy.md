@@ -75,13 +75,14 @@ is a claim on a space that moves; the subject is what the idea becomes. Where a
 stable anchor exists it is used instead — a candidate id, an ADR, a section of the
 product record.
 
-**What the 2026-10-20 sweep lost.** That sweep read twelve comparators and three
-findings survived into ADR 0007 and INTAKE.md. The list itself did not survive:
-`prototypes/DIRECTION.md` was rewritten for Forge and the sweep went with it, and
-[WI-011](../.factory/work/WI-011.md) still points at that file as its source. **This
-table is the sweep, redone and made durable.** It is the answer to a question the
-repository could no longer answer: _which projects is this built on, and what does
-each licence permit?_
+**What the 2026-10-20 sweep lost, and where it lives now.** That sweep read twelve
+comparators and three findings survived into ADR 0007 and INTAKE.md. The list itself
+did not survive: `prototypes/DIRECTION.md` was rewritten for Forge and the sweep went
+with it. **This table is the sweep, redone and made durable**, and it is now where
+the factory reads it: [WI-011](../.factory/work/WI-011.md) — the product's identity
+and principles — **points at this document** as the source of its twelve comparators.
+It is the answer to a question the repository could no longer answer: _which projects
+is this built on, and what does each licence permit?_
 
 **The licence reality is the reason Q5 is right.** n8n's licence file says it is
 "not licensed under any of the main open source licenses". Dify's says it is
