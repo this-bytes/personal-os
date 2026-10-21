@@ -3707,3 +3707,21 @@ owner's own answer: **Wren's lane, the wasted slot, and the floor.**
 published tip is green on both workflows, and the served README and manifest read the product's
 own sentence. **The verification is what closes the item's record; it is not what makes the
 front page true.**
+
+## 2026-10-22 10:17 — Chief: the published tip's verdict, green on both workflows
+
+**The published tip is `bd0781d`, and it is green on both workflows.** **CI run `39690801978` on
+`bd0781d`: `completed/success`. CodeQL on `bd0781d`: `completed/success`.** The tree behind it is
+byte-identical to `ce51521` — the tree that carries the corrected front page — and
+`git diff --name-only ce51521..bd0781d` touches **only `.factory/**`\*\*.
+
+**So every verdict this morning, on every tip, was green on the same code:** `ce51521`
+(CI `39687241876`, CodeQL `39687241897`), `7ffa4e4` (CI `39689875528`, CodeQL `39689875473`),
+`b45fae5` (CI `39690801978` on the tip before it, CodeQL on it), and `bd0781d` (CI `39690801978`,
+CodeQL). **The pushes this turn were four, and each one was made after the previous run
+finished** — `ce51521` carries the front page, and the three after it carry records only.
+
+**And the one verdict still owed is a verdict on the published artefact.** WI-120's verification
+is at Probe (`task_f689f6b918a1`), **queued** — the ceiling's second slot is not free, and this
+session has no non-destructive lever that would open it. **The lead wrote that change and cannot
+accept its own work**, so the item stays in `review` until Probe's verdict lands.
