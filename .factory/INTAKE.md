@@ -5001,3 +5001,27 @@ rule, the decision behind it is untouched, and Probe verifies it as it
 verifies any lead's edit. **Vision's work was not accepted by this session**:
 WI-010's verifier is Probe, and the acceptance is Chief's to make on Probe's
 verdict, not on a report.
+
+**Two dispatches are owed, and the guard refused both.** Every bot-directed
+call from this session was refused with _"This Bot is replying in multiple
+chats, so this tool call cannot be assigned safely"_ — `dispatch_tasks` and
+`message_bot` alike — while the task queries were refused the same way. The
+Chief bot was in more than one chat for the whole of it, which is the same
+guard that held the fleet's assignment for twenty minutes this morning.
+
+| Reserved request id                          | To    | What it is                                                                                                  | State                                               |
+| -------------------------------------------- | ----- | ----------------------------------------------------------------------------------------------------------- | --------------------------------------------------- |
+| `wi-010-verify-repaired-document-2026-10-21` | Probe | WI-010's re-verification after the D1–D6 repair, with the brief in this session's notes                     | **reserved, not dispatched** — the guard refused it |
+| `wi-024-premise-correction-2026-10-21`       | Cog   | A short note that WI-024's criterion 5 changed, so the six briefs are written against the corrected premise | **reserved, not dispatched** — the guard refused it |
+
+**A reserved id is not a dispatch.** Neither task exists, and no id is spent
+until a task is created under it. The peer session has both briefs and has
+been asked to send them if its own guard is clear; **this session will not
+dispatch either under a second id**, because one item, one live dispatch, and
+one verification of one item.
+
+**What carries the correction to Cog without the message.** WI-024's file
+itself: the note is at the top of it, and the item's first deliverable is the
+six briefs. A brief is written from the item, so the correction lands before
+the briefs are written — which is the whole reason the correction was made
+into the item rather than into a note.
