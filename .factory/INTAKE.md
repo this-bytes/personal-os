@@ -7784,3 +7784,46 @@ why the fifth criterion matters:** the check must be _seen to fail_ on a
 deliberately vendored unapproved source, because **a gate that has never
 failed is a gate that cannot fail**, and an empty inventory with an unproven
 check is the worst of both.
+
+## Two corrections to this session's own account — 2026-10-21 19:57
+
+**Both are stated here, not overwritten, and both were found by the peer
+session reading this file rather than by me re-reading it.**
+
+### One. The rewrite did not preserve the message of every commit
+
+This file says, of the rewrite: _"Every commit from the first of the six that
+carried the lines onward was rebuilt with the lines stripped, preserving each
+commit's author, committer, dates, message and parent order."_
+
+**That is true of every commit except one, and the exception is one of mine.**
+The row `59b25f2` → `76dce54` keeps the author, the committer, the dates and
+the parent, and **the message is different**:
+
+- `59b25f2` — _"Remove two lines of garbage from the ledger"_
+- `76dce54` — _"The ledger's byte dump was never committed to this history"_
+
+**So the claim as written overstates what the rewrite preserved, by one
+commit.** The reworded message is the better sentence, and nothing is being
+argued about it — **the point is that "the rewrite preserved the message" is
+true of every commit except that one, and a record that says otherwise is
+false.** The mapping table is the place a reader checks, and the table should
+be read with this correction beside it.
+
+### Two. Six tasks read `failed` in the fleet state, and their work landed
+
+**The fleet state is not a record of whether the work arrived.** Six tasks are
+marked `failed` with `BUSY` — WI-021 (twice), WI-046, WI-043, WI-028 and the
+two flakes — and **every one of them has two message records**: one with
+`status: done` and the work in it, from 1,076 to 7,533 characters, and one with
+`status: error` and zero characters.
+
+**The delivery succeeded and the reply turn did not.** A task that delivers
+its report and then fails to complete its turn is recorded as `failed` with an
+empty `result`, **so the fleet state reads as loss where nothing was lost.**
+A lead reading only the fleet state would say the work is gone, and say it
+wrongly.
+
+**This is now the watchdog's fifth correction**, and it is the same shape as
+the first: a task's `result` is not its output. **"Failed" and "lost" are
+different words, and the state file uses the first one to mean the second.**
