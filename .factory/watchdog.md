@@ -79,12 +79,13 @@ measure available, and it still consumed the slot.
 
 ### What is measurable
 
-| Signal                                   | Read from                     | Verdict                                       |
-| ---------------------------------------- | ----------------------------- | --------------------------------------------- |
-| elapsed time on a `running` task         | the fleet state               | **works, but cannot separate** (see below)    |
-| `result` / `messageId` / `endedAt` empty | the fleet state               | **always true while running** — no signal     |
-| the session's status                     | `mavis session get`           | **circular** — see the correction above       |
-| the session's `updatedAtMs` on disk      | the session's `manifest.json` | **stale** — it is creation time, not liveness |
+| Signal                                   | Read from                     | Verdict                                         |
+| ---------------------------------------- | ----------------------------- | ----------------------------------------------- |
+| elapsed time on a `running` task         | the fleet state               | **works, but cannot separate** (see below)      |
+| `result` / `messageId` / `endedAt` empty | the fleet state               | **always true while running** — no signal       |
+| the session's status                     | `mavis session get`           | **circular** — see the correction above         |
+| the session's `updatedAtMs` on disk      | the session's `manifest.json` | **stale** — it is creation time, not liveness   |
+| the bot's last message in its chat       | the chat's message store      | **empty while a turn is in flight** — no signal |
 
 **The elapsed time cannot separate a stall from a long task.** Measured over the
 82 tasks that completed on 2026-10-21:
@@ -100,6 +101,14 @@ measure available, and it still consumed the slot.
 longest took 477 minutes. **A check that cancels on elapsed time would have
 killed five real pieces of work.** So elapsed time is a _trigger to look_, never
 a _reason to cancel_.
+
+**And a healthy long task is indistinguishable from a livelock, from outside.**
+Measured on 2026-10-21 at 16:24, a group task had been running 43 minutes: its
+session status was `started`, and **the last message its bot had posted to the
+chat was empty** — because the engine appends an empty placeholder when a turn
+starts and the real text when it ends. The livelocked turn of 13:13 had exactly
+the same two properties. **Both signals are the same for both cases**, so **no
+automatic action is safe**, and the check reports.
 
 ### The check
 
@@ -121,7 +130,13 @@ and a person judges.
    - **whether it has already committed its work** (`git log` in the repository),
      because that is what makes cancellation safe;
    - **the last message that chat received from that bot** — on 2026-10-21 the
-     stalled turn had posted **empty text**, and that was the only trace it left.
+     stalled turn had posted **empty text**, and that was the only trace it left;
+   - **that bot's session status**, from `mavis session get` with the task's
+     `sessionId`. `started` means the turn is still in flight and the bot is
+     alive. **It does not clear the task** — a healthy 43-minute task and the
+     livelock both showed `started` — but **it tells the reader that nobody is
+     watching a corpse**, and it is the one thing the reader cannot get from
+     the fleet state alone.
 
 ### What the report leads to
 
