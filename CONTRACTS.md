@@ -65,7 +65,7 @@ type ContentPart =
 
 ### Additive extensions
 
-The implementation adds three fields, all optional and all required by production
+The implementation adds five fields, all optional and all required by production
 behaviour:
 
 ```ts
@@ -80,12 +80,27 @@ interface Message {
     depth: number;
   };
   executionId?: ID;
+  detail?: string;
 }
 ```
 
 `status` lets a client render a partially streamed answer. `correlationId` ties every
 turn derived from one human request together. `origin` records who spoke and how far
-the delegation chain has travelled — the basis of the echo-loop guard.
+the delegation chain has travelled — the basis of the echo-loop guard. `executionId`
+names the execution the message belongs to — the execution is the run itself, and
+the message it produced is that run's own record
+(`apps/server/src/modules/conversations/service.ts:53-54`). **`detail` is the
+server's own sentence about how the message ended** — a message that did not finish
+says why, in the server's words
+(`packages/contracts/src/conversation.ts:90`), and the client shows it as it is
+given rather than rewording it
+(`apps/web/src/components/ChatMessageList.tsx:132-137`).
+
+**Migration.** Nothing is reclassified. The fields are additive and no existing
+record is rewritten: a message that carries none of them is still a message, and a
+message that carries `detail` is still the message it was. A client written before
+this change has to allow for `detail` on a message that carries it, and must not
+read its absence as a failure.
 
 ### The unknown outcome
 
@@ -167,6 +182,19 @@ execution become `complete` or `failed`. The message status is not the
 execution status: it carries `complete` where the execution carries
 `completed` (`packages/contracts/src/conversation.ts:62`), and a client that
 expects the execution's word on the reply's word will be wrong.
+
+**The reply carries the server's own sentence.** `detail` is the account the server
+produced of how the turn ended, and it travels on the reply: the messages of that
+execution carry it when the execution is settled
+(`apps/server/src/modules/executions/service.ts:108-111`, and
+`apps/server/src/modules/approvals/resume.ts:189-193` for the turn that is closed
+rather than continued). **A client shows it as it is given**
+(`apps/web/src/components/ChatMessageList.tsx:132-137`): the account of what happened
+is the server's, and rewording it in the client would be the client telling the
+owner something the server knows better. **A client written before this route existed
+reads a reply that carries no `detail`, and that is not an error** — the sentence is
+the account of a turn that did not finish, and a turn that finished has nothing to
+say.
 
 **The note is recorded with the transition.** The audit entry carries it, and on
 an execution that failed it is the execution's `error`, because that column
