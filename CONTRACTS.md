@@ -746,17 +746,17 @@ the template to start from, and its `type` must equal the `type` the call asks f
 `spec` with those values merged into it. **A call that carries both is no longer
 refused — it is answered**, and the values the call did not name are the template's.
 A template whose spec the owning provider refuses is `validation_failed`
-(`apps/server/src/modules/resources/service.ts:645-650`), and a template of another
+(`apps/server/src/modules/resources/service.ts:648-653`), and a template of another
 kind is refused the same way
-(`apps/server/src/modules/resources/service.ts:660-662`); an unknown template id is
+(`apps/server/src/modules/resources/service.ts:662-666`); an unknown template id is
 `not_found`. Those codes are already published in
 [Error envelope](#error-envelope); this entry adds none. The tool's visibility
 follows the same grant rule as every other tool on that surface, published in
 [MCP exposure](#mcp-exposure).
 
 **The merge rules are these.** They are implemented by `mergeTemplateSpec`
-(`apps/server/src/modules/resources/templates.ts:522`), and the rules per kind
-are at `apps/server/src/modules/resources/templates.ts:497`:
+(`apps/server/src/modules/resources/templates.ts:534`), and the rules per kind
+are at `apps/server/src/modules/resources/templates.ts:509-522`:
 
 - **Objects merge key by key.** A key the caller's values do not name keeps the
   template's value, and the merge is recursive: a nested object merges the same way.
@@ -800,7 +800,7 @@ the connection is granted them, the way every other tool on that surface is
 values into the template's spec at
 `apps/server/src/modules/mcp/server.ts:446-448`, and passes the template's id and
 version on at `apps/server/src/modules/mcp/server.ts:458`. The merge rules
-themselves are at `apps/server/src/modules/resources/templates.ts:497`, and the
+themselves are at `apps/server/src/modules/resources/templates.ts:509-522`, and the
 resource records them at
 `apps/server/src/modules/resources/service.ts:191-192` and
 `apps/server/src/modules/resources/service.ts:374-375`.
@@ -819,7 +819,7 @@ at `apps/server/src/modules/resources/templates.ts:21`:
 
 Each is published at version 1, each carries a guide, and every one is checked
 against the provider that owns its kind when the service is built
-(`apps/server/src/modules/resources/service.ts:459`), so a template that drifted
+(`apps/server/src/modules/resources/service.ts:461-463`), so a template that drifted
 is caught at the door rather than by an agent that reached for it.
 
 **A client may now call `resource.template.list` and `resource.template.get`, and may
@@ -1133,12 +1133,15 @@ difference between a daily cap and `maxSpendUnits`.
 **A cap is only as good as the number it is measured against.** The daily cap is
 measured against the spend units recorded on the executions, and a turn's cost is
 one spend unit — the measure the product already has
-(`apps/server/src/modules/conversations/routing.ts:306`). **The product does
-not yet record it against an execution**: every execution is written with no spend
-units (`apps/server/src/modules/conversations/dispatch.ts:171`,
-`apps/server/src/modules/factory/service.ts:368`), and the column defaults to zero
+(`apps/server/src/modules/conversations/routing.ts:306`). **The cost is recorded
+against the execution when the turn ends**: the worker writes one unit for an
+agent turn and none for a turn that never reached the agent
+(`apps/worker/src/executor.ts:892-899`, `apps/worker/src/executor.ts:1186-1191`).
+**The row is created with no spend units**, because the cost is not known until
+the turn has run (`apps/server/src/modules/conversations/dispatch.ts:171`,
+`apps/server/src/modules/factory/service.ts:372`), and the column defaults to zero
 (`apps/server/src/db/schema.ts:231`). **So the workspace's spend for the day is
-zero today, and the cap cannot bite until the cost is recorded.**
+the sum of what its turns actually cost, and the cap bites.**
 
 **The mode is resolved, readable, and enforced nowhere.** It is carried through the
 resolver and it is readable wherever the policy is, but no enforcement point reads
@@ -1227,8 +1230,8 @@ result: 'queued' | 'succeeded' | 'failed' | 'unknown';
 
 **`queued` means the action was accepted and has not finished.** `POST
 /api/resources/:id/execute` records `queued` for an automation run it enqueues
-(`apps/server/src/modules/resources/service.ts:594`), and answers `queued: true`
-(`apps/server/src/modules/resources/service.ts:599`): the route accepted the request
+(`apps/server/src/modules/resources/service.ts:596`), and answers `queued: true`
+(`apps/server/src/modules/resources/service.ts:601`): the route accepted the request
 and the run has not happened. The same route runs a data source and a dashboard there
 and then, so **the vocabulary is per action, not per route** — one route can record
 `queued` for one kind and `succeeded` for another. **`succeeded` means the outcome was
