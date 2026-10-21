@@ -318,43 +318,45 @@ started its next turn, and cleared once more at 07:11.
 Both request ids are idempotent, so a retry is safe and a retry is not a
 second dispatch.
 
-| Request id                                     | Item                                                               | To     | Task                | State, 2026-10-21 11:05, and this session's 10:03 +11:00                                                                                                                                                                                         |
-| ---------------------------------------------- | ------------------------------------------------------------------ | ------ | ------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `wi-022-publish-waiting-reasons`               | WI-022 — the published waiting list's reasons                      | Wren   | `task_ed4c3132afe9` | **cancelled** — died with `AGENT_UNAVAILABLE`; the retry was cancelled at 07:29 and **Chief implemented it** (`a44a374`)                                                                                                                         |
-| `wi-010-verify-forge-rewrite`                  | WI-010 — the direction, verified                                   | Probe  | `task_4cc3a3b1160f` | **cancelled** — died with `AGENT_UNAVAILABLE`; the retry `task_5666d5ca0dc2` is **done**                                                                                                                                                         |
-| `wi-024-forge-adoption`                        | WI-024 — the panel takes Forge                                     | Cog    | `task_5354f76acca3` | **cancelled** at 07:49:25 — **and it has a successor**: Chief's retry under the same id made a fresh task, `task_5a09991ca5a1` (batch `batch_72271e402bc9`), queued — **that is the live dispatch on WI-024**                                    |
-| `wi-025-direction-adr`                         | WI-025 — the direction answer in ADR 0007                          | Wren   | `task_ce64c47ef3d9` | **cancelled** at 07:49:25 — **Chief implemented it** (`0d4ec09`); Probe's verdict is in and it is **not verified**, and the record pass is with Wren as `wi-025-adr-record-pass-2026-10-21`                                                      |
-| `wi-026-waiting-kind`                          | WI-026 — the waiting list's kind grows by one                      | Wren   | `task_fbb0e0528036` | **cancelled** at 07:29 — **Chief implemented it** (`a44a374`)                                                                                                                                                                                    |
-| `wi-027-unknown-turn`                          | WI-027 — an unknown turn reaches the waiting list                  | Cog    | `task_9425c9b2a237` | **cancelled** at 07:49:25 — the retry `task_18f3c6c43c9d` **ran 08:34–08:51 and landed `c9bb0bc`**; the item is now in verify                                                                                                                    |
-| `wi-028-memory-read-privacy`                   | WI-028 — an agent's own memory is private to it                    | Cog    | `task_99c5c5eeb7aa` | **cancelled** at 07:49:25 — the code landed in `622812c`; the contract half was dispatched at 07:59 as `task_146247be56d5` (queued)                                                                                                              |
-| `wi-029-exposure-race`                         | WI-029 — the exposure test does not race the reset                 | Probe  | `task_085e132ddaa1` | **cancelled** at 07:49:25 — the race is green                                                                                                                                                                                                    |
-| `wi-030-publish-two-shapes`                    | WI-030 — publish the template record and the measures route        | Wren   | `task_f31d629a27b8` | **done** at 08:34:37 — the two entries landed in `e682224` (`CONTRACTS.md:434`, `:935`); **Probe's verification is dispatched** as `wi-030-verify-published-shapes-2026-10-21`                                                                   |
-| `wi-005-ci-review-2`                           | WI-005 — the two CI changes, re-reviewed                           | Probe  | `task_94125a893054` | **done** at 08:29:18 — its findings are being implemented in the tree now                                                                                                                                                                        |
-| `wi-017-resource-templates`                    | WI-017 — a template tells an agent what a good resource looks like | Cog    | `task_d9352ee63330` | **cancelled** at 08:16 — re-dispatched at 08:39 as `task_0256a298ca60` (queued), **and that one was cancelled at 10:50 by Chief and merged** into the live dispatch `wi-017-template-record-successor-2026-10-21` / `task_4b5a7d412c11` (queued) |
-| `wi-020-measures-route`                        | WI-020 — the product reports on itself                             | Cog    | `task_6c20e85110f9` | **cancelled** at 08:16 — re-dispatched at 08:39 as `task_d4813ecd34ee` (queued), **and that one was cancelled at 10:50 by Chief and merged** into the live dispatch `wi-020-measures-successor-2026-10-21` / `task_7fca497d2514` (queued)        |
-| `wi-022-verify-contract`                       | WI-022 — verify the published reasons                              | Probe  | `task_8e6fe1c54bfb` | **cancelled** at 08:33 — re-dispatched under `wi-022-verify-contract-r2` as `task_38cb5ecee977`, queued                                                                                                                                          |
-| `wi-026-verify-contract`                       | WI-026 — verify the published kind                                 | Probe  | `task_3f565465dba3` | **cancelled** at 08:33 — re-dispatched under `wi-026-verify-contract-r2` as `task_25bf9ea7e2cb`, queued                                                                                                                                          |
-| `wi-025-verify-adr`                            | WI-025 — verify the direction answer in ADR 0007                   | Probe  | `task_2b5c9020bf00` | **done** at 09:48 — **not verified**: three defects (a pointer, a figure the ADR should not carry, and the count of travelling rules). The record pass is with Wren; the re-verification is owed after it                                        |
-| `wi-012-verify-fixed-tree-2026-10-21`          | WI-012 — the memory guard, the fixed tree verified                 | Probe  | `task_d9cfcc0b665f` | **done** at 09:45 — **all eight criteria met; WI-012 is accepted**                                                                                                                                                                               |
-| `wi-010-return-d1-d5-2026-10-21`               | WI-010 — the direction document, returned for repair               | Vision | `task_900cda1c2202` | **cancelled** at 10:40 by Chief, before it started, so that one finding could be added — re-dispatched as `wi-010-return-d1-d6-2026-10-21`                                                                                                       |
-| `wi-010-return-d1-d6-2026-10-21`               | WI-010 — the same work, D1 to D6                                   | Vision | `task_9107d7d623d6` | **queued** — **the live dispatch on WI-010**                                                                                                                                                                                                     |
-| `wi-008-close-reply-classification-2026-10-21` | WI-008 — the classification of `closeReply`                        | Cog    | `task_1404e5875644` | **done** — the classification is in the table and criterion 2 is met                                                                                                                                                                             |
-| `wi-031-contract-2026-10-21`                   | WI-031 — the contract half, the route that closes a turn           | Wren   | `task_8ef054ed68d0` | **queued**                                                                                                                                                                                                                                       |
-| `wi-031-implementation-2026-10-21`             | WI-031 — the implementation, the same route                        | Cog    | `task_a22eeda307db` | **queued**                                                                                                                                                                                                                                       |
-| `wi-007-verify-fixed-tree-2026-10-21`          | WI-007 — the fixed tree, verified                                  | Probe  | `task_2e431d7647e5` | **queued**                                                                                                                                                                                                                                       |
-| `wi-007-migration-note-2026-10-21`             | WI-007 — the migration note's missing sentence                     | Wren   | `task_e6fe9555ca74` | **queued** — one sentence of `CONTRACTS.md`, and the last thing between WI-007 and acceptance                                                                                                                                                    |
-| `wi-027-verify-fixed-tree-2026-10-21`          | WI-027 — the turn on the waiting list, verified                    | Probe  | `task_6a9a1179734c` | **queued**                                                                                                                                                                                                                                       |
-| `wi-021-verify-fixed-tree-2026-10-21`          | WI-021 — the refusal, verified                                     | Probe  | `task_479859728e18` | **queued** — the verification that has to read WI-009's updated tests and say what they now hold                                                                                                                                                 |
-| `wi-017-template-record-successor-2026-10-21`  | WI-017 — the template record, built against the published shape    | Cog    | `task_4b5a7d412c11` | **queued** — **the live dispatch on WI-017**; it merges the two cancelled briefs and adds the Chief's rulings                                                                                                                                    |
-| `wi-020-measures-successor-2026-10-21`         | WI-020 — the two measures, built against the published route       | Cog    | `task_7fca497d2514` | **cancelled** at 10:03 +11:00 by Chief — still queued, so nothing was lost; its brief was merged into the third dispatch, which carries the band ruling. **The live dispatch on WI-020 is `wi-020-measures-route-r3-2026-10-21`**                |
-| `wi-025-adr-record-pass-2026-10-21`            | WI-025 — the ADR's record pass, with Wren                          | Wren   | `task_c3e1f0b6d558` | **queued** — a pointer, a figure, and one thing not to touch                                                                                                                                                                                     |
-| `wi-030-verify-published-shapes-2026-10-21`    | WI-030 — the two published shapes, verified                        | Probe  | `task_dc2aeef86acb` | **queued** — **upstream of two builds**; the dispatch asks for the queue to be reordered if it can be                                                                                                                                            |
-| `wi-036-licence-record-2026-10-21`             | WI-036 — the dependency licences, read from the repositories       | Wren   | `task_2c5159aab413` | **queued** — **the live dispatch on WI-036**; the record that WI-038's gate compares against                                                                                                                                                     |
-| `wi-037-product-record-forge-2026-10-21`       | WI-037 — the product record says Desk (B); the owner chose Forge   | Wren   | `task_4947c89ca7fe` | **queued** — **the live dispatch on WI-037**; the overdue truthfulness fix                                                                                                                                                                       |
-| `wi-020-measures-route-r3-2026-10-21`          | WI-020 — the two measures, with the band ruling                    | Cog    | `task_86010eeeb561` | **queued** — **the live dispatch on WI-020**; it carries the band ruling — the band ships only the counts it can defend, and no ratio, until WI-033 and WI-034 land                                                                              |
-| `wi-039-evidence-contract-2026-10-21`          | WI-039 — publish the evidence a decision is taken against          | Wren   | `task_dd95fe7df207` | **queued** — **the live dispatch on WI-039**; the contract half of the gap Vision found in the decision control, and it goes before WI-040                                                                                                       |
-| `wi-041-readme-licence-2026-10-21`             | WI-041 — the README tells the truth about the licence              | Wren   | `task_644f23312ebc` | **queued** — **the live dispatch on WI-041**; the owner's "the licence is deliberately undecided" answer, in one sentence                                                                                                                        |
-| `wi-043-manifest-licence-verify-2026-10-21`    | WI-043 — the manifest no longer claims a licence                   | Probe  | `task_9b1b44c1025f` | **queued** — Chief's one-line removal of `"license": "MIT"`, and Probe's verification of it                                                                                                                                                      |
+| Request id                                     | Item                                                               | To     | Task                | State, 2026-10-21 11:05, and this session's 10:03 +11:00                                                                                                                                                                                                         |
+| ---------------------------------------------- | ------------------------------------------------------------------ | ------ | ------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `wi-022-publish-waiting-reasons`               | WI-022 — the published waiting list's reasons                      | Wren   | `task_ed4c3132afe9` | **cancelled** — died with `AGENT_UNAVAILABLE`; the retry was cancelled at 07:29 and **Chief implemented it** (`a44a374`)                                                                                                                                         |
+| `wi-010-verify-forge-rewrite`                  | WI-010 — the direction, verified                                   | Probe  | `task_4cc3a3b1160f` | **cancelled** — died with `AGENT_UNAVAILABLE`; the retry `task_5666d5ca0dc2` is **done**                                                                                                                                                                         |
+| `wi-024-forge-adoption`                        | WI-024 — the panel takes Forge                                     | Cog    | `task_5354f76acca3` | **cancelled** at 07:49:25 — **and it has a successor**: Chief's retry under the same id made a fresh task, `task_5a09991ca5a1` (batch `batch_72271e402bc9`), queued — **that is the live dispatch on WI-024**                                                    |
+| `wi-025-direction-adr`                         | WI-025 — the direction answer in ADR 0007                          | Wren   | `task_ce64c47ef3d9` | **cancelled** at 07:49:25 — **Chief implemented it** (`0d4ec09`); Probe's verdict is in and it is **not verified**, and the record pass is with Wren as `wi-025-adr-record-pass-2026-10-21`                                                                      |
+| `wi-026-waiting-kind`                          | WI-026 — the waiting list's kind grows by one                      | Wren   | `task_fbb0e0528036` | **cancelled** at 07:29 — **Chief implemented it** (`a44a374`)                                                                                                                                                                                                    |
+| `wi-027-unknown-turn`                          | WI-027 — an unknown turn reaches the waiting list                  | Cog    | `task_9425c9b2a237` | **cancelled** at 07:49:25 — the retry `task_18f3c6c43c9d` **ran 08:34–08:51 and landed `c9bb0bc`**; the item is now in verify                                                                                                                                    |
+| `wi-028-memory-read-privacy`                   | WI-028 — an agent's own memory is private to it                    | Cog    | `task_99c5c5eeb7aa` | **cancelled** at 07:49:25 — the code landed in `622812c`; the contract half was dispatched at 07:59 as `task_146247be56d5` (queued)                                                                                                                              |
+| `wi-029-exposure-race`                         | WI-029 — the exposure test does not race the reset                 | Probe  | `task_085e132ddaa1` | **cancelled** at 07:49:25 — the race is green                                                                                                                                                                                                                    |
+| `wi-030-publish-two-shapes`                    | WI-030 — publish the template record and the measures route        | Wren   | `task_f31d629a27b8` | **done** at 08:34:37 — the two entries landed in `e682224` (`CONTRACTS.md:434`, `:935`); **Probe's verification is dispatched** as `wi-030-verify-published-shapes-2026-10-21`                                                                                   |
+| `wi-005-ci-review-2`                           | WI-005 — the two CI changes, re-reviewed                           | Probe  | `task_94125a893054` | **done** at 08:29:18 — its findings are being implemented in the tree now                                                                                                                                                                                        |
+| `wi-017-resource-templates`                    | WI-017 — a template tells an agent what a good resource looks like | Cog    | `task_d9352ee63330` | **cancelled** at 08:16 — re-dispatched at 08:39 as `task_0256a298ca60` (queued), **and that one was cancelled at 10:50 by Chief and merged** into the live dispatch `wi-017-template-record-successor-2026-10-21` / `task_4b5a7d412c11` (queued)                 |
+| `wi-020-measures-route`                        | WI-020 — the product reports on itself                             | Cog    | `task_6c20e85110f9` | **cancelled** at 08:16 — re-dispatched at 08:39 as `task_d4813ecd34ee` (queued), **and that one was cancelled at 10:50 by Chief and merged** into the live dispatch `wi-020-measures-successor-2026-10-21` / `task_7fca497d2514` (queued)                        |
+| `wi-022-verify-contract`                       | WI-022 — verify the published reasons                              | Probe  | `task_8e6fe1c54bfb` | **cancelled** at 08:33 — re-dispatched under `wi-022-verify-contract-r2` as `task_38cb5ecee977`, **done** at 10:37 — **all seven criteria met; WI-022 is accepted**, the item's own "Changed" line corrected, and the citation refresh dispatched as a successor |
+| `wi-026-verify-contract`                       | WI-026 — verify the published kind                                 | Probe  | `task_3f565465dba3` | **cancelled** at 08:33 — re-dispatched under `wi-026-verify-contract-r2` as `task_25bf9ea7e2cb`, **done** at 10:52 — **all seven criteria met; WI-026 is accepted**, the criterion's citation corrected                                                          |
+| `wi-025-verify-adr`                            | WI-025 — verify the direction answer in ADR 0007                   | Probe  | `task_2b5c9020bf00` | **done** at 09:48 — **not verified**: three defects (a pointer, a figure the ADR should not carry, and the count of travelling rules). The record pass is with Wren; the re-verification is owed after it                                                        |
+| `wi-012-verify-fixed-tree-2026-10-21`          | WI-012 — the memory guard, the fixed tree verified                 | Probe  | `task_d9cfcc0b665f` | **done** at 09:45 — **all eight criteria met; WI-012 is accepted**                                                                                                                                                                                               |
+| `wi-010-return-d1-d5-2026-10-21`               | WI-010 — the direction document, returned for repair               | Vision | `task_900cda1c2202` | **cancelled** at 10:40 by Chief, before it started, so that one finding could be added — re-dispatched as `wi-010-return-d1-d6-2026-10-21`                                                                                                                       |
+| `wi-010-return-d1-d6-2026-10-21`               | WI-010 — the same work, D1 to D6                                   | Vision | `task_9107d7d623d6` | **queued** — **the live dispatch on WI-010**                                                                                                                                                                                                                     |
+| `wi-008-close-reply-classification-2026-10-21` | WI-008 — the classification of `closeReply`                        | Cog    | `task_1404e5875644` | **done** — the classification is in the table and criterion 2 is met                                                                                                                                                                                             |
+| `wi-031-contract-2026-10-21`                   | WI-031 — the contract half, the route that closes a turn           | Wren   | `task_8ef054ed68d0` | **queued**                                                                                                                                                                                                                                                       |
+| `wi-031-implementation-2026-10-21`             | WI-031 — the implementation, the same route                        | Cog    | `task_a22eeda307db` | **queued**                                                                                                                                                                                                                                                       |
+| `wi-007-verify-fixed-tree-2026-10-21`          | WI-007 — the fixed tree, verified                                  | Probe  | `task_2e431d7647e5` | **queued**                                                                                                                                                                                                                                                       |
+| `wi-007-migration-note-2026-10-21`             | WI-007 — the migration note's missing sentence                     | Wren   | `task_e6fe9555ca74` | **queued** — one sentence of `CONTRACTS.md`, and the last thing between WI-007 and acceptance                                                                                                                                                                    |
+| `wi-027-verify-fixed-tree-2026-10-21`          | WI-027 — the turn on the waiting list, verified                    | Probe  | `task_6a9a1179734c` | **queued**                                                                                                                                                                                                                                                       |
+| `wi-021-verify-fixed-tree-2026-10-21`          | WI-021 — the refusal, verified                                     | Probe  | `task_479859728e18` | **queued** — the verification that has to read WI-009's updated tests and say what they now hold                                                                                                                                                                 |
+| `wi-017-template-record-successor-2026-10-21`  | WI-017 — the template record, built against the published shape    | Cog    | `task_4b5a7d412c11` | **queued** — **the live dispatch on WI-017**; it merges the two cancelled briefs and adds the Chief's rulings                                                                                                                                                    |
+| `wi-020-measures-successor-2026-10-21`         | WI-020 — the two measures, built against the published route       | Cog    | `task_7fca497d2514` | **cancelled** at 10:03 +11:00 by Chief — still queued, so nothing was lost; its brief was merged into the third dispatch, which carries the band ruling. **The live dispatch on WI-020 is `wi-020-measures-route-r3-2026-10-21`**                                |
+| `wi-025-adr-record-pass-2026-10-21`            | WI-025 — the ADR's record pass, with Wren                          | Wren   | `task_c3e1f0b6d558` | **queued** — a pointer, a figure, and one thing not to touch                                                                                                                                                                                                     |
+| `wi-030-verify-published-shapes-2026-10-21`    | WI-030 — the two published shapes, verified                        | Probe  | `task_dc2aeef86acb` | **queued** — **upstream of two builds**; the dispatch asks for the queue to be reordered if it can be                                                                                                                                                            |
+| `wi-036-licence-record-2026-10-21`             | WI-036 — the dependency licences, read from the repositories       | Wren   | `task_2c5159aab413` | **queued** — **the live dispatch on WI-036**; the record that WI-038's gate compares against                                                                                                                                                                     |
+| `wi-037-product-record-forge-2026-10-21`       | WI-037 — the product record says Desk (B); the owner chose Forge   | Wren   | `task_4947c89ca7fe` | **queued** — **the live dispatch on WI-037**; the overdue truthfulness fix                                                                                                                                                                                       |
+| `wi-020-measures-route-r3-2026-10-21`          | WI-020 — the two measures, with the band ruling                    | Cog    | `task_86010eeeb561` | **queued** — **the live dispatch on WI-020**; it carries the band ruling — the band ships only the counts it can defend, and no ratio, until WI-033 and WI-034 land                                                                                              |
+| `wi-039-evidence-contract-2026-10-21`          | WI-039 — publish the evidence a decision is taken against          | Wren   | `task_dd95fe7df207` | **queued** — **the live dispatch on WI-039**; the contract half of the gap Vision found in the decision control, and it goes before WI-040                                                                                                                       |
+| `wi-041-readme-licence-2026-10-21`             | WI-041 — the README tells the truth about the licence              | Wren   | `task_644f23312ebc` | **queued** — **the live dispatch on WI-041**; the owner's "the licence is deliberately undecided" answer, in one sentence                                                                                                                                        |
+| `wi-043-manifest-licence-verify-2026-10-21`    | WI-043 — the manifest no longer claims a licence                   | Probe  | `task_9b1b44c1025f` | **queued** — Chief's one-line removal of `"license": "MIT"`, and Probe's verification of it                                                                                                                                                                      |
+| `wi-023-owner-token-step-verify-2026-10-21`    | WI-023 — verify the owner-token step in the container job          | Probe  | `task_6437af4f18f0` | **queued** — Chief's own CI change goes to Probe like anyone else's; the whole sequence is proved locally against real Docker, and the item's criteria are met before it is pushed, not after                                                                    |
+| `wi-022-citation-refresh-successor-2026-10-21` | WI-022 — refresh the waiting list's code citations                 | Wren   | `task_682c73ccbc73` | **queued** — **the live dispatch on WI-022**, a successor: three citations that moved when WI-027's code landed                                                                                                                                                  |
 
 **A cancelled task is not a dispatch — but a cancelled dispatch does not free its
 request id.** That second half was wrong here, and it is corrected now rather
@@ -3284,3 +3286,145 @@ absorb a bad action.
 the counts the audit trail can defend is now in WI-020's acceptance criteria
 and in the live dispatch, and this review agrees with it rather than restating
 it.
+
+### The CI conclusion, measured at the pushed commit
+
+**The question was: what did the two runs on GitHub conclude?** Chief cannot
+read the Actions tab from this machine — the repository is private, the
+Actions API answers `404` without a token, and this shell cannot obtain one.
+**But the conclusion is a property of the tree, and the tree can be measured.**
+
+**The structural fact that makes the measurement exact, and its one
+exception.** When the measurement was made,
+`git diff d03e225..HEAD -- apps packages scripts deploy .github` was **empty**.
+It is not empty now, and both differences are accounted for:
+
+- `apps/server/src/__tests__/waiting-list.test.ts` — Probe's two pin tests
+  (`ab574d8`, `ad58c96`), which add assertions and change no behaviour.
+- `.github/workflows/ci.yml` — WI-023's four new steps, which **have not run
+  in CI**. That is the whole point of the item, and it is why the item is with
+  Probe and why nothing has been pushed.
+
+**With the test file excluded, the only difference is the workflow file: the
+product's own code at the pushed commit is the product's own code now.** The
+only other things that moved since are documents — the contract, this ledger,
+the work items, the strategy document — and `package.json` losing one line
+(WI-043). **So the gates measured at HEAD are the gates CI ran at `d03e225`.**
+
+**Every CI job, measured here:**
+
+| Job and step                               | The command                                                           | What it said                                                                                                                                                                                           | Exit |
+| ------------------------------------------ | --------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ---- |
+| build · Typecheck                          | `npm run typecheck`                                                   | typecheck 0 across every workspace                                                                                                                                                                     | 0    |
+| build · Tests                              | `npm run test`                                                        | server 21/21 files, 213 passed · web 6/6, 52 · worker 5/5, 31 · agent-adapters 2/2, 16 · contracts 4/4, 28 — **340 tests, 0 failures** (338 at the pushed commit; the two since are Probe's pin tests) | 0    |
+| build · Build                              | `npm run build`                                                       | all five packages built; the container image build ran the same script                                                                                                                                 | 0    |
+| build · Formatting                         | `npm run format:check`                                                | "All matched files use Prettier code style!" — measured **at `d03e225` itself**, in a detached worktree at that commit                                                                                 | 0    |
+| build · Smoke                              | `npx tsx scripts/smoke.ts`                                            | "All smoke checks passed."                                                                                                                                                                             | 0    |
+| build · The compiled server boots          | `npx tsx scripts/verify-build.ts`                                     | "The compiled server boots and serves requests."                                                                                                                                                       | 0    |
+| build · The bundle stays within its budget | `npx tsx scripts/verify-bundle-size.ts`                               | "Every chunk is within 300 kB and the first paint carries no page chunk."                                                                                                                              | 0    |
+| build · End-to-end browser tests           | `npm run test:e2e`                                                    | **25 passed**                                                                                                                                                                                          | 0    |
+| audit                                      | `npm audit --audit-level=high`                                        | "found 0 vulnerabilities"                                                                                                                                                                              | 0    |
+| docker                                     | `compose up --build` → health → web root → `verify-stack` → `down -v` | every step green, including **"the worker produced an agent reply"**                                                                                                                                   | 0    |
+| workflow-lint                              | `rhysd/actionlint:1.7.12`                                             | no findings                                                                                                                                                                                            | 0    |
+
+**What is still unread, said plainly.** GitHub's own log. The Actions tab holds
+the platform's verdict, and reading it is the owner's or Probe's to do. What
+the measurement establishes is that **there was nothing for that verdict to
+fail on**: every gate the pipeline runs, green, at the exact commit the
+pipeline was pointed at. The difference that remains is the runner's platform
+— this machine is Windows with Docker Desktop, CI is `ubuntu-latest` — and that
+is a real difference, which is why the tab is still worth reading and this is
+not a substitute for it.
+
+**What it changes.** WI-023's blocker — "wait until the job is known to work"
+— is discharged, and the item's own acceptance criteria asked for the whole
+container sequence to be run locally against real Docker before it is pushed.
+That was done: the workflow's own text, four new steps, the 401 first and the
+green after. The full output is in `.factory/work/WI-023.md` under "What the
+runs concluded, and the local proof", and the change is with Probe
+(`task_6437af4f18f0`), because the lead wrote it.
+
+### The ruling: a contract item is verified against the tree it stands in
+
+**Probe asked it twice** — once in WI-022's verification and once in
+WI-026's — and both times the same question: is a contract item judged against
+the commit it landed in, or against the tree it stands in?
+
+**Against the tree it stands in.** The contract's job is to be a promise the
+product keeps now. A promise that was true for one commit and stale for the
+next is a promise that is wrong, and a contract item's criterion is that the
+published entry agrees with the code that is running. The commit it landed in
+is history; it is recorded, and the entry that names the implementing commit
+is what tells a reader which history it is.
+
+**What it does not change.** An entry that declares the code does not implement
+it yet is **not** a defect — Probe said so for WI-026, in both of the states
+that entry has been in, and that is right: the entry is honest in front of the
+code and honest behind it. The ruling only says which tree the agreement is
+measured on.
+
+**What it did change.** WI-026's criterion 5 was worded for one moment in the
+code's history — "the entry says the code does not implement it yet" — and in
+the tree the item stands in, the code does implement it and the entry says so.
+It is re-worded to ask the standing question (does the entry tell the truth
+about the code as it stands?) **without weakening the requirement**: a
+published member the code never produces is still a defect, and a member the
+code does produce must not be published as one it does not.
+
+**This covers WI-022, WI-026, WI-028 and WI-030**, so the next contract item
+does not have to ask it again.
+
+### Two acceptances, and what the product can now do
+
+**WI-022 — accepted.** Probe's verification (`task_38cb5ecee977`, batch
+`batch_247e598a4edf`) found **all seven criteria met** and **no defect in the
+published entry**; the one defect was in the item's own "Changed" line, which
+understated what `a44a374` published — that commit published WI-022's
+`WaitingReason` **and** WI-026's `WaitingKind` in one file, and the item said
+"nothing else". Corrected. **What the product can now do: the waiting list can
+carry a reason the code actually emits, and the order the panel shows is the
+order the contract publishes — and the two are pinned against each other.**
+Probe closed the gap the item left open: the published urgency order had no
+test at all, and the old urgency test ranked a band that did not exist, so a
+missing band compared as `undefined` and the assertion passed while proving
+nothing. Probe's `ab574d8` reads the four bands out of the published
+paragraph, builds one item of each, and compares the order the route returns
+with the order the contract publishes — so neither can move alone.
+
+**WI-026 — accepted.** Probe's verification (`task_25bf9ea7e2cb`, batch
+`batch_9cf9cefcff10`) found **all seven criteria met** and **no defect in the
+published entry**; the one defect was in the item's own criterion, which cited
+`waiting.ts:17` — the _reason_ type — instead of `waiting.ts:8`, where the
+kind is declared. Corrected. **What the product can now do: a turn whose
+outcome could not be confirmed can reach the owner as a thing to check, and
+where it sorts is the order the contract publishes.** Probe's `ad58c96` reads
+the published "over reasons, not kinds" paragraph, writes a turn the way the
+worker writes it, and compares where the route puts it with what the contract
+claims — so neither can move alone.
+
+**What both left for the contract's owner.** Three citations that moved when
+WI-027's code landed, and they went out as **WI-022's successor** to Wren
+(`task_682c73ccbc73`) rather than as an item of their own — one file, one
+live item, and WI-026's dropped citation of the kind's declaration rides in
+the same edit. Chief checked every line it names against HEAD: `waiting.ts:8`,
+`:17`, `:95` and `:140-144`.
+
+### The want with no number, and who holds the number space
+
+**The MCP surface's id-addressed tools are not scoped to a workspace.** It is
+recorded above, in full, with the code's own rule and the four call sites that
+check it against the seven that do not. **It still has no number, and that is
+deliberate.** The number space has one owner, and the record is clear about
+who: `4034d45` ("Take the six numbers for the seven wants") took WI-038 and
+says so — "WI-030, WI-031 and WI-032 are this session's; WI-024 through WI-029
+are the other Chief session's" — and the same session took WI-039 through
+WI-043 in `96b87f8`. **This session has taken no number since WI-031**, so it
+took none here either. The tiebreak is the one already agreed: whoever numbers
+writes it in the item's "Numbered" line **and** in this dispatch table, and the
+table says who holds the work.
+
+**The number owner is asked for one thing:** number the MCP scoping finding and
+put it in the queue. It is a defect against a rule the code already states —
+`apps/server/src/modules/mcp/server.ts:96` says _"An agent may only act inside
+a workspace it has been granted"_ — and **WI-017 is adding a tool to this same
+surface**, so a rule that lands after it has to be applied to it as well.
