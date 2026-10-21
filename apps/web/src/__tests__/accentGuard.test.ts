@@ -32,7 +32,8 @@ const ROOTS = [path.join(webRoot, 'src'), path.join(repoRoot, 'packages', 'ui', 
 const AMBER_FAMILY = /amber-\d/;
 
 /** An accent utility, named the way Tailwind names one: `bg-accent-surface`. */
-const ACCENT_UTILITY = /(?:bg|text|border|ring|fill|stroke|from|to|via|shadow|outline|decoration)-accent/;
+const ACCENT_UTILITY =
+  /(?:bg|text|border|ring|fill|stroke|from|to|via|shadow|outline|decoration)-accent/;
 
 const SOURCE_EXTENSIONS = ['.ts', '.tsx', '.css', '.js', '.jsx', '.html', '.svg'];
 
@@ -148,7 +149,7 @@ describe('the accent means one thing', () => {
 
     expect(
       sharing,
-      'a token whose value is the accent\'s, and whose name promises a second meaning, is the ' +
+      "a token whose value is the accent's, and whose name promises a second meaning, is the " +
         'collision by the back door. The accent is declared once.',
     ).toEqual(['accent']);
   });
@@ -167,7 +168,15 @@ describe('the accent means one thing', () => {
     // The parse has to have found the table, or the checks below would pass
     // on an empty map.
     expect([...variants.keys()]).toEqual(
-      expect.arrayContaining(['default', 'success', 'warning', 'accent', 'danger', 'info', 'outline']),
+      expect.arrayContaining([
+        'default',
+        'success',
+        'warning',
+        'accent',
+        'danger',
+        'info',
+        'outline',
+      ]),
     );
 
     const warning = variants.get('warning') ?? '';

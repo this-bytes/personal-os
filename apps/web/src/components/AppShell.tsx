@@ -43,10 +43,7 @@ const NAV_ITEMS = [
  * is healthy, not that the owner is needed, and an accent that is on screen
  * all the time in a healthy panel stops meaning anything.
  */
-const STREAM_STATES: Record<
-  StreamStatus,
-  { label: string; dot: string; warning: boolean }
-> = {
+const STREAM_STATES: Record<StreamStatus, { label: string; dot: string; warning: boolean }> = {
   idle: { label: 'idle', dot: 'border border-slate-600 bg-transparent', warning: false },
   connecting: {
     label: 'connecting',
