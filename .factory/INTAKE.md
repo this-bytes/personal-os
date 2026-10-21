@@ -7473,6 +7473,32 @@ what carried the dump has it in the other.
 `refs/remotes` are on the old lineage, and `origin/main` now carries **348**
 commits.
 
+## The watchdog run at 19:28 — nothing over the threshold, and the check's own channel is busy — 2026-10-21 19:28
+
+**What it measured: two tasks running — Probe's WI-041 verification (3.9 min)
+and Wren's WI-066 (5.9 min). Nothing is over the 45-minute trigger, and nothing
+was cancelled.**
+
+**And the reason the schedule keeps failing is now named: the check fires into
+the bot's own chat, and it is refused with `BUSY` whenever that chat is
+mid-turn — including a turn that is not a check.** The 19:27 firing was a
+refused duplicate of the check now running. The 18:56 firing was refused the
+same way, because a peer's message held the chat. The 16:51 firing died with
+`AGENT_UNAVAILABLE`, and the 17:21 one was interrupted by the runtime stop.
+
+**So the check's transport is the same chat it watches, and the watchdog
+competes with everything else the bot does.** That is the fourth distinct
+failure of the same transport today, and it is the one that matters most:
+**the check that is supposed to notice a broken factory is itself queued behind
+the factory's own traffic.** The fix is not in the rule and not in the
+threshold — it is a transport that can carry a check while the chat is busy.
+
+**And the tree this run measured is green by the local gate:** typecheck 0,
+`test` 0 — **18 files, 377 tests, all passing** — `format:check` 0 and `build` 0. The two new test files in the tree, `close-unknown-turn.test.ts` and
+`ChatMessageDetail.test.tsx`, have never been on the remote, so **they are
+measured by the local gate here and by the platform's run on the pushed sha
+afterwards** — that sequence is recorded here rather than glossed.
+
 ### Three late reports, and what each one is worth — 2026-10-21 19:30
 
 **1. WI-021, verified again — and its acceptance stands.** WI-021 was **accepted
