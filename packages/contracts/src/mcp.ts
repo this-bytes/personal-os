@@ -21,6 +21,7 @@ export const mcpToolNames = [
   'resource.template.list',
   'automation.create',
   'automation.inspect',
+  'autonomy.read',
 ] as const;
 
 export type McpToolName = (typeof mcpToolNames)[number];
@@ -45,6 +46,7 @@ export const defaultAgentToolGrants: McpToolName[] = [
   'resource.template.list',
   'automation.create',
   'automation.inspect',
+  'autonomy.read',
 ];
 
 /** The tools the owner may use through MCP. */
