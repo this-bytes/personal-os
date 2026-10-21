@@ -354,7 +354,7 @@ second dispatch.
 | `wi-020-measures-route-r3-2026-10-21`                      | WI-020 — the two measures, with the band ruling                      | Cog    | `task_86010eeeb561` | **queued** — **the live dispatch on WI-020**; it carries the band ruling — the band ships only the counts it can defend, and no ratio, until WI-033 and WI-034 land                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
 | `wi-039-evidence-contract-2026-10-21`                      | WI-039 — publish the evidence a decision is taken against            | Wren   | `task_dd95fe7df207` | **queued** — **the live dispatch on WI-039**; the contract half of the gap Vision found in the decision control, and it goes before WI-040                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
 | `wi-041-readme-licence-2026-10-21`                         | WI-041 — the README tells the truth about the licence                | Wren   | `task_644f23312ebc` | **queued** — **the live dispatch on WI-041**; the owner's "the licence is deliberately undecided" answer, in one sentence                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
-| `wi-043-manifest-licence-verify-2026-10-21`                | WI-043 — the manifest no longer claims a licence                     | Probe  | `task_9b1b44c1025f` | **queued** — Chief's one-line removal of `"license": "MIT"`, and Probe's verification of it                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
+| `wi-043-manifest-licence-verify-2026-10-21`                | WI-043 — the manifest no longer claims a licence                     | Probe  | `task_9b1b44c1025f` | **done** — **not verified.** Chief's one-line removal is exactly right and every gate is green, but the repository does not yet say the truth about its licence: the root `LICENSE` file **is** MIT (tracked since the initial commit `d2f4ec6`) and `CONTRIBUTING.md:238-239` claims contributions are MIT-licensed. **Neither file is covered by any item** — WI-041's is the README, WI-043's is the manifest. The finding opens **WI-068**                                                                                                                                                                               |
 | `wi-023-owner-token-step-verify-2026-10-21`                | WI-023 — verify the owner-token step in the container job            | Probe  | `task_6437af4f18f0` | **done** — **all seven criteria met, no defect, nothing owed to Cog.** Probe's matrix: the right token green, a wrong token fails with the 401, no token fails with the 401, and the 401 line cannot be faked because the assert throws. **The acceptance is the other Chief session's**, because this session wrote the implementation                                                                                                                                                                                                                                                                                      |
 | `wi-022-citation-refresh-successor-2026-10-21`             | WI-022 — refresh the waiting list's code citations                   | Wren   | `task_682c73ccbc73` | **queued** — **the live dispatch on WI-022**, a successor: three citations that moved when WI-027's code landed                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
 | `wi-024-forge-adoption-2`                                  | WI-024 — the Forge adoption, a second dispatch under a new id        | Cog    | `task_2963d3be0f41` | **cancelled** at 09:55 — **the live dispatch on WI-024 is unchanged: `wi-024-forge-adoption`, `task_5a09991ca5a1`, still queued.** Dispatched by the other Chief session; it is not re-dispatched from here                                                                                                                                                                                                                                                                                                                                                                                                                  |
@@ -378,6 +378,7 @@ second dispatch.
 | `wi-042-product-record-closed-questions-2026-10-21-1325`   | WI-042 — the product record's closed questions say they are closed   | Wren   | `task_f1cf510356e8` | **queued** — **the live dispatch on WI-042**: its blocker was WI-037 being live on `PRODUCT.md`, and that has cleared                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |     |
 | `wi-034-outcome-vocabulary-successor-2026-10-21-1325`      | WI-034 — publish the outcome vocabulary, and the migration           | Wren   | `task_55c33b744ef5` | **queued** — **the live dispatch on WI-034**: the item had **never been dispatched**, and WI-033 (W1) waits on it, because the contract leads the code                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
 | `wi-038-licence-gate-script-2026-10-21`                    | WI-038 — the borrow-rule gate's script                               | Probe  | `task_63e621ad515f` | **queued** — **DELIVERED at 14:32**. Chief's half of WI-038 is done (the CI step and the manifest entry, on `wi/038-borrow-rule-gate` at `a9592a4`); the script is `scripts/verify-licences.ts`, Probe's file by the ownership table. The brief carries the whole specification — the four comparisons, the three exit codes, the `--record` and `--lockfile` options and the proof that the gate can fail. **The branch stays unpushed until the script is in it**                                                                                                                                                          |     |
+| `wi-068-contributing-licence-2026-10-21`                   | WI-068 — the repository still grants MIT in a file no item covers    | Wren   | `task_a4d24aa2dc24` | **queued** — **DELIVERED at 14:35**. One sentence in `CONTRIBUTING.md:236-239`, which says contributions are MIT-licensed. Worktree `G:\code\personal-os-worktrees\068-contributing-licence`, branch `wi/068-contributing-licence`. **Chief's half — the `LICENSE` file and the `FACTORY.md` row that names it — is this session's**                                                                                                                                                                                                                                                                                         |     |
 
 **A cancelled task is not a dispatch — but a cancelled dispatch does not free its
 request id.** That second half was wrong here, and it is corrected now rather
@@ -4722,3 +4723,54 @@ own item, and a bot that needs a file owned by someone else asks Chief rather
 than taking it. **The group post naming it was refused twice** — the round is
 mid-discussion — so it is recorded here, and it goes to the group when the
 round opens.
+
+## WI-043 is not verified, and the finding opens WI-068 — 2026-10-21 14:24
+
+**Probe's verification of WI-043 came back: not verified, and the reason is
+not in WI-043's work.** The manifest change is exactly right — one deleted
+line in `96b87f8`, every gate green — but the repository does not yet say the
+truth about its licence.
+
+**Three files said MIT. One is corrected, one is being corrected, and one is
+still there.**
+
+| Where                     | What it says                                                                                       | Whose           |
+| ------------------------- | -------------------------------------------------------------------------------------------------- | --------------- |
+| `package.json` (root)     | `"license": "MIT"` — **removed** at `96b87f8`, WI-043                                              | Chief, done     |
+| `README.md:251-253`       | "MIT." — **being corrected**, WI-041                                                               | Wren, in flight |
+| `CONTRIBUTING.md:236-239` | "your contribution is licensed under the MIT licence, the same licence as the rest of the project" | **no item**     |
+| `LICENSE` (root)          | **the MIT licence, in full, tracked since the initial commit `d2f4ec6`**                           | **no item**     |
+
+**Measured here, not taken from the report.** `LICENSE` opens with "MIT License
+/ Copyright (c) 2026 Personal OS contributors"; `git log --diff-filter=A --
+LICENSE` names `d2f4ec6` (2026-10-20 18:47, "Initial commit") and no other
+commit; `git ls-files` shows it is tracked, and it is the only licence file in
+the repository. `CONTRIBUTING.md:236-239` is the `## Licence` section quoted
+above. **And nothing depends on the file**: `LICENSE` appears in no file under
+`.github/`, in no file under `scripts/`, and in no field of the root
+`package.json`.
+
+**And no item could have been given it, because the ownership table did not
+name it.** `FACTORY.md:45-62` gives `*.md` to Wren — and `LICENSE` has no
+extension — and nothing else in the table matches it either. **The file fell
+through the ownership table.** That is how a file ends up with two owners and
+no owner at once, and it is why Probe could not route the finding.
+
+**So the finding opens WI-068** — `.factory/work/WI-068.md` — with two halves:
+Chief's (the `LICENSE` file, and the `FACTORY.md` table row that names it) and
+Wren's (the `CONTRIBUTING.md` sentence, dispatched as
+`wi-068-contributing-licence-2026-10-21`, `task_a4d24aa2dc24`). **The reading
+is said out loud in the item:** the file is removed on the reading that "there
+is no LICENSE file at this push" means the repository carries no licence file,
+and **removing a stray grant is the safe direction** — the repository is
+private, nothing is published, and the file has been in the tree since the
+first commit. **If the owner meant something else, the item goes back to
+them.**
+
+**WI-043 does not go back to Probe, because its verification would fail the
+same way** — the finding is in the tree, not in the item. It waits for WI-068
+to land, and so does WI-041: both items carry the criterion _"no LICENSE file
+exists"_ and **neither can be satisfied until WI-068 does.**
+
+**The acceptance of WI-068 is the other Chief session's**, because this session
+wrote Chief's half.
