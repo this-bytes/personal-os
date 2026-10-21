@@ -386,6 +386,7 @@ second dispatch.
 | `wi-031-contract-status-correction-2026-10-21` | WI-031 — the entry says the code does not implement it yet, and it does | Wren | `task_be25e082ae5c` | **queued** — **the correction of WI-031's stale status note**, found by Probe while verifying WI-027. `CONTRACTS.md:197-204` says the route is absent; it has been there since `414996c`. **It queues behind WI-065 on `CONTRACTS.md`** — Wren's lane is serialised, so one file carries one live item. **WI-031's acceptance is blocked until it lands** |
 | `wi-069-refusal-names-nobody-code-2026-10-21` | WI-069 — a delegation that names nobody is refused unreadably | Cog | — | **NOT DISPATCHED — held on purpose.** The finding is Probe's, from WI-021's verification. **Two reasons, both said out loud:** the owner's line at 15:40 — _"when a slot frees, lean on verification"_ — and the contract half needs the owner's answer. **Numbered so it is not lost**, with the brief written out in full in `.factory/work/WI-069.md` |
 | `wi-045-unconfirmed-turn-verify-2026-10-21` | WI-045 — an unconfirmed turn routes no further work, verified | Probe | `task_1df39fd407ea` | **queued** — **the verification of the owner's own answer**, dispatched the moment the implementation landed (`a4010bb`, merged into `main` at `66c86ad`). Six questions: the guard stops the routing, a confirmed turn is unaffected, **the stop is recorded where the unknown-outcome machinery is recorded**, the waiting list is unchanged, a test proves both halves, and what the contract publishes. **Chief's word is on the audit entry's target, and the doubt is named in the brief rather than hidden** |
+| `wi-074-stack-test-cleanup-budget-2026-10-21` | WI-074 — the stack test's cleanup can outrun its own budget | Probe | `task_289ede939140` | **queued** — **a red on `main` with every assertion green**: `verifyStack.test.ts` failed to complete at `:133:34` (`fs.rmSync`) after 49 990 ms, while 230 tests passed. **The teardown, not the proofs.** It did not reproduce in two runs, and the machine was under load. **The check is named: a suite that passed every assertion must never be reported as failed.** And **CI runs on ubuntu, where the budget can also be exceeded** — that is why this is an item and not a shrug |
 | `wi-062-measures-citation-refresh-2026-10-21` | WI-062 — four citations in the measures section point at lines that moved | Wren | `task_169f434c05d9` | **queued** — **a citation refresh, not a change of content**: every claim in the measures section is true and only the line numbers are stale. Found by Probe while verifying WI-062. It queues behind WI-065 in Wren's serial lane, and **it must not touch the template record or WI-031's entry** — one file, one live item |
 
 **A cancelled task is not a dispatch — but a cancelled dispatch does not free its
@@ -5922,3 +5923,78 @@ this session's `docs/strategy.md` scope decision's counterpart: this session
 dispatched WI-036's findings with **`docs/strategy.md` out of scope**, because
 that file was being written by hand by the other session at 14:52. **The two
 sessions collided on a file and the ledger caught it before a dispatch did.**
+
+### A red on `main` with every assertion green — and two numbers written over
+
+**At 16:38 the server suite went red and nothing was wrong with the code it
+was testing.** `npm run test` at `main`:
+
+```
+ ❯ src/__tests__/verifyStack.test.ts (12 tests) 49990ms
+⎯⎯⎯⎯⎯⎯⎯ Failed Suites 1 ⎯⎯⎯⎯⎯⎯⎯
+ FAIL  src/__tests__/verifyStack.test.ts [ src/__tests__/verifyStack.test.ts ]
+ ❯ src/__tests__/verifyStack.test.ts:133:34
+ Test Files  1 failed | 22 passed (23)
+      Tests  230 passed (230)
+```
+
+**230 tests passed and the file still failed.** The failure is the file's own
+teardown: `apps/server/src/__tests__/verifyStack.test.ts:131-134` —
+`afterAll(async () => { await Promise.all(children.map(stop)); for (const dir
+of dataDirs) fs.rmSync(dir, { recursive: true, force: true }); }, 30_000)`.
+**The error site is `:133:34`, `fs.rmSync`, and the hook's budget is the
+`30_000` at `:134`.** The file took **49 990 ms**.
+
+**The children are not the unbounded part.** `stop()` (`:106-119`) resolves on
+the child's `exit`, and a 4-second timer sends `SIGKILL` and resolves anyway,
+so `Promise.all(children.map(stop))` costs about four seconds. **The removal
+is what ran past the budget** — and on Windows, removing a tree that a
+just-killed process still holds open is exactly the operation that blocks.
+
+**It did not reproduce.** `npm --prefix apps/server run test` → **exit 0**, 23
+files passed (23), 230 passed (230). `npm run test` over the whole tree →
+**exit 0**, 23/23 and 230/230, then web 52, worker 31, agent-adapters 16,
+contracts 28. **The machine was under load when it went red** — this host also
+runs other tenants' containers (`shiny-octo-broccoli-webui`,
+`technitium-dns-companion`) beside the shared `personal-os` stack, and Chief
+was running a git check and a docker check at the same moment.
+
+**So it is opened as WI-074 and handed to Probe** —
+`wi-074-stack-test-cleanup-budget-2026-10-21`, `task_289ede939140` — and the
+reasons are said out loud rather than shrugging at. **A suite that passed
+every assertion must never be reported as failed.** **CI runs on
+`ubuntu-latest`, and the budget that the removal overruns is not
+Windows-specific even though the blocking is** — so the same budget can be
+exceeded on a busy runner. And **a gate that can go red for no reason is a
+gate that trains people to ignore it**; this factory already spent a day on a
+smoke gate that was flaky on Windows and fixed in `63aba3a`.
+
+**And this session wrote over two of the other session's item files.**
+
+**WI-070 and WI-071 existed and were written over by mistake**, the same
+minute they were overwritten, and **both were restored from `HEAD` byte for
+byte** — the working tree was clean afterwards, and the other session's files
+are untouched. The cause is plain: **the number space is shared and two
+sessions write into it**, and this session had not seen that the other session
+opened **four** items at once at 16:24 (`8575e10`, "Open the four streams of
+the free window") — WI-070, WI-071, WI-072 and WI-073.
+
+**The collision is recorded in WI-074's own file, because that is the only
+place a reader will look.** And the other session had already handled the
+first half of this correctly: they took WI-069, found this session's WI-069
+(`8f87d87`) already on `main`, **renumbered to WI-070 and recorded the
+collision in the item** — which is exactly right, and which is why their
+WI-070's own note names this session as the number space owner.
+
+**So the number space, as it now stands.** WI-030–WI-038, WI-044, WI-045,
+WI-062, WI-065–WI-069 and **WI-074** are the number space owner's; WI-024–WI-029
+and WI-039–WI-043 are the other Chief session's; WI-046–WI-064 are the
+strategy session's; and **WI-070, WI-071, WI-072 and WI-073 are the other
+Chief session's**, opened together at 16:24. **The top is WI-073, so the next
+free number is WI-074, and this session took it.**
+
+**And the rule this makes concrete, for the second time this week.** WI-063
+became WI-065 the same way. **The remedy is the same and it is cheap: renumber,
+restore what was overwritten, and write the collision into the item that lost
+it.** It is cheap only because the items are committed. **An uncommitted item
+file written over is an item file lost**, and this one was committed.
