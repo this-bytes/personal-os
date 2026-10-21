@@ -119,8 +119,9 @@ it as the answer to the vendoring question would be a claim the check cannot bac
 
 Each pillar is a borrowed pattern, what the product already has, and what it does
 not have. Where a pillar's gap is already funded, the work item is named. Where it
-is not, the want is named. Every item named here is either dispatched or proposed
-in [the wants](#the-wants-this-direction-produces) — none is invented twice.
+is not, the want is named. Every item named here is one the factory has taken on, or
+proposed in [the wants](#the-wants-this-direction-produces) — none is invented
+twice.
 
 ### Pillar 1 — A checked example, not a schema
 
@@ -198,7 +199,8 @@ traces, evaluations, datasets, human annotation. Dify: observability embedded in
 the workspace rather than bolted on beside it.
 
 **What we have.** WI-020 (the read-only measures route and the band on the home)
-and WI-030 (the published shape). Both dispatched 2026-10-21.
+and WI-030 (the published shape) — WI-030 **done** (`e682224`), WI-020 **in
+flight**.
 
 **What we do not have.** The data the measures read is **partly wrong**:
 
@@ -261,8 +263,9 @@ can hold it at once:
 | [.factory/INTAKE.md](../.factory/INTAKE.md)                                              | every decision, in order             | anything a reader can hold at once                                        |
 
 **The bridge.** The four pillars are the product's next four moves. Each pillar's
-"what we have" is a work item that is already dispatched; each pillar's "what we do
-not have" is a want below. This document is the line between them.
+"what we have" is a work item the factory has taken on — landed, accepted, or still
+being worked; each pillar's "what we do not have" is a want below. This document is
+the line between them.
 
 ---
 
@@ -306,7 +309,7 @@ recorded read from its repository, and the build fails when a licence changes or
 unapproved one appears. That splits into two wants, because the record and the gate
 are different files and different owners — W5 records it, W7 checks it.
 
-**The record half is done and accepted; the gate is in flight.** WI-036 wrote the
+**The record half is done and accepted; the gate is half done.** WI-036 wrote the
 record — 494 packages, one copy, in `docs/dependency-licences.json` — and it was
 **accepted** on 2026-10-21: Probe re-derived the numbers its own way rather than
 trusting the record, and **all five criteria hold**.
@@ -701,8 +704,9 @@ above; the owner may narrow it, and the record is one edit to change.
 - It does not change a published contract. It records the owner's two answers, and
   settles nothing else.
 - It does not replace PRODUCT.md, ARCHITECTURE.md or ADR 0007. It points at them.
-- It does not re-scope WI-017, WI-020 or WI-030, which are dispatched. It answers
-  the question WI-017 was waiting on.
+- It does not re-scope WI-017, WI-020 or WI-030, which have moved on: WI-017 is
+  **accepted** and WI-030 **done**. It answered the question WI-017 was waiting on,
+  and that item is closed.
 - It does not open a work item, and it takes no number. The wants above are wants.
 - It does not name a product the factory should not build. It names four pillars,
   the gap in each, and the want that closes it.
