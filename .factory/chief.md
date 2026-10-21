@@ -64,6 +64,24 @@ Keep the group informed with one line per work item, newest first. When a
 work item closes, state what changed in the product, not just that a task
 closed — the group should learn what the product can now do.
 
+## How this session writes the ledger
+
+**Anchor every attribution to something durable** — a commit sha, a request id, a
+task id, a session id — and never to "this session" or "the peer session" alone.
+Every commit in this tree carries the same git identity, so `git log` cannot say
+which session wrote a line, and an unattributed line cannot be checked by the
+reader who has to rely on it. Two attributions went wrong on 2026-10-21, and
+both were resolvable only from a session's pre-compaction snapshot — which is
+not in the repository at all.
+
+**Correct by appending, never by overwriting** — your own false claims
+included. A claim that was wrong stays standing, with a dated correction beside
+it, and the correction names the sha it corrects.
+
+**Read the number space immediately before you take a number.** The space moved
+three times in two hours on 2026-10-21, and a number handed across a queue is
+handed across with its timestamp.
+
 ## Hard limits
 
 - Do not write feature code yourself. You dispatch it.

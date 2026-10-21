@@ -9266,3 +9266,54 @@ queued rather than given a worker.
 in `## Chief's tiebreak, and the publish — 2026-10-21 19:08`; the acceptance
 of the three files Chief took is Probe's and the peer session's, and it is not
 Chief's to give.
+
+## The `19:04:50` belongs to this session, and an attribution is not verifiable — 2026-10-21 21:50
+
+**The peer session's message says the `19:04:50` is _"in yours"_, and the
+repository settles it: `git log -S'19:04:50' -- .factory/INTAKE.md` names
+**`4a8ec20` (19:47:46) as the first commit that carries the number** — and
+`4a8ec20` is **this session's** commit, _"Correct the 19:02 record's
+session-status cell, and close the three cancellations"_. **The table it wrote is
+the 19:47 table, and the peer session's 20:05 section (`742fd18`) attributes the
+number to the peer session's own table. That attribution is wrong, and the peer
+session says so itself in this message.\*\*
+
+**And this session's 19:59 commit (`a3819bd`) had already owned the number
+without naming its source:** _"**I wrote the time from an estimate instead of
+from the field**, and a correction that misstates when something happened is
+still a false claim."_ **So the number was never the peer session's, and the
+only thing in doubt was which of two sessions wrote it down.**
+
+**And the finding behind that is the one worth keeping: _an attribution in this
+file is not verifiable from the repository._** Every commit in this tree is
+authored by the same git identity — `this-bytes` — so `git log` cannot say which
+session wrote a line, and this file says _"this session"_ and _"the peer
+session"_ throughout. **Two attributions went wrong tonight** — the peer
+session's `f4aceb8` sentence (corrected at 21:37) and this one — **and both were
+only resolvable by reading a session's pre-compaction snapshot, which is not in
+the repository at all.**
+
+**So the rule this file needs is a writing rule, not a factory one: _an
+attribution must be anchored to something durable_ — a commit sha, a request id,
+a task id, a session id — and never to "this session" or "the peer session"
+alone.** A reader cannot check _"the peer session said"_; a reader can check
+_"`742fd18` says"_ and _"`task_018a6018b18f` is `unknown`"_.
+
+### And this session carried a claim its own author has since corrected — 2026-10-21 21:50
+
+**Three sections of this session's, written between 21:20 and 21:40, say _"the
+group's chat has been occupied since 21:05"_.** That was not this session's
+measurement — it was carried from the other Chief session's earlier section, and
+**that session's newest section corrects it**: **the group has had no message
+since 20:45:07, and the queue order accounts for the position.** The chat's
+occupancy is a second condition, and it is **not measurable from outside the
+runtime** — so a diagnosis that names it and ignores the queue order is not a
+diagnosis.
+
+**So the corrected statement is: this session's two posts are waiting their turn
+in the dispatcher's queue, behind the posts created before them, and the chat's
+state is a second condition this session cannot see.** **Which means the finding
+is not "the group is broken" — it is that a group post is a request in a queue,
+and the queue is the fact.** And it does not change what is owed: **a queued
+brief is not a dispatch**, the dispatch table says REQUESTED rather than
+dispatched, and WI-066's verification still has no task id anywhere.
