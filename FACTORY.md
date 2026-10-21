@@ -292,7 +292,12 @@ Two rules follow from it:
   feature inside this repository against our own contracts, schemas and data
   model. We do not add a runtime dependency on another product to get a
   feature, and we do not vendor a codebase in to stand in for our own. Every
-  feature we ship is ours — our validation, our audit trail, our tests. This is
+  feature we ship is ours — our validation, our audit trail, our tests. **The
+  rule covers this repository's own tree as well as the lockfile**: a file
+  copied in, a snippet inlined, a font, a fixture of real code — each is
+  borrowed work, and each carries its own licence. **WI-044 carries the check
+  that reads the tree** — the inventory of what is vendored, and a build that
+  fails on a vendored source whose licence is not in the approved set. This is
   the owner's rule, set 2026-10-20. One boundary rides on it: an _interface_ is
   conformed to, never reimplemented. Personal OS is a client of ACP, A2A, MCP
   and the OpenAI-compatible API shape, and never a fork of one. "Our spec"
