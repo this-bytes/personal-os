@@ -191,6 +191,7 @@ export function createConversationsService(
       correlationId: row.correlationId ?? undefined,
       origin: row.origin ?? undefined,
       executionId: row.executionId ?? undefined,
+      detail: row.detail ?? undefined,
       createdAt: row.createdAt,
     };
   }

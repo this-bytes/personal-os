@@ -37,6 +37,17 @@ export interface ConversationDetail extends Conversation {
   participants: Participant[];
 }
 
+/**
+ * The owner's conclusion about an execution whose outcome could not be
+ * confirmed, and the server's account of it.
+ */
+export interface ExecutionResolution {
+  execution: { id: string; status: string; error: string | null };
+  outcome: 'completed' | 'failed';
+  /** The sentence the server produced about the conclusion. */
+  detail: string;
+}
+
 /** Why a message did or did not reach an agent. */
 export interface RoutingDecision {
   targets: string[];

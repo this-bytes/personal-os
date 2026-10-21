@@ -149,7 +149,7 @@ export function decideApproval(input: {
   const status = input.approved ? 'completed' : 'cancelled';
 
   approvals.resolveExecution(execution.id, status, detail);
-  closeReply(db, execution.id);
+  closeReply(db, execution.id, detail);
 
   audit.record({
     workspaceId: execution.workspaceId,
@@ -181,8 +181,14 @@ function decisionText(approved: boolean, reason: string): string {
  * Finish the reply of a turn that is closed.
  *
  * The reply is not finished — the turn was stopped — so it says so rather
- * than pretending the agent had answered.
+ * than pretending the agent had answered. The reason goes with it: the
+ * sentence the server produced is on the reply, so the owner reads what
+ * happened instead of a bare badge, and the reason is not left in the audit
+ * trail where the panel does not show it.
  */
-function closeReply(db: Database, executionId: string): void {
-  db.update(messages).set({ status: 'failed' }).where(eq(messages.executionId, executionId)).run();
+function closeReply(db: Database, executionId: string, detail: string): void {
+  db.update(messages)
+    .set({ status: 'failed', detail })
+    .where(eq(messages.executionId, executionId))
+    .run();
 }

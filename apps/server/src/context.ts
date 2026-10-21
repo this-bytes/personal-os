@@ -12,6 +12,7 @@ import type { AutomationsService } from './modules/automations/service.js';
 import type { CapabilitiesService } from './modules/capabilities/service.js';
 import type { AuditService } from './modules/audit/service.js';
 import type { ApprovalsService } from './modules/approvals/service.js';
+import type { ExecutionsService } from './modules/executions/service.js';
 import type { EventsService } from './modules/events/service.js';
 import type { Queue } from './queue/client.js';
 
@@ -33,6 +34,7 @@ export interface AppServices {
   capabilities: CapabilitiesService;
   audit: AuditService;
   approvals: ApprovalsService;
+  executions: ExecutionsService;
   events: EventsService;
   queue: Queue;
 }

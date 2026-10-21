@@ -18,6 +18,7 @@ import { createFactoryService } from './modules/factory/service.js';
 import { createAutomationsService } from './modules/automations/service.js';
 import { createCapabilitiesService } from './modules/capabilities/service.js';
 import { createApprovalsService } from './modules/approvals/service.js';
+import { createExecutionsService } from './modules/executions/service.js';
 import { EventsService } from './modules/events/service.js';
 import { handleMcpRequest } from './modules/mcp/server.js';
 import type { Actor } from './modules/capabilities/service.js';
@@ -30,6 +31,7 @@ import { registerResourceRoutes } from './api/resources.js';
 import { registerFactoryRoutes } from './api/factory.js';
 import { registerAutomationRoutes } from './api/automations.js';
 import { registerApprovalRoutes } from './api/approvals.js';
+import { registerExecutionRoutes } from './api/executions.js';
 import { registerWaitingRoutes } from './api/waiting.js';
 import { registerAuditRoutes } from './api/audit.js';
 import { registerEventRoutes } from './api/events.js';
@@ -96,6 +98,7 @@ export async function buildApp(options: BuildAppOptions = {}): Promise<FastifyIn
   });
   const audit = runtime.audit;
   const approvals = createApprovalsService(runtime.db);
+  const executions = createExecutionsService({ db: runtime.db });
 
   const services: AppServices = {
     config,
@@ -111,6 +114,7 @@ export async function buildApp(options: BuildAppOptions = {}): Promise<FastifyIn
     capabilities,
     audit,
     approvals,
+    executions,
     events,
     queue,
   };
@@ -210,6 +214,7 @@ export async function buildApp(options: BuildAppOptions = {}): Promise<FastifyIn
   registerFactoryRoutes(app);
   registerAutomationRoutes(app);
   registerApprovalRoutes(app);
+  registerExecutionRoutes(app);
   registerWaitingRoutes(app);
   registerAuditRoutes(app);
   registerEventRoutes(app);

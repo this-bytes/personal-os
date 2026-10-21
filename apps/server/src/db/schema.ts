@@ -205,6 +205,8 @@ export const messages = sqliteTable(
     correlationId: text('correlation_id'),
     origin: text('origin', { mode: 'json' }).$type<MessageOrigin | null>(),
     executionId: text('execution_id'),
+    /** The sentence the server produced about how this message ended. */
+    detail: text('detail'),
     createdAt: text('created_at').notNull(),
   },
   (table) => [

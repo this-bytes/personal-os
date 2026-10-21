@@ -129,6 +129,12 @@ export function ChatMessageList({
               </span>
             </header>
             <MessageBody message={message} />
+            {message.detail ? (
+              // The server's account of how this message ended. It is shown
+              // as it is given: the client does not reword what the server
+              // said happened.
+              <p className="mt-1.5 text-[11px] leading-snug text-slate-400">{message.detail}</p>
+            ) : null}
           </article>
         );
       })}

@@ -79,6 +79,15 @@ export const messageSchema = z.object({
   correlationId: idSchema.optional(),
   origin: messageOriginSchema.optional(),
   executionId: idSchema.optional(),
+  /**
+   * The sentence the server produced about how this message ended.
+   *
+   * A message that did not finish says why, in the server's words. The client
+   * shows it as it is given: the account of what happened is the server's, and
+   * rewording it in the client would be the client telling the owner something
+   * the server knows better.
+   */
+  detail: z.string().optional(),
 });
 export type Message = z.infer<typeof messageSchema>;
 

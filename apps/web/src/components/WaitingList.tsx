@@ -8,6 +8,7 @@ import type {
   AgentConnectionDetail,
   ApprovalDecision,
   ConversationDetail,
+  ExecutionResolution,
   WaitingItem,
 } from '../lib/types';
 import { useWorkspace } from '../state/workspace';
@@ -128,6 +129,37 @@ export function WaitingList({ agents, conversations }: WaitingListProps): React.
     },
   });
 
+  /**
+   * The owner closes a turn they were told to check.
+   *
+   * The conclusion is theirs: it did run, or it did not. The server records
+   * it, the reply follows it, the turn leaves the list, and what the
+   * conclusion *did* is the server's to say — the account of it comes back
+   * with the answer, the way a decision's does.
+   */
+  const resolveTurn = useMutation({
+    mutationFn: async (input: {
+      executionId: string;
+      outcome: 'completed' | 'failed';
+      title: string;
+    }) =>
+      api.post<ExecutionResolution>(`/executions/${input.executionId}/resolve`, {
+        workspaceId: activeWorkspaceId ?? undefined,
+        outcome: input.outcome,
+      }),
+    onSuccess: async (result, input) => {
+      setDecisionError(null);
+      setDecisionNote({ title: input.title, detail: result.detail });
+      // The turn has stopped waiting, so the list says so without the owner
+      // reloading the page.
+      await queryClient.invalidateQueries({ queryKey: [QUERY_KEY] });
+    },
+    onError: (error) => {
+      setDecisionError(errorMessage(error));
+      setDecisionNote(null);
+    },
+  });
+
   const items = waiting.data ?? [];
 
   /**
@@ -197,9 +229,12 @@ export function WaitingList({ agents, conversations }: WaitingListProps): React.
                       item.agentConnectionId ? agentsById.get(item.agentConnectionId) : undefined
                     }
                     persona={personaFor(item)}
-                    busy={decide.isPending}
+                    busy={decide.isPending || resolveTurn.isPending}
                     onDecide={(approvalId, approved) =>
                       decide.mutate({ approvalId, approved, title: item.title })
+                    }
+                    onResolve={(executionId, outcome) =>
+                      resolveTurn.mutate({ executionId, outcome, title: item.title })
                     }
                   />
                 </li>
@@ -230,16 +265,19 @@ function WaitingRow({
   persona,
   busy,
   onDecide,
+  onResolve,
 }: {
   item: WaitingItem;
   agent?: AgentConnectionDetail;
   persona?: { role?: string; source: PersonaSource } | null;
   busy: boolean;
   onDecide: (approvalId: string, approved: boolean) => void;
+  onResolve: (executionId: string, outcome: 'completed' | 'failed') => void;
 }): React.JSX.Element {
-  // The waiting item is keyed across kinds, so the approval's own id is
-  // behind the kind.
+  // The waiting item is keyed across kinds, so the approval's own id and the
+  // turn's execution id are both behind the kind.
   const approvalId = item.id.startsWith('approval:') ? item.id.slice('approval:'.length) : null;
+  const executionId = item.id.startsWith('turn:') ? item.id.slice('turn:'.length) : null;
 
   return (
     <div className="flex items-start justify-between gap-3 rounded-md border border-slate-800 px-3 py-2.5 transition-colors hover:border-slate-700">
@@ -282,6 +320,29 @@ function WaitingRow({
               onClick={() => onDecide(approvalId, false)}
             >
               Reject
+            </Button>
+          </>
+        ) : null}
+        {executionId ? (
+          <>
+            {/* The owner's own conclusion about a turn they were told to
+                check: it did run, or it did not. Nothing is decided here for
+                them — the server only records what they say. */}
+            <Button
+              size="sm"
+              variant="secondary"
+              disabled={busy}
+              onClick={() => onResolve(executionId, 'completed')}
+            >
+              It ran
+            </Button>
+            <Button
+              size="sm"
+              variant="ghost"
+              disabled={busy}
+              onClick={() => onResolve(executionId, 'failed')}
+            >
+              It did not run
             </Button>
           </>
         ) : null}
