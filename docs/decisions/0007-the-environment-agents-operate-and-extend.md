@@ -254,14 +254,15 @@ the numbers are in that document.
   [FACTORY.md](../FACTORY.md), and the product record states the product-side
   consequence. Neither forks a protocol, and the boundary between them is the second
   open question.
-- Two of the six answers are half-built, and they say so. The template third of
+- Two of the six answers were half-built, and they said so. The template third of
   Q3 and the counting behind Q6 are both published shapes, so both needed the
-  owner's nod, and the owner gave both on 2026-10-21 at 06:01. They are in build
-  as [WI-017](../../.factory/work/WI-017.md) and
+  owner's nod, and the owner gave both on 2026-10-21 at 06:01. They were built as
+  [WI-017](../../.factory/work/WI-017.md) and
   [WI-020](../../.factory/work/WI-020.md), with their published entries in
-  [WI-030](../../.factory/work/WI-030.md).
-- **The product does not report on itself yet.** Nothing counts the two measures and
-  the panel does not show them.
+  [WI-030](../../.factory/work/WI-030.md) — the templates at `8b1fd01` and the
+  measures at `c2853ac`, both in the tree.
+- **The product reports on itself.** The two measures are counted from the data the
+  product already keeps, and the panel shows them in a band of their own.
 - One licence question is the owner's and not the factory's, and it is recorded
   above rather than left in a candidate table.
 - The open questions stay open, and this ADR does not close them: it records a

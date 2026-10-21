@@ -106,9 +106,15 @@ created it.
 **A resource is what "native" means for an agent-created feature.** An agent's
 feature is a typed, validated resource in these contracts — one of the six kinds
 above, with a spec its owning provider validates — and never a surface invented for
-agents. The third half of that is not built yet: nothing in the product tells an
-agent what a good resource looks like, so an agent creates one from the schema alone,
-and a schema is a type, not an example. That gap is sized and waiting on the owner.
+agents. **The third half of that is built.** The product publishes a template for
+each of the six kinds, and an agent lists them and creates from one: the templates
+are on the MCP surface as `resource.template.list`
+(`packages/contracts/src/mcp.ts:21`), and `resource.create` takes a template and
+builds the resource from the template's spec, with the caller's own values merged
+into it
+(`apps/server/src/modules/mcp/server.ts:428`, `:446-448`). A template is an
+example, and the spec it carries is validated by the owning provider exactly as a
+hand-written spec is.
 
 ### Factory
 
@@ -144,22 +150,37 @@ carries at least:
 - the actions that are allowed,
 - the operations that require approval.
 
-**The policy is stored; it is not yet enforced.** A workspace's or a goal's autonomy
-mode and policy are written and read back, but nothing reads them to make a
-decision — the only mention outside the storage layer is a badge in the panel's
-settings. The limits that are actually enforced are the conversation's own (see
-[CONTRACTS.md](CONTRACTS.md), _Routing behaviour_), on a different object from the
-one the policy is attached to. And there is no pause in a policy: the only pause in
-the product is the conversation's own `paused` flag.
+**The policy is enforced.** The strictest of a workspace's policy, a goal's policy
+and a conversation's own safeguards is resolved in one place, and every enforcement
+point consumes that one result. A turn that has used up the turn budget or the
+spend budget does not start; a turn that outruns the duration limit is stopped, and
+the outcome is recorded rather than silently truncated; an action outside the
+allowed list is refused by name, and the refusal names the policy it blames; and
+an action the policy wants the owner to approve waits for the owner rather than
+proceeding. An action the system does not know is refused, not allowed through.
+
+**The mode is resolved, readable, and enforced nowhere.** Nothing in the product
+reads the resolved mode to make a decision, so nothing behaves differently in
+`manual` than in `autonomous`. What `autonomous` is to mean — the mode that permits
+an agent to begin work on its own initiative, or only the mode that describes work
+the owner has already authorised — is the owner's decision, and it is not settled.
+Until it is, the mode is a description and not a control.
+
+The effective policy is readable — over the API and through the MCP surface — and
+it says where each of its values came from. A policy nobody can read is a policy
+nobody can trust.
+
+And there is no pause in a policy: the only pause in the product is the
+conversation's own `paused` flag.
 
 Manual is the default everywhere. An agent never gains authority by being added to a
 group: adding an agent to a conversation changes who can be reached, not what that
 agent is permitted to do.
 
-In autonomous mode, an agent may only begin work through an approved trigger and
-within its granted scope. The system must never create an unlimited agent-to-agent
-response loop; the routing safeguards in [CONTRACTS.md](CONTRACTS.md) exist for
-exactly that reason.
+An agent may only begin work through an approved trigger and within its granted
+scope. That rule is not enforced by the mode: the mode reads the same in every
+mode. The system must never create an unlimited agent-to-agent response loop; the
+routing safeguards in [CONTRACTS.md](CONTRACTS.md) exist for exactly that reason.
 
 ## 6. What the product is for every day
 
@@ -187,20 +208,24 @@ from the data the product already keeps. But an automation and a task record the
 author as `system`, so for those two kinds the answer is **wrong**, not merely
 uncounted.
 
-The audit trail records the actor of most actions. Of the thirty-four routes that
-change something, twenty write an entry at the route, two more write from the
-service layer — an approval decision, and a task that leaves `unknown` — and twelve
-write none: a capability probe, an agent token revoked, a logout, an owner-token
-mint, an automation edited or deleted, a conversation deleted, a participant added
-or removed, a goal, and a workspace created or edited. An entry names who acted and
-what they acted on, and every entry written today records a success whether the
-action succeeded or not — `POST /api/resources/:id/execute` records one for a run
-that was merely queued. The second measure's denominator is therefore a real
-question, and it is part of what the owner has not settled.
+The audit trail records the actor of most actions. Of the thirty-six routes that
+change something, twenty-one write an entry at the route, three more write from
+the service layer — an approval decision, an AG-UI run resume, and a task that
+leaves `unknown` — and twelve write none: a capability probe, an agent token
+revoked, a logout, an owner-token mint, an automation edited or deleted, a
+conversation deleted, a participant added or removed, a goal, and a workspace
+created or edited. An entry names who acted and what they acted on, and every
+entry written today records a success whether the action succeeded or not —
+`POST /api/resources/:id/execute` records one for a run that was merely queued.
+The second measure's denominator is therefore a real question, and it is part of
+what the owner has not settled.
 
-**Nothing counts them yet**, and the panel does not show these numbers today.
-Counting them is sized and waiting on the owner, because a route that returns them
-is a published contract.
+**The two are counted, and the panel shows them.** `GET /api/measures` returns the
+published shape for a workspace (`apps/server/src/api/measures.ts:17`), and the
+panel shows the counts in a band of their own
+(`apps/web/src/components/MeasuresBand.tsx`). Both are counted from the data the
+product already keeps — the authorship a resource carries, and the entries the
+audit trail holds — and not from a counter that is incremented on some code path.
 
 **No ratio whose denominator is zero.** For a long while the honest value of "the
 share of features authored by agents" is zero or undefined, because no agent has
@@ -269,6 +294,21 @@ are read, not assumed.**
 **An interface is conformed to, never reimplemented.** Personal OS is a client of
 ACP, A2A, MCP and the OpenAI-compatible API shape. "Our spec" means our domain
 model, not our dialect of someone else's protocol.
+
+**The MiniMax Code boundary, and what was taken from it.** The CLI and harness
+are open source under MIT (first-party code defaults to MIT; the sandbox
+runtime is Apache-2.0; the Pi-derived terminal code keeps its own
+declarations), and the **desktop application is not published at all** — that
+repository hosts issue reporting for it. The harness was read as a
+specification, and six of its behaviours were reimplemented against our own
+contracts: per-turn capability pinning, the five-step canonical history
+commit, delivery versus consumption, `lost` for delegated work whose executor
+has gone, steer and queue, and the parent-child work tree. They are published
+as Contract 7 of the interaction model; the context budget and the tool
+eligibility chain stay inside the worker. **No dependency was added, and
+`package.json` and the lockfile are unchanged by any of it.** The licence
+record, read on 2026-10-21, is the row in the landscape table in
+[docs/strategy.md](docs/strategy.md) and the decision is ADR 0009.
 
 **Where the boundary falls exactly is still open.** The reading in front of the
 owner is recorded in ADR 7: the panel's agent-facing surface conforms to MCP and

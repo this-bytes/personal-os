@@ -1,6 +1,6 @@
 import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
-import { parseBody, requireAuth } from './helpers.js';
+import { audit, parseBody, requireAuth } from './helpers.js';
 
 const createWorkspaceSchema = z.object({
   name: z.string().min(1).max(200),
@@ -20,7 +20,12 @@ export function registerWorkspaceRoutes(app: FastifyInstance): void {
 
   app.post('/api/workspaces', { preHandler: requireAuth }, async (request, reply) => {
     const body = parseBody(createWorkspaceSchema, request.body);
-    return reply.code(201).send({ workspace: app.services.workspaces.create(body) });
+    const workspace = app.services.workspaces.create(body);
+    // The workspace does not exist until this call returns, so the entry is
+    // an instance-level one, like the auth events, and it is not scoped to a
+    // workspace's trail.
+    audit(request, 'workspace.created', { type: 'workspace', id: workspace.id });
+    return reply.code(201).send({ workspace });
   });
 
   app.get('/api/workspaces/:id', { preHandler: requireAuth }, async (request) => {
@@ -31,6 +36,12 @@ export function registerWorkspaceRoutes(app: FastifyInstance): void {
   app.patch('/api/workspaces/:id', { preHandler: requireAuth }, async (request) => {
     const { id } = request.params as { id: string };
     const body = parseBody(updateWorkspaceSchema, request.body);
-    return { workspace: app.services.workspaces.update(id, body) };
+    const workspace = app.services.workspaces.update(id, body);
+    audit(request, 'workspace.updated', {
+      type: 'workspace',
+      id,
+      workspaceId: workspace.id,
+    });
+    return { workspace };
   });
 }

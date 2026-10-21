@@ -99,6 +99,39 @@ export const echoAdapterConfigSchema = z.object({
 });
 export type EchoAdapterConfig = z.infer<typeof echoAdapterConfigSchema>;
 
+/**
+ * An agent that is an MCP server.
+ *
+ * The connection is a trust decision like any other: the owner names the
+ * server, the tool a turn calls, and the tools the connection may call at
+ * all. Credentials are references, never values — the bearer token lives in a
+ * server-held secret record.
+ */
+export const mcpAdapterConfigSchema = z.object({
+  /** How the MCP server is reached. */
+  transport: z.enum(['stdio', 'http']).default('stdio'),
+  /** The command that starts an MCP server, for the stdio transport. */
+  command: z.string().min(1).optional(),
+  args: z.array(z.string()).default([]),
+  cwd: z.string().optional(),
+  /** Additional environment variables for the supervised process. */
+  env: z.record(z.string()).default({}),
+  /** The MCP server's URL, for the http transport. */
+  url: z.string().url().optional(),
+  /** Reference to a secret holding the bearer token, for the http transport. */
+  authTokenRef: z.string().optional(),
+  /** The MCP protocol revision the client speaks. */
+  protocolVersion: z.string().min(1).default('2025-06-18'),
+  /** The tool a turn calls. */
+  toolName: z.string().min(1),
+  /** The tool's arguments, as a JSON template. */
+  argumentTemplate: z.string().default('{"message":"{{message}}"}'),
+  /** The tools this connection may call. Empty means the configured tool alone. */
+  allowedTools: z.array(z.string()).default([]),
+  timeoutSeconds: z.number().int().min(1).max(86_400).default(600),
+});
+export type McpAdapterConfig = z.infer<typeof mcpAdapterConfigSchema>;
+
 export const adapterConfigSchema = z.discriminatedUnion('adapterType', [
   cliAdapterConfigSchema.extend({ adapterType: z.literal('cli') }),
   acpAdapterConfigSchema.extend({ adapterType: z.literal('acp') }),
@@ -106,6 +139,7 @@ export const adapterConfigSchema = z.discriminatedUnion('adapterType', [
   httpAdapterConfigSchema.extend({ adapterType: z.literal('http') }),
   modelAdapterConfigSchema.extend({ adapterType: z.literal('model') }),
   echoAdapterConfigSchema.extend({ adapterType: z.literal('echo') }),
+  mcpAdapterConfigSchema.extend({ adapterType: z.literal('mcp') }),
 ]);
 export type AdapterConfig = z.infer<typeof adapterConfigSchema>;
 
