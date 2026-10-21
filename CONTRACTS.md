@@ -223,7 +223,7 @@ execution's outcome could not be confirmed, so an execution that is no longer
 
 **The transition is written to the audit trail** as `execution.outcome.resolved`,
 beside the task path's `task.outcome.resolved`
-(`apps/server/src/modules/factory/service.ts:279`). It names the owner the way
+(`apps/server/src/modules/factory/service.ts:319`). It names the owner the way
 the task path's does — `actorType: 'human'` and the owner's id — and its
 metadata carries the transition, `from: 'unknown'` and `to` the outcome.
 
@@ -237,7 +237,7 @@ This entry is the contract for **WI-031**, and the code implements it — as of
 (`363428e`), and `3dd490b` brought the route to the published shape after it.
 The route is `POST /api/executions/:id/resolve`, at
 `apps/server/src/api/executions.ts:21`, and it is registered at
-`apps/server/src/app.ts:223`. **Only the owner may call it**, under the same
+`apps/server/src/app.ts:226`. **Only the owner may call it**, under the same
 authentication as every other owner-facing route
 (`apps/server/src/api/helpers.ts:13-17`). **The route's own writer is the
 executions service**, which writes the execution's status and the reply's
@@ -682,11 +682,13 @@ the template to start from, and its `type` must equal the `type` the call asks f
 `data` is the caller's own values, and the resource's `data` is the template's
 `spec` with those values merged into it. **A call that carries both is no longer
 refused — it is answered**, and the values the call did not name are the template's.
-A template of another kind, and a spec the owning provider refuses, are
-`validation_failed`; an unknown template id is `not_found`. Those codes are already
-published in [Error envelope](#error-envelope); this entry adds none. The tool's
-visibility follows the same grant rule as every other tool on that surface,
-published in [MCP exposure](#mcp-exposure).
+A template of another kind, and a template whose spec the owning provider refuses,
+are `validation_failed`
+(`apps/server/src/modules/resources/service.ts:638-655`); an unknown template id is
+`not_found`. Those codes are already published in
+[Error envelope](#error-envelope); this entry adds none. The tool's visibility
+follows the same grant rule as every other tool on that surface, published in
+[MCP exposure](#mcp-exposure).
 
 **The merge rules are these.** They are implemented by `mergeTemplateSpec`
 (`apps/server/src/modules/resources/templates.ts:522-543`), and the rules per kind
@@ -804,7 +806,7 @@ do today.
 
 This entry is the contract for **WI-012**, and the code implements it — as of
 `e764e6a`. `memoryScopeSchema` carries `'agent'` at
-`packages/contracts/src/resource.ts:138`, the spec's `agentConnectionId` at `:148`,
+`packages/contracts/src/resource.ts:216`, the spec's `agentConnectionId` at `:226`,
 and `listAgentMemories` at
 `apps/server/src/modules/resources/agent-memory.ts:29` is what puts the agent's
 memories in the turn context.
@@ -813,9 +815,9 @@ memories in the turn context.
 owner's ruling of 2026-10-21 at 07:07 was that an agent's own memory is private
 to it, on reads as well as on writes, and the sentence above now says so. The rule
 is one call — `assertOwnMemory` at
-`apps/server/src/modules/mcp/server.ts:153`, with `memoryOwner` at `:119` — and it
-answers the same way for the three resource tools: `resource.create` at `:386`,
-`resource.update` at `:447` and `resource.get` at `:417`. A memory's owner is
+`apps/server/src/modules/mcp/server.ts:217`, with `memoryOwner` at `:181` — and it
+answers the same way for the three resource tools: `resource.create` at `:450`,
+`resource.update` at `:514` and `resource.get` at `:484`. A memory's owner is
 `memoryOwner`'s answer, and an agent that is not that owner is refused with
 `forbidden` and the message "An agent may only reach its own memory."
 
@@ -1098,7 +1100,7 @@ supports, and the capability to do it is already modelled and negotiated.
 This entry is the contract for **WI-007**, and the code implements it — as of
 `5f019b9`. `resumeSession` is implemented at
 `packages/agent-adapters/src/acp.ts:213` and called at
-`apps/worker/src/executor.ts:375`, and the gate is the capability and the session
+`apps/worker/src/executor.ts:424`, and the gate is the capability and the session
 id together: `canResume = capabilities?.persistentSessions === true &&
 Boolean(execution.externalRef)`.
 
@@ -1127,7 +1129,7 @@ result: 'queued' | 'succeeded' | 'failed' | 'unknown';
 
 **`queued` means the action was accepted and has not finished.** `POST
 /api/resources/:id/execute` records `queued` for an automation run it enqueues
-(`apps/server/src/modules/resources/service.ts:525`): the route accepted the request
+(`apps/server/src/modules/resources/service.ts:594-599`): the route accepted the request
 and the run has not happened. The same route runs a data source and a dashboard there
 and then, so **the vocabulary is per action, not per route** — one route can record
 `queued` for one kind and `succeeded` for another. **`succeeded` means the outcome was
@@ -1138,7 +1140,7 @@ not.**
 failure. It is the same word the unknown outcome uses
 ([The unknown outcome](#the-unknown-outcome)), and it is in this vocabulary because
 the product produces it: the worker writes it when a turn's outcome cannot be
-confirmed (`apps/worker/src/executor.ts:104`), and the conversation dispatch writes it
+confirmed (`apps/worker/src/executor.ts:112`), and the conversation dispatch writes it
 when a turn stops for the same reason
 (`apps/server/src/modules/conversations/dispatch.ts:247`). **A vocabulary without
 `unknown` would leave the unknown outcome unrepresentable in the trail**, and the
@@ -1146,14 +1148,14 @@ trail is where it is recorded.
 
 **Every mutating route writes an entry, and every entry records what the action
 produced.** The route helper wrote `success` for every route that used it
-(`apps/server/src/api/helpers.ts:62`) and the audit service defaulted to it
+(`apps/server/src/api/helpers.ts:76`) and the audit service defaulted to it
 (`apps/server/src/modules/audit/service.ts:79`), so an entry said "done" about a run
 that was merely queued. **The twelve routes that used to write no entry at all now
 write one each, at the route** — they are the twelve in
 [the measures route](#the-measures-route). **A route whose action fails writes an
 entry that says `failed`**: today it writes none, because every route-level entry is
 written after the work and a handler that throws never reaches it, and the error
-handler writes nothing (`apps/server/src/app.ts:190`).
+handler writes nothing (`apps/server/src/app.ts:193`).
 
 **The code does not implement this yet.** The vocabulary is published ahead of its
 implementation, because the contract leads and the code follows: the implementation
@@ -1214,7 +1216,7 @@ defined in [The unknown outcome](#the-unknown-outcome); this entry publishes the
 list's use of it, and the two are not two definitions. The published type
 carries `pending | review | blocked | unknown`, member for member with
 `apps/server/src/api/waiting.ts:17`, and the route takes the reason straight
-from the task's status (`waiting.ts:95`), so a task that cannot be confirmed
+from the task's status (`apps/server/src/api/waiting.ts:95`), so a task that cannot be confirmed
 arrives as `reason: 'unknown'` and the published type cannot drift away from
 what the route returns.
 
@@ -1633,8 +1635,8 @@ only.
 
 **Every kind carries an author now.** The `automation` and `task` kinds keep their
 author on the row — `created_by` on both tables
-(`apps/server/src/db/schema.ts:330`, `:410`) — and the projections read it
-(`apps/server/src/modules/resources/service.ts:210`, `:301`). An agent-created
+(`apps/server/src/db/schema.ts:330`, `:416`) — and the projections read it
+(`apps/server/src/modules/resources/service.ts:234`, `:338`). An agent-created
 automation or task is recorded as authored by the agent that made it.
 
 **Every mutating route writes an audit entry.** Of the 36 mutating routes in
@@ -1642,7 +1644,7 @@ automation or task is recorded as authored by the agent that made it.
 write one from the service layer — `POST /api/approvals/:id/decide` and `POST
 /api/agui/runs/:runId/resume`, both at
 `apps/server/src/modules/approvals/resume.ts:53`, and `PATCH /api/tasks/:id` at
-`apps/server/src/modules/factory/service.ts:308`, and that one only when the task
+`apps/server/src/modules/factory/service.ts:315`, and that one only when the task
 leaves `unknown`. **No mutating route writes none.**
 
 The twelve that used to write none write one each, at the route:
