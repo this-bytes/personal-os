@@ -1317,15 +1317,32 @@ only.
 
 **What the reading cannot cover.** Four things, said plainly.
 
-**Two of the six kinds can never be agent-authored.** The `automation` and `task`
+**Two of the six kinds do not carry an author yet.** The `automation` and `task`
 projections hardcode `createdBy: 'system'`
-(`apps/server/src/modules/resources/service.ts:170`, `:260`), and their tables
-have no `created_by` column at all (`apps/server/src/db/schema.ts:385-401`,
-`:305-330`) — the value is invented at projection time and nothing is stored. An
-agent-created automation or task is recorded as authored by `'system'`. **The
-first measure is therefore a lower bound**: those resources sit in the
-denominator and can never sit in the count, so the ratio is a share over four of
-the six kinds, reported over all six.
+(`apps/server/src/modules/resources/service.ts:203` and `:293`, and `:448`,
+where the list path writes the same value), and their tables have no
+`created_by` column at all (`apps/server/src/db/schema.ts:387-403`, `:307-332`)
+— the value is invented at projection time and nothing is stored. An
+agent-created automation or task is recorded as authored by `'system'`.
+
+**Once WI-033 lands, that stops being true.** The published shape is one field
+for all six kinds — `createdBy` — and the two kinds that cannot carry it today
+will carry it like the other four, in the same id space: a resource whose
+`createdBy` carries the `agt_` form is agent-authored, and `'owner'` and
+`'system'` are not, which is the reading the entry above defines. **Where the
+author is kept is the implementation's business, and this entry does not publish
+it**: no column is named here, and the shape above is what it has to reach.
+**The code does not implement this yet.** The implementation is WI-033, and a
+client written against this entry must treat those two kinds' author as absent
+until it lands.
+
+**The first measure counts over four of the six kinds today, and over all six
+when WI-033 lands.** Those resources sit in the denominator and can never sit
+in the count, so while the code stands as it does the ratio is a share over
+four of the six kinds, reported over all six. Once the two kinds carry an
+author, every kind can contribute to the count. **The measure is a floor either
+way** — the owner's own resources are in the denominator and never in the count
+— but which kinds the count can reach is what this change moves.
 
 **Twelve of the thirty-six mutating routes write no audit entry at all.** Of the
 36 mutating routes in `apps/server/src/api/`, 21 write an audit entry at the
@@ -1387,9 +1404,11 @@ is `null` when the denominator is zero, and the count is still returned.
 resource that records no agent author — the `'system'` of the automation and
 task projections, and everything the owner created — is in the denominator and
 can never be in the count, so the ratio can only understate what the agents
-authored. The second measure is **not a share of completed work**, and it is
-published with two different facts behind it. The first is a count of routes:
-the twelve listed above write no audit entry at all, and the MCP surface
+authored. **The `'system'` cause ends with WI-033; the owner's own resources do
+not**, so the floor holds either way, and what WI-033 moves is which kinds the
+count can reach. The second measure is **not a share of completed work**, and
+it is published with two different facts behind it. The first is a count of
+routes: the twelve listed above write no audit entry at all, and the MCP surface
 writes none either. The second is a rule about outcomes: every audited route
 records `result: 'success'` whatever happened, no writer in the product
 records `failure`, and the count has no filter on the result — so the
@@ -1403,13 +1422,13 @@ worker wrote, not the share of the work an agent did.
 new and read-only, so a client that does not call it is unaffected, and a client
 that does has no earlier version of it to migrate from. **No resource's
 `createdBy` is changed** — the two kinds that record `'system'` keep recording
-it, and the measure publishes that as a lower bound rather than correcting the
-data behind the owner's back. **No audit entry is rewritten**, so the second
-measure's denominator is what the trail actually holds, which is fewer
-operations than the owner performed; a client that keeps a measure over time is
-keeping a number whose denominator moves as more routes are audited. A client
-that reads `ratio` has to handle `null`, which is a value the ratio can now take
-and which is not the same as 0.
+it until WI-033 gives them a real author, and the measure publishes that as a
+lower bound rather than correcting the data behind the owner's back. **No audit
+entry is rewritten**, so the second measure's denominator is what the trail
+actually holds, which is fewer operations than the owner performed; a client
+that keeps a measure over time is keeping a number whose denominator moves as
+more routes are audited. A client that reads `ratio` has to handle `null`,
+which is a value the ratio can now take and which is not the same as 0.
 
 ### Error envelope
 
