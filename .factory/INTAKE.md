@@ -399,7 +399,7 @@ second dispatch.
 | `probe-verify-wi-037-product-record-forge-2026-10-21-1325` **(reused — a defect)** | WI-034 — the outcome vocabulary, written | Wren | `task_55c33b744ef5` | **done** — the contract's `### The audit outcome` entry and its migration note, `be10169` plus `ccfb3c2` for the item's own `State:` line, pushed and merged into `main` at `2cb8ba7`. **And the record is wrong about how it was dispatched:** this request id belongs to **WI-037's verification** (row above), and it was used a second time for a different item. **A request id is spent when it is used, and a reused id makes the table lie.** It is recorded here rather than hidden, and the id is spent for good |
 | `wi-028-name-the-change-and-fix-pointers-2026-10-21-1940` | WI-028 — the two published entries: name the change, and point the pointers | Wren | `hlp_fcab95870b97` | **running** — **WI-028 goes back to Wren for one edit.** Probe's verification is in hand (`task_458901e810d7`, measured at `767fbe3`) and reads _"on substance verified … one edit in Wren's file away from acceptance"_. **Criterion 1's last clause fails on the second entry** — the MCP exposure entry states the rule and names no commit and no item, while the memory-scope entry names both twice. **And seven code pointers have drifted** under `8b1fd01`; the claims are true, the pointers no longer point. **The `message_bot` path was refused** — "This tool call cannot be assigned to an active reply" — because this session sits in a crash-recovery `started` state, so the brief went as an isolated execution for Wren and **this request id is reserved and unspent** |
 | `wi-066-published-shapes-member-for-member-2026-10-21-1950` | WI-066 — the published shapes, member for member | Wren | — | **WITHDRAWN — and the mistake is the point.** This session was about to hand WI-066 to Wren in the group at 20:45, **and WI-066 had already been dispatched at 13:40 by the peer session** (`wi-066-message-shape-fourth-field-2026-10-21-1340`, `task_0cfbcce20e92`) **and Wren had already implemented it** (`f63c978`, "Publish the message shape's fifth field"). **The item's own file carried no task id, and this session read that as "not dispatched" — the dispatch table is the record of what is dispatched, and it was not consulted.** A second worker on one item is the thing these rules exist to prevent, and it was stopped before it went out. **Wren's implementation independently corrected the count the same way this session did — "the item's own count was four and the tree's is five … the tree wins" — and the lead's corrected title and criteria are now merged with her record.** Merged into `main` as `d3add55`; **WI-066 is in `verify` and Probe's verification is still to be dispatched** |
-| `wi-078-published-note-bound-2026-10-21-2045` | WI-078 — the published note has no bound the code has | Wren | — | **OPENED, and the hand-off is in the group** — Probe's WI-031 verification found that `CONTRACTS.md` publishes `ResolveExecutionInput.note` with **no bound** while the code caps it at 2 000 characters (`apps/server/src/api/executions.ts:9`), and routed it rather than letting it go unrecorded. **It is a gap against WI-031's own criterion 7, and it is the last thing standing between WI-031 and its acceptance.** Branch `wi/078-published-note-bound`, worktree `G:\code\personal-os-worktrees\078-published-note-bound` — created by `scripts/work-item.ts`, so the item file was written on `main` afterwards and the worker is told to bring `main` into the branch first. **WI-031's own status paragraph correction is queued ahead of it on the same file** |
+| `wi-078-note-bound-2026-10-21` | WI-078 — the published note has no bound the code has | Wren | — | **DISPATCHED THROUGH THE GROUP at 21:00, under the id the peer session reserved.** The peer session opened WI-078 from Probe's WI-031 verification and wrote the better brief — it measured the contract's own line numbers and **found the house form for publishing a bound** (a trailing comment on the field's own line, as `CONTRACTS.md:376` and `:377` do). **That brief was in the working tree and uncommitted when the tree was reconciled at 20:57, so it was restored by hand and is committed with this row.** **The Mini App runtime stopped mid-turn and took the task API's tools with it; `miniapp restart` brought the factory back but not this session's registry, so the dispatch goes by the group** — which is the channel that reaches the group. Branch `wi/078-published-note-bound`, worktree `G:\code\personal-os-worktrees\078-published-note-bound`. **It is the last thing standing between WI-031 and its acceptance** |
 | `wi-028-verify-after-correction-2026-10-21-2048` | WI-028 — re-verify the two published entries after the correction | Probe | — | **HANDED OVER IN THE GROUP, not through the task API** — the Mini App runtime stopped mid-turn and took the task tools with it; the repair is a restart, and the restart does not restore this session's tool registry. **The brief is in the item file and in this turn's group post.** The change is `22ef5ba`, merged into `main` as `d530f73`: the MCP exposure entry now names its change, and all seven drifted pointers point where they say |
 | `probe-verify-wi-041-readme-licence-2026-10-21-1340` | WI-041 — verify the README tells the truth about the licence | Probe | `task_5b4e02d59413` | **done — and WI-041 is accepted.** Probe measured the tree as it stands at `e676ba9`: **all six criteria, as the item's file stands (corrected 19:08), are met on their face.** `README.md:251-254` reads "MIT. The owner chose it on 2026-10-21, and the full text is in the [LICENSE](LICENSE) file at the root of the repository." The gates: `prettier --check README.md` 0, `npm run format:check` 0; supporting, `typecheck` 0 and `test` 0 — server 25 files/248, web 7/54, worker 5/31, agent-adapters 2/16, contracts 4/28. **Criterion 3's second clause — "the repository is public under it" — was a fact the verifier could not confirm from its own machine, and the lead confirmed it from outside this one:** an unauthenticated read of the repository's endpoint returns `visibility = public`, `license = MIT / MIT License`, `private = False`. **The implementation was taken by the other Chief session under the tiebreak (`f129594`, merged `141f0be`) and the verification is Probe's, so the lead accepts it and no writer accepts its own work** |
 | `wi-036-record-reverification-2026-10-21-1955` | WI-036 — re-verify the licence record against the file as it stands | Probe | `hlp_72d0eace0a08` | **queued** — **the peer's question, asked and not skipped:** WI-036 was accepted on Probe's verification of the record at `edbd105`, and **the file has been edited since** — `45e7b2b`, `ed7b829` and `6cf63b5` each changed six lines of `docs/dependency-licences.json`, because the owner's 19:08 MIT decision made the record's "private for now, with no LICENSE yet" notes false and the other Chief session landed the correction under the tiebreak. **Nobody had asked whether the acceptance survives the edit; that is a question for the verifier and not for a lead.** The brief names the five criteria, quotes what changed, and says plainly: judge **whether the acceptance still holds**, not the record's quality |
@@ -8139,6 +8139,43 @@ the pipeline measured green at `e676ba9` — **but the rule is about the tree,
 not about the code.** **The gate is what it is until WI-074 lands, and a push
 made on a tree whose gate has been red twice tonight is a push the next person
 has to re-check.**
+
+### `origin/main` was pushed from a branch, and it is reconciled
+
+**What happened, measured.** At 20:57 `git rev-list --left-right --count
+origin/main...main` read **9 11** — the two had diverged — and `git log
+origin/main` showed its head as `38c14fb`, _"Merge remote-tracking branch
+'origin/main' into wi/070-free-window-streams"_. **A branch had been pushed to
+`origin/main`.**
+
+**What it carried, and what it left out.** That push carried the peer session's
+real work — `apps/server/src/api/agui.ts`, `agui-protocol.ts`, two test suites,
+the route registration in `app.ts`, the contract entries and the
+`published-shapes` test — **and it left out this session's two contract
+merges**, `d530f73` (WI-028) and `d3add55` (WI-066), which existed only on this
+machine. **A push that writes `main` from a branch is a push that can silently
+drop another session's landed work, and this one did.**
+
+**The repair is a merge, not a force-push.** `git merge origin/main` into
+`main` was clean — `CONTRACTS.md` auto-merged, because the AG-UI passages and
+the memory and message-shape passages do not overlap — and `main` now carries
+both sides. **A force-push would have been the wrong repair twice over: it
+would have destroyed the peer's AG-UI commits, and it is exactly the
+push-to-undo-by-force that `FACTORY.md` forbids.** The merge is Chief's by the
+rule at `FACTORY.md:134`, and it is done.
+
+**And one thing that was nearly lost, and was not.** The peer session's
+rewritten WI-078 brief — the one that measured the contract's own line numbers
+and found the house form for publishing a bound — was in the working tree and
+uncommitted when the tree was reconciled. **It is restored and committed**, and
+the item file says whose content stands.
+
+**And one thing two sessions found independently, which is worth noticing.**
+The peer session wrote, at 20:11, _"WI-036's artefact changed under its
+acceptance, so the item goes back to verify"_ — and this session dispatched the
+same re-verification at 19:55, from the peer's own note in the ledger's tail.
+**One finding, two sessions, reached from opposite ends of the same record.**
+That is the ledger working, and it is the reason the note was there.
 
 ## One timestamp in this file is right and two are wrong — 2026-10-21 20:05
 
