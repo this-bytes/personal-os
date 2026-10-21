@@ -3334,3 +3334,76 @@ waiting list carries it as its own kind, one row per agent and capability; the
 owner can widen the grant from the list; the row leaves when the grant is
 widened; a test proves the refusal reaches the list and that the row leaves
 after the grant.
+
+## 2026-10-22 09:20 — Chief: the front page is corrected, two numbers are taken, and WI-112's record is true
+
+**One — the owner's answer, and the standing word that covers the push.** In the strategy
+group the owner answered _"Does the owner stand behind a public MIT repository — with the
+front page corrected to the new identity before anyone finds it?"_ with **"Yes to both, in
+that order."** The repository is public and MIT and stays that way, and the front page is
+corrected **in the world, not on a branch** — a correction that lives only on a branch
+leaves the published page carrying the old sentence for every reader who arrives first.
+
+**The push of `main` needs no new word.** `.factory/chief.md:90-94` and `FACTORY.md:92-97`
+carry the owner's standing word of **2026-10-21 18:07** — _"push `main` whenever CI is
+green"_ — and `FACTORY.md:94-95` says it plainly: **"That word is not spent — it stands
+until the owner changes it."** The conditions before the push are `FACTORY.md:99-107`: the
+local gates pass **on the tree being pushed**, the landed code is code the pipeline has
+measured green, and the push is a fast-forward from where the work started.
+**The platform's verdict is read afterwards and recorded** (`FACTORY.md:109-113`), and **a
+red verdict on a pushed `main` is a factory failure to fix and say out loud**, never a push
+to undo by force. **One push at a time**, because a push cancels the run that judges it.
+
+**Two — WI-120 and WI-121 are this session's items, and both are dispatched.**
+
+| item       | what it is                                                      | owner | request                                            | task                |
+| ---------- | --------------------------------------------------------------- | ----- | -------------------------------------------------- | ------------------- |
+| **WI-120** | The published front page states the identity the owner replaced | Wren  | `wi-120-front-page-identity-2026-10-22`            | `task_2b5160e24223` |
+| **WI-121** | The decision surface carries what an agent is blocked on        | Cog   | `wi-121-blocked-agent-decision-surface-2026-10-22` | `task_bbf11f83be2b` |
+
+**WI-121 is Vision's third want, and it was left unnumbered for three hours.** It is
+numbered now, and it is dispatched. **A want that is written down but not numbered is how
+the MCP scoping defect sat for three hours**, and the rule that stops it is the one the
+block already carries: _a number is added to the table the moment it is taken_.
+
+**Three — the block carries each number once, and the rows that are there are right.** The
+other Chief session read these two item files out of the shared tree and published the two
+claims into the block at **09:10:59** (`4458ad1`), with **"the next free number is
+WI-122"**. **Those rows are the block's, and they stand.** This session had inserted its own
+two rows at 09:0x — the same two numbers, the same titles — and **they are removed**, so
+each number appears once. The owner column reads `peer` for both rows because the block is
+written from that session's side of the tree. **The tiebreak was never needed: there was one
+claim, taken once, and published by the session that read it.**
+
+**Four — WI-112's four record corrections are applied, not just listed.** In
+`.factory/work/WI-112.md`: the duplicated `## The problem` is gone; the State line reads
+**`accepted`**; the pin's three copies are named (`RULE_COPIES` is **measured** — three
+entries — and the item's own "Not in scope" section said three); and the house-form
+sentence names **brief 01:18 and brief 05:29 only**, because the phrase _"quoted exactly as
+the direction document states it"_ is in those two files and **grep over
+`prototypes/briefs` returns those two lines and no third** — the briefs README carries the
+rule as a bare blockquote. **The section that named the four stays**, so the difference
+between what the item said and what is true is still visible. **The pin is still owed**: no
+test reads `docs/strategy.md`, it is **WI-116**, and it is **HELD** behind Probe's lane —
+a verifier who writes the pin is no longer independent of it.
+
+**Five — a want, and it is not numbered.** The README's **body** carries the product's older
+framing — _"one place to talk to agents, run group conversations…"_ is a chat home, and the
+product record lists what this product is not (`docs/strategy.md:37`). **The owner's
+decision was about one line, and this is a rewrite of the document, not a one-line
+correction**, so it is recorded here as a want and not as an item. It has no owner until it
+is triaged, and a want without an owner is a wish — which is the point of writing it down.
+
+**Six — the dispatch tool's own rule, measured twice.** Dispatching from this session failed
+with _"This Bot is replying in multiple chats, so this tool call cannot be assigned
+safely"_, because this bot answers in two chats at once — the strategy group and the
+owner's chat. **The dispatch succeeds when the caller id is left empty**, which is what the
+tool's own description says to do from the user's own chat. **A dispatch that cannot be
+delivered is not a dispatch**: both request ids are recorded in their item files, and the
+items can be delivered from there.
+
+**Seven — what the product can now do.** When WI-120 lands, **the front page of a public
+repository says what the product is, in the product's own words**. When WI-121 lands, **an
+agent blocked on a capability the owner never granted appears in the owner's waiting list,
+with the agent's name and what it needed, and the owner can widen the grant from that list
+— and the row leaves once they have.**
