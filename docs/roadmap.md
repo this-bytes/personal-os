@@ -77,8 +77,12 @@ connection, so connecting a new agent is a trust decision rather than an
 integration project. `ADR 0009` makes MiniMax Code a _specification_: the
 patterns are borrowed, the dependency is not.
 
-**All of this is on the `wi/046-domains-interaction-model` branch, not yet on
-`main`.** It is verified and landable; see `docs/free-period-plan.md`, D2-1.
+**This is landing on `main` now, as a merge rather than a fast-forward.**
+`wi/046-domains-interaction-model` is 64 commits behind the current tip, so
+landing it means merging it onto that tip, resolving `.factory/INTAKE.md` by
+keeping **both** sessions' entries, and running the gates on the merged tree
+rather than on the branch's own tree. The rehearsal branch is
+`wi/046-merge-rehearsal`.
 
 On top of the connection, the **interaction model** — one published contract
 (`CONTRACTS.md`, Contract 7) that says what an agent can observe, when it is
@@ -207,16 +211,16 @@ and it cost something.
 1. `AGENTS.md` — the contract. Short, and it is binding.
 2. `FACTORY.md` — how the factory works, and who owns what.
 3. `.factory/queue.json` — the machine-readable state of every work item.
-   **Not built yet.** It is Day 1 of `docs/free-period-plan.md`; until it
-   lands, read `.factory/work/*.md` directly, which is the record the index is
-   generated from.
-4. `docs/domains.md` — the five domains, and the rule that a module nobody
-   classified fails the build. **Lands with the `wi/046` merge**; until then it
-   is on that branch.
-5. `docs/self-improvement.md` — the runbook, with what is proved and what is
+   **Being built now**, as WI-072. Until it lands, read `.factory/work/*.md`
+   directly, which is the record the index is generated from.
+4. `docs/streams.md` — the current window's four streams, why they land in
+   that order, and what must not be built. **On `main`.**
+5. `docs/domains.md` — the five domains, and the rule that a module nobody
+   classified fails the build. **Lands with the `wi/046` merge.**
+6. `docs/self-improvement.md` — the runbook, with what is proved and what is
    still open. **Lands with the `wi/046` merge.**
-6. `docs/free-period-plan.md` — what the current window is for.
-7. `.factory/work/WI-*.md` — the item you are about to do.
+7. `docs/free-period-plan.md` — what the current window is for.
+8. `.factory/work/WI-*.md` — the item you are about to do.
 
 Pick an item from the queue that is in `triage`, in your lane, with no
 `blockedBy`. Ask Chief for a number. Work in a worktree. Prove it with the

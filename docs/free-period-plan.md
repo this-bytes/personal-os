@@ -95,6 +95,12 @@ Nothing else in this plan survives if Day 1 is skipped.
 
 ### D1-1. A queue that a program can read (owner: Wren)
 
+> **Now WI-072.** The research behind it changed two things: the index is
+> generated from a YAML header block on each item file rather than from the
+> prose `**State:**` line, and the generator is `work-item.ts queue --write`
+> rather than a second script. The criteria below are kept as written, with
+> that correction.
+
 `.factory/work/*.md` holds the state of every item, and it is the reason the
 factory is hard to run unattended: a scheduler would have to parse prose. Add a
 machine-readable index that is _generated from_ the work-item files, never
@@ -110,8 +116,8 @@ the index is the view.
 
 **Acceptance criteria**
 
-- [ ] `npx tsx scripts/queue.ts` regenerates `.factory/queue.json` from `.factory/work/*.md`, and the output is byte-identical on a second run.
-- [ ] A work item's `state` and `owner` in the index match the `**State:**` and `**Owner:**` lines in its file.
+- [ ] `npx tsx scripts/work-item.ts queue --write` regenerates `.factory/queue.json` from `.factory/work/*.md`, and the output is byte-identical on a second run.
+- [ ] A work item's `state` and `owner` in the index match the header block's `state:` and `owner:` fields in its file.
 - [ ] An item whose work-item file is not reachable from the checkout doing the reading (today's `WI-046`: the file exists on `wi/046-domains-interaction-model` but not on `main`, so `work-item.ts list` reports "no work item file") appears with an explicit `blockedReason`, not silently missing.
 - [ ] `npm run test` passes and the generator has a named test.
 
