@@ -25,6 +25,16 @@ export const resourceSchema = z.object({
   data: z.unknown(),
   createdBy: idSchema,
   updatedAt: isoDateSchema,
+  /**
+   * The template this resource was made from, and the version of it.
+   *
+   * A resource made from a template is a copy of what that version produced,
+   * not a link to it: a later version of the template does not change this
+   * resource, and this resource keeps citing the version it was made from. A
+   * resource made from a spec carries neither.
+   */
+  templateId: idSchema.optional(),
+  templateVersion: z.number().int().min(1).optional(),
 });
 export type Resource<T = unknown> = z.infer<typeof resourceSchema> & { data: T };
 
@@ -47,8 +57,46 @@ export interface ResourceProvider<T> {
 }
 
 /**
- * A template: a named, versioned example of one resource kind, with its spec,
- * that an agent can start from.
+ * The guide: what a good one of this kind is.
+ *
+ * A template's spec is an example. The guide is why the example is a good
+ * one — what to set, what good looks like, and what a reader would get wrong.
+ */
+export const resourceTemplateGuideSchema = z.object({
+  /** What this template is for, and what it produces. */
+  summary: z.string().min(1).max(2_000),
+  /** When to reach for this template. */
+  whenToUse: z.array(z.string().min(1).max(400)).min(1).max(8),
+  /** When not to. A template that cannot be declined is a rule, not a choice. */
+  whenNotToUse: z.array(z.string().min(1).max(400)).max(8).default([]),
+  /** The fields the agent fills in, and what each one is for. */
+  fields: z
+    .array(
+      z.object({
+        /** A dotted path into the spec. `widgets[].dataSourceId` means every widget's. */
+        path: z.string().min(1).max(200),
+        /** What this field is for. */
+        what: z.string().min(1).max(400),
+        /**
+         * True when the template's own value is a placeholder the agent must
+         * replace. False when the template's value is a good default.
+         */
+        mustSet: z.boolean().default(false),
+      }),
+    )
+    .max(20)
+    .default([]),
+  /** What a reader would get wrong. */
+  mistakes: z.array(z.string().min(1).max(400)).max(8).default([]),
+  /** What to check before calling it done. */
+  checklist: z.array(z.string().min(1).max(400)).max(8).default([]),
+});
+export type ResourceTemplateGuide = z.infer<typeof resourceTemplateGuideSchema>;
+
+/**
+ * A template: a named, versioned example of one resource kind, with its spec
+ * and the guide that says what a good one of that kind is, that an agent can
+ * start from.
  *
  * A template is not a resource. It has no workspace, no revision and no
  * `createdBy`, and it is not a row in any table: templates are authored in the
@@ -67,6 +115,14 @@ export const resourceTemplateSchema = z.object({
   description: z.string().min(1).max(1_000),
   /** The example itself, validated by the owning provider for `type`. */
   spec: z.unknown(),
+  /**
+   * What a good one of this kind is.
+   *
+   * A guide is required: the registry is typed, so a template without one does
+   * not compile. The check for a template is a pull request, so the check
+   * should be the compiler.
+   */
+  guide: resourceTemplateGuideSchema,
 });
 export type ResourceTemplate = z.infer<typeof resourceTemplateSchema>;
 

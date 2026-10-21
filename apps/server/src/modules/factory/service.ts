@@ -43,6 +43,9 @@ export interface FactoryService {
     assigneeId?: string;
     executionOwner?: ExecutionOwner;
     acceptanceCriteria?: string[];
+    /** The template this task was made from, and the version of it. */
+    templateId?: string;
+    templateVersion?: number;
   }): FactoryTask;
   updateTask(
     id: string,
@@ -125,6 +128,8 @@ export function createFactoryService(options: FactoryServiceOptions): FactorySer
     evidenceResourceIds: row.evidenceResourceIds,
     revision: row.revision,
     externalRef: row.externalRef ?? undefined,
+    templateId: row.templateId ?? undefined,
+    templateVersion: row.templateVersion ?? undefined,
   });
 
   const toEvidence = (row: typeof evidence.$inferSelect): Evidence => ({
@@ -224,6 +229,8 @@ export function createFactoryService(options: FactoryServiceOptions): FactorySer
           acceptanceCriteria: input.acceptanceCriteria ?? [],
           evidenceResourceIds: [],
           externalRef: null,
+          templateId: input.templateId ?? null,
+          templateVersion: input.templateVersion ?? null,
           createdAt: now,
           updatedAt: now,
         })

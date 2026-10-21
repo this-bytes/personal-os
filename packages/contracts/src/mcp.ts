@@ -19,6 +19,7 @@ export const mcpToolNames = [
   'resource.get',
   'resource.update',
   'resource.template.list',
+  'resource.template.get',
   'automation.create',
   'automation.inspect',
 ] as const;
@@ -43,6 +44,7 @@ export const defaultAgentToolGrants: McpToolName[] = [
   'resource.get',
   'resource.update',
   'resource.template.list',
+  'resource.template.get',
   'automation.create',
   'automation.inspect',
 ];

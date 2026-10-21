@@ -322,6 +322,9 @@ export const tasks = sqliteTable(
       .notNull(),
     /** External task identifier when the work is delegated to an orchestrator. */
     externalRef: text('external_ref'),
+    /** The template this task was made from, and the version of it. */
+    templateId: text('template_id'),
+    templateVersion: integer('template_version'),
     createdAt: text('created_at').notNull(),
     updatedAt: text('updated_at').notNull(),
   },
@@ -360,6 +363,9 @@ export const resources = sqliteTable(
     title: text('title').notNull(),
     data: text('data', { mode: 'json' }).notNull(),
     createdBy: text('created_by').notNull(),
+    /** The template this resource was made from, and the version of it. */
+    templateId: text('template_id'),
+    templateVersion: integer('template_version'),
     createdAt: text('created_at').notNull(),
     updatedAt: text('updated_at').notNull(),
   },
@@ -396,6 +402,9 @@ export const automations = sqliteTable(
     enabled: integer('enabled', { mode: 'boolean' }).notNull().default(false),
     lastRunAt: text('last_run_at'),
     nextRunAt: text('next_run_at'),
+    /** The template this automation was made from, and the version of it. */
+    templateId: text('template_id'),
+    templateVersion: integer('template_version'),
     createdAt: text('created_at').notNull(),
     updatedAt: text('updated_at').notNull(),
   },

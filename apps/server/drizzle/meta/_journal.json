@@ -57,6 +57,13 @@
       "when": 1792541293275,
       "tag": "0007_message_detail",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "6",
+      "when": 1792596490053,
+      "tag": "0008_kind_lilith",
+      "breakpoints": true
     }
   ]
 }

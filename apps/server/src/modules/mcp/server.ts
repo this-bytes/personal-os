@@ -10,7 +10,7 @@ import {
   type McpToolName,
 } from '@personal-os/contracts';
 import type { CapabilitiesService, Actor } from '../capabilities/service.js';
-import { AppError, errors } from '../../lib/errors.js';
+import { AppError } from '../../lib/errors.js';
 
 /**
  * MCP exposure.
@@ -354,7 +354,7 @@ export async function createMcpServer(options: McpServerOptions): Promise<McpSer
       'resource.create',
       {
         description:
-          'Create a dashboard, document, data source, memory item, automation or task — from a template, or from a spec.',
+          'Create a dashboard, document, data source, memory item, automation or task — from a template, or from a spec. A template’s spec is merged with the values you send: objects merge key by key, arrays are replaced, and the values you do not name are the template’s. Read the template’s guide before you create anything.',
         inputSchema: {
           workspaceId: z.string().optional(),
           type: resourceTypeSchema,
@@ -369,20 +369,17 @@ export async function createMcpServer(options: McpServerOptions): Promise<McpSer
           const workspaceId = args.workspaceId ?? (await defaultWorkspace());
           await assertWorkspace(workspaceId);
 
-          // A resource is created from a spec or from a template, not from
-          // both. There is no published answer to which of the two wins, so a
-          // call that supplies both is refused rather than guessed at.
-          if (args.data !== undefined && args.template !== undefined) {
-            throw errors.validation(
-              'A resource is created from either a spec or a template, not from both.',
-            );
-          }
+          // The template is resolved first, so that the memory rule below is
+          // judged on the data the resource will actually carry.
+          const template = args.template
+            ? options.capabilities.resourceTemplateGet(args.template)
+            : undefined;
 
-          // The template's spec is the resource's data. The template is
-          // resolved first, so that the memory rule below is judged on the
-          // data the resource will actually carry.
-          const data = args.template
-            ? options.capabilities.resourceTemplateGet(args.template, args.type).spec
+          // `data` is an override when a template is present, and the spec
+          // when it is not. The merge belongs to the provider — it never
+          // refuses — and the guide is the advice.
+          const data = template
+            ? options.capabilities.resourceTemplateMerge(template, args.type, args.data ?? {})
             : (args.data ?? {});
 
           assertOwnMemory(undefined, { type: args.type, data });
@@ -393,6 +390,7 @@ export async function createMcpServer(options: McpServerOptions): Promise<McpSer
               title: args.title,
               data,
               createdBy: actor.kind === 'agent' ? actor.agentConnectionId : 'owner',
+              ...(template ? { template: { id: template.id, version: template.version } } : {}),
             }),
           );
         } catch (error) {
@@ -468,13 +466,41 @@ export async function createMcpServer(options: McpServerOptions): Promise<McpSer
     server.registerTool(
       'resource.template.list',
       {
-        description: 'List the templates published for one resource kind.',
-        inputSchema: { type: resourceTypeSchema },
+        description:
+          'List the templates published for the resource kinds. A template is a reviewed example of a good resource of that kind, with a guide that says what to set and what a reader would get wrong. Read the guide before you create anything.',
+        inputSchema: { type: resourceTypeSchema.optional() },
       },
       async ({ type }) => {
         try {
           guard('resource.template.list');
           return jsonResult(options.capabilities.resourceTemplateList(type));
+        } catch (error) {
+          return errorResult(error);
+        }
+      },
+    );
+  }
+
+  if (granted.has('resource.template.get')) {
+    server.registerTool(
+      'resource.template.get',
+      {
+        description:
+          'Read one template in full: its spec and its guide — what a good one of this kind is, which fields you must set, and what a reader would get wrong. Name a version to read an older one; without one, the newest published version is meant.',
+        inputSchema: {
+          id: z.string(),
+          version: z.number().int().min(1).optional(),
+        },
+      },
+      async (args) => {
+        try {
+          guard('resource.template.get');
+          return jsonResult(
+            options.capabilities.resourceTemplateGet({
+              id: args.id,
+              ...(args.version === undefined ? {} : { version: args.version }),
+            }),
+          );
         } catch (error) {
           return errorResult(error);
         }
