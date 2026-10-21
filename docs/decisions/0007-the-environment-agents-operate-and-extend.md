@@ -2,7 +2,7 @@
 
 **Status:** accepted
 
-**Written against:** commit `5f019b9` (2026-10-21), clean working tree. The decisions
+**Written against:** commit `a186c42` (2026-10-21), clean working tree. The decisions
 this ADR records were made on 2026-10-20 and are kept in `.factory/INTAKE.md`; that
 section is the source, and this ADR is the copy into the repository's own decision
 record. The borrowing rule went into the doctrine at `c7ae5fa`; the owner's four
@@ -175,8 +175,10 @@ owner's behalf is kept.
   direction whose home screen _is_ the decision list — the owner's top want and
   Q2 in the same screen — and it is the cheapest of the four and the closest to
   the existing stack. Against it: a warm-paper rebuild of a dark panel, a serif
-  added to a product that has no serif, and a 195-line palette rewrite to buy a
-  three-band scroll. It buys the least structure of the four.
+  added to a product that has no serif, and a palette rewrite to buy a
+  three-band scroll. It buys the least structure of the four. The size of that
+  rewrite is in the cost model in
+  [`prototypes/DIRECTION.md`](../../prototypes/DIRECTION.md).
 - **A — Deck. Absorbed rather than rejected.** A's trace gutter is now part of
   Forge's execution room, and A's dense instrumented language is the execution
   room's language. A alone was rejected: it promotes the event stream from an
