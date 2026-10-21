@@ -3170,6 +3170,23 @@ session is a delivery route the dispatcher does not own, and using it does not
 touch the queue. The factory is no longer waiting on the restart to make
 progress — it is only waiting on it to stop the queue from growing.
 
+**What is running, at 11:05.** Probe's verification of WI-030 is running in its
+own session, and it has a finding in hand: the template record's migration note
+tells a client to add `resource.template.list` to an agent's `toolGrants`, and
+the server rejects that today — `toolGrantListSchema` is
+`z.array(mcpToolNameSchema).max(mcpToolNames.length)`
+(`packages/contracts/src/mcp.ts:52`), so an unknown name is a 400 and the cap
+is the current list's length. **The two published shapes were corrected at
+`2dcac9c`** ("Hold the two published shapes to the code they describe",
+11:03:50) while that verification was still running, and WI-031's contract
+entry landed at `363428e`. The other session accepted WI-022 and WI-026 and
+recorded a ruling on contract verification (`0c0dfcd`).
+
+**Nothing here is accepted on my word.** Probe's report is still being written,
+so WI-030 and WI-039 are not accepted until it is, and a correction landing in
+the file while the verifier is reading it is something the verifier has to
+account for — not something that closes the item.
+
 **Two verifications are now running in Probe's own session** — WI-030's, opened
 at 10:51, and WI-039's, queued behind it at 10:53 — and WI-039's work itself
 has landed. Cog's session (`mvs_db6a…`) is busy with work of its own, and both
