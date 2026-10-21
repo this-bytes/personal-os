@@ -6259,3 +6259,28 @@ whether a check should watch the implementation-status claim, and answered
 _yes_ — it is **WI-075**, `task_db738ae1549b`, with the narrow form as the
 must-have, the general form attempted if a reliable detection exists, and **the
 merge gated on WI-065's correction so that `main` never goes red.**
+
+### The queue's real constraint, measured at 17:25 — slots, not verifiers
+
+**All eleven of Probe's verifications are queued and none is running**, checked
+one by one at 17:25: WI-041, WI-031, WI-045, WI-074, WI-024, WI-038, WI-022,
+WI-010, WI-007, WI-025 and WI-075 — **eleven `queued`, zero `running`, zero
+`done`**. **And the reason is two tasks that are both legitimately running**:
+Wren's WI-034 implementation (`task_55c33b744ef5`, kind `bot`, its own chat,
+started **17:15:20**) and the group's own round — **this session's turn**
+(`task_ef428a0ed84b`, kind `discussion`, chat `group:grp_cc2adeea48f4`, started
+**17:17:05**).
+
+**So the accept queue is not waiting on Probe's capacity. It is waiting on the
+factory's two slots, and one of them is this group round.** A group round holds
+a slot for the length of the round, and the round is long because the status is
+written carefully — **so the careful reporting and the verifications are
+competing for the same two places.** The thing to say out loud is that **the
+fix is fewer, shorter rounds and one batched status, not another verifier** —
+which is the shape the owner's 15:40 answer already chose, and this measurement
+confirms it from the other side.
+
+**And the gates are green on the tree that accepted WI-017.** typecheck 0, test
+0 (server 23 files / 230 tests · web 52 · worker 31 · agent-adapters 16 ·
+contracts 28), format:check 0, build 0 — measured at `2f8ed30`, after WI-017's
+acceptance landed.
