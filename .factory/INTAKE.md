@@ -368,6 +368,10 @@ second dispatch.
 | `probe-verify-wi-036-licence-record-2026-10-21-1248`       | WI-036 — verify the dependency licence record                      | Probe  | `task_3bb64dabf31a` | **queued** — **the live dispatch on WI-036**, and the first verification of that item: the record was written and pushed with **no verification ever dispatched**, so it could never have been accepted                                                                                                                                                                                                                                                                                                                                                                                                                      |     |
 | `probe-verify-wi-017-template-record-2026-10-21-1305`      | WI-017 — verify the template record, and write its missing test    | Probe  | `task_dbcc178374a7` | **queued** — **the live dispatch on WI-017**, and the first verification of that item: the implementation landed at 12:42 and **no verification was ever sent**. It carries the missing test with it                                                                                                                                                                                                                                                                                                                                                                                                                         |     |
 | `wi-065-template-record-contract-status-2026-10-21-1330`   | WI-065 — the template record says what the code now does           | Wren   | `task_6274afe1abc1` | **queued** — **the live dispatch on WI-065**: the contract still publishes a status note about the template record that the code has outgrown, and every clause of it is now false                                                                                                                                                                                                                                                                                                                                                                                                                                           |     |
+| `probe-verify-wi-031-close-a-turn-2026-10-21-1340`         | WI-031 — verify the route that closes a turn, and write its pin    | Probe  | `task_b511f4062477` | **queued** — **the live dispatch on WI-031**: the implementation landed at 11:35 with **no verification ever sent**, and the item's own pin is Probe's to write                                                                                                                                                                                                                                                                                                                                                                                                                                                              |     |
+| `probe-verify-wi-041-readme-licence-2026-10-21-1340`       | WI-041 — verify the README tells the truth about the licence       | Probe  | `task_5b4e02d59413` | **queued** — **the live dispatch on WI-041**: the work landed at 12:51 and was merged at `5012df2` with **no verification ever sent**                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |     |
+| `probe-verify-wi-024-forge-adoption-2026-10-21-1340`       | WI-024 — verify the Forge adoption and its six briefs              | Probe  | `task_d2fa4fb7e946` | **queued** — **the live dispatch on WI-024**: the six briefs landed at 12:15 with **no verification ever sent**, and brief 06's constellation test is Probe's to write                                                                                                                                                                                                                                                                                                                                                                                                                                                       |     |
+| `wi-066-message-shape-fourth-field-2026-10-21-1340`        | WI-066 — the message shape publishes the fourth field              | Wren   | `task_0cfbcce20e92` | **queued** — **the live dispatch on WI-066**: the code carries a fourth optional `Message` field the contract does not publish, so WI-031's member-for-member criterion cannot hold until it does                                                                                                                                                                                                                                                                                                                                                                                                                            |     |
 | `probe-verify-wi-037-product-record-forge-2026-10-21-1325` | WI-037 — verify the product record says Forge                      | Probe  | `task_207afe6818f8` | **queued** — **the live dispatch on WI-037**, and its first verification: the work was merged into `main` at `94d110f` with **no verification ever dispatched**                                                                                                                                                                                                                                                                                                                                                                                                                                                              |     |
 | `wi-042-product-record-closed-questions-2026-10-21-1325`   | WI-042 — the product record's closed questions say they are closed | Wren   | `task_f1cf510356e8` | **queued** — **the live dispatch on WI-042**: its blocker was WI-037 being live on `PRODUCT.md`, and that has cleared                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |     |
 | `wi-034-outcome-vocabulary-successor-2026-10-21-1325`      | WI-034 — publish the outcome vocabulary, and the migration         | Wren   | `task_55c33b744ef5` | **queued** — **the live dispatch on WI-034**: the item had **never been dispatched**, and WI-033 (W1) waits on it, because the contract leads the code                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |     |
@@ -4407,3 +4411,64 @@ rule's purpose, stopping two agents writing one file at the same time.
 their implementation dispatches are spent and their work is landed. It did not
 cancel anything to make the floor look busy. It did not push `main`: the
 merged tip is on `verify/green-at-tip`, and `main` waits for the owner's word.
+
+## The accept queue, swept against the tree — 2026-10-21 13:45
+
+**The lead audited every work item against the fleet's own records, and the
+audit is what found the rest.** Every `.factory/work/WI-*.md` was read for its
+state, and every task in the runtime's state file was read for what it
+carried. **Three items had work landed and no verification ever dispatched:**
+WI-024 (the Forge adoption), WI-031 (the route that closes a turn) and WI-041
+(the README's licence). **All three verifications are now dispatched**, and
+each carries the pin the implementer said was Probe's to write.
+
+| Item   | Work landed                                 | Verification                                                          | Task                |
+| ------ | ------------------------------------------- | --------------------------------------------------------------------- | ------------------- |
+| WI-031 | `414996c`, the contract half `8ef054ed68d0` | **dispatched** — and its pin, which the item says is Probe's to write | `task_b511f4062477` |
+| WI-041 | `64d38f4`, merged `5012df2`                 | **dispatched**                                                        | `task_5b4e02d59413` |
+| WI-024 | `93ef99b`, `a5042aa`                        | **dispatched** — and brief 06's constellation test                    | `task_d2fa4fb7e946` |
+
+**This is the audit the amended loop asks for.** Chief dispatches Verify the
+moment Implement lands; three items had landed and nobody had. **The audit
+that finds them is a cross-reference of the item files against the runtime's
+task records**, and it is cheap.
+
+**And a third green branch was never landed: WI-041's.** The README's licence
+section said **MIT**, and the owner's answer of 2026-10-21 was that the
+repository is private for now, there is no LICENSE file, and the licence is
+**deliberately undecided**. It is merged now (`5012df2`), proved green on its
+own tip first.
+
+**WI-066 — the contract gap Cog found and named.** WI-031's implementation
+added a **fourth** optional field to the `Message` shape —
+`detail: z.string().optional()` at `packages/contracts/src/conversation.ts:90`,
+the server's sentence — and the contract's `### Additive extensions` section
+publishes **three** fields. **WI-031's own criterion — _the published shape
+matches the code exactly, member for member_ — cannot hold until it does.**
+Cog reported it rather than widening the contract itself: _"That gap is the
+contract's, not mine; I am not inventing a second shape and moving on, I am
+naming it."_ **It is WI-066, and it is Wren's** — `task_0cfbcce20e92`. **The
+field is wanted**: WI-031's criterion _"the reason reaches the panel"_ needs
+the sentence, so the fix is to publish it, not to remove it.
+
+**The number space, again, and this session's part in it.** The strategy
+session's branches claim **WI-063** and **WI-064** for a free-period-plan
+item, and this session had taken WI-063 for the template record's status note.
+**The item was renumbered to WI-065** — the first number free above that
+range — and the dispatch went with it: `task_1ee3414e9bcc` was cancelled
+before it ran and the work was re-issued as
+`wi-065-template-record-contract-status-2026-10-21-1330`, task
+`task_6274afe1abc1`. **WI-066 is the next one up, and it is this session's.**
+
+**`FACTORY.md` already said all of this, and this session broke it twice.**
+`:284`: _"the number space has one owner… A session with a gap to fill records
+it in `.factory/INTAKE.md` as a want… and the session that owns the numbers
+creates the file… If the session that owns the numbers is not running, the
+other session **says so in the group** and takes the space, rather than taking
+it quietly."_ **WI-046 was taken quietly, and WI-063 was taken quietly.** Both
+are stated here rather than overwritten. **The allocation as it now stands:
+WI-046 through WI-064 are the strategy session's; WI-030 through WI-038, WI-044,
+WI-045, WI-062, WI-065 and WI-066 are this session's.**
+
+**The group post for it was refused** — the round is mid-discussion — so the
+allocation is recorded here, and the group line goes when the round opens.
