@@ -2930,6 +2930,81 @@ owner's own sessions sit in the same checkout as four bots and two Chief
 sessions. That is the contention the red in `ownerPasswordExposure.test.ts`
 came from, and it is the reason a contended gate run is not evidence.
 
+### The correction to the section above — 2026-10-21 12:55, machine clock
+
+**The test that section proposed has been run, and the answer is that the queue
+moved. The gap was three minutes, and it was one task's turnaround.**
+
+**The assignment timeline, read from the runtime's own records** — every task
+that started, with its start and end:
+
+| Started  | Ended    | Item                                          |
+| -------- | -------- | --------------------------------------------- |
+| 09:51:17 | 10:18:14 | Adversarial review of `docs/strategy.md`      |
+| 10:12:59 | 10:20:41 | The owner's answers to the two questions      |
+| 10:20:41 | 10:37:22 | WI-022 — verify the published waiting reasons |
+| 10:37:22 | 10:45:32 | WI-026 — verify the published waiting kind    |
+| 10:45:32 | 10:54:04 | WI-008 — return                               |
+| 10:54:04 | 11:09:48 | WI-031 — the contract half                    |
+| 11:02:14 | 11:35:05 | WI-031 — the implementation                   |
+| 11:09:48 | 11:10:17 | WI-007 — verify (failed `BUSY`)               |
+| 11:10:17 | 11:19:30 | WI-007 — the migration note                   |
+| 11:19:30 | 11:19:58 | WI-027 — verify (failed `BUSY`)               |
+| 11:19:58 | 11:20:27 | WI-021 — verify (failed `BUSY`)               |
+| 11:20:27 | 11:20:55 | a correction (failed `BUSY`)                  |
+| 11:20:55 | 11:31:50 | WI-010 — return                               |
+| 11:35:05 | 12:15:08 | **WI-024 — the Forge adoption**               |
+| 11:52:28 | 11:58:04 | WI-025 — the ADR's record pass                |
+| 11:58:04 | 12:24:24 | **WI-036 — the dependency licences**          |
+| 12:15:08 | 12:42:14 | **WI-017 — the template record**              |
+| 12:24:24 | 12:42:59 | **WI-037 — the product record says Forge**    |
+| 12:42:14 | running  | WI-020 — the two measures                     |
+| 12:42:59 | 12:51:36 | WI-041 — the README tells the truth           |
+| 12:51:36 | running  | WI-043 — verify the manifest                  |
+
+**Neither of the two readings above is what happened.** The guard does not hold
+the assignment — the runtime has assigned continuously since 09:51:17. And no
+session is wedged: **Cog ran WI-024 for forty minutes and WI-017 for
+twenty-seven, back to back**, and the third and fourth slots have gone to
+Cog and Wren in turn. **Nothing needs replacing, and nothing needs to be
+cancelled or re-dispatched to make the floor look busy.**
+
+**The specific claims in that section, answered.** **WI-022's verification
+finished at 10:37:22** — it was not waiting. **WI-025's record pass finished at
+11:58:04** — not waiting. **WI-036 finished at 12:24:24 and WI-037 at
+12:42:59** — both done, and neither was re-dispatched. **The idle-since table
+is a snapshot of 09:48, and it was a snapshot of a boundary**: the last task
+had finished at 09:48 and the next had not yet started.
+
+**What the other Chief session asked for, and what was posted instead.** It
+asked for a line in the factory group carrying its reading. **Its reading is
+three hours stale**, and posting it would have put _"the factory is idle with
+a full queue"_ and _"nothing is running"_ into the group's record as fact.
+**A corrected line was posted instead** — request
+`factory-assignment-timeline-2026-10-21-1255`, task `task_e5080dacbdbd`,
+queued — carrying the timeline, saying that no session is wedged, and naming
+the two items in the accept queue. **The record in this file is the same
+correction, next to the section it corrects.**
+
+**Three things that have moved since that section, so a reader is not misled
+by it.** **The Actions outcome is readable from this machine** — the
+credential is in git's helper, and `main` at `f8d808e` is **green on both
+legs: CI success on all four jobs, and CodeQL success**. **The owner gave a
+new push word at 12:27, and `main` was pushed at 12:28** — the word that was
+spent at 08:56 was replaced, not the push. **The two questions in
+`ask_840a807bf1ad7291f4d92f44` were answered earlier** — the unconfirmed turn
+at 11:05, and Forge's place in the queue at 08:54 — so neither needs asking
+again.
+
+**What is true, and is not a stall.** **The accept queue is the bottleneck,
+and that has been true all along.** Six items sat at `verify` and every one of
+them waits on Probe — one verifier, and acceptance is the gate that turns work
+into product. **The lean stands: the next free slot goes to Probe.** WI-062's
+and WI-036's verifications are queued for it. **WI-036's implementation was
+not re-dispatched** — what went out was its **first verification**, which had
+never been sent, so the item could never have been accepted however green its
+branch became.
+
 ## Chief's tick — 2026-10-21 10:03 +11:00
 
 **The times in this entry are the machine's clock (+11:00).** The entries above
