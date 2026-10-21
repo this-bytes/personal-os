@@ -35,6 +35,32 @@ Verdicts: `open` — not yet judged. `accepted` — became a work item, cited
 here. `declined` — not doing it, with the reason kept. `folded` — already
 covered by an existing work item.
 
+## Numbers claimed in the 48-hour build
+
+The number space has one owner: the session that leads implementation in a
+tree. During the 48-hour build that is the session running the push below,
+and it holds the block **WI-090 to WI-096** so that two sessions cannot claim
+the same number.
+
+| Number | Item                                                       | Owner  |
+| ------ | ---------------------------------------------------------- | ------ |
+| WI-087 | The stranded branches, and what is actually worth keeping  | worker |
+| WI-088 | The ledger split into what it is and what it was           | worker |
+| WI-090 | The substrate the product's own two measures stand on      | worker |
+| WI-091 | The gate that notices when a published contract goes false | worker |
+| WI-092 | reserved                                                   |        |
+| WI-093 | reserved                                                   |        |
+| WI-094 | reserved                                                   |        |
+| WI-095 | reserved                                                   |        |
+| WI-096 | reserved                                                   |        |
+
+**WI-089 is not in this block and does not belong to it.** The peer session
+holds WI-089 for the hot-reload item, and held WI-088 before it. Both numbers
+were collisions with this push and both were resolved by re-filing, not by
+reusing. **Take a number from this block, not the next free one above the
+highest taken** — on 2026-10-22 that rule produced two collisions in twenty
+minutes, because it cannot see an item that has not been filed yet.
+
 ## The stated scope
 
 The owner answered "run within a stated scope" for how much the factory
