@@ -14,7 +14,9 @@ this document was read at that commit, not at `3479c31` and not at the working
 tree. A pointer is the one kind of claim here that goes stale without anything in
 the document changing, so the commit it was read at is named next to it: a reader
 checking against a later tree should re-measure the pointers rather than trust
-them.
+them. **A claim about what the tree does or does not contain is pinned the same
+way.** The evidence read is named as missing **at `0d4731f`**, because the route
+that answers it is being written on another branch and will change that.
 **Owner decision, 2026-10-21: D — Forge.** The recommendation had been B (Desk).
 The owner chose D. This document names the direction the owner chose, settles the
 boundary Forge left open, states what adopting it costs today, and records what was
@@ -234,9 +236,9 @@ item has to split them.
    `packages/contracts/src/common.ts:58`) is held on the execution's own row
    (`apps/server/src/db/schema.ts:231`), and it is published by the
    approval-evidence read — `GET /api/approvals/:id/evidence` — whose contract
-   is published (`CONTRACTS.md:1047-1145`) and whose code is **WI-086**. So the
-   trace is a surface over existing data for the events, and a surface over a
-   read that does not exist yet for the cost.
+   is published (`CONTRACTS.md:1047-1145`) and whose code is **WI-086** — **not
+   in the tree at `0d4731f`**. So the trace is a surface over existing data for
+   the events, and a surface over a read that does not exist yet for the cost.
 5. **Agents get an identity hue.** Forge's theme carries one `--agent-*` token
    per agent, so each agent connection has a colour in the panel. The current
    app has no equivalent concept. It lines up with the persona work: an agent
@@ -289,7 +291,7 @@ acceptance is reached by a link that opens the exact card. Putting an
 acceptance control on the rail is a separate item, and it needs the owner.
 
 **Forge is a large build for one implementer whose lane held fifteen open
-items at the pinned commit** (WI-003, WI-007, WI-008, WI-017, WI-018, WI-020,
+items at `3479c31`** (WI-003, WI-007, WI-008, WI-017, WI-018, WI-020,
 WI-021, WI-024, WI-027, WI-028, WI-031, WI-032, WI-033, WI-035, WI-040). The
 live count moves as the factory moves, so this is a count at a commit and not a
 standing total. That is the honest cost of this direction and it belongs in the
@@ -372,8 +374,8 @@ spend units are held on its own row (`apps/server/src/db/schema.ts:231`) and
 published by the approval-evidence read, `GET /api/approvals/:id/evidence`,
 whose contract is published and whose code is **WI-086**. **This is now
 WI-039** (the contract half, landed at `6406291`), **WI-086** (the read that
-answers it, not in the tree) and **WI-040** (the control shows the evidence it
-decides on).
+answers it, not in the tree at `0d4731f`) and **WI-040** (the control shows the
+evidence it decides on).
 
 **The waiting list has a way in and no way out.** The published vocabulary
 carries `approval.requested` and `task.updated`; it carries no
