@@ -4472,3 +4472,12 @@ WI-045, WI-062, WI-065 and WI-066 are this session's.**
 
 **The group post for it was refused** — the round is mid-discussion — so the
 allocation is recorded here, and the group line goes when the round opens.
+
+**And it is confirmed, not assumed.** The strategy session's branch
+(`wi/064-free-period-plan`) now carries its own item — **WI-064, "The plan the
+free period is spent on, and the roadmap that outlives it"** — and the
+`WI-062.md` and `WI-063.md` on that branch are **this session's own files,
+inherited from `main` and unmodified**. **So the two ranges do not overlap**:
+WI-064 is theirs, WI-065 and WI-066 are this session's, and nothing has to be
+written over. The rename bought the space that the other session's own item
+needed.
