@@ -7084,6 +7084,51 @@ was itself broken.** The failure was not in the rule and not in the
 threshold. **It was in the transport** — `mavis mcp list` returns no servers,
 and the bot's MCP server did not come back after the runtime stopped.
 
+## Correction to the 19:02 record, and the three cancellations, resolved — 2026-10-21 19:47
+
+**One cell in the 19:02 table is wrong, and it is the cell the rule turns on.**
+It reads: the group session's status was "`started`, still carrying the
+crash-recovery note". **That was read at 19:02, by which time the session was
+`started` again for a _new_ turn** — the group's WI-027 round, begun at 18:56.
+**At 18:31, when the stall was live, the peer session measured that session as
+`idle`**, and `.factory/watchdog.md` records it as such. **So the status in the
+table belongs to a later turn, not to the dead one.**
+
+**And the difference changes the reading.** Under the file's rule — cancel only
+when the session is **not** `started` — **both** sessions at 18:31 were not
+`started`: one `idle`, one `interrupted`, both carrying the crash-recovery
+note. **So both were cancellable, and neither was cancelled: `cancel_tasks` was
+unavailable to anyone.** That is the correct account, and the table above
+implies the opposite for the group session. **The conclusion it reached — that
+there was nothing to cancel — still holds**, but it holds for a different
+reason: **by 19:02 both tasks had left `running` on their own** (they are
+`unknown` now, holding no slot), **and their work was handled anyway** — WI-007
+accepted at `0c86d2b`, WI-065 re-dispatched as `task_2bf6b0a6164a`.
+
+### The three cancellations, as they now stand
+
+| Task                | State                     | What it was                                                                       |
+| ------------------- | ------------------------- | --------------------------------------------------------------------------------- |
+| `task_797badb7e918` | **cancelled at 19:04:50** | WI-007's re-verification — a second verification of a verified item               |
+| `task_de340ccec5c2` | `unknown`, holds no slot  | the group's round; its verification was delivered at 17:29 and WI-007 is accepted |
+| `task_6274afe1abc1` | `unknown`, holds no slot  | Wren's WI-065; the turn died with the runtime and WI-065 has been re-dispatched   |
+
+**And the honest answer to _"is there a way to reach the bot's server that you
+do not have"_: no, not from this session — and the reason is now located.**
+`mavis mcp list` returns **no servers** here. **The plugin's MCP server is a
+node service** — `miniapp/node/mcp.mjs` in the plugin cache — and **no node
+process is running for it**; the desktop app owns the board's storage and the
+tools are not re-registered. **So the cancellations are done by a session that
+has the tools, and this session cannot do them.** The one that mattered — the
+redundant re-verification — is already cancelled.
+
+**And a plugin fact worth having, because it is why the two dead tasks look the
+way they do:** the plugin's own note says _"After a restart, work that never
+started stays queued. Interrupted executions become `unknown` and are not
+replayed automatically."_ **So `unknown` is the documented end state of an
+interrupted execution, not a state with work in it** — which is exactly why
+cancelling those two would tidy the board and free nothing.
+
 ## The third stall, and a correction to this session's own record — 2026-10-21 18:35
 
 **The commit `5663545` in this file says that two long-running tasks were
@@ -7706,3 +7751,36 @@ says Chief decides and says so in the group**, so the post was re-made under a
 new id, `chief-tiebreak-licence-mit-repost-2026-10-21-1945`, task
 `task_b7f3bbf0d43e`. **The cancelled one and the live one are both named
 here**: the first is spent, and the second is the record.
+
+## WI-044 was waiting for exactly this, and it is dispatched — 2026-10-21 19:46
+
+**WI-044 — "the licence check that covers this repository's own sources" — was
+deferred until the repository's visibility was decided.** Its own text says
+why: _"a vendored-source licence matters most at the moment the repository
+goes public … dispatched when the visibility decision lands and the inventory
+can be written against a settled repository."_
+
+**The owner chose MIT at 19:08 and the repository went public at 19:41:10, so
+the condition is met.** The item is dispatched in three halves, one per owner:
+
+| Half      | Files                                                                               | Task                |
+| --------- | ----------------------------------------------------------------------------------- | ------------------- |
+| **Wren**  | `docs/vendored-sources.json` (the inventory), `PRODUCT.md` §10                      | `task_234ce8535eb1` |
+| **Probe** | `scripts/verify-vendored-sources.ts`, and the test that proves the check can fail   | `task_fbbd05f3e9cd` |
+| **Chief** | `FACTORY.md`'s borrow rule, and the root manifest's script entry with Probe's check | this session        |
+
+Request id `wi-044-vendored-inventory-2026-10-21`, batch `batch_886567f30d8f`.
+
+**And the rule in `FACTORY.md` now says what the check will be.** It says the
+borrow rule **covers this repository's own tree as well as the lockfile** — a
+file copied in, a snippet inlined, a font, a fixture of real code — and names
+WI-044 as the item that carries the check. **The rule is not written as though
+the check is already there**, because a reader told the rule is stronger than
+the check is the exact reader WI-044's fourth criterion is about.
+
+**A first reading of the tree finds no file carrying a third-party licence
+header**, so the inventory is expected to be nearly empty. **That is precisely
+why the fifth criterion matters:** the check must be _seen to fail_ on a
+deliberately vendored unapproved source, because **a gate that has never
+failed is a gate that cannot fail**, and an empty inventory with an unproven
+check is the worst of both.
