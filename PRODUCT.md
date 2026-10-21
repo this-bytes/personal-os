@@ -256,6 +256,16 @@ vendor a codebase in and does not take a runtime dependency to get a feature. Th
 doctrine keeps the rule itself in [FACTORY.md](FACTORY.md); this is the product-side
 consequence of it.
 
+**Every dependency is read, and the reading is published.** The dependencies we
+do take are read in place — from the package's own licence file where it ships
+one, and from the `license` field of its own `package.json` where it does not —
+and the reading is published in
+[docs/dependency-licences.json](docs/dependency-licences.json). The record holds
+one entry for every package the lockfile installs: the file the licence was read
+from, the lines of that file that identify the licence, the date it was read,
+and the licences this project accepts with the reason for each. **The licences
+are read, not assumed.**
+
 **An interface is conformed to, never reimplemented.** Personal OS is a client of
 ACP, A2A, MCP and the OpenAI-compatible API shape. "Our spec" means our domain
 model, not our dialect of someone else's protocol.
@@ -275,13 +285,21 @@ block has to become neutral or use the error colour. This is the rule that lets 
 number be read at a glance instead of being decoration, and it is the one thing a
 visual direction has to get right before the rest of the visual work matters.
 
-**The panel does not do this yet.** Its accent is indigo, and indigo marks
-structure — the active nav item, an agent's messages, the app's own badge —
-rather than liveness, and the event stream's state is a four-colour traffic
-light: emerald for live, amber for reconnecting, red for offline, slate for
-idle. The direction that fixes it is **D — Forge**, chosen by the owner on
-**2026-10-21**, against the factory's recommendation of **B — Desk**, and it is
-recorded in ADR 7.
+**The panel does this now.** Its accent is amber, and it means one thing: live,
+or waiting on you. Every row of the waiting rail wears it — an approval, a
+task in review, an unknown outcome and a blocked item are all waiting on the
+owner, and the four reasons a row can be there are carried by its label
+rather than by four colours. A task awaiting acceptance and a streaming turn
+wear it too. Structure stays in indigo — the active nav item, an agent's
+messages, the app's own badge — and the event stream's state is a shape
+rather than a colour: a filled disc when it is open, a dashed ring while it
+is connecting, a hollow ring when it is idle. A caution is the neutral scale
+or the error colour, never the accent. The tokens live in
+`apps/web/src/index.css`, the inventory of every site that used to reach for
+amber is in [docs/panel-accent.md](docs/panel-accent.md), and a test fails if
+amber appears anywhere but the token layer. The direction is **D — Forge**,
+chosen by the owner on **2026-10-21**, against the factory's recommendation of
+**B — Desk**, and it is recorded in ADR 7.
 
 ## 12. What v1.0 deliberately leaves out
 
