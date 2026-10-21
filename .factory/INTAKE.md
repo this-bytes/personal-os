@@ -412,6 +412,7 @@ second dispatch.
 | `wi-022-citation-refresh-verify-r2-2026-10-21` | WI-022 — the waiting list's refreshed citations, verified (again) | Probe | — | **WITHDRAWN — and the mistake is the point.** This session requested a re-dispatch at 21:05 on the ground that `task_018a6018b18f` was interrupted at 20:45 with **length 0**, and concluded the work was gone. **It was not.** Probe's report was delivered **to the group at 20:59:56** — `task_5634427d74e4`, 6,587 characters — and it ends **"Verdict: verified."** **The report went to the group, and this session looked only at the task's own channel.** **The id is spent and the request is withdrawn: if it was dispatched, cancel it.** A second verification of one item is never created. What WI-022's successor needs now is the lead's **acceptance**, not a second look — **and it has it: accepted at `8fc0289` by the session that wrote neither the implementation nor the verification**, on Probe's five criteria met with measured evidence |
 | `wi-078-error-envelope-anchor-2026-10-21` | WI-078 — the error-envelope link does not resolve | Wren | `task_993e382b1071` | **queued — the return to implement, after Probe's verification found three findings.** **One of the three is this item's own and it is blocking:** `CONTRACTS.md:178` links `(#the-error-envelope)`; the heading is `### Error envelope` at `:1414`, whose slug is `#error-envelope`, and **the file's own other reference at `:618` uses it correctly** — so the link this item published does not resolve. **One word.** **A new id and a new title, because the verification's id is spent.** The other two findings are not Wren's: the missing gate is **WI-081** (Probe's file) and the contradicted neighbour is **WI-031's own correction, which queues behind this one on the same lane.** Branch `wi/078-error-envelope-anchor`, worktree `G:\code\personal-os-worktrees\078-error-envelope-anchor` |
 | `wi-081-published-note-bound-gate-2026-10-21` | WI-081 — nothing holds the published note's bound to the code's | Probe | `task_51cd8330a3e0` | **queued — opened and dispatched.** It comes from Probe's own finding in WI-078's verification: `apps/server/src/__tests__/published-shapes.test.ts` holds three cases (the template record's kinds, the unaudited routes, the route and audit counts) and **zero** references to `note`, `ResolveExecutionInput` or `2_000` — **so it passes identically with the bound unpublished or mis-numbered, and a gate that passes on a wrong tree is not a gate.** **The lead confirmed it by reading the test.** The published bound (`CONTRACTS.md:165`, 2,000 characters) and the code's cap (`apps/server/src/api/executions.ts:9`, `z.string().max(2_000)`) are **both right today, and nothing would say so if one of them changed.** **Probe writes the case and the lead verifies it — the session that wrote the work does not accept it.** Branch `wi/081-published-note-bound-gate`, worktree `G:\code\personal-os-worktrees\081-published-note-bound-gate` |
+| `wi-031-contract-status-correction-r2-2026-10-21` | WI-031 — the route entry says the code does not exist, and it does | Wren | `task_70be52bdefa9` | **queued — the re-dispatch, because the first attempt failed.** The first attempt, `wi-031-contract-status-correction-2026-10-21` (`task_be25e082ae5c`), **failed at 20:45** — the runtime restarted mid-turn — so **that id is spent**, and this one is new, with a new title. **The defect, measured by this session before the brief was written:** `CONTRACTS.md:235-242` still says "the code does not implement it yet" and "there is no `/api/executions` route", though the route landed in `414996c`/`3dd490b`, is served at `apps/server/src/api/executions.ts:21` and registered at `app.ts:223`; and the paragraph's "the only writer of an execution's outcome is `resolveExecution`" is false, because the executions service writes it too (`apps/server/src/modules/executions/service.ts:93-111`, and that is the writer this route calls, at `api/executions.ts:25`). It queues behind **WI-065** (live, `task_2bf6b0a6164a`) and **WI-078's anchor fix** (`task_993e382b1071`), because `CONTRACTS.md` is one file and one live item at a time. **WI-031 must not be accepted until this lands** — Probe's own words, in WI-078's verification. Batch `batch_faa4525ade7f` |
 
 **A cancelled task is not a dispatch — but a cancelled dispatch does not free its
 request id.** That second half was wrong here, and it is corrected now rather
@@ -9449,3 +9450,69 @@ failed task is not a dispatch, and a row that says "queued" about a failed task
 is a record that lies.** The re-dispatch waits on WI-078's anchor fix — **the
 lane order written in `WI-078.md` puts WI-078 first** — and it goes out under a
 new request id and a new title, because this one is spent.
+
+## What this session measured, and two records that were not true — 2026-10-21 22:19
+
+**WI-066 is accepted, and the acceptance still covers the file it accepted.** The
+acceptance was written by the lane that dispatched the verification
+(`hlp_1f8922079492`, group session `mvs_da4fd6a55d284724835efedd6434bfcc`),
+and this session checked it rather than taking it on trust. **Two measurements,
+both empty:** `git diff c88b253..3281603 -- CONTRACTS.md
+packages/contracts/src/conversation.ts` — the contract and the code's message
+schema are **byte-identical** between the head Probe measured and the head now
+on `origin/main`; and `git diff 998f15f..3281603 -- CONTRACTS.md` — the note
+bound WI-078 published has not moved since it landed. **An item is not accepted
+on evidence that no longer covers the file it accepted, and this one does.** The
+gates Probe measured are on the record: `prettier --check CONTRACTS.md` pass,
+`format:check` pass, `published-shapes` 3 passed, `typecheck` 0, `test` 0 (435
+tests), `build` 0.
+
+**WI-078 is not accepted, and one word keeps it that way.** Probe's verification
+(`hlp_3c50e3033785`, 581 seconds) found three things. The one that is WI-078's
+own: `CONTRACTS.md:178` links `(#the-error-envelope)`, the heading at `:1414` is
+`### Error envelope`, whose slug is `#error-envelope`, and **the file's own other
+reference at `:618` uses it correctly** — so the link WI-078 published does not
+resolve. **Measured again by this session, from the file itself.** The item went
+back to Wren as `task_993e382b1071`.
+
+### Two records that were not true, and the rule each one breaks
+
+**One request id, two tasks.** The dispatcher's own state — measured, not
+inferred — carries **`task_993e382b1071`** (WI-078's anchor fix, to Wren) and
+**`task_51cd8330a3e0`** (WI-081, to Probe) in **the same batch**, under the
+**one** request id `wi-078-error-envelope-anchor-2026-10-21`. **A request id is
+the guard that stops two lanes becoming two workers, and here it is spent on two
+items at once.** The id is now unusable — a retry under it dedupes against the
+wrong task — and it must never be reused. **WI-081's durable handle from here is
+its task id, `task_51cd8330a3e0`.**
+
+**And the ledger's row for WI-081 names an request id that never reached the
+dispatcher.** The row says `wi-081-published-note-bound-gate-2026-10-21`; that id
+is **nowhere in the dispatcher's state**, and WI-081's task is filed under
+WI-078's id instead. **A row that names a request id the dispatcher never saw is
+a record that lies.** The fix is not to re-dispatch — that would put a second
+worker on WI-081 — but to say so, and to keep the task id as the handle.
+
+**One failed dispatch, still owed.** WI-031's status paragraph correction was
+dispatched once, as `wi-031-contract-status-correction-2026-10-21`
+(`task_be25e082ae5c`), and **failed at 20:45** — the minute the runtime
+restarted. **"Failed" is not "lost", and it is not "dispatched":** the row that
+said "queued" about it was wrong for hours, and the correction itself was owed
+all that time. **It has gone out — by this session — as
+`wi-031-contract-status-correction-r2-2026-10-21` → `task_70be52bdefa9`, batch
+`batch_faa4525ade7f`, to Wren**, with the defect measured first: the route is
+served at `apps/server/src/api/executions.ts:21` and registered at `app.ts:223`,
+and there are **two** writers of an execution's outcome, not one.
+
+### The watchdog, measured again at 22:19
+
+**The task that was over the threshold at 21:50 finished on its own at 21:55:28**
+— `task_678dfc957439`, WI-036's successor — so the 21:50 report led to **nothing
+cancelled and nothing lost**. **WI-074's task is over the threshold again**
+(`task_289ede939140`) and **is not cancelled**, for the rule's own reasons: its
+session `mvs_f1f513955649480dbfb09fae820cf59f` is **`started`**, so condition 2
+fails, and Probe's last message in that chat is `done` rather than `streaming`,
+so condition 3 fails too. **Its work is in the tree and in flight** —
+`apps/server/src/__tests__/verifyStack.test.ts` modified, with
+`stackCleanup.test.ts` and `support/` untracked: **a live item's files, and this
+session did not touch them.**
