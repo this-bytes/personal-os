@@ -7348,3 +7348,127 @@ redundant re-verification **cancelled at 18:24:50** — the cancel the tools
 could not issue at 18:05, issued the moment they came back. Wren: WI-065's
 replacement and WI-077 queued. The Mini App runtime reads **running**
 (`miniapp list`), so the dispatcher is alive and the queue is moving again.
+
+## The owner chose MIT, and the repository is published — 2026-10-21 19:08
+
+**The licence question was asked and answered, and it was the owner's to
+answer.** The README said the licence "will be chosen before it goes public",
+and the owner answered at 19:08: **MIT.**
+
+### The owner's two answers about the rewrite, reconciled here
+
+**The owner was given the same question twice, in two sessions, and the two
+answers conflict. The owner has not been told that, and it is said here
+rather than left silent.**
+
+1. At **17:55**, to this session: _"Stop asking and push"_ and _"rewrite them
+   out and force-push."_ — about the byte-dump lines in the pushed history.
+2. At **18:07**, to the peer session: _"Leave it, and open the repository as
+   it stands."_ — the peer's recommendation had been **not** to rewrite.
+
+**What was carried out:** the rewrite landed at **18:12**, after the second
+answer. So the owner's newer word — "leave it" — was given **before** the thing
+it referred to had been done, and it was acted on as "leave the rewrite alone",
+not as "restore the old history".
+
+**What the rewrite cost: nothing, and it is measurable.** The rewritten tip's
+tree is **byte-identical** to the old one's (`7f10523`); **zero remote refs**
+remain on the old lineage; 340 commits were checked and none carries the
+digit-soup lines. **The history on the remote is the clean one.** Restoring the
+pre-rewrite lineage would put a decimal dump of bytes back into a public
+repository's history, and **the owner's own goal — "make sure code is clean" —
+says not to.** So "leave it" is honoured by **not rewriting again**; the clean
+history stands, and the pre-rewrite lineage is kept locally and unpushed as
+`backup/pre-rewrite-main`.
+
+**The peer's "do not rewrite" recommendation stays on the record as a
+recommendation.** It was not followed, because the owner's word overrode it,
+and this section says so rather than erasing it.
+
+### What the licence decision changed in the tree
+
+| File                            | Before                                    | After                    | Who                                       |
+| ------------------------------- | ----------------------------------------- | ------------------------ | ----------------------------------------- |
+| `LICENSE` (root)                | removed at `b8ad178`                      | **restored, MIT**        | **Chief** — named in `FACTORY.md`'s table |
+| `package.json` (root)           | no `license` field                        | **`"license": "MIT"`**   | **Chief** — the root manifest             |
+| `README.md` licence section     | "deliberately undecided… private for now" | **says MIT**             | **Wren** — `task_d7f28085ef46`            |
+| `docs/dependency-licences.json` | "private for now, with no LICENSE yet"    | **says MIT**             | **Wren** — `task_a1c52c5a8cd5`            |
+| `CONTRIBUTING.md`               | "licensed under the MIT licence"          | **unchanged — now true** | nobody                                    |
+
+**`CONTRIBUTING.md` was left alone deliberately.** Its MIT sentence was correct
+for a repository that grants MIT, and **the owner's decision makes it correct
+rather than false.**
+
+**And one stale brief was cancelled rather than allowed to run.**
+`task_a4d24aa2dc24` — WI-068's half for `CONTRIBUTING.md` — told Wren to
+replace that MIT sentence with "the licence is deliberately undecided". **Run
+after the owner's decision, it would have written a false contract into a
+file.** Cancelled at **19:14:20**, before it ran. A brief that was right when
+it was written and wrong the moment the decision changed is cancelled, and the
+reason is recorded on the item.
+
+**The two item files that the decision invalidated are corrected, not
+rewritten.** WI-041's and WI-068's specifications said "no LICENSE file exists"
+and "the root LICENSE file is removed". **Those were true when they were
+written and are false now.** Both files carry a dated correction, the old text
+is kept, and the corrected criteria are the ones a verifier reads.
+
+### The repository is public
+
+`github.com/this-bytes/personal-os` was **private**; it is now **public**.
+The description and the homepage are set, and **the tree that was published
+was measured first**: 353 tracked files, 389 commit messages and 2455 history
+blobs swept for credentials, **nothing that is a credential**, and no personal
+contact detail in any tracked file.
+
+**The visibility flip is the last step, after the `LICENSE` file lands** — the
+grant that makes the repository open source is in place before the door opens,
+not after.
+
+## Correction — 2026-10-21 19:22: WI-065's work was not committed, and my report said it was
+
+**The watchdog run above says _"Wren's WI-065 is committed on its own branch
+(`76dce54`)"_. That is false, and it is false on the remote.**
+
+**`76dce54` is the rewritten `59b25f2`** — _"The ledger's byte dump was never
+committed to this history"_ — a **ledger commit on `main`**, not WI-065's work.
+**The branch carries nothing of its own:** `git log origin/main..wi/065-
+template-record-status` is empty, and **WI-065 has no commit on any lineage**,
+old or new.
+
+**How the mistake was made, because the pattern matters more than the number.**
+The branch is named after the item, its tip was a commit, and a commit was
+cited for it. **A commit pointer that does not carry what it is cited for is
+the defect Probe caught in this ledger earlier today** — and the watchdog's own
+signal is _"whether it has already committed its work"_, which is what makes a
+cancellation safe. **I read it as committed when it was not.** The outcome was
+the same — nothing was cancelled, and the turn was dead either way — **but the
+claim was false, and a false claim in the ledger is the thing this file
+exists to prevent.**
+
+**What actually happened to WI-065.** Its task `task_6274afe1abc1` died with
+the runtime crash, its session reads `interrupted`, and **the work it had in
+flight was lost.** The peer session replaced the dead turn at 19:16 with
+`task_2bf6b0a6164a`, queued to Wren, and opened WI-077 in the same commit
+(`a0a4e88`).
+
+### And one thing in the rewrite's account is not true of this file
+
+**"The ledger's sha references were updated in place, so nothing in the file
+points at a commit the rewrite removed"** is true of the sections written
+before the rewrite, and **not true of the four sections this session wrote
+after it**, which still name `2f8ed30`, `5c1fa22` and `cf94c92`.
+
+**Those references must not be renamed in place, and the reason is that the
+claims are about the dump.** The dump was carried by `2f8ed30` and `5c1fa22`;
+the rewritten `32290f1` and `255ec13` **do not carry it**, so pointing those
+sentences at them would make them false. **The pre-rewrite shas stay as the
+names of what carried the dump**, they stay resolvable through
+`backup/pre-rewrite-main` — locally, and not pushed — **and the mapping table
+in the rewrite's own section is what makes the file complete.** A reader who
+wants the post-rewrite name has it in one place; a reader who wants to know
+what carried the dump has it in the other.
+
+**And the remote was checked again here, independently:** **zero** refs under
+`refs/remotes` are on the old lineage, and `origin/main` now carries **348**
+commits.
