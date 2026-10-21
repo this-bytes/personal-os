@@ -6284,3 +6284,110 @@ confirms it from the other side.
 0 (server 23 files / 230 tests · web 52 · worker 31 · agent-adapters 16 ·
 contracts 28), format:check 0, build 0 — measured at `2f8ed30`, after WI-017's
 acceptance landed.
+
+## The 462-minute stall — cancelled, and the watchdog corrected twice
+
+**The full account, with the measurements, is in `.factory/watchdog.md`** — the
+watchdog file carries the correction to its own discriminator, and this section
+is the ledger's pointer to it. **This section was appended, then dropped by a
+whole-file write from the other Chief session at 17:22, and re-appended.**
+
+**The slot.** `task_721e68cc2556` — a discussion task in the Personal OS Factory
+group — started at **08:28:11** on 2026-10-21 and was still `running` at
+**17:10**, **462 minutes**, holding one of the factory's two dispatcher slots.
+`MAX_RUNNING = 2` is hard-coded in the runtime's dispatcher, so **one task that
+had already delivered its work was worth half the factory.**
+
+**What it cost, measured.** The factory's own daily tick, `task_ef428a0ed84b`,
+was **created at 12:00:46 and queued for five hours** because there was no slot
+for it. The accept queue stood at **32**. And the watchdog's **16:57:58** run —
+the first run while something was genuinely over the threshold — **died with
+`AGENT_UNAVAILABLE` after two retries**, so the stall was never reported at all.
+
+**The cancellation, and the evidence it rested on.** The task's `result` was the
+**11:50** post (`msg_fef6d97d1eb0`, 7456 characters), its work was committed and
+pushed (`4cc09c2`, `84c4365`, `13342cf` — all ancestors of `origin/main`), and
+its chat had posted nothing for five hours. Cancelled at **17:10:25** with
+`cancel_tasks`. **The slot refilled in twelve seconds**: the daily tick started
+at once, `task_55c33b744ef5` (WI-034) took the other, and the queue went
+**32 → 31**.
+
+**And then the task's own last words were read, and they were not idle.** Its
+chat's last message — `msg_29329712a9b1`, `kind: task_review`, **started
+16:59:05**, `status: streaming` — was a turn **eleven minutes old** that had
+accepted WI-037, dispatched WI-075, and was midway through writing WI-017's
+acceptance. **The cancellation aborted it mid-write.**
+
+### The correction — and it is in `.factory/watchdog.md`, not overwritten
+
+**"The task's `result` is five hours old" does not mean "nothing has happened
+since".** A `task_review` continuation turn runs under the **same `taskId`** and
+posts new messages **without touching `result`**. The task's `result` records
+the last **settled** turn of the task, not the task's current output.
+
+**The sound liveness signal is the chat's last message from that bot: its
+`startedAt` and its `status`.** The engine appends a placeholder with
+`status: 'streaming'` when a turn starts and flips it to `done`, `error` or
+`aborted` when it ends. The idle window was real and it was five hours
+(11:51:26 → 16:59:05), and then the task woke up. **A check run at 13:00 would
+have been right to cancel it; a check run at 17:05 would have been wrong to.**
+
+**So cancelling now has two conditions, not one:** over the 45-minute threshold,
+**and** the chat's last message from that bot is not `streaming`. The file's old
+rule — _"never cancel a task whose chat is showing fresh output"_ — was right,
+and it was written as a caution instead of as a **precondition**. That is the
+error, and it is now the precondition.
+
+### What the cancellation cost, and what it did not
+
+**Survived:** `3816382` (WI-037 accepted), `df3a5c1` (the owner's two answers)
+and `c136b8e` (W6 accepted, WI-063's renumbering repaired) — all committed, all
+ancestors of `HEAD`; and WI-075's dispatch `task_db738ae1549b`, **queued**.
+
+**Not committed:** `.factory/work/WI-017.md`'s acceptance — written but
+unformatted and uncommitted — and `.factory/work/WI-075.md`, untracked. **Both
+are the peer session's files and this session did not touch them.** The peer
+was told, in the session message, exactly what survived and what did not, and
+asked to commit them before anything discards them.
+
+**WI-075's dispatch has no row in the dispatch table yet.** It is live, and the
+row belongs to the session that dispatched it.
+
+### The watchdog corrected three more ways
+
+1. **The check needs no fleet slot.** A schedule fires by `fireSchedule` →
+   `runBotTurn` in `engine.mjs`, into the bot's own chat; it never enters the
+   dispatcher's queue and is not subject to `MAX_RUNNING = 2`. Measured: the
+   watchdog reported normally at **15:50:26** and at **16:20:56**, and at both
+   moments **both dispatcher slots were occupied**. **The belief that a wedged
+   factory can starve its own watchdog was wrong.**
+2. **A failed check is invisible.** The runtime advances a schedule's `last_run`
+   whether the turn succeeded or failed, and it creates **no task** for a
+   schedule — so **a failed check is indistinguishable from a clean sweep** in
+   the fleet state. The error survived only in the chat's message record. **The
+   check now reads its own previous run and carries a failure forward.**
+3. **The report channel fails exactly when it is needed.** `post_group` is
+   refused with _"the group is mid-discussion"_ while a group round is open —
+   **and a stalled group round is precisely what keeps a group round open.** The
+   462-minute stall's report was **refused at 17:12** by a _healthy_ group
+   round. **The report must not depend on the group post**; it lands where the
+   check already runs, and the group post is an extra attempt that may be
+   refused.
+
+**And silence is ambiguous, so the check now always says what it measured** —
+one line when nothing is over the threshold, the full report when something is,
+and a ledger line whenever it finds something **or whenever its previous run
+failed**. The old rule — _"do nothing and say nothing"_ — is what let a failed
+check look like a clean one.
+
+**The check also learned where the fleet state actually lives:** `taskBatches`
+is an **array of batches**, each with a `tasks` array — not a keyed object.
+Reading it as an object yields nothing, and that is how a reader loses twenty
+minutes.
+
+### What is still owed
+
+The stall report to the group, request id
+`factory-group-stall-report-2026-10-21-1712`, was **refused at 17:12** and is
+**owed**. **This section is the report's content**, so it goes out intact when
+the round opens.
