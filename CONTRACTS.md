@@ -1283,12 +1283,12 @@ product's first report on itself must not be a lie by omission.
 
 **What "authored by an agent" counts as.** A resource is **agent-authored** when
 its `createdBy` carries the `agt_` form — the id form of an agent connection
-(`apps/server/src/lib/ids.ts:9-17`). **The test is the id form, not a lookup**: a
+(`apps/server/src/lib/ids.ts:30`). **The test is the id form, not a lookup**: a
 connection that has since been removed does not make the resources it authored
 owner-authored. It is **owner-authored** otherwise: the owner's user id, or the
 literal `owner` that is written when there is no user id
 (`apps/server/src/api/resources.ts:37`,
-`apps/server/src/modules/mcp/server.ts:368`). `createdBy` is one column holding
+`apps/server/src/modules/mcp/server.ts:393`). `createdBy` is one column holding
 two id spaces, so neither `'owner'` nor `'system'` is an agent. A resource's kind,
 its title, and who worked on it afterwards are not part of the reading. On the
 audit side an operation is **agent-performed** when the entry's `actorType` is
@@ -1301,7 +1301,7 @@ only.
 
 **Two of the six kinds can never be agent-authored.** The `automation` and `task`
 projections hardcode `createdBy: 'system'`
-(`apps/server/src/modules/resources/service.ts:170`, `:260`), and their tables
+(`apps/server/src/modules/resources/service.ts:203`, `:293`), and their tables
 have no `created_by` column at all (`apps/server/src/db/schema.ts:385-401`,
 `:305-330`) — the value is invented at projection time and nothing is stored. An
 agent-created automation or task is recorded as authored by `'system'`. **The
