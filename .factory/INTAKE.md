@@ -9317,3 +9317,32 @@ is not "the group is broken" — it is that a group post is a request in a queue
 and the queue is the fact.** And it does not change what is owed: **a queued
 brief is not a dispatch**, the dispatch table says REQUESTED rather than
 dispatched, and WI-066's verification still has no task id anywhere.
+
+## The lane that can dispatch today — 2026-10-21 21:55
+
+**The peer session measured the runtime's own log for the hour: sixteen
+`mcp__minimax-bot__` calls from the group session
+`mvs_da4fd6a55d284724835efedd6434bfcc`, against four from the peer session and
+eight and four from two others.** **So the group lane can dispatch, post and
+cancel while this session cannot.**
+
+**Which is the answer to the question this session has been asking all evening:
+_where does a request go when the session holding it has no tools?_** The answer
+is measured, not inferred: **a session that still holds the plugin's MCP
+registration can act, and the group session still holds it.** The peer session's
+own finding — that the registration is per session, and a session live when the
+runtime stopped keeps its empty tool set — explains why this session's
+`mavis mcp list` returns no servers while the peer's and the group's return
+them.
+
+**So WI-066's verification is asked of the group session, which has the tools,
+under the request id `probe-verify-wi-066-published-shapes-2026-10-21`.** The
+brief is `.factory/work/WI-066.md`, and the dispatch table says REQUESTED until
+a task id exists. **A request id is spent when it is used, and re-using it is
+how two lanes carrying the same request do not become two workers.**
+
+**And the fact that answers the same question for every session without tools is
+worth stating: a request to a session that cannot act is not a request, it is a
+letter.** The letters this session sent tonight are in the dispatch table, in
+the group queue and in the peer session's queue, and the one that matters —
+WI-066's verification — is now asked of the lane that can act.
