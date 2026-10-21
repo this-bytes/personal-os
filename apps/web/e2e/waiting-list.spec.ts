@@ -435,4 +435,51 @@ test.describe('what is waiting on the owner', () => {
     await expect(row.getByText('Blocked')).toHaveCount(0);
     await expect(row.getByText('In review')).toHaveCount(0);
   });
+
+  test('a turn is drawn the way a task is, and a client that switches on the kind does not fall through to a blank row', async ({
+    page,
+  }) => {
+    await signIn(page);
+    const workspaceId = await firstWorkspaceId(page);
+
+    // A turn is a kind of its own now, so the client has to draw it. Only
+    // the worker can leave a turn in the unknown state, so the row is put in
+    // front of the client the way the server would send it.
+    await serveWaitingList(page, [
+      {
+        id: 'turn:exe_unknown',
+        kind: 'turn',
+        title: 'Turn with an unknown outcome',
+        detail:
+          'This turn started and we cannot confirm how it ended. Check whether it ran before you ask the agent again.',
+        reason: 'unknown',
+        workspaceId,
+        conversationId: 'cnv_waiting',
+        taskId: null,
+        agentConnectionId: 'agt_waiting',
+      },
+    ]);
+
+    await page.goto('/conversations');
+
+    const row = page.getByRole('listitem').filter({ hasText: 'Turn with an unknown outcome' });
+    await expect(row).toBeVisible();
+
+    // It says what it is: something to check. A client that matched on the
+    // kind and had no case for a turn would leave the row blank.
+    await expect(row.getByText('Check this')).toBeVisible();
+    await expect(row.getByText('Blocked')).toHaveCount(0);
+    await expect(row.getByText('In review')).toHaveCount(0);
+
+    // It is not a decision. A turn is not an approval, so nothing here
+    // offers to approve or reject it.
+    await expect(row.getByRole('button', { name: 'Approve' })).toHaveCount(0);
+    await expect(row.getByRole('button', { name: 'Reject' })).toHaveCount(0);
+
+    // And it leads to where the turn happened.
+    await expect(row.getByRole('link', { name: 'Turn with an unknown outcome' })).toHaveAttribute(
+      'href',
+      '/conversations/cnv_waiting',
+    );
+  });
 });
