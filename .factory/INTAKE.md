@@ -92,8 +92,20 @@ free number above the highest taken.**
 | WI-119 | The strategy document's copy of the record's loose sentence, in three places                                                               | peer   |
 | WI-120 | The published front page states the identity the owner replaced                                                                            | peer   |
 | WI-121 | The decision surface carries what an agent is blocked on                                                                                   | peer   |
+| WI-122 | The mode's meaning is settled — `manual` does not gate delegation                                                                          | worker |
+| WI-123 | Publish `approval.decided`, so a decided approval can leave the waiting list                                                               | worker |
 
-**The next free number is WI-122.**
+**The next free number is WI-124.**
+
+**Two decisions the owner took, and the numbers they took.** The owner answered
+the two questions that were open: `manual` **does not gate delegation**, and the
+product **publishes `approval.decided`** so a decided approval can leave the
+waiting list. WI-122 is the first and WI-123 is the second. **WI-122 changes no
+behaviour** — the mode was never a gate, and the item makes the product, the
+contract, the code comment, the decision record and the attack suite say so
+plainly instead of leaving it open. **WI-123 adds a published event and changes
+the contract with it**, with a migration note, because a published contract is
+not changed without one.
 
 **WI-118 was claimed twice, and this is the record that kept it.** The lead
 opened this session's mode item as WI-113 at 07:50, yielded it when the
