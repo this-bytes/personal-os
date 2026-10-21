@@ -20,6 +20,7 @@ import type { FastifyInstance } from 'fastify';
 import { buildApp } from '../app.js';
 import { loadConfig } from '../config.js';
 import { defaultAgentToolGrants, mcpToolNames } from '@personal-os/contracts';
+import type { AutonomyPolicy } from '@personal-os/contracts';
 
 /**
  * The policy the contract publishes for a workspace whose stored policy is
@@ -332,26 +333,46 @@ async function createWorkspace(name: string): Promise<string> {
 }
 
 /**
- * A workspace whose stored policy allows one action only.
+ * A workspace whose stored policy is the one named.
+ */
+async function createWorkspaceWithPolicy(
+  name: string,
+  autonomyPolicy: AutonomyPolicy,
+): Promise<string> {
+  const id = await createWorkspace(name);
+  app.services.workspaces.update(id, { autonomyPolicy });
+  return id;
+}
+
+/**
+ * A policy that allows one action only.
  *
  * `tool.call` is what every MCP tool other than `conversation.post` stands
  * for, so a policy that does not allow it refuses those calls.
  */
-async function createRestrictedWorkspace(name: string): Promise<string> {
-  const id = await createWorkspace(name);
-  app.services.workspaces.update(id, {
-    autonomyPolicy: {
-      mode: 'manual',
-      allowedActions: ['message.send'],
-      approvalRequired: [],
-      maxTurns: 8,
-      maxDurationSeconds: 900,
-      maxSpendUnits: 0,
-      dailySpendUnits: 0,
-    },
-  });
-  return id;
-}
+const RESTRICTED_POLICY: AutonomyPolicy = {
+  mode: 'manual',
+  allowedActions: ['message.send'],
+  approvalRequired: [],
+  maxTurns: 8,
+  maxDurationSeconds: 900,
+  maxSpendUnits: 0,
+  dailySpendUnits: 0,
+};
+
+/**
+ * A policy that allows every action, and wants the owner to approve one of
+ * them before an agent may take it.
+ */
+const APPROVAL_POLICY: AutonomyPolicy = {
+  mode: 'manual',
+  allowedActions: ['message.send', 'tool.call', 'artifact.create'],
+  approvalRequired: ['tool.call'],
+  maxTurns: 8,
+  maxDurationSeconds: 900,
+  maxSpendUnits: 0,
+  dailySpendUnits: 0,
+};
 
 /** The resources the owner can see in a workspace. */
 async function listResources(workspace: string): Promise<unknown[]> {
@@ -385,7 +406,10 @@ describe('the MCP surface under a policy that refuses an action', () => {
   });
 
   it('refuses an action the policy does not allow, and does not pass it', async () => {
-    const restrictedId = await createRestrictedWorkspace('Restricted for the refusal');
+    const restrictedId = await createWorkspaceWithPolicy(
+      'Restricted for the refusal',
+      RESTRICTED_POLICY,
+    );
     const { token } = await createAgent(
       'agent-under-a-restrictive-policy',
       undefined,
@@ -422,8 +446,41 @@ describe('the MCP surface under a policy that refuses an action', () => {
     expect((await listResources(restrictedId)).length).toBe(before.length);
   });
 
+  it('refuses an action the policy wants the owner to approve, until the owner decides', async () => {
+    const pendingId = await createWorkspaceWithPolicy('Waiting for the owner', APPROVAL_POLICY);
+    const { token } = await createAgent('agent-waiting-for-the-owner', undefined, pendingId);
+    const before = await listResources(pendingId);
+
+    const response = await mcp(token, 'tools/call', {
+      name: 'resource.create',
+      arguments: {
+        workspaceId: pendingId,
+        type: 'document',
+        title: 'Waiting for the owner',
+        data: { format: 'markdown', content: 'x' },
+      },
+    });
+
+    // The action is allowed by the policy, and the policy wants the owner to
+    // approve it, so it is refused until the owner has decided
+    // (`CONTRACTS.md:902-903`).
+    expect(response.statusCode).toBe(200);
+    const result = toolResult(response.body);
+    expect(result.isError).toBe(true);
+
+    const refusal = JSON.parse(result.text) as { code?: string; message?: string };
+    expect(refusal.code).toBe('forbidden');
+    expect(refusal.message).toContain('tool.call');
+
+    // Nothing was created while the decision was outstanding.
+    expect((await listResources(pendingId)).length).toBe(before.length);
+  });
+
   it('answers with the policy even when the policy refuses that agent its other actions', async () => {
-    const restrictedId = await createRestrictedWorkspace('Restricted for the reading');
+    const restrictedId = await createWorkspaceWithPolicy(
+      'Restricted for the reading',
+      RESTRICTED_POLICY,
+    );
     const { token } = await createAgent(
       'agent-reading-a-restrictive-policy',
       undefined,
