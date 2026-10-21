@@ -137,6 +137,81 @@ This entry is the contract for **WI-008**, and the code implements it — as of
 change stay `failed` — we cannot know which of them were really unknown — and
 `unknown` applies only to transitions made after it.
 
+### Closing an unknown outcome
+
+`POST /api/executions/:id/resolve` is how the owner closes an execution whose
+outcome could not be confirmed. It is the leg of the promise
+[The unknown outcome](#the-unknown-outcome) makes that was missing: a task is
+closed through `PATCH /api/tasks/:id`, and this route is what a turn has.
+
+```ts
+interface ResolveExecutionInput {
+  outcome: 'completed' | 'failed';
+  note?: string;
+}
+```
+
+**The route carries the owner's own conclusion.** `outcome` is required, and it
+is one of two values: `completed` — it did run — or `failed` — it did not run.
+The product does not know what happened; the owner does, and the route records
+what they said. `note` is optional, and it is the owner's own words.
+
+**The route answers for an execution whose outcome could not be confirmed** —
+one in `unknown`. An execution in any other state has already been settled, and
+this route does not settle it twice.
+
+**The execution's status becomes that**, and nothing else decides it: an
+execution in `unknown` becomes `completed` or `failed`, and `finishedAt` is
+written with it. **The reply's status follows it** — the messages of that
+execution become `complete` or `failed`. The message status is not the
+execution status: it carries `complete` where the execution carries
+`completed` (`packages/contracts/src/conversation.ts:62`), and a client that
+expects the execution's word on the reply's word will be wrong.
+
+**The note is recorded with the transition.** The audit entry carries it, and on
+an execution that failed it is the execution's `error`, because that column
+carries a reason only where there is an error
+(`apps/server/src/modules/approvals/service.ts:167`).
+
+**The route is for the run the list draws as a turn.** A turn on the waiting
+list is an execution whose outcome could not be confirmed and that belongs to no
+task ([The waiting list](#the-waiting-list)), and the id the list draws is
+`turn:<execution id>` — the id this route takes. A run that belongs to a task is
+the task's own outcome, and it is closed through the task's own path.
+
+**The item leaves the waiting list.** A turn is on the list because its
+execution's outcome could not be confirmed, so an execution that is no longer
+`unknown` is no longer waiting on the owner.
+
+**The transition is written to the audit trail** as `execution.outcome.resolved`,
+beside the task path's `task.outcome.resolved`
+(`apps/server/src/modules/factory/service.ts:279`). It names the owner the way
+the task path's does — `actorType: 'human'` and the owner's id — and its
+metadata carries the transition, `from: 'unknown'` and `to` the outcome.
+
+**The route is additive.** No existing route's shape or semantics change. It
+takes the same authentication and workspace rules as every other owner-facing
+route — a session cookie or the owner token, and never an agent token, which is
+MCP-only — and it is published in the route table with the rest.
+
+**This entry is the contract for **WI-031**, and the code does not implement it
+yet.** The route is published ahead of its implementation, because the contract
+leads and the code follows, and the shape above is what the implementation has
+to reach. Nothing in the tree answers it today: there is no `/api/executions`
+route, and the only writer of an execution's outcome is `resolveExecution`
+(`apps/server/src/modules/approvals/service.ts:160-168`), which the approval
+decision path calls and this route does not. A client written against this entry
+must treat the route as absent until the implementation lands.
+
+**Migration.** Nothing is reclassified, and no execution is closed by this
+change. A client written before this route existed has nothing to migrate: the
+route table did not carry it, so no client was written against it, and every
+route it knew keeps the shape and the semantics it had. **A turn recorded
+before the change keeps the outcome it was recorded with** — an execution left
+in `unknown` stays in `unknown` and stays on the waiting list until the owner
+closes it, because the route closes nothing by arriving. An unknown outcome is
+still never retried automatically.
+
 ### Routing behaviour
 
 **Mentions mode.** Only explicitly addressed agents receive a turn.
@@ -1060,6 +1135,7 @@ is not left deleting the database.
 | `GET/PATCH`        | `/api/tasks/:id`                                     | Read and update a task. `PATCH` cannot set `done`; it also enforces `expectedRevision`. |
 | `POST`             | `/api/tasks/:id/assign`                              | Assign a task to an agent.                                                              |
 | `POST`             | `/api/tasks/:id/accept`                              | Record an acceptance decision.                                                          |
+| `POST`             | `/api/executions/:id/resolve`                        | Close a turn the owner cannot confirm. See [the entry](#closing-an-unknown-outcome).    |
 | `GET/POST`         | `/api/automations`                                   | List and create automations.                                                            |
 | `GET/PATCH/DELETE` | `/api/automations/:id`                               | Read, update and remove an automation.                                                  |
 | `POST`             | `/api/automations/:id/enable` · `/disable`           | Toggle scheduling.                                                                      |
