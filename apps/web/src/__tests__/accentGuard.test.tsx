@@ -1,4 +1,4 @@
-// @vitest-environment node
+// @testing-library/jest-dom/vitest
 //
 // The accent means one thing, and this is what keeps it meaning one thing.
 //
@@ -16,7 +16,12 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { describe, expect, it } from 'vitest';
+import { render, screen, waitFor } from '@testing-library/react';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { MemoryRouter } from 'react-router-dom';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+import type { WaitingItem } from '../lib/types';
+import { WaitingList } from '../components/WaitingList';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const webRoot = path.resolve(here, '..', '..');
@@ -36,6 +41,90 @@ const ACCENT_UTILITY =
   /(?:bg|text|border|ring|fill|stroke|from|to|via|shadow|outline|decoration)-accent/;
 
 const SOURCE_EXTENSIONS = ['.ts', '.tsx', '.css', '.js', '.jsx', '.html', '.svg'];
+
+/**
+ * The rail, rendered.
+ *
+ * The waiting list is the panel's clearest "waiting on you" surface, and the
+ * owner ruled that every row of it wears the accent. The four reasons a row
+ * can be there are carried by its label, so a row whose label was dropped
+ * would be told apart by colour alone — and the accent against the caution
+ * colour is the weakest pair there is under deuteranopia. This renders the
+ * rail and checks that every row is both the accent and a label.
+ */
+const { get } = vi.hoisted(() => ({ get: vi.fn() }));
+
+vi.mock('../lib/api', () => ({
+  api: { get: (...args: unknown[]) => get(...args) },
+  errorMessage: (error: unknown) => String(error),
+}));
+
+vi.mock('../state/workspace', () => ({
+  useWorkspace: () => ({ activeWorkspaceId: 'ws_1' }),
+}));
+
+vi.mock('../state/events', () => ({
+  useServerEvents: () => ({ subscribe: () => () => {} }),
+}));
+
+/** One row of each of the four reasons a row can be in the rail. */
+const RAIL_ITEMS: WaitingItem[] = [
+  {
+    id: 'approval:apr_1',
+    kind: 'approval',
+    title: 'An approval',
+    detail: 'An agent is stopped and waiting for your decision.',
+    reason: 'pending',
+    workspaceId: 'ws_1',
+    conversationId: null,
+    taskId: null,
+    agentConnectionId: null,
+  },
+  {
+    id: 'task:tsk_review',
+    kind: 'task',
+    title: 'A task in review',
+    detail: 'It is waiting for an acceptance decision.',
+    reason: 'review',
+    workspaceId: 'ws_1',
+    conversationId: null,
+    taskId: 'tsk_review',
+    agentConnectionId: null,
+  },
+  {
+    id: 'task:tsk_unknown',
+    kind: 'task',
+    title: 'A task with an unknown outcome',
+    detail: 'It started and we cannot confirm how it ended.',
+    reason: 'unknown',
+    workspaceId: 'ws_1',
+    conversationId: null,
+    taskId: 'tsk_unknown',
+    agentConnectionId: null,
+  },
+  {
+    id: 'task:tsk_blocked',
+    kind: 'task',
+    title: 'A blocked task',
+    detail: 'It cannot go on until you decide.',
+    reason: 'blocked',
+    workspaceId: 'ws_1',
+    conversationId: null,
+    taskId: 'tsk_blocked',
+    agentConnectionId: null,
+  },
+];
+
+function renderRail(): { container: HTMLElement } {
+  const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+  return render(
+    <MemoryRouter>
+      <QueryClientProvider client={queryClient}>
+        <WaitingList agents={[]} conversations={[]} />
+      </QueryClientProvider>
+    </MemoryRouter>,
+  );
+}
 
 function relative(file: string): string {
   return path.relative(repoRoot, file).replace(/\\/g, '/');
@@ -204,5 +293,49 @@ describe('the accent means one thing', () => {
           'healthy panel stops meaning anything.',
       ).not.toMatch(ACCENT_UTILITY);
     }
+  });
+});
+
+describe('the waiting rail is one colour', () => {
+  beforeEach(() => {
+    get.mockResolvedValue({ items: RAIL_ITEMS });
+  });
+
+  it('wears the accent on every row', async () => {
+    const { container } = renderRail();
+
+    await waitFor(() => expect(container.querySelectorAll('.bg-accent-surface')).toHaveLength(4));
+
+    for (const badge of container.querySelectorAll('.bg-accent-surface')) {
+      expect(badge.className).toContain('text-accent-text');
+    }
+  });
+
+  it('tells the rows apart by their labels, not by their colour', async () => {
+    const { container } = renderRail();
+
+    await waitFor(() => expect(container.querySelectorAll('.bg-accent-surface')).toHaveLength(4));
+
+    const labels = [...container.querySelectorAll('.bg-accent-surface')].map((badge) =>
+      (badge.textContent ?? '').trim(),
+    );
+
+    // A row whose label was dropped would be carried by colour alone, and
+    // the accent against the caution colour is the weakest pair there is
+    // under deuteranopia. Every row has to say which one it is.
+    for (const label of labels) {
+      expect(label).not.toBe('');
+    }
+    expect(labels.sort()).toEqual(['Approval', 'Blocked', 'Check this', 'In review']);
+  });
+
+  it('names no other badge colour in the rail', () => {
+    const source = fs.readFileSync(
+      path.join(webRoot, 'src', 'components', 'WaitingList.tsx'),
+      'utf8',
+    );
+    const variants = [...source.matchAll(/<Badge variant="([^"]+)"/g)].map((match) => match[1]);
+
+    expect([...new Set(variants)]).toEqual(['accent']);
   });
 });
