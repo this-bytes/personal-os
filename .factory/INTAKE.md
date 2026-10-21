@@ -353,7 +353,7 @@ second dispatch.
 | `wi-037-product-record-forge-2026-10-21`                   | WI-037 — the product record says Desk (B); the owner chose Forge        | Wren   | `task_4947c89ca7fe` | **queued** — **the live dispatch on WI-037**; the overdue truthfulness fix                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
 | `wi-020-measures-route-r3-2026-10-21`                      | WI-020 — the two measures, with the band ruling                         | Cog    | `task_86010eeeb561` | **queued** — **the live dispatch on WI-020**; it carries the band ruling — the band ships only the counts it can defend, and no ratio, until WI-033 and WI-034 land                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
 | `wi-039-evidence-contract-2026-10-21`                      | WI-039 — publish the evidence a decision is taken against               | Wren   | `task_dd95fe7df207` | **queued** — **the live dispatch on WI-039**; the contract half of the gap Vision found in the decision control, and it goes before WI-040                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
-| `wi-041-readme-licence-2026-10-21`                         | WI-041 — the README tells the truth about the licence                   | Wren   | `task_644f23312ebc` | **queued** — **the live dispatch on WI-041**; the owner's "the licence is deliberately undecided" answer, in one sentence                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
+| `wi-041-readme-licence-2026-10-21`                         | WI-041 — the README tells the truth about the licence                   | Wren   | `task_644f23312ebc` | **SPENT, and the row was wrong** — this request id was the "deliberately undecided" implementation, `64d38f4`, merged `5012df2`. **It is not "the live dispatch on WI-041".** The MIT implementation that followed it was `wi-041-readme-mit-2026-10-21`, `task_d7f28085ef46`, **cancelled when the tiebreak took the file**; the verification that closed the item was `probe-verify-wi-041-readme-licence-2026-10-21-1340`, `task_5b4e02d59413`. **WI-041 is accepted** — see the acceptance row at the end of this table                                                                                                                                                                                                                                                                                                                                                                                                                                      |
 | `wi-043-manifest-licence-verify-2026-10-21`                | WI-043 — the manifest no longer claims a licence                        | Probe  | `task_9b1b44c1025f` | **done** — **not verified.** Chief's one-line removal is exactly right and every gate is green, but the repository does not yet say the truth about its licence: the root `LICENSE` file **is** MIT (tracked since the initial commit `d2f4ec6`) and `CONTRIBUTING.md:238-239` claims contributions are MIT-licensed. **Neither file is covered by any item** — WI-041's is the README, WI-043's is the manifest. The finding opens **WI-068**                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
 | `wi-023-owner-token-step-verify-2026-10-21`                | WI-023 — verify the owner-token step in the container job               | Probe  | `task_6437af4f18f0` | **done** — **all seven criteria met, no defect, nothing owed to Cog.** Probe's matrix: the right token green, a wrong token fails with the 401, no token fails with the 401, and the 401 line cannot be faked because the assert throws. **The acceptance is the other Chief session's**, because this session wrote the implementation                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
 | `wi-022-citation-refresh-successor-2026-10-21`             | WI-022 — refresh the waiting list's code citations                      | Wren   | `task_682c73ccbc73` | **done** — `CONTRACTS.md` only: two stale citations moved (`waiting.ts:85`→`:95`, `:106-110`→`:140-144`) and the kind's declaration (`:8`) added to WI-026's entry. Branch `wi/022-citation-refresh` (`bd705c2`, `57c1248`), pushed by Wren, and **merged into `main` at `fb236dc`**. **The verification is dispatched** as `wi-022-citation-refresh-verify-2026-10-21`, `task_018a6018b18f`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     |
@@ -399,6 +399,8 @@ second dispatch.
 | `probe-verify-wi-037-product-record-forge-2026-10-21-1325` **(reused — a defect)** | WI-034 — the outcome vocabulary, written | Wren | `task_55c33b744ef5` | **done** — the contract's `### The audit outcome` entry and its migration note, `be10169` plus `ccfb3c2` for the item's own `State:` line, pushed and merged into `main` at `2cb8ba7`. **And the record is wrong about how it was dispatched:** this request id belongs to **WI-037's verification** (row above), and it was used a second time for a different item. **A request id is spent when it is used, and a reused id makes the table lie.** It is recorded here rather than hidden, and the id is spent for good |
 | `wi-028-name-the-change-and-fix-pointers-2026-10-21-1940` | WI-028 — the two published entries: name the change, and point the pointers | Wren | `hlp_fcab95870b97` | **running** — **WI-028 goes back to Wren for one edit.** Probe's verification is in hand (`task_458901e810d7`, measured at `767fbe3`) and reads _"on substance verified … one edit in Wren's file away from acceptance"_. **Criterion 1's last clause fails on the second entry** — the MCP exposure entry states the rule and names no commit and no item, while the memory-scope entry names both twice. **And seven code pointers have drifted** under `8b1fd01`; the claims are true, the pointers no longer point. **The `message_bot` path was refused** — "This tool call cannot be assigned to an active reply" — because this session sits in a crash-recovery `started` state, so the brief went as an isolated execution for Wren and **this request id is reserved and unspent** |
 | `wi-066-published-shapes-member-for-member-2026-10-21-1950` | WI-066 — the published shapes, member for member | Wren | — | **HANDED OVER IN THE GROUP, not through the task API** — the dispatcher refused the assignment three times while Wren's chat was busy with WI-028's helper, so the brief goes out by the group's own hand-off. **The premise was corrected before it was sent:** the item said _"the fourth field the code carries"_, and measured against the code the contract's prose says **three**, its own block lists **four**, and the code carries **five** — `detail` is the fifth, not the fourth. **It also carries a second shape now:** `ResolveExecutionInput.note`'s 2 000-character cap is unpublished. **Both are gaps against WI-031's criterion 7, and WI-031 cannot be accepted until both close** |
+| `probe-verify-wi-041-readme-licence-2026-10-21-1340` | WI-041 — verify the README tells the truth about the licence | Probe | `task_5b4e02d59413` | **done — and WI-041 is accepted.** Probe measured the tree as it stands at `e676ba9`: **all six criteria, as the item's file stands (corrected 19:08), are met on their face.** `README.md:251-254` reads "MIT. The owner chose it on 2026-10-21, and the full text is in the [LICENSE](LICENSE) file at the root of the repository." The gates: `prettier --check README.md` 0, `npm run format:check` 0; supporting, `typecheck` 0 and `test` 0 — server 25 files/248, web 7/54, worker 5/31, agent-adapters 2/16, contracts 4/28. **Criterion 3's second clause — "the repository is public under it" — was a fact the verifier could not confirm from its own machine, and the lead confirmed it from outside this one:** an unauthenticated read of the repository's endpoint returns `visibility = public`, `license = MIT / MIT License`, `private = False`. **The implementation was taken by the other Chief session under the tiebreak (`f129594`, merged `141f0be`) and the verification is Probe's, so the lead accepts it and no writer accepts its own work** |
+| `wi-036-record-reverification-2026-10-21-1955` | WI-036 — re-verify the licence record against the file as it stands | Probe | `hlp_72d0eace0a08` | **queued** — **the peer's question, asked and not skipped:** WI-036 was accepted on Probe's verification of the record at `edbd105`, and **the file has been edited since** — `45e7b2b`, `ed7b829` and `6cf63b5` each changed six lines of `docs/dependency-licences.json`, because the owner's 19:08 MIT decision made the record's "private for now, with no LICENSE yet" notes false and the other Chief session landed the correction under the tiebreak. **Nobody had asked whether the acceptance survives the edit; that is a question for the verifier and not for a lead.** The brief names the five criteria, quotes what changed, and says plainly: judge **whether the acceptance still holds**, not the record's quality |
 
 **A cancelled task is not a dispatch — but a cancelled dispatch does not free its
 request id.** That second half was wrong here, and it is corrected now rather
@@ -7902,6 +7904,147 @@ question asked.
 in this session's hands — **so it is recorded here, for the session that has
 the tools.**
 
+## The floor at 19:55 — 2026-10-21
+
+### The push was not mine to make, and the tree it pushed is green
+
+**`main` and `origin/main` are the same commit, `f62e065`.** The other Chief
+session pushed at 19:41, and **the condition in `FACTORY.md:99-107` for that
+push holds**: `git diff --name-only e676ba9..f62e065` touches
+**`.factory/INTAKE.md` only** — no code path — so **the code that landed is
+byte-identical to the tree the pipeline measured green at `e676ba9`**, and the
+pipeline read green on it: all four jobs plus CodeQL.
+
+**The publish took, and it was confirmed from outside this machine.** The
+peer's first measurement said it had not (four unauthenticated surfaces 404'd,
+`e59f0e3`); its second said it had (`f62e065`). The lead confirmed it a third
+time, without credentials, against the repository's own endpoint:
+
+```
+visibility = public
+license    = MIT / MIT License
+private   = False
+html_url  = https://github.com/this-bytes/personal-os
+```
+
+### The gate went red once in five runs tonight, and the failing file's name was not captured
+
+**This is WI-074's signature and it is not a new thing — but tonight's
+measurement is new, and the honest limit of it is recorded.**
+
+| Run                                | Result                                                                                       |
+| ---------------------------------- | -------------------------------------------------------------------------------------------- | --------------------------------------------- |
+| 19:31 — the four gates, background | typecheck 0 · **test exit 1** · format 0 · build 0 — \*\*`Test Files 1 failed                | 24 passed (25)`, `Tests 248 passed (248)`\*\* |
+| 19:36 — `npm run test` at the root | **exit 0** — server 25 files/248, web 7/54, worker 5/31, agent-adapters 2/16, contracts 4/28 |
+| 19:40–19:44 — three more root runs | **exit 0**, three times                                                                      |
+
+**One red in five root runs, on one tree, with every assertion green.**
+**The output window did not carry the failing file's name, so which file failed
+at 19:31 is not recorded** — the signature is WI-074's and the workspace is the
+server's, but the name is not a claim that can be made from what was captured.
+**And the cause is measured**: the failure is `EBUSY` on a file a just-killed
+child still holds, **not an overrun** — `fs.rmSync` retries `EBUSY` on Windows
+**only when `maxRetries` is above its default of `0`**, and at `0` it throws on
+the first attempt. **The `30_000` added in `1c92001` cannot help, because the
+call never gets to wait.** That is now in WI-074's own file, because Probe's
+task on it is still **queued** and the item file is the brief.
+
+### WI-028 goes back to Wren for one edit — and only one
+
+**Probe's verification is in hand** (`task_458901e810d7`, measured at
+`767fbe3`) and reads _"on substance verified … one edit in Wren's file away
+from acceptance"_. **Four of the five criteria hold**, and the gates were green
+on that tree.
+
+**The two findings, both in `CONTRACTS.md`, which is Wren's.**
+
+1. **Criterion 1's last clause fails on the second entry.** The memory-scope
+   entry names its change twice — "as of `e764e6a`" and "as of `622812c`" — and
+   the MCP exposure entry names **no commit and no item anywhere**. **Chief's
+   call: criterion 1 says _"the change to each is named"_, and one of the two
+   entries does not name it.**
+2. **Seven code pointers have drifted** under `8b1fd01`. The claims are true;
+   the pointers no longer point.
+
+### WI-066's premise was wrong, and it was corrected before it was sent
+
+**The item said _"the fourth field the code carries"_. Measured against the
+code, the contract's prose says three, its own block lists four, and the code
+carries five — `detail` is the fifth, not the fourth.** A brief that states a
+fact about the code is checked against the code before it is sent; a wrong
+premise is replaced, not annotated. **The item's title and its criteria are
+rewritten, and the correction is in the item file with the measurement that
+forced it.** The item also now carries a second shape: `ResolveExecutionInput`'s
+note is published with no bound while the code caps it at 2 000 characters
+(`api/executions.ts:9`) — **a gap against WI-031's own criterion 7, and Probe
+routed it here rather than letting it go unrecorded.**
+
+### WI-041 is accepted
+
+**Probe's verification is done** (`task_5b4e02d59413`, measured at `e676ba9`)
+and **all six criteria, as the item's file stands after the 19:08 correction,
+are met on their face.** The gates: `prettier --check README.md` 0, `npm run
+format:check` 0; supporting, `typecheck` 0 and `test` 0.
+
+**The implementation was taken by the other Chief session under the tiebreak in
+`FACTORY.md:38`** (`f129594`, merged `141f0be`) **and the verification is
+Probe's — so the lead accepts it and no writer accepts its own work.** The
+implementation that was verified is not the one the item was written against:
+`64d38f4` was the superseded "deliberately undecided" sentence, and the MIT
+implementation landed at 19:28–19:32 while the verification was running.
+**Probe measured the tree as it stood.**
+
+**Criterion 3's second clause — "the repository is public under it" — was a fact
+the verifier could not confirm from its own machine, and the lead confirmed it
+from outside this one** (the endpoint read above). **What the product can now
+do:** a reader who opens the repository finds one honest sentence at the door,
+and the repository they are reading is the public one — **the README, the
+visibility, the manifest and the licence record all say the same thing.**
+
+**Two of Probe's findings were the lead's to close, and are closed:**
+WI-041's own file was stale in two places — the `State` paragraph still
+describing `64d38f4` and the "undecided" sentence, and a "Not in scope" line
+saying the licence was deferred — **and the ledger's row still called a spent
+request id "the live dispatch on WI-041".** A third finding, that WI-044's
+premise was void, **was overtaken**: the file already carries the correction.
+
+### WI-036's acceptance is re-verified, because the file was edited under it
+
+**The peer session's tail note asked a question nobody had asked:** WI-036 is
+accepted, and the file it was accepted on was edited afterwards — the owner's
+19:08 MIT decision made the record's "private for now, with no LICENSE yet"
+notes false, and the tiebreak landed the correction. **Whether the five criteria
+still hold against the changed record is a question for the verifier and not for
+a lead.** It is now with Probe (`hlp_72d0eace0a08`), and the brief says plainly:
+**judge whether the acceptance still holds, not the record's quality.** Probe's
+own WI-041 report is the best evidence that the change was narrow — _"only
+`firstPartyNote` and the six first-party workspace notes changed … no
+third-party dependency entry was touched"_ — **and the brief tells Probe to
+verify that claim rather than take it.**
+
+### The dispatcher's rule, found by measurement
+
+**A bot's chat takes one assignment at a time.** `message_bot` and
+`dispatch_tasks` were refused four times this turn with _"This tool call cannot
+be assigned to an active reply"_ — and the first `start_helper` went through
+for Wren at 19:44, when Wren's chat was free. **A second assignment to the
+same bot was refused while its first was running**, and an assignment to Probe
+was admitted in the same window, because Probe's chat was free.
+
+**This session's own state is part of it, and it is said rather than guessed at:
+`mavis session get` reports this session as `started` with _"This session was
+interrupted because the previous local runtime stopped"_ and
+`errorSource: crash-recovery`.** **The practical rule: when the task API
+refuses with that message, the target bot's chat is busy, and the brief waits
+in the item file until it is not.** WI-066's brief was written in full in
+`.factory/work/WI-066.md` and handed over in the group instead.
+
+**And one thing the refusal taught that is worth keeping:** the group is a real
+delivery channel, not a noticeboard. Probe's WI-031 report says _"The group
+took the report this time (`task_a93656399224`)"_ — a post to the group creates
+a task. **So the floor has two doors, and the task API is the one that can be
+refused.**
+
 ## One timestamp in this file is right and two are wrong — 2026-10-21 20:05
 
 **`task_797badb7e918` was cancelled at 18:58:10.** The authority is the fleet
@@ -7940,3 +8083,87 @@ queued. **Interrupted executions become `unknown` and are not replayed
 automatically.**"_ So `unknown` is the **documented end state of an
 interrupted execution**, not a state with work in it — which is why the
 repair for the dead slots was a restart and not a cancellation.
+
+## The dispatch the peer session could not make — made — 2026-10-21 20:12
+
+**The peer session's tools did not come back with the runtime, and it said so
+rather than pretending otherwise.** `mavis mcp list` returns no servers in
+that session at 19:41 and again at 19:52, while this session has called the
+bot tools since 18:58. **So the registration is per-session: a session that was
+live when the Mini App runtime stopped keeps the empty tool set it had.** The
+restart brought the dispatcher and the server back for the sessions that
+re-register, and not for the one that did not.
+
+**Which meant a dispatch was owed that only this session could make, and the
+peer recorded it in the ledger rather than leaving it in a message.** It is
+made now.
+
+### The question nobody had asked
+
+**The three files taken under the tiebreak were not all covered.**
+
+| File                            | Item                                                                           | Covered?                                                                              |
+| ------------------------------- | ------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------- |
+| `README.md`                     | **WI-041**, in `verify` with Probe on it                                       | **yes** — Probe's re-verification is queued                                           |
+| `docs/dependency-licences.json` | **WI-036, `accepted`**                                                         | **no** — the acceptance was given to a version of the file that is no longer the file |
+| `docs/strategy.md`              | **WI-036's scope** — its gates name it, and its comparator table is the item's | **no** — same reason                                                                  |
+
+**Both files are inside WI-036's own scope, WI-036 is accepted, and this
+session changed both of them after the acceptance was given.** The acceptance
+was given to a version of the record that is no longer the record, and **whether
+the five criteria still hold against the tree as it stands is the verifier's
+question, not a lead's.**
+
+**Probe is asked it.** Request
+`probe-verify-wi-036-licence-record-mit-2026-10-21`, task `task_e4b8ac641700`,
+batch `batch_3e8305153bdb`, queued. It is asked to re-derive the numbers its
+own way rather than trust the record, to prove **that no dependency entry
+changed** — the corrections were to the notes about _this repository_, and a
+changed dependency entry would be a serious finding — to check that the new
+claims are true against the root `LICENSE` file and the manifest, and to sweep
+the tree and say which remaining hits are live claims and which are recorded
+history.
+
+**And WI-036's own file now says so**, with a dated correction and the
+dispatch recorded on it — **the same pattern WI-043 used when WI-068 landed
+underneath it**: the item goes back to verify when the tree changes under it.
+
+**This is the second time today that a change made above the factory was
+allowed to land on accepted work without anyone asking.** The first was the
+byte dump; the second was the licence decision. **The pattern is the finding:
+a change that a lead makes in the tree does not carry its own verification
+with it, and the lead who made it is the one person who cannot ask the
+question** — because the implementer is not the verifier, and the lead who
+wrote the change is not the lead who accepts it. **So the lead who changes an
+accepted artefact owes the factory a verification dispatch, and owes it before
+the change lands.**
+
+## The watchdog run at 20:16 — one task over the threshold, and it is live — 2026-10-21 20:16
+
+**One task is over the 45-minute trigger: `task_0cfbcce20e92` — WI-066 in
+Wren's chat, 47.7 minutes.** The other running task is Probe's WI-022
+verification, 0.4 minutes.
+
+**And the corrected rule says report, not cancel.** Wren's session
+`mvs_dff627414f0e47fbbdf7501b11dfdd06` reads **`started`**, and the chat's last
+message from that bot is `msg_dea2462e3324` — **`streaming`, 2.2 minutes old**,
+`kind: task_review`, under the same task id. **So condition 2, that the session
+is not `started`, is not met, and nothing is cancelled.** Cancelling is Chief's
+judgement, and Chief's judgement here is that the turn is live.
+
+**And this is the 462-minute stall's exact shape, one more time:** a
+`task_review` continuation runs under the **same `taskId`** and posts new
+messages **without touching `result`**, so the task's age and the turn's age
+are two different numbers. **Wren's substantive report was delivered at
+19:42:28 — 5,059 characters, _"WI-066 is written, gated, and pushed"_ — and the
+work is committed** (`f63c978`, `fd5477e`). **The task has been running 47.7
+minutes; its live turn is 2.2 minutes old.** A check that read the age alone
+would have called it a stall; **the chat says a turn is in flight.**
+
+**And the previous check did not complete.** The 20:07 firing was refused with
+`BUSY`, and so were 18:56 and 19:27 — **because this chat has been in one long
+turn since 18:53.** **So the scheduled check's last completed run is still
+16:21**, every firing since has been refused, and the measurement itself has
+been taken repeatedly inside that turn instead. **That is the same finding as
+the 19:28 run, and it is now the rule's practical shape: the check and the
+chat share one thread, and a chat that is busy cannot also be watched.**
