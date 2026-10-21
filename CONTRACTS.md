@@ -745,7 +745,9 @@ the effective policy — the strictest of the workspace's policy, the goal's pol
 the conversation's own safeguards, and where each value came from. The shape is the
 one published in [the autonomy-policy route](#the-autonomy-policy-route); the tool
 answers with the policy itself, where the route answers with it under a `policy`
-key.
+key. A `workspaceId` the caller names must be one it may reach: an agent reads
+only the policy of a workspace it was granted, and a connection that names no
+workspace gets its own.
 
 **Reading the policy is not one of the actions the policy governs.** The tool
 answers even when the policy refuses that agent's other actions, because an agent
