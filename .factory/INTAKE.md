@@ -5108,6 +5108,35 @@ when a slot is free**, and today the slot was the problem. It is still worth
 the owner's answer, on the measurement that today the queue did not move
 because a turn was stuck, not because there was one of anything.
 
+## The watchdog fires — 2026-10-21 15:50
+
+**The check is verified, not assumed.** The schedule `sch_6db03ac6ba13` fired at
+**15:50:26** and its next run is **16:20:27** — exactly the 30-minute interval.
+**It created no task and posted nothing**, which is the specified behaviour
+when nothing has been running for more than 45 minutes: the two tasks running
+at that moment were 12 and 4 minutes old. **So the check that can fail did
+fire, and it correctly concluded that there was nothing to report.**
+
+**One branch of it is verified and the other is not, and that is said here
+rather than left implied.** The **quiet** branch — nothing over the threshold,
+say nothing — is verified. The **report** branch — something over the
+threshold, report it with the task id, the minutes held, the chat blocked and
+whether the work is already committed — is **not verified, because there was no
+stall to report.** Manufacturing one to test it would be manufacturing the
+failure the check exists to prevent.
+
+**A correction to how the firing is read.** The liveboards `state.json` shows
+`last_run: null` for this schedule, and **that field is not where the runtime
+keeps it** — a check that reads the state file alone would conclude the
+schedule never fired, which is the opposite of the truth. The authoritative
+value is what `list_schedules` reports. **A check that reads the wrong place
+is worse than no check**, and that is worth knowing about this one.
+
+**And the queue answered a question the group has been asking all day.** At
+15:27 WI-027's verification landed — **the first accept-queue item to close
+since 09:48** — and at 15:49 WI-062's verification started. **The queue is
+moving because the slot was freed, not because the verifier count changed.**
+
 ## The briefs were written before the ruling, and the correction reached them — 2026-10-21 15:45
 
 **The lead's own claim of an hour ago was wrong, and it is corrected here
