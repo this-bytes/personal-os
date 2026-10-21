@@ -9115,3 +9115,91 @@ spelling out: the working tree's `format:check` is red on `.factory/work/WI-089.
 (modified, and not in this session's commit) and `.factory/work/WI-090.md`
 (untracked), while the tree being pushed is clean** — and the measurement that
 counts is the one on the tree that is actually pushed.
+
+## WI-010 accepted, and WI-103's correction held until the tree it describes lands — 2026-10-22 05:46
+
+**WI-010 is accepted**, on Cog's verification and the lead's red-then-green proof
+of the fix.
+
+Cog's verification of the repaired direction document met all three criteria and
+found exactly one defect: the document said "…whose lane held fifteen open items
+**at the pinned commit**", and in that document "pinned" means `0d4731f`. The
+words were the error and not the number. Cog's fix changed that phrase to "at
+`3479c31`" — one line, one file, one phrase (`2d7f33d`, merged `e18a6f0`).
+
+The lead verified it, because Probe's lane is still dead and the lead wrote none
+of it. **The red:** at `0d4731f` the filter — Cog-owned item files, not
+accepted, not superseded — gives **twenty-one** open items, not fifteen, and
+**six of the fifteen the sentence itself names were already accepted there**
+(WI-007, WI-008, WI-017, WI-021, WI-027, WI-028). The sentence contradicted its
+own list at the commit it named. **The green:** at `3479c31` the same filter
+gives **exactly fifteen**, and that is exactly the set the sentence names — no
+omission, no extra — and the new wording agrees with the document's own rule at
+`:9`. The gates on the merged tree at `e18a6f0`: typecheck 0, format:check 0,
+build 0, test 0 — 49 files, 458 tests, 0 failures.
+
+**What the product can now do:** the direction document names the commit its
+lane count was measured at, so a reader can reproduce the count instead of
+trusting it.
+
+**WI-103's correction is held, and the reason is measured rather than cautious.**
+
+Wren's verification of WI-080 found that the merge that fixed the code comment
+shifted `apps/server/src/modules/mcp/server.ts` by two lines and took nine of
+`CONTRACTS.md`'s pointers with it. The lead re-measured all nine at `d777953`
+— **ten** pointers into that file, **nine wrong, one right** (`memoryOwner` at
+`:119`) — and dispatched the correction. Two things stopped it, and both are
+facts about trees.
+
+**First, the peer's integration branch is green and carries the code those
+pointers describe.** `origin/wi/106-publish-template-contract` is CI green and
+CodeQL green at `03362af`. `git merge-tree --write-tree main
+origin/wi/106-publish-template-contract` names **one** conflicting file —
+`.factory/work/WI-106.md`, an add/add on a number, not a code conflict — and
+`main` has not touched `server.ts` since `ceed799`. **So the tree that lands
+carries that branch's `server.ts` byte for byte, and the branch's re-citation
+is already correct for it**: `:532-576` the registration, `:217` the
+`assertOwnMemory` definition, `:181` `memoryOwner`, `:450`, `:514` and
+`:484` the three tools' calls, `:428` the template input. Every one was
+opened and read.
+
+**Second, and this is the part that decides it:** the correction on `main` would
+not only be mis-pointed, it would be **wrong**. `CONTRACTS.md:639` says the
+call "refuses a call that carries both a spec and a template". On that branch
+`resource.create` **merges** the caller's values into the template's spec
+(`:446-448`) and passes the template's id and version on (`:458`) — **so the
+sentence is replaced, not stale.** Fixing the pointers on `main` would preserve
+a sentence the landing removes.
+
+So the order is named: **the integration branch lands first, and WI-103's edit
+is measured on the tree that lands.** A pointer is true of a tree, and the
+arithmetic of a previous tree is not evidence. The lead's dispatch was
+withdrawn before it ran, and the peer's earlier dispatch of the same item was
+withdrawn the hour before because two dispatches of one item into one chat are
+two writers on one file. **Three request ids are spent on WI-103 and none of
+them delivered a wrong edit.**
+
+**And the floor.** Probe's session is still frozen — `mvs_f1f513955649480dbfb09fae820cf59f`,
+`started`, `errorSource: turn-system`, `updatedAt` unmoved for ninety
+minutes and more. **Cog's WI-010 turn finished at 05:31**, so the reason the
+owner's restart decision had been expensive — it would destroy a live turn — **has
+cleared**. The ceiling is still 2 on every copy of the dispatcher on disk, and a
+content-addressed cache refresh erased the patch that raised it. **Order is
+patch → restart**, and the restart is the owner's word.
+
+**What the owner still has to decide, and it is unchanged by this shift:**
+whether a substituted verifier stands (it stands only where the substituted
+verifier did not write the work being verified); when to restart
+`minimax-bot`; whether the product publishes the shape of a delegation refusal
+(WI-069's contract half); where the resource editor sits; whether `manual` mode
+refuses a delegation; and which mode field is authoritative.
+
+**And WI-106 went out at 05:37, because its hold was a queue fact and not a
+file fact.** WI-106 — the four loose sentences in the licence record — had been
+held behind WI-103 on Wren's queue. WI-103's two dispatches were both
+withdrawn, so the lane was free; **and WI-106 never touched `CONTRACTS.md` at
+all** — it touches `docs/dependency-licences.json` and `PRODUCT.md` — **so the
+one-file-one-item rule never held it back.** It went out with a new request id
+(`task_fede9dee2ed9`), and the check that would pin the four sentences is named
+as owed and is Probe's file to write. **A hold that was never about the file
+should not be allowed to outlive the queue.**
