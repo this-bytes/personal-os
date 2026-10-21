@@ -4891,3 +4891,61 @@ citation, and where it would live — `scripts/verify-*.ts` is Probe's by the
 ownership table. **The brief says not to write one unless Probe says it
 belongs**, because Probe's queue is eleven deep and a verdict on the three
 citations is what this item needs.
+
+## The third push — 2026-10-21 15:03
+
+**`main` is on the remote at `e18bfff`.** The owner gave the word at **14:51** for
+the green tree, and the push is made: **43 commits, 26 files, +11216/−138,
+fast-forward**, visibility unchanged at private, nothing rewritten. The pre-push
+hook ran and passed.
+
+**The word was given against a sha the tip has moved past, and the gap was
+measured rather than assumed.** The card named **`dfb1e9b`**; the tip stood at
+**`e18bfff`**, **fifteen commits further on**. Every one of those fifteen is
+accounted for, and **the only non-document change among them is WI-068's removal
+of the root `LICENSE` file**. The licence position is the owner's own answer of
+08:54 — private for now, no `LICENSE` file, no code of conduct — so **this push
+records a decision that was already made and decides nothing new.**
+
+**The evidence was read from the platform, on the tip's own code.** The pipeline
+ran on **`213908d`** and **both legs were green: CI success on all four jobs
+(Build and test, Dependency audit, Lint the workflows, Build and run the stack),
+and CodeQL success.** The delta between that sha and the pushed tip is **exactly
+one file, `.factory/INTAKE.md`** — ledger prose — and **no workflow reads
+`.factory/`**: grepping `.github/workflows` for `.factory` and `INTAKE` returns
+no match. **Every `.ts`, `.json`, contract and work-item file the push carries
+was inside the measured tree**, and the seven code files it does carry
+(`capabilities/service.ts`, `mcp/server.ts`, `resources/service.ts`,
+`resources/templates.ts`, `packages/contracts/src/mcp.ts`,
+`packages/contracts/src/resource.ts`, `agent-memory.test.ts`) and
+`docs/dependency-licences.json` are the ones that sha's green run covered.
+**The repository's own format gate passes on the tip** —
+`prettier --check "**/*.{ts,tsx,js,json,md,css}"`, exit 0 — and the hook ran it
+again over the files in the push.
+
+**What rode along.** The three finished wants, each proved green on its own tip
+before it was merged: **WI-036** (the dependency licence record),
+**WI-037** (the product record says Forge, and stops telling the owner a thing
+they had already decided) and **WI-041** (the README says the licence is
+deliberately undecided, not MIT). **WI-022**'s citation refresh, which puts the
+published kind's declaration where WI-026's criterion can see it.
+**WI-068**, which removes the root `LICENSE` file and gives it an owner in
+`FACTORY.md`'s table. **WI-067**, delivered by the other session. And this
+session's ledger rows.
+
+**The evidence branch moved with it.** `verify/green-at-tip` was fast-forwarded
+`213908d..e18bfff` on the standing authorisation for branch pushes. **It is
+evidence and it can be deleted** — nothing depends on it, and `main` carries the
+same tree.
+
+**A push is not an acceptance, and this push is no exception.** **Nine
+verifications are queued behind one Probe**, and **WI-062 — the acceptance of
+this session's own counts correction — is one of them**: the lead implemented
+that correction and the lead does not accept its own work. The tree is green and
+the pipeline is the evidence; **the factory's verifier has still to say yes**, and
+it lands as a later commit. **What is on the remote is code that has not been
+accepted by the factory.** That is the honest state of it.
+
+**One commit is ahead of the remote, and it is this record.** The tree that was
+pushed is the tree that was verified; adding a record of the push makes it a
+different tree. **`main` waits for the owner's next word.**
