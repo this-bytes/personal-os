@@ -42,17 +42,17 @@ tree. During the 48-hour build that is the session running the push below,
 and it holds the block **WI-090 to WI-096** so that two sessions cannot claim
 the same number.
 
-| Number | Item                                                       | Owner  |
-| ------ | ---------------------------------------------------------- | ------ |
-| WI-087 | The stranded branches, and what is actually worth keeping  | worker |
-| WI-088 | The ledger split into what it is and what it was           | worker |
-| WI-090 | The substrate the product's own two measures stand on      | worker |
-| WI-091 | The gate that notices when a published contract goes false | worker |
-| WI-092 | reserved                                                   |        |
-| WI-093 | reserved                                                   |        |
-| WI-094 | reserved                                                   |        |
-| WI-095 | reserved                                                   |        |
-| WI-096 | reserved                                                   |        |
+| Number | Item                                                                                     | Owner  |
+| ------ | ---------------------------------------------------------------------------------------- | ------ |
+| WI-087 | The stranded branches, and what is actually worth keeping                                | worker |
+| WI-088 | The ledger split into what it is and what it was                                         | worker |
+| WI-090 | The substrate the product's own two measures stand on                                    | worker |
+| WI-091 | The gate that notices when a published contract goes false                               | worker |
+| WI-092 | The bundle-budget test's five-second timeout                                             | peer   |
+| WI-093 | The pin that says the old rule instead of the current one                                | worker |
+| WI-094 | The pin reads the rule out of a phrase — **folded into WI-093**, one file, one live item | peer   |
+| WI-095 | reserved                                                                                 |        |
+| WI-096 | reserved                                                                                 |        |
 
 **WI-089 is not in this block and does not belong to it.** The peer session
 holds WI-089 for the hot-reload item, and held WI-088 before it. Both numbers
@@ -60,6 +60,19 @@ were collisions with this push and both were resolved by re-filing, not by
 reusing. **Take a number from this block, not the next free one above the
 highest taken** — on 2026-10-22 that rule produced two collisions in twenty
 minutes, because it cannot see an item that has not been filed yet.
+
+**WI-092 is the peer session's, and the amber pin moved to WI-093.** The
+number was committed on `main` before this session filed its item, and the
+peer's own tiebreak record had already reserved WI-093 for it. The number was
+reused, never: the item moved and the record moved with it.
+
+**WI-094 was folded into WI-093, and the tiebreak is said out loud.**
+`apps/web/src/__tests__/forge-briefs.test.ts` carries **two independent
+reds** — the amber assertion this session found, and the boundary-rule proxy
+phrase the peer session found — and **one file is one live item at a time**.
+Probe's dispatch for WI-094 (`task_6c74144b03df`) was cancelled rather than
+left to race WI-093 on the same file, and WI-093's brief carries WI-094's
+analysis unchanged. WI-094's number is not reused.
 
 ## The stated scope
 
