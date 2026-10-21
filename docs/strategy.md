@@ -138,10 +138,12 @@ recommendation was the owner's to reject; see decision 1.
 **The set that ships, and the state it is in.** WI-017 has built one template per
 kind, all six: `dashboard.metrics`, `document.brief`, `data-source.json`,
 `automation.manual-prompt`, `task.deliverable`, `memory.decision-note` — against
-WI-030's landed contract entry. **The item is built and not yet accepted**: Probe
-has not verified it, and WI-017 ships when both halves land. This pillar's gap is
-closing, not closed, and this document should not be read as saying the template
-half is finished.
+WI-030's landed contract entry. **The item is built and not yet accepted**: Probe's
+verification of it was dispatched late, and WI-063 was opened because WI-017's
+implementation landed before the contract's statement about it did — the same drift
+the pipeline caught in the published counts. This pillar's gap is closing, not
+closed, and this document should not be read as saying the template half is
+finished.
 
 ### Pillar 2 — One truth, one history, and a way back
 
