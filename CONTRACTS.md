@@ -533,6 +533,15 @@ This is a shared envelope, not a requirement to store every document or file as 
 Each resource type maintains an appropriate internal representation while exposing
 stable operations.
 
+**The author is a closed set.** `createdBy` is a string, and the strings it may
+hold are published as `resourceAuthorSchema`
+(`packages/contracts/src/resource.ts:26`): an agent connection's id (`agt_…`), the
+owner's user id (`usr_…`), the literal `owner` for a write by the owner when no
+user id is known, and the literal `system` for a write with no authenticated actor
+behind it. The recorded id is derived from the authenticated identity
+(`apps/server/src/lib/author.ts:28`), never from the request body, so a caller
+cannot name an author the request did not authenticate.
+
 **The revision number provides optimistic concurrency protection**, so two agents
 cannot silently overwrite each other's changes. A stale `expectedRevision` is
 rejected with `409 revision_conflict`.
