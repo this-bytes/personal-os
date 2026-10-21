@@ -76,17 +76,38 @@ function readCommandLine(pid: number): string | null {
  * 267 ms measured against the same 5.7 s. PowerShell stays as the fallback
  * for a machine without a script host, because a slower answer is better than
  * no answer. The smoke script reads the process table the same way.
+ *
+ * **The fallback is not a per-question fallback, and that distinction is the
+ * whole fix.** An earlier version of this file asked PowerShell whenever the
+ * script host had no answer — a missed row, or a start that failed under load
+ * — and that put the slow path back on the critical path. One missed answer
+ * then cost more than the five seconds the reset waits for the lock. Measured,
+ * with a single missed answer forced: the read took 19 s, the reset gave up on
+ * the lock and exited 1, and the command line was never read. The script host
+ * is asked every time; PowerShell is asked only when there is no script host
+ * to ask.
  */
 function readWindowsCommandLine(pid: number): string | null {
   const script = windowsCommandLineScript();
-  if (script) {
-    const result = spawnSync('cscript.exe', ['//nologo', script, String(pid)], {
-      encoding: 'utf8',
-    });
-    const text = (result.stdout ?? '').trim();
-    if (text.length > 0) return text;
-  }
+  if (!script) return readWindowsCommandLineWithPowerShell(pid);
 
+  const result = spawnSync('cscript.exe', ['//nologo', script, String(pid)], {
+    encoding: 'utf8',
+  });
+  const text = (result.stdout ?? '').trim();
+  return text.length > 0 ? text : null;
+}
+
+/**
+ * The command line of a process, as PowerShell reports it.
+ *
+ * This is the slow way, and it is used in exactly two places: on a machine
+ * with no script host, and by the capability check below — which asks the
+ * question once, at startup, when no reset is racing anything. The read of
+ * the reset's own command line never takes this path while the script host is
+ * available.
+ */
+function readWindowsCommandLineWithPowerShell(pid: number): string | null {
   const result = spawnSync(
     'powershell.exe',
     [
@@ -131,18 +152,32 @@ function windowsCommandLineScript(): string | null {
 function canReadCommandLines(): boolean {
   if (fs.existsSync(path.join('/proc', String(process.pid), 'cmdline'))) return true;
   if (process.platform !== 'win32') return false;
-  return readWindowsCommandLine(process.pid) !== null;
+  // The thorough question, asked once, at startup, when no reset is racing
+  // anything. A missed answer here would skip the whole file, and a file that
+  // skips itself is not a gate.
+  return (
+    readWindowsCommandLine(process.pid) !== null ||
+    readWindowsCommandLineWithPowerShell(process.pid) !== null
+  );
 }
 
-/** Wait until the command line of a process contains a given string. */
+/**
+ * Wait until the command line of a process contains a given string.
+ *
+ * The wait stops as soon as the process is gone. There is nothing left to
+ * read, and every further poll costs a process start — which, on a loaded
+ * machine, is the difference between a read that finishes inside the reset's
+ * window and one that outlives it.
+ */
 async function waitForCommandLine(
-  pid: number,
+  target: ChildProcess,
   needle: string,
   timeoutMs = 30_000,
 ): Promise<string | null> {
   const deadline = Date.now() + timeoutMs;
   while (Date.now() < deadline) {
-    const commandLine = readCommandLine(pid);
+    if (target.exitCode !== null || target.signalCode !== null) return null;
+    const commandLine = target.pid === undefined ? null : readCommandLine(target.pid);
     if (commandLine && commandLine.includes(needle)) return commandLine;
     await new Promise((resolve) => setTimeout(resolve, 50));
   }
@@ -211,7 +246,7 @@ beforeAll(async () => {
   });
 
   if (resetProcess.pid !== undefined) {
-    commandLine = await waitForCommandLine(resetProcess.pid, NEW_PASSWORD);
+    commandLine = await waitForCommandLine(resetProcess, NEW_PASSWORD);
   }
 
   // The lock is released the moment the command line has been read: the reset
@@ -244,6 +279,24 @@ afterAll(async () => {
   fs.rmSync(scriptDir, { recursive: true, force: true });
 });
 
+/**
+ * What happened to the read, said plainly.
+ *
+ * The two failures are different problems, and a reader should not have to
+ * guess which one they are looking at: a reset whose command line was never
+ * readable is one thing, and a reset that gave up on the database lock before
+ * the read finished is another. The second is the race this file used to
+ * lose, so it is named as one.
+ */
+function whatHappenedToTheRead(): string {
+  if (commandLine) return 'the command line was read';
+  if (resetExit === null) return 'the reset process did not finish';
+  return (
+    `the reset process exited with ${resetExit} before its command line could be read, ` +
+    'which means the read did not finish inside the window the reset waits for the lock'
+  );
+}
+
 describe('the command line of the recovery path', () => {
   it.skipIf(!canReadCommandLines())(
     'shows the new password to any other process on the host',
@@ -253,14 +306,14 @@ describe('the command line of the recovery path', () => {
       // of this test, it is a property of every process list on the host.
       expect(
         commandLine,
-        'the reset process did not run, or its command line was not readable',
+        `the reset process did not run, or its command line was not readable (${whatHappenedToTheRead()})`,
       ).not.toBeNull();
       expect(commandLine).toContain(NEW_PASSWORD);
     },
   );
 
   it('still replaces the credential, so the exposure buys a working recovery path', async () => {
-    expect(resetExit, 'the reset process did not finish').toBe(0);
+    expect(resetExit, `the reset process did not finish (${whatHappenedToTheRead()})`).toBe(0);
 
     const handle = createDatabase(dbPath);
     try {
