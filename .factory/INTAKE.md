@@ -6393,3 +6393,66 @@ The stall report to the group, request id
 `factory-group-stall-report-2026-10-21-1712`, was **refused at 17:12** and is
 **owed**. **This section is the report's content**, so it goes out intact when
 the round opens.
+
+### The stack test's failure mode is a lock, not a budget — 2026-10-21 17:45
+
+**The gates were run against `main` at `5e0c30a` and one of them is red, and the red
+is not the one WI-074's brief names.** `npm run typecheck` passed, `npm run build`
+passed, and `npx tsx scripts/smoke.ts` passed with every assertion ok, including the
+owner-recovery path. `npm run test` failed in one file:
+`apps/server/src/__tests__/verifyStack.test.ts`. **230 tests passed and the file still
+failed** — the same shape WI-074 was opened for, and the second reproduction today.
+
+**The error is `EBUSY`, not an overrun.** The failure is
+`EBUSY: resource busy or locked, unlink 'C:\Users\Aaron\AppData\Local\Temp\verify-stack-no-owner-AK7d7G\personal-os.db'`
+at `apps/server/src/__tests__/verifyStack.test.ts:133` — the same `fs.rmSync` line the
+earlier failure named, but the cause is **a lock**, not a timeout. The teardown budget
+was raised once already (`1c92001`), and **raising it again would not fix this**: the
+call is `fs.rmSync(dir, { recursive: true, force: true })`, and Node's `fs.rmSync`
+retries `EBUSY` and `EPERM` on Windows **only** when `maxRetries` is above its default
+of `0`. At `0` it throws on the first attempt. **The lever is `maxRetries` (with
+`retryDelay`), not the `afterAll` timeout.** WI-074's brief should say so before Probe
+spends the budget a second time on the wrong lever.
+
+**And it is load-dependent, which is measurable.** The same server suite, run alone
+four minutes later with no change to the tree, **passed** — 23 files, 230 tests, exit 0.
+So the teardown loses its race with the child process only under contention. The fix
+and the trigger are different things, and the brief needs both.
+
+**The format gate is red on the working tree, and it is another session's in-flight
+edit rather than a committed defect.** `npm run format:check` named
+`.factory/INTAKE.md` and `.factory/work/WI-075.md`, both of which are being written
+right now. **The committed tree is clean**: `Build and test` completed green on
+`5e0c30a`.
+
+### The ready set is one item, and nothing was landed in this sweep
+
+**`main` is `5e0c30a` and equals `origin/main`, and all five checks are green on it.**
+Three branches hold unlanded product work, and each is blocked by a different
+condition, so **none of them was landed**:
+
+- `wi/020-measures-route` (`d79aff7`) — four checks green, `Build and run the stack`
+  still in flight, and another session's worker is repairing the branch right now.
+- `wi/071-accent-one-meaning` (`abb3fc1`) — **green on all five**, and being written
+  right now by another session's live worker, `Implement WI-071 one-accent rule`.
+- `wi/046-domains-interaction-model` (`1fb60e7`) — **green on all five**, one commit
+  ahead, and its file is `CONTRACTS.md`, which WI-034's live worker is writing now.
+
+Landing any of them would be two hands on one landing, so none was. The merge itself
+is clean — `git merge-tree --write-tree main wi/071-accent-one-meaning` returns a tree
+with no conflict — so the only thing standing between these branches and `main` is an
+owner with the dispatch authority.
+
+**Of the thirty items at `implement`, one is ready to go: WI-029.**
+`apps/server/src/__tests__/ownerPasswordExposure.test.ts`, Probe's lane, no branch, no
+live dispatch, and **no worktree touches that file**. WI-043 is ready for its
+verification — the implementation is a one-line removal and it is done. The rest are
+blocked for reasons written on their own files: WI-011 and WI-013 wait on
+`PRODUCT.md` and `CONTRACTS.md`, which WI-071's and WI-034's live workers are writing;
+WI-040 waits on WI-020, WI-031 and WI-024; WI-033 waits on WI-034; WI-073 waits on
+WI-020's repair; WI-035, WI-044 and WI-069 wait on the owner.
+
+**One slot was freed during the sweep and the queue moved.** The group task that had
+held a slot for 462 minutes was cancelled by another session at 17:10, and **the slot
+refilled in twelve seconds**: the factory's daily tick started at 17:10:25 and
+WI-034's dispatch took the other. The queue went 32 → 31.
