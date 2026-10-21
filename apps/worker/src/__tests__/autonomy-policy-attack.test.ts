@@ -642,6 +642,32 @@ describe('strictest wins (decision 2)', () => {
     ).toBe(workspace.maxTurns);
   });
 
+  it('ignores an approval list a policy omits, and never widens the other', () => {
+    const { workspace, goal } = policies();
+    const workspaceWithoutApprovals: Partial<Policy> = { ...workspace };
+    delete workspaceWithoutApprovals.approvalRequired;
+
+    let policy: Policy;
+    try {
+      policy = resolvePolicy({
+        workspace: workspaceWithoutApprovals,
+        goal,
+        conversation: { maxTurns: 7, maxDurationSeconds: 300, maxSpendUnits: 80, paused: false },
+      }).policy;
+    } catch (error) {
+      throw new Error(
+        'a policy that omits its approval list must be ignored, not obeyed and not fatal: the ' +
+          `resolver threw ${(error as Error).message}. The union of the approvals is guarded ` +
+          'against a missing field, and the level that decided the result is not.',
+      );
+    }
+
+    expect(
+      policy.approvalRequired,
+      'a workspace that omits its approval list must not erase the approvals the goal asked for',
+    ).toEqual(goal.approvalRequired);
+  });
+
   it('ignores an action list a policy omits, and never widens the other', () => {
     const { workspace, goal } = policies();
     const goalWithoutActions: Partial<Policy> = { ...goal };
@@ -1551,11 +1577,13 @@ describe('the effective policy over the API and in MCP (decision 5)', () => {
     );
   });
 
-  it('is the mode the owner can set, not a different one', async () => {
+  it('is the mode the owner can see, not a different one', async () => {
     // The panel shows `workspace.autonomyMode`, and `PATCH /api/workspaces/:id`
-    // is the only way an owner can set a mode. If the mode that is in force
-    // is a different field, then the control the owner can reach does
-    // nothing at all.
+    // is the only way an owner can set a mode. Which of the two workspace
+    // mode fields is authoritative is a question for the owner — but the two
+    // owner-facing surfaces must not disagree either way. A panel that says
+    // "autonomous" while the policy in force says "manual" tells the owner
+    // something false about what the agent is permitted to do.
     setWorkspacePolicy({ ...DEFAULT_WORKSPACE_POLICY });
 
     const patched = await app.inject({
@@ -1566,6 +1594,14 @@ describe('the effective policy over the API and in MCP (decision 5)', () => {
     });
     expect(patched.statusCode, 'the owner could not set the workspace mode').toBe(200);
 
+    const shown = await app.inject({
+      method: 'GET',
+      url: `/api/workspaces/${workspaceId}`,
+      headers: { cookie: sessionCookie },
+    });
+    const displayed = (shown.json() as { workspace?: { autonomyMode?: string } }).workspace
+      ?.autonomyMode;
+
     const response = await app.inject({
       method: 'GET',
       url: `/api/autonomy-policy?workspaceId=${workspaceId}`,
@@ -1575,10 +1611,9 @@ describe('the effective policy over the API and in MCP (decision 5)', () => {
 
     expect(
       policy?.mode,
-      'the workspace says its mode is autonomous and the policy in force says manual: the panel ' +
-        'shows the workspace mode and the API writes it, so the mode the owner sets has to be ' +
-        'the mode that is in force',
-    ).toBe('autonomous');
+      `the panel shows "${displayed}" and the policy in force says "${policy?.mode}": the mode the ` +
+        'owner can see and set has to be the mode that is in force',
+    ).toBe(displayed);
   });
 
   it('is readable over the MCP surface', async () => {
