@@ -2252,3 +2252,166 @@ and release Probe's chat from a refusal that has run for 54 hours.** **Nobody ha
 dispatched to Probe since 04:25:20, so the release is untested** — and that is the
 one thing the owner can test cheaply, by ordering the restart and watching
 whether a delegation into Probe's chat is accepted.
+
+## 2026-10-22 07:26 — Chief: WI-108 is on `main`, the ceiling is vendor code, and the owner's three decisions, answered with what was measured
+
+**WI-108 is landed, and this ledger's own note about it was wrong.** `9c6444a`
+(07:15:46) "Merge WI-108: a broken spec is refused, not crashed". **My `bf28f0a`
+(06:56:42) recorded WI-108 as "verified and waiting on the vehicle" — it was not
+waiting; the vehicle carried it at 07:15:46, and Vision's verification landed
+after the code, not before it.** The four files that carry the fix are
+**byte-identical between `main` and the branch tip `a65ff32`**: `service.ts`
+`e519b554…`, `templates.ts` `9bcce9cd…`, `resources.test.ts` `032debf4…`,
+`resource-templates.test.ts` `a1515f91…`. So Vision's verification (delivered
+07:05, `task_cb4460d7e002`) measured code that is **already published**, and its
+six checks, the before/after error shape (`internal_error`/500 →
+`validation_failed`/422, with the task provider's exact message and the schema's
+issue list) and its mutation proof (6 red of 36, then green) all hold on the
+published tree. **Its two findings are not fixed by landing:** the item's three
+citations into `CONTRACTS.md` point 52, 39 and 159 lines out, and **the refusal
+message is published nowhere in the contract.**
+
+**WI-098 is landed, and its pointer is true on the published tree.** `3fab75a`
+(06:52:23) merged `wi/098-adr-rule-resync` (`53802d0`) into this session's line;
+the peer's `9a88ebe` (07:08:43) carried that line into the published one.
+Re-measured on `main`: the rule stands at `prototypes/DIRECTION.md` `:53-57`, and
+the ADR's provenance note reads `:53-57` as read at `95e5165` — **the pointer is
+true on the tree that publishes it, not only on the branch it was written on.**
+The record correction owed is **four stale sentences in
+`.factory/work/WI-098.md`** — "character for character", "Probe's pin", "402
+lines", "366 lines" — and that is **Wren's file, in a lane that refuses.**
+
+**The peer's merge resolved the ledger conflict with nothing lost.** `9a88ebe`
+merged `87c7b16` into this session's tree. Measured on the merged file: **all 19
+of this session's section headers and all 19 of the peer's are present**, 30
+dispatch rows with none lost, no conflict markers; the two `WI-112.md` sides were
+the same blob (`034610c2`) before the merge, and the ADR auto-merged with **this**
+session's corrected version — the peer's tree still carried the one-declaration
+quote.
+
+**The ceiling is vendor code, and the recommendation on it changes.** The
+two-slot limit is one line — `const MAX_RUNNING = 2;` in `task-dispatcher.mjs` —
+and that file is **official plugin code in a content-addressed cache**
+(`C:\Users\Aaron\.minimax\v2\plugin-cache\official\`). Measured: **seven version
+directories sit there, six of them written at 2026-10-21 07:06**, and **exactly
+one copy of `task-dispatcher.mjs` exists on disk**. A patch there works until the
+next official plugin update and then **vanishes silently, taking the capacity
+decision with it.** Vision raised this and it is right, and I checked it rather
+than take it. **So: no — do not patch the vendor cache.** The factory is not
+short of slots; it is short of **healthy lanes**.
+
+**The lanes, measured at 07:2x.** Cog **free** (last turn `done` 05:31), Vision
+**free** (report delivered 07:05), **Probe refusing** (last delegation 04:25:20 —
+176 minutes ago, `status=error`), **Wren refusing** (last delegation 06:30 —
+49 minutes ago, `status=error`). **77 of the 109 item files on `main` are not
+yet accepted.** The factory is idle because two lanes refuse, not because it is
+busy.
+
+**No restart has happened.** `runtime.start_requested` and `runtime.ready` are
+both at **2026-10-21 23:37:39**, one run id `5bc9c2db`, `current: true`. The four
+cancellations at 05:50 were **this session's own queue-clearing, not the
+restart** — Vision corrected that cause, and this ledger's own record of them
+(`c63d270`) already names them as this session's.
+
+**The owner's three decisions, answered with what was measured.**
+
+1. **The restart, and when — recommend yes, and the cheapest moment is now.**
+   Nothing is in flight but a report relay whose content has already been read. A
+   restart buys back **both** refusing lanes, and that is the only thing that
+   unblocks WI-103, WI-104, WI-106, WI-098's record correction and every
+   Probe-verified item on the board. **Its price: it cuts this session's own
+   turn** (the runtime logs "Cut off without an error: the Mini App restarted")
+   and any turn in flight at that moment — so order it at the end of a cycle,
+   with nothing started.
+2. **The ceiling patch — recommend no, and the reason changed.** Not because the
+   ceiling is right, but because the mechanism does not survive an update (above).
+   The durable line is **the ceiling stays at two** until the lanes are repaired;
+   a capacity decision that a vendor update can silently erase is not a decision.
+3. **A substituted verifier — settled: yes** where the substitute did not write
+   the work (WI-098, WI-010), **no** for WI-031's contract half, which stays
+   **HELD**.
+
+**Two dispatches, and the number space.** `wi-086-land-and-wi-112-verify-2026-10-22`
+(batch `batch_5f496c9fb4f6`): **Cog** `task_80405e5083e5` — WI-086, the
+approval-evidence read, re-applied onto today's tree with every citation
+re-pointed (its branch is a day old and `CONTRACTS.md` has been republished three
+times since); **Vision** `task_40d13d90f6d5` — WI-112, verified read-only as a
+**substituted** verifier, with the pin the item says is Probe's file left owed.
+**WI-113 is taken** — the contract publishes the refusal, and the tests read the
+message out of the contract instead of repeating it — and it is **held, not
+dispatched**, because `CONTRACTS.md` is WI-086's live file until Cog's dispatch
+lands.
+
+## 2026-10-22 07:39 — Chief: the WI-108 landing was backed out, the pointers that broke it are measured to the line, and the repair is dispatched
+
+**Correction to the section above: WI-108 is NOT on `main`.** The peer session
+reset `main` back to **`9a88ebe`** — the green, published tree — and with it went
+the WI-108 landing (`9c6444a`) and this session's ledger commit (`fc2e39b`).
+That commit's text survived as an uncommitted working-tree change and is
+committed again below. **The reason the landing came out is measured, and it is
+not a defect in WI-108's fix: eight pointers still named the lines the files had
+before the fix.**
+
+**The published tree is GREEN; the local tree was RED.** The platform's verdict
+on `9a88ebe`, read from outside the machine: CodeQL `completed/success`, CI
+`completed/success` on every job — "Build and test", "Dependency audit", "The
+published contract matches the tree", "The contract's pointers point at code",
+"Lint the workflows", "Build and run the stack" — **VERDICT: GREEN**. The tree
+with WI-108's landing on it was **not** green: `npm run test` at `fc2e39b`
+exited **1**, with **2 test files failed, 2 tests failed, 415 passed of 417** —
+`audit-outcome-vocabulary.test.ts` ("`service.ts:594` no longer carries the
+enqueue of an automation run") and `contractPointers.test.ts` (the gate, with
+**five** contract pointers naming a line that holds no code). **Both failures
+are pointers, and both are the shift WI-108's change causes.** The gate did its
+job: it caught the landing on the tree the landing was made for.
+
+**The shifts, measured from the diff between `9a88ebe` and the landing.**
+`service.ts`: **+2** lines from ~250 (the automation provider's parse became
+`parseSpec(...)`) and **+40** from ~704 (the `kindNames` map and `parseSpec`), so
+above 250 unchanged, 250-704 **+2**, below 704 **+42**. `templates.ts`:
+**+12** from ~465 (the `templateIssues` change).
+
+**The nine pointers, each with its measured target on the tree that has WI-108
+applied.**
+
+| #   | where                                                        | cited                | must become          | the code it names                                                                                                                              |
+| --- | ------------------------------------------------------------ | -------------------- | -------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1   | `CONTRACTS.md:749`                                           | `service.ts:645-650` | `service.ts:647-652` | the `try { providerFor(...).validate(...) }` that refuses a template whose spec the owning provider rejects                                    |
+| 2   | `CONTRACTS.md:751`                                           | `service.ts:660-662` | `service.ts:662-664` | the `if (template.type !== type) { throw errors.validation(...) }`                                                                             |
+| 3   | `CONTRACTS.md:758`                                           | `templates.ts:522`   | `templates.ts:534`   | `export function mergeTemplateSpec(`                                                                                                           |
+| 4   | `CONTRACTS.md:759`                                           | `templates.ts:497`   | `templates.ts:509`   | `const mergeRules: Record<ResourceType, MergeRules> = {`                                                                                       |
+| 5   | `CONTRACTS.md:803`                                           | `templates.ts:497`   | `templates.ts:509`   | the merge rules themselves                                                                                                                     |
+| 6   | `CONTRACTS.md:822`                                           | `service.ts:459`     | `service.ts:461`     | `assertTemplatesValid(templates, ...)` — every template judged by the provider that owns its kind                                              |
+| 7   | `CONTRACTS.md:1230`                                          | `service.ts:594`     | `service.ts:596`     | `queue.enqueue({`                                                                                                                              |
+| 8   | `CONTRACTS.md:1231`                                          | `service.ts:599`     | `service.ts:601`     | `return { output: { queued: true, ... } };` — **and the old citation pointed at the `payload:` line, so this one was stale before WI-108 too** |
+| 9   | `apps/server/src/__tests__/audit-outcome-vocabulary.test.ts` | `at: [594, 599]`     | `at: [596, 601]`     | the claim names the enqueue where it now stands                                                                                                |
+
+**The repair is dispatched, to the lane that wrote the fix.**
+`wi-108-reland-with-citations-repointed-cog-2026-10-22`, batch
+`batch_3eb8edf3d380`, task **`task_b8b449d29d74`** → **Cog**: re-apply
+`a65ff32` onto today's `main`, re-point the nine pointers, make the pointer gate
+exit 0, gate everything, land and report. **WI-108's verified behaviour is not
+published**, so the product still answers a broken spec with a server fault —
+that is what this repair buys back.
+
+**One dispatch cancelled, with the reason.** `task_80405e5083e5` (WI-086, the
+approval-evidence read, to Cog) was **cancelled at @@TIME@@ before it started**:
+it was queued, and **one file, one live item** — both WI-086 and this repair
+need `CONTRACTS.md`, and the repair is the critical path, so WI-086 is **held**,
+not lost. It needs a NEW request id and a NEW title when it is re-dispatched.
+Vision's WI-112 verification (`task_40d13d90f6d5`) is **still queued and still
+good** — it is read-only, and it does not touch `CONTRACTS.md`.
+
+**The lanes, measured at @@TIME@@.** Cog **free** (the repair is queued), Vision
+**busy** on the peer's WI-106 verification (`task_64ef89071335`, running), **the
+peer's WI-106 implementation queued at Wren** (`task_44c894c402ef`) — so Wren's
+lane gets another test, and this session does not spend an id there.
+`task_cb4460d7e002` (Vision's WI-108 verification) is **57 minutes old and
+`waiting_for_tasks`**: over the 45-minute trigger, **and protected** — a task in
+`waiting_for_tasks` is never cancelled, and its report has already been read.
+
+**And the tree this session pushed nothing to.** `origin/main` is `9a88ebe` and
+is green; this session's commits from `3a0b8fd` onward are already inside it
+(they are ancestors of `9a88ebe`). What is **not** published is WI-108's
+behaviour and this session's two ledger sections, and both are on their way:
+the ledger below, and the repair above.
