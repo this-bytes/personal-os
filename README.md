@@ -250,4 +250,6 @@ browser once: `npx playwright install chromium`.
 
 ## Licence
 
-MIT.
+The licence is deliberately undecided: the owner decided on 2026-10-21 that this
+repository is private for now, and the licence will be chosen before it goes
+public.
