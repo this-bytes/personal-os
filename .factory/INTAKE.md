@@ -368,15 +368,16 @@ second dispatch.
 | `probe-verify-wi-036-licence-record-2026-10-21-1248`       | WI-036 — verify the dependency licence record                        | Probe  | `task_3bb64dabf31a` | **queued** — **the live dispatch on WI-036**, and the first verification of that item: the record was written and pushed with **no verification ever dispatched**, so it could never have been accepted                                                                                                                                                                                                                                                                                                                                                                                                                      |     |
 | `probe-verify-wi-017-template-record-2026-10-21-1305`      | WI-017 — verify the template record, and write its missing test      | Probe  | `task_dbcc178374a7` | **queued** — **the live dispatch on WI-017**, and the first verification of that item: the implementation landed at 12:42 and **no verification was ever sent**. It carries the missing test with it                                                                                                                                                                                                                                                                                                                                                                                                                         |     |
 | `wi-065-template-record-contract-status-2026-10-21-1330`   | WI-065 — the template record says what the code now does             | Wren   | `task_6274afe1abc1` | **queued** — **the live dispatch on WI-065**: the contract still publishes a status note about the template record that the code has outgrown, and every clause of it is now false                                                                                                                                                                                                                                                                                                                                                                                                                                           |     |
-| `wi-067-mcp-workspace-scope-code-2026-10-21`               | WI-067 — the MCP surface's id-addressed tools, the code half         | Cog    | —                   | **NOT DELIVERED** — the runtime refused the call four times over about ten minutes: "This Bot is replying in multiple chats, so this tool call cannot be assigned safely." **A dispatch that cannot be delivered is not a dispatch.** The brief is written out in `.factory/work/WI-067.md`, and the group is the other door. The id is reserved; the delivery may use a new id and a new title                                                                                                                                                                                                                              |
-| `wi-067-mcp-workspace-scope-contract-2026-10-21`           | WI-067 — the MCP surface's tools are workspace-scoped, contract half | Wren   | —                   | **NOT DELIVERED** — the same refusal, the same reason. The brief is in `.factory/work/WI-067.md`. It queues behind WI-065 on `CONTRACTS.md`; Wren's lane is serialised, so one file carries one live item                                                                                                                                                                                                                                                                                                                                                                                                                    |
+| `wi-067-mcp-workspace-scope-code-2026-10-21`               | WI-067 — the MCP surface's id-addressed tools, the code half         | Cog    | `task_6766b83a3f23` | **queued** — **DELIVERED at 14:32**, after the runtime's refusal had stood for about forty minutes. The reserved id was never registered, so it was not spent, and it was used as reserved. The brief is in `.factory/work/WI-067.md`. Worktree `G:\code\personal-os-worktrees\067-mcp-workspace-scope`, branch `wi/067-mcp-workspace-scope`                                                                                                                                                                                                                                                                                 |
+| `wi-067-mcp-workspace-scope-contract-2026-10-21`           | WI-067 — the MCP surface's tools are workspace-scoped, contract half | Wren   | `task_acc8a5211855` | **queued** — **DELIVERED at 14:32**, the same reserved id, also never registered. The brief is in `.factory/work/WI-067.md`. It queues behind WI-065 on `CONTRACTS.md`; Wren's lane is serialised, so one file carries one live item. Worktree `G:\code\personal-os-worktrees\067-mcp-workspace-scope-contract`, branch `wi/067-mcp-workspace-scope-contract`                                                                                                                                                                                                                                                                |
 | `probe-verify-wi-031-close-a-turn-2026-10-21-1340`         | WI-031 — verify the route that closes a turn, and write its pin      | Probe  | `task_b511f4062477` | **queued** — **the live dispatch on WI-031**: the implementation landed at 11:35 with **no verification ever sent**, and the item's own pin is Probe's to write                                                                                                                                                                                                                                                                                                                                                                                                                                                              |     |
 | `probe-verify-wi-041-readme-licence-2026-10-21-1340`       | WI-041 — verify the README tells the truth about the licence         | Probe  | `task_5b4e02d59413` | **queued** — **the live dispatch on WI-041**: the work landed at 12:51 and was merged at `5012df2` with **no verification ever sent**                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |     |
 | `probe-verify-wi-024-forge-adoption-2026-10-21-1340`       | WI-024 — verify the Forge adoption and its six briefs                | Probe  | `task_d2fa4fb7e946` | **queued** — **the live dispatch on WI-024**: the six briefs landed at 12:15 with **no verification ever sent**, and brief 06's constellation test is Probe's to write                                                                                                                                                                                                                                                                                                                                                                                                                                                       |     |
 | `wi-066-message-shape-fourth-field-2026-10-21-1340`        | WI-066 — the message shape publishes the fourth field                | Wren   | `task_0cfbcce20e92` | **queued** — **the live dispatch on WI-066**: the code carries a fourth optional `Message` field the contract does not publish, so WI-031's member-for-member criterion cannot hold until it does                                                                                                                                                                                                                                                                                                                                                                                                                            |     |
 | `probe-verify-wi-037-product-record-forge-2026-10-21-1325` | WI-037 — verify the product record says Forge                        | Probe  | `task_207afe6818f8` | **queued** — **the live dispatch on WI-037**, and its first verification: the work was merged into `main` at `94d110f` with **no verification ever dispatched**                                                                                                                                                                                                                                                                                                                                                                                                                                                              |     |
 | `wi-042-product-record-closed-questions-2026-10-21-1325`   | WI-042 — the product record's closed questions say they are closed   | Wren   | `task_f1cf510356e8` | **queued** — **the live dispatch on WI-042**: its blocker was WI-037 being live on `PRODUCT.md`, and that has cleared                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |     |
-| `wi-034-outcome-vocabulary-successor-2026-10-21-1325`      | WI-034 — publish the outcome vocabulary, and the migration           | Wren   | `task_55c33b744ef5` | **queued** — **the live dispatch on WI-034**: the item had **never been dispatched**, and WI-033 (W1) waits on it, because the contract leads the code                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |     |
+| `wi-034-outcome-vocabulary-successor-2026-10-21-1325`      | WI-034 — publish the outcome vocabulary, and the migration           | Wren   | `task_55c33b744ef5` | **queued** — **the live dispatch on WI-034**: the item had **never been dispatched**, and WI-033 (W1) waits on it, because the contract leads the code                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
+| `wi-038-licence-gate-script-2026-10-21`                    | WI-038 — the borrow-rule gate's script                               | Probe  | `task_63e621ad515f` | **queued** — **DELIVERED at 14:32**. Chief's half of WI-038 is done (the CI step and the manifest entry, on `wi/038-borrow-rule-gate` at `a9592a4`); the script is `scripts/verify-licences.ts`, Probe's file by the ownership table. The brief carries the whole specification — the four comparisons, the three exit codes, the `--record` and `--lockfile` options and the proof that the gate can fail. **The branch stays unpushed until the script is in it**                                                                                                                                                          |     |
 
 **A cancelled task is not a dispatch — but a cancelled dispatch does not free its
 request id.** That second half was wrong here, and it is corrected now rather
@@ -4052,6 +4053,15 @@ correction was refused at 10:20:55, and now the lead's own dispatch channel
 is refusing while the queue behind it grows. **The factory's constraint is
 not the code and it is not the lead's judgement. It is delivery.**
 
+**Update, 14:32 — the channel came back and the dispatch went.** Both reserved
+ids were used as reserved (neither had been registered, so neither was spent):
+`task_6766b83a3f23` for the code half to Cog, `task_acc8a5211855` for the
+contract half to Wren. Two worktrees were made —
+`067-mcp-workspace-scope` and `067-mcp-workspace-scope-contract` — one worker
+in each. **The group was not posted for this item**, because a dispatch that
+has been delivered must not also be posted. The refusal above is the record of
+what happened at the time; the delivery above is the record of how it ended.
+
 ### WI-023 is verified, and the acceptance is not this session's
 
 **Probe's review of Chief's own CI change is in, and it is a clean pass: all
@@ -4139,17 +4149,37 @@ without asking anything:
 **The branch is not pushed until the script is in it.** A branch that is red
 is a branch that waits a second round, and this one can be green.
 
-### WI-067 — one question left, and it has a one-word answer
+**The script was dispatched at 14:32** — `wi-038-licence-gate-script-2026-10-21`,
+`task_63e621ad515f`, Probe — with the whole specification above in the brief,
+so that nothing had to be asked. Probe writes it in the WI-038 worktree, on
+`wi/038-borrow-rule-gate`, next to Chief's wiring, and commits it there; **the
+branch is pushed once the script is in it and the gate is green.** The
+acceptance of WI-038 is **the other Chief session's**, because this session
+wrote the wiring at `a9592a4` — the session that wrote an implementation does
+not accept it, the same rule that holds WI-023.
 
-**The other Chief session's record says WI-067 is "opened, numbered and
-dispatched", and nothing on disk says so.** The two rows in this ledger still
-read **NOT DELIVERED** — this session's own record, written when the runtime
-refused four times — **no task id for WI-067 appears anywhere in the
-ledger**, and WI-067's own file carries no `Dispatched` line. **One of those
-two records is wrong, and the difference is a second worker on a live file.**
-So the group is asked the only question that matters here: **is WI-067 in a
-queue?** If it is, leave it; if it is not, both briefs are in
-`.factory/work/WI-067.md` and the request ids are reserved.
+### WI-067 — the question is answered, and the answer was this session's dispatch
+
+**The other Chief session's record said WI-067 was "opened, numbered and
+dispatched", and nothing on disk said so.** The two rows in this ledger read
+**NOT DELIVERED** — this session's own record, written when the runtime refused
+four times — **no task id for WI-067 appeared anywhere in the ledger**, and
+WI-067's file carried no `Dispatched` line. **One of those two records was
+wrong, and the difference was a second worker on a live file.**
+
+**The question was asked in the group and went unanswered. The channel came
+back at 14:32, and this session dispatched both halves.** The reserved ids had
+never been registered, so they were not spent, and both were used as reserved:
+`task_6766b83a3f23` (Cog, the code half) and `task_acc8a5211855` (Wren, the
+contract half).
+
+**So the other session's record was wrong, and the group's silence was
+right.** It had said "dispatched" with no task id behind the word — a claim is
+not a dispatch, exactly as a task's status is not the evidence of a
+verification. **The item now has one dispatch, not two**, and the risk that
+mattered — a second worker on `apps/server/src/modules/mcp/server.ts` — did
+not materialise. The two worktrees are `067-mcp-workspace-scope` and
+`067-mcp-workspace-scope-contract`, one worker in each.
 
 ## The pipeline caught the contract going stale — 2026-10-21 11:50
 
