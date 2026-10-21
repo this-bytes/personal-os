@@ -209,7 +209,7 @@ say.
 **The note is recorded with the transition.** The audit entry carries it, and on
 an execution that failed it is the execution's `error`, because that column
 carries a reason only where there is an error
-(`apps/server/src/modules/approvals/service.ts:167`).
+(`apps/server/src/modules/approvals/service.ts:182`).
 
 **The route is for the run the list draws as a turn.** A turn on the waiting
 list is an execution whose outcome could not be confirmed and that belongs to no
@@ -245,7 +245,7 @@ executions service**, which writes the execution's status
 (`apps/server/src/modules/executions/service.ts:108-111`) together; the
 route calls it at `apps/server/src/api/executions.ts:25`. **There are two
 writers of an execution's outcome, not one**: the other is `resolveExecution`
-(`apps/server/src/modules/approvals/service.ts:160`), which the approval
+(`apps/server/src/modules/approvals/service.ts:175`), which the approval
 decision path calls (`apps/server/src/modules/approvals/resume.ts:151`) and
 this route does not.
 
@@ -1150,6 +1150,15 @@ it: the only reads of a resolved mode are in the resolver's own tests. What
 initiative, or only the mode that describes work that has already been authorised —
 is the owner's decision, and it is not settled.
 
+**The mode the owner sets is the mode that is in force.** A workspace carries the
+mode twice — the column the panel shows and the policy the resolver reads — and a
+setting that lands in one of them and not the other tells the owner something
+false: a panel that says "autonomous" while the policy in force says "manual".
+**So the two are written together and cannot disagree, whichever way round the
+change arrives.** **That is about the setting being honest, not about the mode
+being in force** — the mode is still enforced nowhere, and what it is to mean is
+still the owner's decision.
+
 **The effective policy is readable** over `GET /api/autonomy-policy` and through the
 `autonomy.read` MCP tool. Its shape is published in
 [the autonomy-policy route](#the-autonomy-policy-route).
@@ -1436,7 +1445,7 @@ the resource it made, when it was given either.
 status, published in [Adapter events](#adapter-events). `error` carries the
 reason the execution stopped, and only then: a cancellation carries `null`,
 because a cancellation is a decision and not a fault
-(`apps/server/src/modules/approvals/service.ts:167`).
+(`apps/server/src/modules/approvals/service.ts:182`).
 
 **The spend units are recorded, and today they are zero.** A spend unit is an
 abstract cost counter, not currency (`packages/contracts/src/common.ts:58`). The
@@ -1450,7 +1459,7 @@ than a measure of what the work was worth.
 
 **The evidence is the execution and the execution's events.** An approval points
 at the execution that raised it (`approval.executionId`,
-`apps/server/src/modules/approvals/service.ts:12`), and the tool calls and the
+`apps/server/src/modules/approvals/service.ts:14`), and the tool calls and the
 artifacts are that execution's events, read from the event log. **No new storage
 is introduced** — the approval, the execution and its events all exist already.
 This is the execution's record. The factory's task evidence — results,
@@ -1468,11 +1477,11 @@ same way, and its `detail` says which of the two it was.
 authentication as every other route** — a session cookie or the owner token, and
 never an agent token, which is MCP-only.
 
-**The code does not implement this yet.** The read this entry publishes is not in
-the tree: there is no route for it, and `GET /api/approvals/:id` answers with
-the approval alone (`apps/server/src/api/approvals.ts:28-30`). This entry is the
-contract for **WI-039**, and the drawer that reads it is WI-040's; the route
-that answers it is written against this entry.
+This entry is the contract for **WI-039**, and the code implements it — the route
+is `GET /api/approvals/:id/evidence`, at `apps/server/src/api/approvals.ts:37`,
+and it is registered at `apps/server/src/app.ts:225`. The shape it answers is the
+one published above, and it lives at `packages/contracts/src/approvals.ts:55`. The
+drawer that reads it is WI-040's, and it waits for this route.
 
 **Migration.** There was nothing before this read, so there is nothing to
 migrate. A client written against the published surface before this change had
