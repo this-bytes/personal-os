@@ -267,18 +267,21 @@ stay ours. The owner is being asked to settle it.
 
 ## 11. The panel's own rules
 
-**One accent, one meaning.** The rule is that the panel uses a single accent
-colour, and it always means the same thing: live, or waiting on you. Structure
-and data stay in their own colours. This is the rule that lets a number be read at
-a glance instead of being decoration, and it is the one thing a visual direction
-has to get right before the rest of the visual work matters.
+**One accent with one meaning.** The rule is that the panel uses a single accent
+colour, and it always means the same thing: live or waiting on you. Structure and
+data stay in their own colours. Amber is the one collision that breaks it, because
+in Forge amber always means live or waiting on you and never caution, so a caution
+block has to become neutral or use the error colour. This is the rule that lets a
+number be read at a glance instead of being decoration, and it is the one thing a
+visual direction has to get right before the rest of the visual work matters.
 
 **The panel does not do this yet.** Its accent is indigo, and indigo marks
 structure — the active nav item, an agent's messages, the app's own badge —
-rather than liveness, and the event stream's state is a four-colour traffic light:
-emerald for live, amber for reconnecting, red for offline, slate for idle. The
-direction that would fix it is Desk (B), it is recommended rather than decided,
-and the owner has one word to say about it.
+rather than liveness, and the event stream's state is a four-colour traffic
+light: emerald for live, amber for reconnecting, red for offline, slate for
+idle. The direction that fixes it is **D — Forge**, chosen by the owner on
+**2026-10-21**, against the factory's recommendation of **B — Desk**, and it is
+recorded in ADR 7.
 
 ## 12. What v1.0 deliberately leaves out
 
