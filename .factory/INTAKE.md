@@ -6799,3 +6799,28 @@ when it was written.
 **And the pre-rewrite lineage is kept locally and is not pushed** — on
 `backup/pre-rewrite-main`. **The point is that the remote does not carry the
 lines**, so the backup is a local audit trail, not a published branch.
+
+## One push from the strategy session — 2026-10-21 18:25
+
+**This session pushed `main`, on the owner's standing word of 18:07.** `3f40b2f..7e673a8`,
+fast-forward, one commit: the strategy document's correction that WI-011 now points at
+`docs/strategy.md` as the source of the twelve-comparator sweep. **The repository's
+own pre-push hook ran the format gate, and it passed.**
+
+**What was checked, and what was not.** `typecheck` 0 and `format:check` 0 on the
+pushed tree. `test` and `build` were not run locally, and the reason is the rule's
+own: **a local gate run contended by another session is not evidence.** The tree's
+**code** is byte-identical to the tree the platform measured green at `301acd9` —
+`git diff --name-only 301acd9..7e673a8` touches **seven files and every one is a
+`.md`**, so it touches **no code path**. That is the case the rule allows: the code
+that would be landed is the code the pipeline has measured green.
+
+**The platform's verdict is not readable from this session**, and that is said rather
+than left silent: the repository is private, there is no `gh` on PATH, and no token is
+in the environment. **The sweep reads it.** **A red verdict on a pushed `main` is a
+factory failure to fix and say out loud** — and this commit is a documentation change,
+so the only gate it can move is the format one, which the pre-push hook ran green.
+
+**And the count is recorded here**, because a push the ledger does not carry is read
+as a push that never happened — which is the fault this ledger already carries once,
+for five pushes. **This one is carried.**
