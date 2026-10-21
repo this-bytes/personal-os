@@ -107,7 +107,7 @@ export function ChatMessageList({
               <Badge variant={isAgent ? 'info' : 'outline'}>{isAgent ? 'agent' : 'human'}</Badge>
               {message.status === 'streaming' ? (
                 <Badge variant="accent">
-                  <Loader2 className="h-2.5 w-2.5 animate-spin" />
+                  <Loader2 className="h-2.5 w-2.5 animate-spin text-accent" />
                   streaming
                 </Badge>
               ) : null}
@@ -150,7 +150,7 @@ export function ChatMessageList({
               {entry.agentName ?? 'Agent'}
             </span>
             <Badge variant="accent">
-              <Loader2 className="h-2.5 w-2.5 animate-spin" />
+              <Loader2 className="h-2.5 w-2.5 animate-spin text-accent" />
               streaming
             </Badge>
           </header>

@@ -1,6 +1,7 @@
 import { Suspense, useState } from 'react';
 import { NavLink, Outlet, useNavigate } from 'react-router-dom';
 import {
+  AlertTriangle,
   Bot,
   Cog,
   Database,
@@ -17,6 +18,7 @@ import { cn } from '@personal-os/ui';
 import { useAuth } from '../state/auth';
 import { useServerEvents } from '../state/events';
 import { useWorkspace } from '../state/workspace';
+import type { StreamStatus } from '../lib/events';
 import { LoadingState } from './ErrorState';
 
 const NAV_ITEMS = [
@@ -28,32 +30,53 @@ const NAV_ITEMS = [
   { to: '/settings', label: 'Settings', icon: Cog },
 ];
 
+/**
+ * What the event stream is doing.
+ *
+ * The shape is the part that survives. A filled disc, a dashed ring and a
+ * hollow ring read the same in a screenshot, in a print, and to a reader who
+ * cannot tell the colours apart — WCAG 2.2 SC 1.4.1 asks that colour is
+ * never the only thing carrying the meaning, and the label beside the mark
+ * says the state in words.
+ *
+ * The accent is deliberately not here. A socket that is open says the panel
+ * is healthy, not that the owner is needed, and an accent that is on screen
+ * all the time in a healthy panel stops meaning anything.
+ */
+const STREAM_STATES: Record<
+  StreamStatus,
+  { label: string; dot: string; warning: boolean }
+> = {
+  idle: { label: 'idle', dot: 'border border-slate-600 bg-transparent', warning: false },
+  connecting: {
+    label: 'connecting',
+    dot: 'border border-dashed border-caution bg-transparent',
+    warning: true,
+  },
+  open: { label: 'live', dot: 'bg-ok', warning: false },
+  reconnecting: {
+    label: 'reconnecting',
+    dot: 'border border-dashed border-caution bg-transparent',
+    warning: true,
+  },
+  error: { label: 'offline', dot: 'bg-err', warning: true },
+};
+
 function StreamIndicator(): React.JSX.Element {
   const { status } = useServerEvents();
-  const tone =
-    status === 'open'
-      ? 'bg-emerald-400'
-      : status === 'reconnecting'
-        ? 'bg-amber-400'
-        : status === 'error'
-          ? 'bg-red-400'
-          : 'bg-slate-600';
-  const label =
-    status === 'open'
-      ? 'live'
-      : status === 'reconnecting'
-        ? 'reconnecting'
-        : status === 'error'
-          ? 'offline'
-          : 'idle';
+  const state = STREAM_STATES[status] ?? STREAM_STATES.idle;
   return (
     <span
       className="inline-flex items-center gap-1.5 rounded-full border border-slate-800 bg-slate-900 px-2 py-0.5 text-[11px] text-slate-400"
-      title={`Event stream: ${label}`}
+      title={`Event stream: ${state.label}`}
     >
-      <Radio className={cn('h-3 w-3', status === 'open' && 'text-emerald-400')} />
-      <span className={cn('h-1.5 w-1.5 rounded-full', tone)} />
-      {label}
+      {state.warning ? (
+        <AlertTriangle className="h-3 w-3 text-caution" />
+      ) : (
+        <Radio className={cn('h-3 w-3', status === 'open' ? 'text-ok' : 'text-slate-500')} />
+      )}
+      <span className={cn('h-2 w-2 rounded-full', state.dot)} />
+      {state.label}
     </span>
   );
 }
