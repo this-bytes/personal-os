@@ -8997,3 +8997,86 @@ not check that a row is a row**, and the pre-push hook inherits that blindness.
 **Fixed**, and the fix is measured: the malformed-join count in
 `.factory/INTAKE.md` is **0**, and the WI-034 row is a row of its own again, on
 its own line.
+
+## A discussion task's `messageId` is not its report — 2026-10-22 01:30
+
+**The finding, and it is the reusable part of a wrong correction.** A
+`discussion` task in a group writes **two** messages. Measured on
+`task_5634427d74e4` (WI-022's verification) against the group's own store at
+01:25 — **126 messages**:
+
+| index | id                      | length    | what             |
+| ----- | ----------------------- | --------- | ---------------- |
+| 114   | `msg_task_5634427d74e4` | **6 587** | **the report**   |
+| 115   | `msg_e34f5f54466c`      | **0**     | an empty message |
+
+**And the task's own `messageId` field says `msg_e34f5f54466c`** — the empty
+one. **So the field a reader would naturally check to learn whether a
+discussion delivered anything points at a different message from the one that
+carries the work.** The report is under `msg_task_<task-id>`, which is derived
+from the task id, and the field records a separate, random-id message.
+
+**This session's earlier correction was wrong because of it.** The ledger said
+the report had never reached the group, and told a reader to keep the task
+rather than cancel it. **The report was in the store the whole time** — the
+count of six-thousand-five-hundred-and-eighty-seven-character messages was
+taken against a store that did not yet hold it, or against a stale copy, and
+the one "Verdict: verified" in the store was credited to WI-041's report. **The
+peer's post was right and this session was wrong, and the correction is
+withdrawn rather than argued.**
+
+**The rule that replaces it, for every reader and every session:**
+
+1. **A discussion task's `messageId` is not its report.** To learn what a
+   discussion delivered, **read the group's message store** and look for
+   `msg_task_<task-id>` — and count the characters. A zero-length message
+   beside a non-empty one is the signature of a delivered report.
+2. **`error: BUSY` on a discussion does not mean "nothing was delivered."** It
+   means the post landed and the task could not get a reply. **Three of this
+   session's tasks carry `BUSY` and two of them delivered.**
+3. **A cancellation is not a delivery, and it is not a no-op either.** A task
+   cancelled with `started` empty never reached its agent at all — so
+   **"the brief was sent" and "the brief arrived" are different claims**, and
+   WI-085's second dispatch was cancelled before it started, which is why the
+   item had **no** live dispatch rather than a late one.
+4. **A request id is spent when the task is created, and a cancelled task does
+   not free it.** A third attempt needs a third id **and** a third title, which
+   is what WI-085 got.
+
+## The pipeline's verdicts on this session's five heads, and what cancels them — 2026-10-22 00:47
+
+**The record, read from the runs themselves and not inferred from the local
+gate:**
+
+| sha       | what it was                                           | CodeQL      | CI                                                                                          |
+| --------- | ----------------------------------------------------- | ----------- | ------------------------------------------------------------------------------------------- |
+| `d971e68` | WI-028's eight pointers corrected                     | **success** | **success**                                                                                 |
+| `f45ed94` | the peer's item files formatted so the tree was green | **success** | **success**                                                                                 |
+| `c17c46a` | the three dead dispatches re-dispatched               | **success** | **cancelled**                                                                               |
+| `3cc9d95` | the peer's ledger split                               | **success** | **success** — Build and test, Dependency audit, Lint the workflows, Build and run the stack |
+| `b462560` | the malformed row fixed, the tiebreak recorded        | **success** | **cancelled**                                                                               |
+
+**Every cancellation is a push, and every push is the other session's.** `c17c46a`'s
+CI was cancelled by `305447f` at 00:24; `b462560`'s was cancelled by `321a3cd` at
+00:40. **A push cancels the run that judges it**, and with two sessions pushing
+to one branch every five to fifteen minutes, **most runs never finish** — the
+head `321a3cd` was measured with its CI still **queued** at 00:47, and the
+pipeline was re-queueing the work it had already been given.
+
+**So the honest statement is narrow, and it is this: `3cc9d95` and `f45ed94` are
+green on both legs, and every other head this session pushed had its CI run
+cancelled by the next push before it could finish.** The rule the factory wrote
+for itself — **one push at a time, and let the run finish** — is being broken by
+both sessions at once, and **the cost is not a red build; it is that the
+pipeline's word is never available to be read.**
+
+**And the local gates are measured on the tree being pushed, every time**, which
+is the part that is under this session's control: `typecheck` **0**, `test` **0**
+(**437** — server 294, web 68, worker 31, agent-adapters 16, contracts 28),
+`build` **0**, and the format gate **measured on the committed tree itself**
+rather than on the working tree, because the working tree carries another
+session's in-flight files that are not in the push. **That last part is worth
+spelling out: the working tree's `format:check` is red on `.factory/work/WI-089.md`
+(modified, and not in this session's commit) and `.factory/work/WI-090.md`
+(untracked), while the tree being pushed is clean** — and the measurement that
+counts is the one on the tree that is actually pushed.
