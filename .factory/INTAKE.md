@@ -49,20 +49,20 @@ tree. During the 48-hour build that is the session running the push below,
 and it holds the block **WI-090 to WI-097** so that two sessions cannot claim
 the same number.
 
-| Number | Item                                                                                                                    | Owner  |
-| ------ | ----------------------------------------------------------------------------------------------------------------------- | ------ |
-| WI-087 | The stranded branches, and what is actually worth keeping                                                               | worker |
-| WI-088 | The ledger split into what it is and what it was                                                                        | worker |
-| WI-090 | The substrate the product's own two measures stand on                                                                   | worker |
-| WI-091 | The gate that notices when a published contract goes false                                                              | worker |
-| WI-092 | The bundle-budget test's five-second timeout                                                                            | peer   |
-| WI-093 | The pin that says the old rule instead of the current one                                                               | worker |
-| WI-094 | The pin reads the rule out of a phrase — **folded into WI-093**, one file, one live item                                | peer   |
-| WI-095 | The resolver does not throw on a policy row that lost a field                                                           | worker |
-| WI-096 | Publish what WI-082 changed, and stop the product denying it                                                            | worker |
-| WI-097 | The guide, the filling, and where a resource came from                                                                  | worker |
-| WI-107 | Land the five domains on the integration vehicle — **was WI-104, then WI-106, renumbered twice**                        | worker |
-| WI-108 | The effective policy is composed by the one module that may read across — **was WI-105, then WI-107, renumbered twice** | worker |
+| Number | Item                                                                                                                                       | Owner  |
+| ------ | ------------------------------------------------------------------------------------------------------------------------------------------ | ------ |
+| WI-087 | The stranded branches, and what is actually worth keeping                                                                                  | worker |
+| WI-088 | The ledger split into what it is and what it was                                                                                           | worker |
+| WI-090 | The substrate the product's own two measures stand on                                                                                      | worker |
+| WI-091 | The gate that notices when a published contract goes false                                                                                 | worker |
+| WI-092 | The bundle-budget test's five-second timeout                                                                                               | peer   |
+| WI-093 | The pin that says the old rule instead of the current one                                                                                  | worker |
+| WI-094 | The pin reads the rule out of a phrase — **folded into WI-093**, one file, one live item                                                   | peer   |
+| WI-095 | The resolver does not throw on a policy row that lost a field                                                                              | worker |
+| WI-096 | Publish what WI-082 changed, and stop the product denying it                                                                               | worker |
+| WI-097 | The guide, the filling, and where a resource came from                                                                                     | worker |
+| WI-109 | Land the five domains on the integration vehicle — **was WI-104, then WI-106, then WI-107, renumbered three times**                        | worker |
+| WI-110 | The effective policy is composed by the one module that may read across — **was WI-105, then WI-107, then WI-108, renumbered three times** | worker |
 
 **WI-089 is not in this block and does not belong to it.** The peer session
 holds WI-089 for the hot-reload item, and held WI-088 before it. Both numbers
@@ -76,7 +76,7 @@ number was committed on `main` before this session filed its item, and the
 peer's own tiebreak record had already reserved WI-093 for it. The number was
 reused, never: the item moved and the record moved with it.
 
-**WI-104 is the peer session's, and this push's landing item moved twice.**
+**WI-104 is the peer session's, and this push's landing item moved three times.**
 The peer opened WI-104 on `main` at 04:50 — "the published id is not the id the
 route takes" — and its own file says: _"If another session has taken WI-104 in
 the meantime, this item is renumbered and the table is corrected."_ **This
@@ -85,15 +85,18 @@ ledger until after 05:00**, so the peer's read of the number space was correct
 when it was taken: WI-104 was in no item file, no dispatch record and no commit.
 **WI-105 is the peer's too** — "record what a turn costs, so the daily cap can
 bite", on `wi/105-record-turn-cost`, dispatched and in flight — so the item file
-that was written under WI-105 moved to **WI-106** and says so at the top.
+that was written under WI-105 moved on, and says so at the top.
 
-**AND WI-106 WAS TAKEN WHILE THIS PUSH WAS IN FLIGHT, SO THE ITEM MOVED AGAIN.**
-The peer's `wi/106-publish-template-contract` carries its own
-`.factory/work/WI-106.md`, and it appeared on the remote after this session had
-taken WI-106 for the landing item. **Two numbers cannot mean two items**, so
-the landing item moved to **WI-107** and the crossing's item to **WI-108**, and
-the table above moved with them. **The numbers were renumbered, never reused**,
-and the record moved with them.
+**AND WI-106, WI-107 AND WI-108 WERE TAKEN WHILE THIS PUSH WAS IN FLIGHT, SO THE
+ITEMS MOVED AGAIN.** The peer's `wi/106-publish-template-contract` carries its
+own `.factory/work/WI-106.md`, and it appeared on the remote after this session
+had taken WI-106 for the landing item; the lead then read the number space and
+found **WI-107** taken by the peer's contract-pointer gate
+(`scripts/verify-contract-pointers.ts`) and **WI-108** taken by Cog's
+validation-error fix. **Two numbers cannot mean two items**, so the landing item
+moved to **WI-109** and the crossing's item to **WI-110**, and the table above
+moved with them. **The numbers were renumbered, never reused**, and the record
+moved with them.
 
 **WI-094 was folded into WI-093, and the tiebreak is said out loud.**
 `apps/web/src/__tests__/forge-briefs.test.ts` carries **two independent

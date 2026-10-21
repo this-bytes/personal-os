@@ -221,7 +221,7 @@ export const sharedTableReads: SharedTableRead[] = [
     owner: 'interaction',
     reason:
       'The effective policy is composed from the conversation\u2019s own limits, so resolving it reads the turn\u2019s row.',
-    workItem: 'WI-108',
+    workItem: 'WI-110',
   },
 ];
 

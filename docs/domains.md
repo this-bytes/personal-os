@@ -87,7 +87,7 @@ name, not a permission.
 | ---------------------------------- | ------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------ |
 | Resources → Work                   | `modules/resources/service.ts`  | The task resource provider reads the factory ledger to present a task as a resource. The ledger owns the task; the resource API owns the view of it.  | WI-059 — Resources reads the ledger through the capability API     |
 | Interaction → Work _(table write)_ | `modules/executions/service.ts` | A turn is stored as an execution row, so the owner closing an unknown turn writes the ledger's row.                                                   | WI-060 — the turn's own resolution fields move onto the turn's row |
-| Work → Interaction _(table read)_  | `modules/autonomy/service.ts`   | The effective autonomy policy is composed from a workspace's, a goal's and a conversation's own limits, so resolving it reads the conversation's row. | WI-108 — the caller that may read across composes the policy       |
+| Work → Interaction _(table read)_  | `modules/autonomy/service.ts`   | The effective autonomy policy is composed from a workspace's, a goal's and a conversation's own limits, so resolving it reads the conversation's row. | WI-110 — the caller that may read across composes the policy       |
 
 The second one is a table write rather than an import, so it is declared but not
 machine-checked: proving that a module writes only its own tables needs a
@@ -104,7 +104,7 @@ limits (Interaction). **One rule composes three domains' facts, so it reaches
 across by nature** — and the map's third rule says a crossing that is genuinely
 necessary is declared rather than hidden. The module that enforces it is Work's,
 because the policy says what work may proceed; the reach is into Interaction's
-table, and WI-108 removes it by composing the policy in the one module that is
+table, and WI-110 removes it by composing the policy in the one module that is
 allowed to read across — the rule ADR 0008 already states.
 
 ---
