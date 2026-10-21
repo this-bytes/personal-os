@@ -1,0 +1,95 @@
+{
+  "readOn": "2026-10-21",
+  "whatThisIs": "The inventory of source vendored into this repository's own tree: code, text, data and assets copied in from somewhere else. WI-036 recorded the dependency set; this records the tree, because a lockfile check cannot see what has been copied in beside it.",
+  "readAt": {
+    "commit": "477ed59",
+    "branch": "wi/044-vendored-sources",
+    "trackedFiles": 368,
+    "trackedBytes": 4690501,
+    "trackedLines": 110951
+  },
+  "rule": {
+    "covers": "This repository's own tree, as well as the lockfile. WI-038's gate reads the dependency set; this file is what a check over the tree reads.",
+    "checkedAgainst": "docs/dependency-licences.json — approvedSet.licences, eleven licences, each accepted with the reason it was accepted and the number of packages it rides on, read on 2026-10-21. That set is WI-036's, and it was written about packages; whether it also governs documents is the owner's question, and it is recorded below rather than assumed.",
+    "failsWhen": "A vendored source in the tree carries a licence outside the approved set, or carries no licence at all. A missing licence is not a pass: a file with no stated licence is exactly the case a check has to catch."
+  },
+  "method": {
+    "read": [
+      "Every tracked file was read. All 368 of them are valid UTF-8 text: this tree carries no font, no image, no archive and no other binary asset, so the usual carriers of vendored material are simply absent.",
+      "A licence-header scan ran over every tracked file for SPDX-License-Identifier, copyright lines, the standard permission notices and the names of the licences in the approved set. Three files matched: this repository's own LICENSE, the WI-036 record (where licence names are data rather than headers), and the factory's ledger (which quotes this repository's own LICENSE). No file in the tree carries a third-party licence header.",
+      "An attribution scan ran over every tracked file for the sentences that admit a borrowing — adapted from, copied from, vendored from, taken from, inspired by, derived from, snippet from — and every hit was read. One of them is a borrowing: CODE_OF_CONDUCT.md.",
+      "A verbatim-copy scan compared every line of every tracked file against every line of the 20,682 files installed in node_modules, matching on trimmed lines of 50 characters or more (377,882 signature lines indexed, 110,951 tree lines compared). It found 304 matches in five files. Two of those files are the expected collisions — package-lock.json, which is the dependency set's own manifest, and LICENSE, whose MIT body is byte-identical to the body in every MIT dependency. The other six matches are four individual lines in three files, and each was read and is a coincidence.",
+      "Each candidate was then read by hand: the ACP test fixture, the vendor-chunk test, the prototype CSS, HTML and mock data, the deploy files, the issue and pull-request templates, SECURITY.md, CONTRIBUTING.md, the decision records, the git hooks, the scripts, and CODE_OF_CONDUCT.md."
+    ],
+    "notLookedAt": [
+      "Source copied in from outside the dependency set. The copy scan compares the tree against installed packages, so a snippet pasted from a blog post, a file taken from a repository that is not a dependency, or an asset fetched from the web leaves no signature to match. Nothing in this file excludes that.",
+      "A copy that has been rewritten. A snippet re-typed with different names, or a whole file reformatted, matches no line.",
+      "Whether a third party's licence is what that third party says. Where a third party's own sources disagree about their licence — as they do for the one entry below — the disagreement is recorded here, not resolved.",
+      "Whether this repository's adaptation satisfies the upstream's terms. That is a judgement about a licence that is not stated, and it is the owner's to make. This file records the question; it does not answer it.",
+      "The provenance of the first-party work. What was read was the tree. Nothing here establishes that the tree's own code was not itself adapted from something whose trace does not survive."
+    ]
+  },
+  "findings": {
+    "vendoredSources": 1,
+    "carryingAThirdPartyLicenceHeader": 0,
+    "binaryAssets": 0,
+    "copiedFromTheDependencySet": 0,
+    "note": "The tree carries one vendored source, and it is the case the item anticipated: a file with no licence header that is someone else's work. Its licence is not stated, so it cannot pass an approved-set check either way. It is recorded as NOASSERTION rather than guessed at."
+  },
+  "sources": [
+    {
+      "path": "CODE_OF_CONDUCT.md",
+      "kind": "adaptation",
+      "spdxId": "NOASSERTION",
+      "licence": "Not stated. The file names what it is adapted from and does not name a licence.",
+      "permits": "Not stated, because no licence is.",
+      "requires": "Not stated, because no licence is.",
+      "forbids": "Not stated, because no licence is.",
+      "readOn": "2026-10-21",
+      "firstSeenInThisRepository": "d2f4ec6 — the initial commit, 2026-10-20",
+      "source": {
+        "kind": "attribution-line",
+        "file": "CODE_OF_CONDUCT.md",
+        "lines": "71-72",
+        "evidence": "This code of conduct is adapted from the [Contributor Covenant](https://www.contributor-covenant.org), version 2.1.",
+        "readOn": "2026-10-21"
+      },
+      "upstream": {
+        "name": "Contributor Covenant",
+        "version": "2.1",
+        "textReadFrom": "https://www.contributor-covenant.org/version/2/1/code_of_conduct/code_of_conduct.md",
+        "howItWasAdapted": "Rewritten, not copied. The upstream's Enforcement Responsibilities section is dropped, its Enforcement Guidelines ladder is compressed into four bullets, and every paragraph is rewritten for this project. The upstream's section structure and its attribution sentence are what survive.",
+        "attributionShortened": "The upstream sentence reads \"This Code of Conduct is adapted from the [Contributor Covenant](https://www.contributor-covenant.org), version 2.1, available at https://www.contributor-covenant.org/version/2/1/code_of_conduct.html.\" The line in this repository drops the \"available at\" and its URL. The upstream's second attribution sentence, which credits Mozilla's code of conduct enforcement ladder, is absent here; this repository's copy does not carry the Community Impact Guidelines that sentence refers to.",
+        "licenceReadFrom": [
+          {
+            "file": "https://raw.githubusercontent.com/contributor-covenant/contributor-covenant/main/LICENSE",
+            "states": "MIT License — Copyright (c) 2021 Contributor Covenant",
+            "readOn": "2026-10-21",
+            "note": "The repository behind the Covenant's GitHub presence. As read above it holds only that LICENSE file and a 22-byte README; its content has moved to the steward named below."
+          },
+          {
+            "file": "https://raw.githubusercontent.com/EthicalSource/contributor_covenant/release/LICENSE.md",
+            "states": "Hippocratic License Version 3.0, October 2021",
+            "readOn": "2026-10-21",
+            "note": "The Organization for Ethical Source, which the Covenant's own site names as the steward and links to as the source. That licence governs the site's source code."
+          },
+          {
+            "file": "https://www.contributor-covenant.org/version/2/1/code_of_conduct/code_of_conduct.md",
+            "states": "Nothing. The version 2.1 text carries no licence statement, and neither does the upstream's FAQ, which says only that the source code is \"open and ethically licensed\".",
+            "readOn": "2026-10-21"
+          }
+        ]
+      },
+      "whyNoassertion": "The file states no licence. The upstream's own sources name two different ones, and they fall on opposite sides of the approved set: MIT is approved, the Hippocratic License 3.0 is not. Choosing between them would be a guess, and a guess in this file is what the item exists to prevent. NOASSERTION is SPDX's value for a licence that is not asserted.",
+      "whatTheApprovedSetWouldDoWithThisEntry": "It depends entirely on the answer, which is why the answer cannot be assumed. MIT is approved and rides on 423 packages, so an entry that carried MIT would pass. The Hippocratic License 3.0 is not in the set at all, so an entry that carried it would fail. CC-BY-4.0 is approved, on one package — a browser-support data set — and many projects that adopt the Covenant assert that licence for it, but the upstream does not state it for the text and no file was read from which it could be read. A third possibility the owner may prefer: the file is not vendored work at all, because the Covenant is a document that carries no code.",
+      "whatACheckWouldDoWithThisEntry": "It fails. A vendored source whose licence is not stated is not a vendored source whose licence is approved, and the rule says the build fails on a licence outside the approved set. Whether the answer is to state the licence in the file, to replace the file, or to leave it as it is, is the owner's question — this item only checks what is there."
+    }
+  ],
+  "summary": {
+    "trackedFiles": 368,
+    "vendoredSources": 1,
+    "licencesStated": 0,
+    "licencesNotStated": 1,
+    "distinctLicencesStated": 0
+  }
+}
