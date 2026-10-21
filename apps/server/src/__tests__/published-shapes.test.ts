@@ -12,16 +12,17 @@ import { resourceTypeSchema } from '@personal-os/contracts';
  *
  *  - the template record publishes the six kinds a template may start, and
  *    the code's own kind enum has to be those six;
- *  - the measures route publishes the twelve mutating routes that write no
- *    audit entry, out of the thirty-six it counts, and the code has to be
- *    writing one on exactly the others;
+ *  - the measures route publishes which mutating routes write no audit entry,
+ *    out of the thirty-six it counts, and the code has to be writing one on
+ *    exactly the others;
  *  - the closing-an-unknown-outcome entry publishes the owner's note as capped,
  *    and the code's own schema has to cap it at that same number.
  *
  * All three are checked against CONTRACTS.md and against the code, rather than
  * against a copy of either, so the two cannot drift apart quietly. A change
- * to one that the other does not follow fails here: WI-033 adds the missing
- * audit entries, and the entry that names the twelve has to change with them.
+ * to one that the other does not follow fails here: a route that stops
+ * auditing, and the entry that names the routes that write none, have to
+ * change together.
  */
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..', '..', '..');
@@ -48,14 +49,125 @@ function publishedTemplateKinds(): string[] {
   return list!.split('|').map((kind) => kind.trim());
 }
 
-/** The mutating routes the measures entry says write no audit entry. */
+/**
+ * The mutating routes the measures entry says write no audit entry.
+ *
+ * The entry publishes that claim in one of two forms, and this reads whichever
+ * is published:
+ *
+ *  - the table form: a table of the routes that write no audit entry. It may
+ *    have no rows at all — the claim that there are none is published by an
+ *    empty table, and a table with a header and no rows is still a published
+ *    table;
+ *  - the prose form: a sentence saying that every mutating route writes an
+ *    audit entry. The published set is then empty.
+ *
+ * The table is read first, because it is the specific set of routes and the
+ * prose form publishes an empty one. A claim published in neither form is a
+ * claim that has been dropped, and that fails here rather than passing on an
+ * empty set.
+ */
 function publishedUnauditedRoutes(): string[] {
   const section = contractsSection('### The measures route');
-  const rows = [...section.matchAll(/^\|\s*`(GET|POST|PUT|PATCH|DELETE)`\s*\|\s*`([^`]+)`\s*\|/gm)];
-  expect(rows.length, 'the measures route no longer publishes the table of routes').toBeGreaterThan(
-    0,
-  );
-  return rows.map((row) => `${row[1]} ${row[2]}`).sort();
+
+  const table = publishedUnauditedTable(section);
+  if (table !== null) return table;
+
+  expect(
+    publishesEveryRouteAudits(section),
+    'the measures route publishes neither the table of the routes that write no audit entry ' +
+      'nor a sentence saying that every mutating route writes an audit entry',
+  ).toBe(true);
+
+  return [];
+}
+
+/**
+ * The table of the routes that write no audit entry, if the entry publishes
+ * one.
+ *
+ * The table is found by its header and not by its rows, because the table may
+ * legitimately have no rows at all: the claim that there are no exceptions is
+ * published by an empty table, and a header on its own is a published table.
+ */
+function publishedUnauditedTable(section: string): string[] | null {
+  const lines = section.split('\n');
+  const header = lines.findIndex((line) => isUnauditedTableHeader(line));
+  if (header < 0) return null;
+
+  const routes: string[] = [];
+  for (let index = header + 1; index < lines.length; index += 1) {
+    const line = lines[index];
+    if (line === undefined || !line.startsWith('|')) break;
+    // The separator under a markdown header is not a row.
+    if (/^\|\s*[-: ]+\|/.test(line)) continue;
+    const row = /^\|\s*`(GET|POST|PUT|PATCH|DELETE)`\s*\|\s*`([^`]+)`\s*\|/.exec(line);
+    if (row) routes.push(`${row[1]!} ${row[2]!}`);
+  }
+  return routes;
+}
+
+/**
+ * The header of the table that publishes the routes which write no audit
+ * entry.
+ *
+ * The columns are named in the header, so the header is what identifies the
+ * table — the rows cannot, because the table may have none. The table has two
+ * columns, a method and a path; a wider table with a third column beside the
+ * path is a table of something else, such as the route table in the HTTP
+ * surface.
+ */
+function isUnauditedTableHeader(line: string): boolean {
+  if (!line.startsWith('|')) return false;
+  const cells = line
+    .split('|')
+    .slice(1, -1)
+    .map((cell) => cell.trim());
+  if (cells.length !== 2) return false;
+  return /method/i.test(cells[0] ?? '') && /path/i.test(cells[1] ?? '');
+}
+
+/**
+ * The prose form: a sentence saying that every mutating route writes an audit
+ * entry.
+ *
+ * What is matched is the sentence's shape and not its wording, which is the
+ * contract's to change: the sentence's subject is the whole set of mutating
+ * routes, and it is about their auditing. A sentence whose subject is a part
+ * of the set — that some of them write none — and a sentence that denies the
+ * claim are not this claim, and are not read as one.
+ */
+function publishesEveryRouteAudits(section: string): boolean {
+  return sentences(section).some(isEveryRouteAudited);
+}
+
+/**
+ * The shape of that sentence.
+ *
+ * Two parts, and both are needed. The subject is the whole set of the
+ * mutating routes — every one of them, all of them, each of them — and the
+ * sentence is about their auditing.
+ */
+const CLAIMS_THE_WHOLE_SET = /^\W*(?:every|all|each)\s+(?:\w+\s+){0,4}mutating\s+routes?\b/i;
+const ABOUT_THEIR_AUDITING = /\baudit/i;
+
+function isEveryRouteAudited(sentence: string): boolean {
+  return CLAIMS_THE_WHOLE_SET.test(sentence) && ABOUT_THEIR_AUDITING.test(sentence);
+}
+
+/**
+ * The section's sentences.
+ *
+ * The emphasis markers come off first, so that a sentence whose last words are
+ * emphasised still ends at its full stop, and a sentence ends where a full
+ * stop is followed by white space.
+ */
+function sentences(section: string): string[] {
+  return section
+    .replace(/\*\*/g, '')
+    .split(/(?<=[.!?])\s+/)
+    .map((sentence) => sentence.trim())
+    .filter((sentence) => sentence.length > 0);
 }
 
 /**
@@ -84,9 +196,9 @@ function publishedNoteBound(): number {
  * entry in its own handler.
  *
  * The handlers are read from the source, because the claim is about the
- * source: "twelve of the thirty-six mutating routes write no audit entry at
- * all" is a statement about what the handlers do, and a client can only be
- * told the truth about it from the handlers.
+ * source: "every mutating route writes an audit entry" is a statement about
+ * what the handlers do, and a client can only be told the truth about it from
+ * the handlers.
  */
 function codeMutatingRoutes(): { route: string; audited: boolean }[] {
   const dir = path.join(repoRoot, 'apps', 'server', 'src', 'api');
@@ -135,7 +247,7 @@ describe('the published shapes', () => {
   it('names the routes that write no audit entry, and the code writes none on exactly those', () => {
     const routes = codeMutatingRoutes();
 
-    // Two of the mutating routes write their audit entry from the service
+    // Three of the mutating routes write their audit entry from the service
     // layer rather than the route; the entry names them.
     const fromTheServiceLayer = new Set([
       'POST /api/approvals/:id/decide',

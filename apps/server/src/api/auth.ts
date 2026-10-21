@@ -73,6 +73,7 @@ export function registerAuthRoutes(app: FastifyInstance): void {
     const token = request.cookies[SESSION_COOKIE];
     if (token) await app.services.auth.logout(token);
     reply.clearCookie(SESSION_COOKIE, { path: '/' });
+    audit(request, 'auth.logged_out', { type: 'user', id: request.user?.id ?? 'owner' });
     return reply.send({ ok: true });
   });
 
@@ -86,6 +87,10 @@ export function registerAuthRoutes(app: FastifyInstance): void {
         'No owner token is configured. Set PERSONAL_OS_OWNER_TOKEN to enable headless access.',
       );
     }
+    audit(request, 'auth.owner_token.issued', {
+      type: 'user',
+      id: request.user?.id ?? 'owner',
+    });
     return reply.send({ token: app.services.config.ownerToken });
   });
 }
