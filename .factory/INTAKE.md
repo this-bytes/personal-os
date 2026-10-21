@@ -367,7 +367,7 @@ second dispatch.
 | `probe-verify-published-counts-2026-10-21-1240`            | WI-062 — verify the published counts, and fix the stale number          | Probe  | `task_2c7c9f4fd696` | **done** — **WI-062 is verified: all six criteria hold**, and **WI-062 is accepted** by the session that wrote neither half. Probe re-implemented the test's own counting method: 35 mutating routes registered, 21 auditing in their own handler, 2 auditing from the service layer, 12 writing no audit entry, and the published table and the code's unaudited list are the same twelve. Gates: the published-shapes suite 3 passed, the server suite 219 passed, `prettier --check` 0, `npm run format:check` 0. **Three findings, and all three are routed**: four stale citations (dispatched to Wren), the template record (WI-065's line, live), and WI-031's stale status note (dispatched)                                                                                                                                                                                                                                                             |     |
 | `probe-verify-wi-036-licence-record-2026-10-21-1248`       | WI-036 — verify the dependency licence record                           | Probe  | `task_3bb64dabf31a` | **done** — **WI-036 is verified: all five criteria hold**, and **WI-036 is accepted** by the session that wrote none of the three halves. Probe re-derived the numbers its own way: the lockfile has **500** package entries excluding the root (488 third-party + 6 `link: true` aliases + 6 workspace roots), the record covers **494** (488 third-party + 6 first-party), attribution is 375 + 16 + 97 = 488, and there are **11** distinct licences matching the approved set's 11 entries whose package counts sum to 488. **Three findings, all routed.** And the verdict caught **a defect in the lead's own WI-038 brief** — see the section below                                                                                                                                                                                                                                                                                                       |     |     |
 | `probe-verify-wi-017-template-record-2026-10-21-1305`      | WI-017 — verify the template record, and write its missing test         | Probe  | `task_dbcc178374a7` | **done** — **WI-017 is verified: all seven criteria hold**, and **WI-017 is accepted** by the session that wrote none of the three halves — the implementation is Cog's (`8b1fd01`), the contract is Wren's (WI-030, `e682224`), the test is Probe's (`052f050` — 449 lines, 11 cases, all through the MCP surface an agent uses). **The product diff is empty**: the two drift-pins were proved to bite and then restored. **Three findings, all routed**: the template record's status paragraph is false (**WI-065**, live), the spec path answers an unpublished `internal_error` (named in the item, not dispatched), and the entry's tool table agrees with the code ✓                                                                                                                                                                                                                                                                                     |     |
-| `wi-065-template-record-contract-status-2026-10-21-1330`   | WI-065 — the template record says what the code now does                | Wren   | `task_6274afe1abc1` | **queued** — **the live dispatch on WI-065**: the contract still publishes a status note about the template record that the code has outgrown, and every clause of it is now false                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |     |
+| `wi-065-template-record-contract-status-2026-10-21-1330`   | WI-065 — the template record says what the code now does                | Wren   | `task_6274afe1abc1` | **dead with the runtime, and replaced** — the task's status went to `unknown` when the **Mini App's own dispatcher stopped** (measured and recorded in `.factory/watchdog.md`), and the turn stopped posting at **18:12:27** with the worktree clean, so **no work was lost and none was in flight**. Cancelled at 18:59 (unconfirmed), and the **replacement is dispatched**: `wi-065-template-record-status-replacement-2026-10-21-1905` / `task_2bf6b0a6164a`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |     |
 | `wi-067-mcp-workspace-scope-code-2026-10-21`               | WI-067 — the MCP surface's id-addressed tools, the code half            | Cog    | `task_6766b83a3f23` | **queued** — **DELIVERED at 14:32**, after the runtime's refusal had stood for about forty minutes. The reserved id was never registered, so it was not spent, and it was used as reserved. The brief is in `.factory/work/WI-067.md`. Worktree `G:\code\personal-os-worktrees\067-mcp-workspace-scope`, branch `wi/067-mcp-workspace-scope`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     |
 | `wi-067-mcp-workspace-scope-contract-2026-10-21`           | WI-067 — the MCP surface's tools are workspace-scoped, contract half    | Wren   | `task_acc8a5211855` | **queued** — **DELIVERED at 14:32**, the same reserved id, also never registered. The brief is in `.factory/work/WI-067.md`. It queues behind WI-065 on `CONTRACTS.md`; Wren's lane is serialised, so one file carries one live item. Worktree `G:\code\personal-os-worktrees\067-mcp-workspace-scope-contract`, branch `wi/067-mcp-workspace-scope-contract`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
 | `probe-verify-wi-031-close-a-turn-2026-10-21-1340`         | WI-031 — verify the route that closes a turn, and write its pin         | Probe  | `task_b511f4062477` | **queued** — **the live dispatch on WI-031**: the implementation landed at 11:35 with **no verification ever sent**, and the item's own pin is Probe's to write                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  |     |
@@ -385,14 +385,18 @@ second dispatch.
 
 | `wi-031-contract-status-correction-2026-10-21` | WI-031 — the entry says the code does not implement it yet, and it does | Wren | `task_be25e082ae5c` | **queued** — **the correction of WI-031's stale status note**, found by Probe while verifying WI-027. `CONTRACTS.md:197-204` says the route is absent; it has been there since `414996c`. **It queues behind WI-065 on `CONTRACTS.md`** — Wren's lane is serialised, so one file carries one live item. **WI-031's acceptance is blocked until it lands** |
 | `wi-010-verify-repaired-document-2026-10-21` | WI-010 — the repaired direction document, verified | Probe | `task_2f3e137d63ee` | **queued** — the live dispatch on WI-010, under the request id and title the peer session reserved and could not dispatch; the work is the D1 to D6 repair at `e560165`, and Probe's earlier verification ran before it |
-| `wi-007-verify-fixed-tree-successor-2026-10-21` | WI-007 — the fixed tree, verified again | Probe | `task_797badb7e918` | **queued, and it should be cancelled** — WI-007 is **accepted** on Probe's report, so this re-verification is redundant. **The cancel could not be issued: the `minimax-bot` tools were withdrawn from the turn that accepted the item** (`post_group` and `get_tasks` both returned "tool not found"). **The next session with the tools cancels `task_797badb7e918`, and the slot goes to an item that needs it** |
+| `wi-007-verify-fixed-tree-successor-2026-10-21` | WI-007 — the fixed tree, verified again | Probe | `task_797badb7e918` | **cancelled** at **18:24:50** — WI-007 is **accepted** on Probe's report, so the re-verification was redundant, and **one verifier, one item, one verification** is the rule. The cancel could not be issued from the turn that accepted the item (the `minimax-bot` tools were withdrawn then); it was issued at **18:24:50**, once they returned, and the slot went back to the queue |
 | `wi-025-verify-adr-record-pass-successor-2026-10-21` | WI-025 — the ADR after the record pass, verified again | Probe | `task_5cf2b97b54ce` | **queued** — the live dispatch on WI-025; Probe's earlier verification found three defects, Wren fixed them at 11:58, and the re-verification was never dispatched |
 | `wi-069-refusal-names-nobody-code-2026-10-21` | WI-069 — a delegation that names nobody is refused unreadably | Cog | — | **NOT DISPATCHED — held on purpose.** The finding is Probe's, from WI-021's verification. **Two reasons, both said out loud:** the owner's line at 15:40 — _"when a slot frees, lean on verification"_ — and the contract half needs the owner's answer. **Numbered so it is not lost**, with the brief written out in full in `.factory/work/WI-069.md` |
 | `wi-045-unconfirmed-turn-verify-2026-10-21` | WI-045 — an unconfirmed turn routes no further work, verified | Probe | `task_1df39fd407ea` | **queued** — **the verification of the owner's own answer**, dispatched the moment the implementation landed (`a4010bb`, merged into `main` at `66c86ad`). Six questions: the guard stops the routing, a confirmed turn is unaffected, **the stop is recorded where the unknown-outcome machinery is recorded**, the waiting list is unchanged, a test proves both halves, and what the contract publishes. **Chief's word is on the audit entry's target, and the doubt is named in the brief rather than hidden** |
 | `wi-074-stack-test-cleanup-budget-2026-10-21` | WI-074 — the stack test's cleanup can outrun its own budget | Probe | `task_289ede939140` | **queued** — **a red on `main` with every assertion green**: `verifyStack.test.ts` failed to complete at `:133:34` (`fs.rmSync`) after 49 990 ms, while 230 tests passed. **The teardown, not the proofs.** It did not reproduce in two runs, and the machine was under load. **The check is named: a suite that passed every assertion must never be reported as failed.** And **CI runs on ubuntu, where the budget can also be exceeded** — that is why this is an item and not a shrug |
 | `wi-062-measures-citation-refresh-2026-10-21` | WI-062 — four citations in the measures section point at lines that moved | Wren | `task_169f434c05d9` | **queued** — **a citation refresh, not a change of content**: every claim in the measures section is true and only the line numbers are stale. Found by Probe while verifying WI-062. It queues behind WI-065 in Wren's serial lane, and **it must not touch the template record or WI-031's entry** — one file, one live item |
 
-| `wi-076-reset-password-lock-retry-2026-10-21` | WI-076 — the owner's password recovery dies with a raw stack trace | Cog | — | **NOT DISPATCHED — held on purpose.** The finding is Probe's, from WI-007's verification, and it is the product's half of a gate fix Probe made. **One reason, said out loud:** the owner's line at 15:40 — _"when a slot frees, lean on verification"_ — and the accept queue is eleven deep with none running. **Numbered so it is not lost**, with the brief written out in full in `.factory/work/WI-076.md`. The request id is reserved and unspent |
+| `wi-076-reset-password-lock-retry-2026-10-21` | WI-076 — the owner's password recovery dies with a raw stack trace | Cog | — | **NOT DISPATCHED — held on purpose.** The finding is Probe's, from WI-007's verification, and it is the product's half of a gate fix Probe made. **One reason, said out loud:** the owner's line at 15:40 — _"when a slot frees, lean on verification"_ — and the accept queue is ten deep with one running. **Numbered so it is not lost**, with the brief written out in full in `.factory/work/WI-076.md`. The request id is reserved and unspent |
+| `wi-065-template-record-status-replacement-2026-10-21-1905` | WI-065 — the template record says what the code now does (replacement) | Wren | `task_2bf6b0a6164a` | **queued** — the replacement for the task that died with the runtime. The brief is self-contained and carries the item, the criteria, the line-ending finding the dead turn was chasing, and the note that **WI-075's merge is gated on this landing** |
+| `wi-034-outcome-vocabulary-verify-2026-10-21-1910` | WI-034 — the outcome vocabulary, verified | Probe | `task_f5ccfea7ea35` | **queued** — WI-034's contract half landed (`be10169`) and was merged into `main` at `2cb8ba7`, and **the lead dispatches Verify the moment Implement lands**. The brief says to re-measure every pointer, because the merge moved the lines by 64 |
+| `wi-077-author-shape-house-form-2026-10-21-1920` | WI-077 — the contract publishes the author of every kind, in the house form | Wren | `task_5c00453d1f61` | **queued** — opened and dispatched this turn. WI-034 deliberately did not publish the authorship storage shape, so **WI-033's fourth criterion referred the contract to an entry that did not exist**. This is the entry, in the house form, and it is **on the critical path to WI-033** |
+| `probe-verify-wi-037-product-record-forge-2026-10-21-1325` **(reused — a defect)** | WI-034 — the outcome vocabulary, written | Wren | `task_55c33b744ef5` | **done** — the contract's `### The audit outcome` entry and its migration note, `be10169` plus `ccfb3c2` for the item's own `State:` line, pushed and merged into `main` at `2cb8ba7`. **And the record is wrong about how it was dispatched:** this request id belongs to **WI-037's verification** (row above), and it was used a second time for a different item. **A request id is spent when it is used, and a reused id makes the table lie.** It is recorded here rather than hidden, and the id is spent for good |
 
 **A cancelled task is not a dispatch — but a cancelled dispatch does not free its
 request id.** That second half was wrong here, and it is corrected now rather
@@ -7261,5 +7265,86 @@ assignments) found **seven hits, all benign**: three lines in
 `apps/server/src/__tests__/agents.test.ts` (the literal `sk-super-secret` in a
 fixture whose own assertion is that the credential is never in the config) and
 one in `scripts/verify-deployment.sh` (`PASSWORD="${3:-${PERSONAL_OS_PASSWORD:-}}"`,
-an environment fallback). **Nothing that is a credential, in the tree or in the
-history.**
+history.\*\*
+
+### WI-034 landed, WI-065's turn died with the runtime, and WI-077 was opened — 2026-10-21 19:20
+
+**Four things happened in this round, and the second one corrects my own record
+from 17:25.**
+
+**1. WI-034 landed, and Verify was dispatched the moment it landed.** Wren's
+contract half — `### The audit outcome`, carrying `queued | succeeded | failed
+| unknown`, the rule that every mutating route writes an entry recording what
+the action produced, and the migration note — was pushed as `be10169` (plus
+`ccfb3c2` for the item's own `State:` line) and **merged into `main` at
+`2cb8ba7`**, cleanly. **Probe's verification is dispatched**:
+`wi-034-outcome-vocabulary-verify-2026-10-21-1910`, task `task_f5ccfea7ea35`.
+The brief says to **re-measure every pointer**, because the merge moved
+`CONTRACTS.md` by 64 lines and the item file's line numbers are stale.
+
+**2. The queue's constraint was not the slots. The runtime was stopped.** At
+17:25 this session measured eleven verifications queued and none running, and
+named the cause as the two slots being held by Wren's WI-034 implementation and
+this group round. **That was true at 17:25 and it stopped being the cause.**
+The other Chief session measured the Mini App's own dispatcher **stopped** at
+18:56 — `MAX_RUNNING = 2` and `pump()` live in the Mini App's runtime, so while
+it is down **nothing dispatches at all**, and a row marked `running` means only
+that an earlier run marked it running. **The repair is a restart, not a
+cancellation**, and the restart released the orphaned rows for free. **This
+session's own diagnosis was a symptom, not a cause, and it is corrected here
+rather than left standing** — the same way the peer's watchdog file corrected
+its own. The rule now: **never cancel a task while the dispatcher's host is not
+running.**
+
+**That is what WI-065's turn was.** Its task went to `unknown` and its turn
+stopped posting at **18:12:27**, with the worktree **clean** — so no work was
+lost and none was in flight. Cancelled at 18:59 (unconfirmed), and the
+**replacement is dispatched**: `wi-065-template-record-status-replacement-2026-10-21-1905`,
+task `task_2bf6b0a6164a`. The replacement's brief carries the whole item, the
+criteria, and **the one question the dead turn was chasing** — main's
+`CONTRACTS.md` and the worktree's have different file hashes while
+`git diff <commit> HEAD -- CONTRACTS.md` is empty in both. **That is the
+checkout's line-ending normalisation, not a content difference**, and the dead
+turn spent its last minutes deciding it.
+
+**3. WI-027's re-verification found four things, and every one of them was
+already closed or already dispatched.** Probe says all eight criteria hold.
+
+- **Two of the entry's own code citations were stale** — `CONTRACTS.md` cited
+  `waiting.ts:85` and `waiting.ts:106-110` where the code is now `:93-95` and
+  `:140-144`. **They were corrected at 13:36 by `bd705c2`**, WI-022's citation
+  refresh, which is _after_ the 12:00 tree Probe measured. **Not a live defect,
+  and no work item opens for it.** The citation class is still named and still
+  not closed.
+- **WI-031's entry is false** — `CONTRACTS.md:197-204` says _"the code does not
+  implement it yet… there is no `/api/executions` route"_, and the route landed
+  in `414996c`. **Already dispatched**: `task_be25e082ae5c`, "WI-031 — the
+  entry says the code does not implement it yet, and it does".
+- **WI-031's route has no test at all** — a search of every test file for
+  `api/executions` returns **no match**, and this session confirmed it
+  independently. **Already in Probe's queue**: `task_b511f4062477`, "verify the
+  route that closes a turn, and **write its pin**".
+- **Observation, no action**: the client's "It ran" / "It did not run" buttons
+  are WI-031's, and WI-027's pin does not reach into them.
+
+**4. WI-033 was blocked on a premise that was false.** Its file said "waiting on
+WI-034" — and WI-034 landed at 19:03. **What it now waits for is real: WI-077.**
+WI-034 deliberately did not publish the authorship storage shape, because
+publishing it before the implementation would be publishing a proposal — and
+**WI-033's fourth criterion referred that shape to the contract, so the
+contract had to carry the part that can be carried before the code ships.**
+**WI-077 is opened and dispatched** (`task_5c00453d1f61`): the two kinds'
+published resources will carry `createdBy`, in the house form WI-030 used for
+the template record, and the storage is not published. **WI-033's own file was
+corrected at the same time**, and the corrections are in the item: the count of
+mutating routes is **thirty-five**, not thirty-four (WI-031's resolve route
+landed and the contract publishes 35), and the two code citations had moved —
+**and there is a third occurrence of the hardcoding at `service.ts:448`**, a
+second task projection the old paragraph never named.
+
+**And the fleet, measured one task at a time at 18:57.** Probe: **ten queued,
+one running** (WI-031's route verification, started 18:23:35), and WI-007's
+redundant re-verification **cancelled at 18:24:50** — the cancel the tools
+could not issue at 18:05, issued the moment they came back. Wren: WI-065's
+replacement and WI-077 queued. The Mini App runtime reads **running**
+(`miniapp list`), so the dispatcher is alive and the queue is moving again.
