@@ -8137,3 +8137,33 @@ question** — because the implementer is not the verifier, and the lead who
 wrote the change is not the lead who accepts it. **So the lead who changes an
 accepted artefact owes the factory a verification dispatch, and owes it before
 the change lands.**
+
+## The watchdog run at 20:16 — one task over the threshold, and it is live — 2026-10-21 20:16
+
+**One task is over the 45-minute trigger: `task_0cfbcce20e92` — WI-066 in
+Wren's chat, 47.7 minutes.** The other running task is Probe's WI-022
+verification, 0.4 minutes.
+
+**And the corrected rule says report, not cancel.** Wren's session
+`mvs_dff627414f0e47fbbdf7501b11dfdd06` reads **`started`**, and the chat's last
+message from that bot is `msg_dea2462e3324` — **`streaming`, 2.2 minutes old**,
+`kind: task_review`, under the same task id. **So condition 2, that the session
+is not `started`, is not met, and nothing is cancelled.** Cancelling is Chief's
+judgement, and Chief's judgement here is that the turn is live.
+
+**And this is the 462-minute stall's exact shape, one more time:** a
+`task_review` continuation runs under the **same `taskId`** and posts new
+messages **without touching `result`**, so the task's age and the turn's age
+are two different numbers. **Wren's substantive report was delivered at
+19:42:28 — 5,059 characters, _"WI-066 is written, gated, and pushed"_ — and the
+work is committed** (`f63c978`, `fd5477e`). **The task has been running 47.7
+minutes; its live turn is 2.2 minutes old.** A check that read the age alone
+would have called it a stall; **the chat says a turn is in flight.**
+
+**And the previous check did not complete.** The 20:07 firing was refused with
+`BUSY`, and so were 18:56 and 19:27 — **because this chat has been in one long
+turn since 18:53.** **So the scheduled check's last completed run is still
+16:21**, every firing since has been refused, and the measurement itself has
+been taken repeatedly inside that turn instead. **That is the same finding as
+the 19:28 run, and it is now the rule's practical shape: the check and the
+chat share one thread, and a chat that is busy cannot also be watched.**
