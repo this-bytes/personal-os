@@ -9627,3 +9627,27 @@ disagreed. **The dispatcher's own state is the truth about what was dispatched;
 the ledger is the truth about what was decided.** A lead that reads the ledger
 where it should read the state inherits the lie, and the only defence is
 measuring the thing the record is about.
+
+## The watchdog at 22:40 — the 97-minute task, and why it was not cancelled
+
+**One task is over the trigger by more than half an hour: `task_2f3e137d63ee` —
+WI-010's verification in Probe's chat, 97.3 minutes.** **It is not cancelled,
+and the measurement says why:** Probe's last message in that chat is
+`msg_7d0b4eb2b73f`, `kind: task_review`, **`streaming`**, at **22:27:50**,
+**under this same `taskId`** — **a live turn, 11.4 minutes old** — and the
+session `mvs_f1f513955649480dbfb09fae820cf59f` is `started`. **Condition 2 of
+the three fails, so the rule's outcome is a report and not a cancellation.**
+
+**This is the same shape as WI-036's at 21:50, and it is worth writing down
+twice, because the number that is easy to read is not the number that
+matters.** A `task_review` continuation runs under the same `taskId` and posts
+new messages without touching `result`, **so a task can be 97 minutes old and
+its turn 11 minutes old, and neither of those numbers is evidence of a stall.**
+The one that would be is a turn that stopped.
+
+**And the other over-threshold task from tonight has landed its work.**
+`task_289ede939140` — WI-074 — is queued again, and its fix is in `main`
+(`31a38e7`): `stackCleanup.test.ts` (242 lines), `support/cleanup.ts` (233
+lines) and `verifyStack.test.ts` (+42). **The teardown can no longer be the
+reason a green suite is reported failed — and the file's mtime at 22:04 said
+so twenty minutes before the chat did.**
