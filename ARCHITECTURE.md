@@ -279,8 +279,8 @@ Four layers, each answering a different question:
 
 | Layer                | Command                      | What it proves                                                                                                                                                                             |
 | -------------------- | ---------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| Unit and integration | `npm run test`               | 130 tests across contracts, adapters, server and worker: routing safeguards, queue leases, resource revisions, the acceptance boundary, guards, MCP grants.                                |
-| End-to-end           | `npx tsx scripts/smoke.ts`   | 42 checks against a real server and worker on a throwaway database: setup, a chat turn, concurrency, acceptance, audit, approvals, MCP, and an event-triggered automation actually firing. |
+| Unit and integration | `npm run test`               | 369 tests across contracts, adapters, server and worker — 437 with the web client: routing safeguards, queue leases, resource revisions, the acceptance boundary, guards, MCP grants.      |
+| End-to-end           | `npx tsx scripts/smoke.ts`   | 56 checks against a real server and worker on a throwaway database: setup, a chat turn, concurrency, acceptance, audit, approvals, MCP, and an event-triggered automation actually firing. |
 | Browser              | `npm run test:e2e`           | Playwright drives the built client in headless Chromium: the owner creates the account, narrows an agent's MCP tool grants, and builds an event-triggered automation.                      |
 | Deployment           | `scripts/verify-compose.ps1` | The Compose stack starts, the server becomes healthy, the worker runs, and the client is served.                                                                                           |
 
@@ -298,22 +298,27 @@ These are real, and deliberately not hidden:
   not scale to many clients.
 - **Only the OpenAI-compatible model API shape is implemented.** Other providers need
   an adapter.
-- **ACP sessions are not resumed.** The adapter creates a session per turn. Native
-  `session/load` is supported by the protocol but not used yet. The published
-  contract has already moved: `CONTRACTS.md` says a turn re-enters the same session
-  when the adapter reports `persistentSessions` (WI-007). The code has not caught
-  up.
+- **ACP sessions are resumed, and only where the adapter can.** The adapter creates
+  a session per turn, and a turn suspended on an approval re-enters the session it
+  was in: the ACP adapter asks the agent to load that session with the native
+  `session/load` (`packages/agent-adapters/src/acp.ts:213`), and the worker restores
+  it before the turn continues (`apps/worker/src/executor.ts:375`). An adapter that
+  reports `persistentSessions` and has a session to restore gets the turn back; one
+  that does not has its execution closed with the reason on the reply. The published
+  contract and the code agree (WI-007).
 - **Data sources are read-only and table-scoped.** SQLite data sources accept a
   single `SELECT` over an allowlist of tables. Credentials, sessions and audit
   records are deliberately not readable.
-- **An approval closes its execution; it does not resume it.** When an agent asks
-  for approval, the execution is marked `blocked` and the request is recorded.
-  Deciding the approval finishes the execution with the decision's outcome — it
-  does not re-enter the adapter and continue the interrupted turn. Resuming a
-  blocked adapter turn needs a protocol-level resume that not every adapter
-  supports. `CONTRACTS.md` now publishes the opposite as the contract — a decision
-  resumes the turn when the adapter reports `persistentSessions` (WI-007) — and the
-  code still closes the execution.
+- **An approval resumes its execution where the adapter can, and closes it where
+  it cannot.** When an agent asks for approval, the execution is marked `blocked`
+  and the request is recorded. Deciding the approval then takes one of two paths:
+  if the adapter reports `persistentSessions` and the execution carries a session
+  to re-enter, the decision is recorded and the turn is queued to continue in
+  that session (`apps/server/src/modules/approvals/resume.ts:102-124`); if it does
+  not, the execution is finished with the decision's outcome and the reason
+  written on the reply (`apps/server/src/modules/approvals/resume.ts:144-169`).
+  Resuming a blocked adapter turn needs a protocol-level resume that not every
+  adapter supports, so closing is the fallback and not the rule.
 - **A single owner.** No teams, no sharing, no permissions beyond "this workspace".
 - **There is no email delivery, so there is no reset link.** The owner account is
   created at first run and there are no default credentials. A forgotten password is
