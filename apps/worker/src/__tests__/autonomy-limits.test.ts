@@ -4,12 +4,15 @@ import {
   agentConnections,
   approvals,
   auditLog,
+  automations,
+  automationRuns,
   conversations,
   createDatabase,
   executions,
   messages,
   participants,
   runMigrations,
+  tasks,
   workspaces,
   type DatabaseHandle,
 } from '@personal-os/server/db';
@@ -111,11 +114,14 @@ let workspacePolicy: AutonomyPolicy;
 /** The agent's script for the next test. */
 let script: AgentEvent[];
 
-function job(payload: Record<string, unknown>): Parameters<typeof executeJob>[1] {
+function job(
+  payload: Record<string, unknown>,
+  type: Parameters<typeof executeJob>[1]['type'] = 'chat.turn',
+): Parameters<typeof executeJob>[1] {
   return {
     id: 'job_1',
     workspaceId: 'wsp_1',
-    type: 'chat.turn',
+    type,
     payload,
     status: 'running',
     priority: 0,
@@ -313,18 +319,114 @@ function utcDays(now: Date): { startOfToday: string; yesterday: string } {
   };
 }
 
-function runTurn(): ReturnType<typeof executeJob> {
+function runTurn(executionId = 'exe_1'): ReturnType<typeof executeJob> {
   return executeJob(
     context,
     job({
       conversationId: 'cnv_1',
       parentMessageId: 'msg_parent',
       agentConnectionId: 'agt_1',
-      executionId: 'exe_1',
+      executionId,
       correlationId: 'cor_1',
       depth: 1,
     }),
   );
+}
+
+/**
+ * Add an execution for the workspace, the way the server adds one for a turn.
+ *
+ * The row is created now, because that is when the server creates it and the
+ * daily cap is measured from the start of the UTC day.
+ */
+function addExecution(
+  id: string,
+  options: { taskId?: string | null; conversationId?: string | null } = {},
+): void {
+  handle.db
+    .insert(executions)
+    .values({
+      id,
+      workspaceId: 'wsp_1',
+      conversationId: options.taskId ? null : (options.conversationId ?? 'cnv_1'),
+      taskId: options.taskId ?? null,
+      externalRef: null,
+      agentConnectionId: 'agt_1',
+      executionOwner: 'personal-os',
+      status: 'queued',
+      error: null,
+      spendUnits: 0,
+      startedAt: null,
+      finishedAt: null,
+      createdAt: new Date().toISOString(),
+    })
+    .run();
+}
+
+/** A task for the factory path, with the acceptance criteria a task carries. */
+function seedTask(): void {
+  handle.db
+    .insert(tasks)
+    .values({
+      id: 'tsk_1',
+      workspaceId: 'wsp_1',
+      goalId: null,
+      title: 'Do the thing',
+      description: '',
+      assigneeId: null,
+      executionOwner: 'personal-os',
+      status: 'open',
+      revision: 1,
+      acceptanceCriteria: ['It is done.'],
+      evidenceResourceIds: [],
+      externalRef: null,
+      createdBy: 'system',
+      createdAt: NOW,
+      updatedAt: NOW,
+    })
+    .run();
+}
+
+/** An automation whose action is a prompt to the agent. */
+function seedAutomation(): void {
+  handle.db
+    .insert(automations)
+    .values({
+      id: 'aut_1',
+      workspaceId: 'wsp_1',
+      title: 'The automation',
+      trigger: { type: 'manual' },
+      action: {
+        type: 'agent.prompt',
+        agentConnectionId: 'agt_1',
+        prompt: 'Do the thing',
+        method: 'GET',
+      },
+      revision: 1,
+      enabled: true,
+      lastRunAt: null,
+      nextRunAt: null,
+      createdBy: 'system',
+      createdAt: NOW,
+      updatedAt: NOW,
+    })
+    .run();
+}
+
+/** Run a factory task's turn, the way the queue runs it. */
+function runTask(): ReturnType<typeof executeJob> {
+  return executeJob(
+    context,
+    job(
+      { taskId: 'tsk_1', executionId: 'exe_task', agentConnectionId: 'agt_1' },
+      'factory.execute',
+    ),
+  );
+}
+
+/** Run an automation, the way the scheduler runs it. */
+function runAutomation(): ReturnType<typeof executeJob> {
+  return executeJob(context, job({ automationId: 'aut_1' }, 'automation.run'));
 }
 
 beforeEach(() => {
@@ -688,5 +790,120 @@ describe('a turn held to the daily spend cap', () => {
 
     // Yesterday's spend is not today's spend, so the turn runs.
     expect(outcome.status).toBe('completed');
+  });
+});
+
+describe('the spend a turn records', () => {
+  it('records the cost of a conversation turn on its own execution', async () => {
+    const outcome = await runTurn();
+
+    expect(outcome.status).toBe('completed');
+
+    const execution = handle.db.select().from(executions).where(eq(executions.id, 'exe_1')).get();
+    expect(execution?.spendUnits).toBe(1);
+  });
+
+  it('records nothing for a turn that never ran', async () => {
+    // The chain has used its turn budget, so the turn is refused before it
+    // starts. A turn that did not run cost nothing.
+    addAgentTurn(8);
+
+    const outcome = await runTurn();
+
+    expect(outcome.status).toBe('failed');
+    const execution = handle.db.select().from(executions).where(eq(executions.id, 'exe_1')).get();
+    expect(execution?.spendUnits).toBe(0);
+  });
+
+  it('records the cost of a turn that waits for the owner', async () => {
+    // The turn ran and then asked the owner for a decision. It cost what a
+    // turn costs, and it is written even if the owner never comes back.
+    setWorkspacePolicy(policy({ approvalRequired: ['message.send'] }));
+
+    const outcome = await runTurn();
+
+    expect(outcome.status).toBe('blocked');
+    const execution = handle.db.select().from(executions).where(eq(executions.id, 'exe_1')).get();
+    expect(execution?.status).toBe('blocked');
+    expect(execution?.spendUnits).toBe(1);
+  });
+
+  it('makes the daily cap bite after the workspace has spent its budget', async () => {
+    setWorkspacePolicy(policy({ dailySpendUnits: 1 }));
+    addExecution('exe_2');
+    addExecution('exe_3');
+
+    const first = await runTurn('exe_2');
+    expect(first.status).toBe('completed');
+
+    // The turn wrote its own cost, and the next turn is refused because of
+    // it. No spend is written by hand anywhere in this case.
+    const recorded = handle.db.select().from(executions).where(eq(executions.id, 'exe_2')).get();
+    expect(recorded?.spendUnits).toBe(1);
+
+    const second = await runTurn('exe_3');
+    expect(second.status).toBe('failed');
+    expect(second.error).toContain('daily spend limit of 1');
+  });
+
+  it('records the cost of a factory task turn', async () => {
+    seedTask();
+    addExecution('exe_task', { taskId: 'tsk_1' });
+
+    const outcome = await runTask();
+
+    expect(outcome.status).toBe('completed');
+
+    // The task's turn cost one unit, and it is recorded on the task's own
+    // execution and nowhere else.
+    const taskExecution = handle.db
+      .select()
+      .from(executions)
+      .where(eq(executions.id, 'exe_task'))
+      .get();
+    expect(taskExecution?.spendUnits).toBe(1);
+    expect(taskExecution?.status).toBe('completed');
+    expect(taskExecution?.taskId).toBe('tsk_1');
+
+    const conversationExecution = handle.db
+      .select()
+      .from(executions)
+      .where(eq(executions.id, 'exe_1'))
+      .get();
+    expect(conversationExecution?.spendUnits).toBe(0);
+  });
+
+  it('records the cost of an automation run on an execution of its own', async () => {
+    seedAutomation();
+
+    const outcome = await runAutomation();
+
+    expect(outcome.status).toBe('completed');
+
+    // The run's agent turn is an execution like any other: it belongs to no
+    // conversation and to no task, and it carries what the turn cost.
+    const rows = handle.db.select().from(executions).all();
+    const run = rows.find((row) => row.conversationId === null && row.taskId === null);
+    expect(run?.spendUnits).toBe(1);
+    expect(run?.status).toBe('completed');
+    expect(run?.agentConnectionId).toBe('agt_1');
+
+    const runs = handle.db.select().from(automationRuns).all();
+    expect(runs[0]?.status).toBe('completed');
+  });
+
+  it('counts an automation run against the workspace daily cap', async () => {
+    setWorkspacePolicy(policy({ dailySpendUnits: 1 }));
+    seedAutomation();
+
+    const run = await runAutomation();
+    expect(run.status).toBe('completed');
+
+    // The run spent the workspace's budget, so the next turn is refused
+    // because of what the automation did.
+    addExecution('exe_2');
+    const turn = await runTurn('exe_2');
+    expect(turn.status).toBe('failed');
+    expect(turn.error).toContain('daily spend limit of 1');
   });
 });

@@ -505,7 +505,14 @@ async function executeChatTurn(context: ExecutorContext, job: QueueJob): Promise
     // The turn is not over. The reply stays unfinished and the execution
     // stays blocked until the owner decides.
     db.update(executions)
-      .set({ status: 'blocked', error: null })
+      .set({
+        status: 'blocked',
+        error: null,
+        // The turn ran, so it cost what a turn costs. It is written here as
+        // well as at the end of the turn, because a turn that waits for the
+        // owner may never be continued.
+        spendUnits: agentTurns(db, payload.executionId),
+      })
       .where(eq(executions.id, payload.executionId))
       .run();
     return { status: 'blocked' };
@@ -551,6 +558,10 @@ async function executeChatTurn(context: ExecutorContext, job: QueueJob): Promise
       status: unknown ? 'unknown' : failed ? 'failed' : 'completed',
       error: explanation ?? null,
       finishedAt: new Date().toISOString(),
+      // What the turn cost. The unit is one agent turn, and the count is over
+      // the execution's own messages, so a turn that was suspended and then
+      // continued is still one turn and is not counted twice.
+      spendUnits: agentTurns(db, payload.executionId),
     })
     .where(eq(executions.id, payload.executionId))
     .run();
@@ -811,6 +822,8 @@ async function executeFactoryTask(
 
   let output = '';
   let failure: string | undefined;
+  /** Whether the task's turn reached the agent. */
+  let agentTurnRan = false;
 
   const controller = new AbortController();
   const adapterConfig = await loadAdapterConfig(context, payload.agentConnectionId);
@@ -831,6 +844,10 @@ async function executeFactoryTask(
       logger: { info: () => undefined, warn: () => undefined, error: () => undefined },
     });
 
+    // The turn is handed to the agent here. A turn that reaches the agent is
+    // a turn that cost what a turn costs, and a turn that never got this far
+    // cost nothing.
+    agentTurnRan = true;
     for await (const event of adapter.send({
       conversationId: '',
       message: prompt,
@@ -877,6 +894,9 @@ async function executeFactoryTask(
       status: unknown ? 'unknown' : failure ? 'failed' : 'completed',
       error: explanation ?? null,
       finishedAt: new Date().toISOString(),
+      // What the turn cost: one unit for the agent turn the task ran, and
+      // nothing for a turn that never reached the agent.
+      spendUnits: agentTurnRan ? 1 : 0,
     })
     .where(eq(executions.id, payload.executionId))
     .run();
@@ -979,6 +999,13 @@ async function executeAutomation(
   let failure: string | undefined;
   let timedOut = false;
   let timeoutSeconds = 0;
+  /**
+   * The execution the run's agent turn runs on. An automation's run belongs to
+   * no conversation and to no task, so the worker creates the row itself.
+   */
+  let executionId: string | undefined;
+  /** Whether the run's turn reached the agent. */
+  let agentTurnRan = false;
 
   // An automation that was started by an event produces its own events at
   // the next depth, which is what bounds the chain.
@@ -1016,6 +1043,33 @@ async function executeAutomation(
     const action = automation.action;
     if (action.type === 'agent.prompt') {
       if (!action.agentConnectionId) throw new Error('The action has no agent connection.');
+
+      // An automation's agent turn is an execution like any other: a run of an
+      // agent, with its cost recorded on the row that records the run. The
+      // chat path's execution is created by the server that enqueued the
+      // turn; an automation's run is the worker's own, so the worker creates
+      // the row it writes the cost on. The row belongs to no conversation and
+      // to no task, which is what an automation's turn is.
+      executionId = newId('exe');
+      const runExecutionId = executionId;
+      db.insert(executions)
+        .values({
+          id: runExecutionId,
+          workspaceId: automation.workspaceId,
+          conversationId: null,
+          taskId: null,
+          externalRef: null,
+          agentConnectionId: action.agentConnectionId,
+          executionOwner: 'personal-os',
+          status: 'running',
+          error: null,
+          spendUnits: 0,
+          startedAt,
+          finishedAt: null,
+          createdAt: startedAt,
+        })
+        .run();
+
       const adapter = runtime.registry.create(
         await loadAdapterConfig(context, action.agentConnectionId),
         {
@@ -1035,11 +1089,15 @@ async function executeAutomation(
         controller.abort();
       }, timeoutSeconds * 1000);
       try {
+        // The turn is handed to the agent here. A turn that reaches the agent
+        // is a turn that cost what a turn costs, and a turn that never got
+        // this far cost nothing.
+        agentTurnRan = true;
         for await (const event of adapter.send({
           conversationId: '',
           message: renderPrompt(action.prompt ?? '', automation, payload.trigger),
           context: `Automation: ${automation.title}`,
-          executionId: runId,
+          executionId: runExecutionId,
           signal: controller.signal,
         })) {
           if (event.type === 'message.delta') text += event.text;
@@ -1120,6 +1178,21 @@ async function executeAutomation(
     error: explanation ?? null,
     depth,
   });
+
+  if (executionId) {
+    // The run's execution ends with the run, and it carries what the turn
+    // cost: one unit for the agent turn the run made, and nothing for a run
+    // that never reached the agent.
+    db.update(executions)
+      .set({
+        status: unknown ? 'unknown' : failure ? 'failed' : 'completed',
+        error: explanation ?? null,
+        finishedAt: new Date().toISOString(),
+        spendUnits: agentTurnRan ? 1 : 0,
+      })
+      .where(eq(executions.id, executionId))
+      .run();
+  }
 
   if (unknown) {
     recordUnknownOutcome(runtime, {
@@ -1372,6 +1445,24 @@ function limitRefusal(
     );
   }
   return undefined;
+}
+
+/**
+ * The agent turns an execution has run.
+ *
+ * The unit is the one the chain already uses: one agent turn costs one spend
+ * unit (`apps/server/src/modules/conversations/routing.ts`). A conversation
+ * turn is one agent message, and the count is taken over the execution's own
+ * messages rather than kept as a running total, so a turn that was suspended
+ * on an approval and then continued is one turn and is written once.
+ */
+function agentTurns(db: Database, executionId: string): number {
+  return db
+    .select({ origin: messages.origin })
+    .from(messages)
+    .where(eq(messages.executionId, executionId))
+    .all()
+    .filter((row) => row.origin?.kind === 'agent').length;
 }
 
 /**
