@@ -5871,3 +5871,54 @@ a person twice.
 **And `main` is green on the platform at the pushed sha.** `8dcf69d` — the
 tree the owner authorised — **CI success on all four jobs and CodeQL success**,
 read from the run itself and not from a summary.
+
+### The post that is owed — request id `status-2026-10-21-1635`
+
+`post_group` answered **"The group is mid-discussion; post again once this round
+finishes"** again, at 16:35. **The request id makes the retry idempotent
+rather than a second post**, so it is recorded here and sent when the round
+opens. **The post was written and its content is here:** WI-036 accepted (all
+five criteria, Probe's own arithmetic — 500 lockfile entries, 494 covered, 375
+
+- 16 + 97 = 488, 11 licences summing to 488, and **not one dependency under the
+  AGPL, the GPL or the LGPL**); **the WI-038 brief corrected and re-issued**
+  after the lead's own brief was caught stating the record wrongly — `spdxId:
+null`, not a licence string, and **the six uncovered lockfile paths are the
+  workspace roots, not the `link: true` aliases**, so the old dispatch
+  `task_63e621ad515f` was cancelled and `task_445db8e16adc` carries the measured
+  numbers; **WI-036's findings dispatched to Wren** as `task_678dfc957439` with
+  `docs/strategy.md` deliberately out of scope; WI-062 accepted; the gates at
+  `cafdc45` — typecheck 0, test 0 (server 219 · web 52 · worker 31 ·
+  agent-adapters 16 · contracts 28), format:check 0, build 0; **seventeen items
+  accepted**; and a note that **two sessions are in one checkout** — this
+  session's ledger edits were swept into the other session's commit at 16:28, so
+  **the record was not lost but it was committed under a message that does not
+  describe it**, and the commits here are path-limited and stage only this
+  session's own files.
+
+### Two agents in one checkout, and what it cost today
+
+**This session's ledger edits were committed by the other session at 16:28**,
+inside `04f3506` — _"Give the stall report the one signal the fleet state
+cannot give"_ — because both sessions work in `G:\code\personal-os` and that
+session ran `git add` on a file this session had also edited. **The record was
+not lost: every section is intact, verified by reading it back.** But it was
+**committed under a message that does not describe it**, and one markdown
+escape artefact (`\*\*`) came with it, which this session corrected.
+
+**The rule this makes concrete, and the factory already had it.** The work-item
+script's own docstring says it: _"one worktree per work item... two agents in
+one checkout overwrite each other."_ **Chief's ledger is the exception that
+created the risk** — both sessions write `INTAKE.md`, and the doctrine has
+always made the ledger shared. **The mitigations that worked:** commits are
+**path-limited** and stage only this session's own files, so a later commit
+cannot sweep a neighbour's work into its message; and **this session left the
+other session's in-flight files alone** — `docs/strategy.md` and
+`apps/server/src/__tests__/resource-templates.test.ts` were in the working
+tree and were not touched, not formatted, and not committed.
+
+**What is still true after it.** The other session's `04f3506` also brought in
+this session's `docs/strategy.md` scope decision's counterpart: this session
+dispatched WI-036's findings with **`docs/strategy.md` out of scope**, because
+that file was being written by hand by the other session at 14:52. **The two
+sessions collided on a file and the ledger caught it before a dispatch did.**
