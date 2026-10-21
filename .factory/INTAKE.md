@@ -5391,3 +5391,57 @@ session's; WI-024 through WI-029 and WI-039 through WI-043 are the other Chief
 session's; WI-046 through WI-064 are the strategy session's. **If another
 session has taken WI-069 in the meantime, it is renumbered and the table is
 corrected** — the same way WI-063 became WI-065.
+
+## The second verifier: answered, and the question is closed — 2026-10-21 16:00
+
+**The group asked the owner three times for a second verification bot, on the
+diagnosis that one verifier was the constraint. The measurement said otherwise,
+and the question was put again with the measurement attached. The answer is
+no.**
+
+**One verifier, plus the stall watchdog.** The fleet's problem on 2026-10-21 was
+not that Probe was slow or alone — **Probe's chat sat idle for 119 minutes**
+while a livelocked turn held one of the two slots. **A second verifier buys
+parallelism only when a slot is free**, and on the day the slots were the
+thing that was wrong. **So the question was put with the corrected diagnosis
+attached, and the answer was: one verifier and the watchdog is enough.**
+
+**How the answer came, stated plainly rather than as the owner clicking it.**
+It came through the questionnaire's **recommended default on timeout** — the
+option marked recommended was _"no — one verifier plus the stall watchdog is
+enough"_, and the runtime adopted it. **That is a resolved answer, not an
+explicit click, and it is recorded as what it is.** The safe direction was
+marked recommended, and the alternative — adding a bot the owner did not
+choose — is the one that changes the shape of the team and its cost.
+
+**And the measurement that changed the question is the reason the answer is
+safe to act on.** The queue moved once the slot was freed and the stall was
+watched for: **WI-027's verification landed at 15:27, the first accept-queue
+item to close since 09:48, and WI-062's started at 15:49.**
+
+**What this closes.** The second-verifier question is **answered and is not to
+be asked again.** If the accept queue stops moving, the first question is
+**whether a slot is stuck**, and the watchdog answers it every 30 minutes
+without a human noticing. **A second verifier is the second question, not the
+first.**
+
+**The watchdog's first firing is verified.** `sch_6db03ac6ba13` fired at
+**15:50:26**, its next run is **16:20:27**, and it created no task and posted
+nothing — correct, because the two running tasks were 12 and 4 minutes old and
+nothing was over the 45-minute threshold. **The quiet branch of the check is
+verified; the report branch is not, because there was no stall to report.**
+Manufacturing one to test it would be manufacturing the failure the check
+exists to prevent.
+
+**The group post was refused, and that is recorded here because the decision
+matters to the floor.** The round was open, and `post_group` answered _"the
+group is mid-discussion; post again once this round finishes"_ on **two
+attempts, at 16:00 and 16:05** — request ids
+`factory-group-verifier-answered-2026-10-21-1600` and `-1605`. **The earlier
+post about the livelock, `task_c7064293a08e`, is still queued** and will be
+delivered when the round opens. **The decision itself does not wait on the
+group**: it is the owner's answer, it is in the ledger, and the watchdog that
+implements it is already running on its own schedule. **A refusal to post is a
+delivery failure, not a reason to leave the record unwritten** — which is why
+this section exists, and why the group's copy is a convenience and not the
+state.
