@@ -364,7 +364,7 @@ second dispatch.
 | `wi-021-verify-fixed-tree-successor-2026-10-21`            | WI-021 — the refusal, verified again                                 | Probe  | `task_d817d075a0ce` | **done** at 15:27 — **WI-021 is verified: all five criteria hold**, on `51c92f8` (the product code is byte-identical on the current head). Probe's own gates: typecheck 0, format 0, build 0, test 0 (server 219 · web 52 · worker 31 · agent-adapters 16 · contracts 28), and `npm run smoke` 0 in 9.5 s; the two pinned suites **39 passed (39)**. **WI-021 is accepted.** Findings: the item's own file describes a behaviour the code cannot exhibit, a stale citation, and **a question for Chief — a delegation naming nobody is refused in a way a client cannot read**, which is now **WI-069**                                                                            |
 | `wi-031-refresh-published-counts-2026-10-21`               | WI-031 — refresh the published counts                                | Wren   | `task_03f8f1042155` | **cancelled** — **the lead made the correction itself** (`50b908d`), because the collision that was the reason for routing it to Wren no longer held: nothing was writing `CONTRACTS.md` at the time. One item, one worker                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
 | `probe-verify-published-counts-2026-10-21-1215`            | WI-046 — verify the published counts, and fix the stale number       | Probe  | `task_27a529dbec89` | **cancelled** — the item number was wrong: WI-046 belongs to the strategy session's batch. The work was re-issued as WI-062                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |     |
-| `probe-verify-published-counts-2026-10-21-1240`            | WI-062 — verify the published counts, and fix the stale number       | Probe  | `task_2c7c9f4fd696` | **queued** — **the live dispatch on the correction**, and on the stale "thirty-four" in Probe's own test file. The lead implemented the correction, so the lead does not accept it                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |     |
+| `probe-verify-published-counts-2026-10-21-1240`            | WI-062 — verify the published counts, and fix the stale number       | Probe  | `task_2c7c9f4fd696` | **done** — **WI-062 is verified: all six criteria hold**, and **WI-062 is accepted** by the session that wrote neither half. Probe re-implemented the test's own counting method: 35 mutating routes registered, 21 auditing in their own handler, 2 auditing from the service layer, 12 writing no audit entry, and the published table and the code's unaudited list are the same twelve. Gates: the published-shapes suite 3 passed, the server suite 219 passed, `prettier --check` 0, `npm run format:check` 0. **Three findings, and all three are routed**: four stale citations (dispatched to Wren), the template record (WI-065's line, live), and WI-031's stale status note (dispatched)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |     |
 | `probe-verify-wi-036-licence-record-2026-10-21-1248`       | WI-036 — verify the dependency licence record                        | Probe  | `task_3bb64dabf31a` | **queued** — **the live dispatch on WI-036**, and the first verification of that item: the record was written and pushed with **no verification ever dispatched**, so it could never have been accepted                                                                                                                                                                                                                                                                                                                                                                                                                                                                            |     |
 | `probe-verify-wi-017-template-record-2026-10-21-1305`      | WI-017 — verify the template record, and write its missing test      | Probe  | `task_dbcc178374a7` | **queued** — **the live dispatch on WI-017**, and the first verification of that item: the implementation landed at 12:42 and **no verification was ever sent**. It carries the missing test with it                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |     |
 | `wi-065-template-record-contract-status-2026-10-21-1330`   | WI-065 — the template record says what the code now does             | Wren   | `task_6274afe1abc1` | **queued** — **the live dispatch on WI-065**: the contract still publishes a status note about the template record that the code has outgrown, and every clause of it is now false                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |     |
@@ -5501,3 +5501,122 @@ accept-queue item to close since 09:48 — and **WI-036's verification started
 at 15:38**. The livelocked turn that held half the factory was cancelled, and
 in the sixteen minutes after the release two tasks completed with a
 **16-minute median**, against two in the hour before with a 278-minute median.
+
+## The watchdog sweep, 2026-10-21 16:10 — four verifications that never arrived
+
+**This is the watchdog's own sweep, on the 30-minute cadence, and it found the
+failure this factory exists to prevent: work that landed and a verification that
+was never delivered.** Four items have their work in `main` and **no live
+dispatch**, and every one of them is a hole rather than a deliberate hold.
+
+### What is running, measured
+
+| Task                | Held     | What it is                                                                                                                                       |
+| ------------------- | -------- | ------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `task_aa4b43bdd748` | 28.9 min | Chief's tick in the Personal OS Factory group. **Fresh output at 16:03:26** — it ruled on WI-045's judgement call and merged WI-045 into `main`. |
+| `task_3bb64dabf31a` | 11.7 min | Probe, WI-036 — verify the dependency licence record against the lockfile.                                                                       |
+
+**Neither is a stall, and nothing was cancelled.** The watchdog's trigger is 45
+minutes and neither task has reached it; the group turn is measurably
+producing output and the Probe turn is eleven minutes old. The queue behind
+them: **Probe 8 queued, Wren 7, Cog 1, Chief 1.**
+
+### The four items, and what died on each
+
+| Item       | The work, and where it is                                                                | What died                                                                                                                                                                                                                                                                                                                    | Lane        |
+| ---------- | ---------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------- |
+| **WI-007** | Cog's fix `6878e7c` (**in main**); Wren's migration note `task_e6fe9555ca74`, done 11:19 | Probe's verification of the fixed tree, `task_2e431d7647e5`, **failed at 11:10:17** with an empty result, and was never re-dispatched.                                                                                                                                                                                       | **free**    |
+| **WI-010** | D1 to D6 repaired (`e560165`, **in main**); Chief's own task closed 15:12                | **Probe's re-check was never dispatched.** The item's state line says _"Probe re-checks, Chief closes"_ — and Probe's only WI-010 verification (`task_5666d5ca0dc2`) ran 07:08 to 07:46, **before** the repairs.                                                                                                             | **free**    |
+| **WI-025** | Wren's three record fixes (`a107cb9`, `b1b9ee9`, **in main**)                            | Probe's verification (`task_2b5c9020bf00`, 09:28) found **three defects** in the ADR's record; Wren fixed them at 11:58; **the re-verification was never dispatched.**                                                                                                                                                       | **free**    |
+| **WI-039** | The contract half **landed** — `6406291`, `CONTRACTS.md` only, +101 lines, **in main**   | The verification was handed to Probe's **own session** (`mvs_f1f513955649480dbfb09fae820cf59f`) at 10:53, and the dispatcher task `task_e486def935b8` was cancelled at 10:54 — **and the brief never arrived.** That session's three user-role messages are the three dispatcher briefs; the WI-039 brief is not among them. | **blocked** |
+
+**WI-039's lane is blocked, and the block is concrete.** Its subject is
+`CONTRACTS.md`, and **`wi/046-domains-interaction-model` holds that file** —
+34 files changed, `CONTRACTS.md` among them, unmerged. Verifying WI-039 against
+`main` measures a tree that does not carry WI-046's contract changes. **Either
+the verification waits for that branch, or it is scoped to the WI-039 entry
+alone and says so.** That is a tiebreak for the lead, and it is said out loud
+here rather than taken quietly.
+
+**The three free lanes are free, measured.** No live branch touches
+`apps/server/src/__tests__/approval-resume.test.ts` or
+`apps/web/e2e/waiting-list.spec.ts` (WI-007), `prototypes/DIRECTION.md`
+(WI-010), or `docs/decisions/0007-the-environment-agents-operate-and-extend.md`
+(WI-025) — `wi/046` touches ADRs 0008, 0009 and 0010, **not 0007**.
+
+### What this sweep dispatched, and why it dispatched nothing
+
+**Nothing was dispatched from here, and that is a decision rather than an
+omission.** Probe's chat is busy with **eight** Probe tasks queued behind it;
+the live Chief session in the group owns the dispatch and the number space,
+and at 16:06:05 it dispatched WI-045's verification
+(`task_1df39fd407ea`, request `wi-045-unconfirmed-turn-verify-2026-10-21`).
+**Dispatching WI-007, WI-010 or WI-025 from a second session is two verifiers
+on one item.** The four are recorded here as **ready to go**, with the lane
+named, so the session that holds the queue takes them in this order:
+**WI-007, WI-010, WI-025** — the three with a free lane — and **WI-039** when
+`wi/046` clears `CONTRACTS.md`, or with the check scoped down and said.
+
+### Two records are wrong, and two gaps are recorded correctly
+
+**The same defect the ledger recorded at 15:35, in a third shape: the record
+is wrong about what has been dispatched.**
+
+1. **WI-007's state line names a failed task as its live dispatch** — _"Probe's
+   verification of the fixed tree is dispatched, task `task_2e431d7647e5`"_ —
+   and that task is `failed` with an empty result. A reader would count WI-007
+   as busy.
+2. **WI-039's record says the verification "was handed over the working
+   route"** to Probe's session. **That handover did not land.** The brief is
+   not in the session's history, and the dispatcher task that would have
+   delivered it was cancelled a minute later.
+
+**WI-010's and WI-025's records are honest** — they say a check is owed — and
+that is the problem: **nothing was ever dispatched for either, and nobody
+noticed.** A gap that is correctly described is still a gap.
+
+**None of the four records is corrected here.** `.factory/work/**` is the
+lead's file, and this sweep does not edit another session's item records.
+
+### The branches, and one that CI cannot gate
+
+**Measured from the merge base, not from `main`** — the difference matters,
+because `main` has moved on and the two lists are not the same thing.
+
+| Branch                             | What it actually changes                                                          | On origin      |
+| ---------------------------------- | --------------------------------------------------------------------------------- | -------------- |
+| `wi/020-measures-route`            | the measures route — `apps/server`, `apps/web`, `packages/contracts`              | **pushed**     |
+| `wi/038-borrow-rule-gate`          | `.github/workflows/ci.yml` and `package.json`, and nothing else                   | **NOT pushed** |
+| `wi/046-domains-interaction-model` | 34 files — `CONTRACTS.md`, `docs/**`, `packages/**`, `apps/server/src/domains.ts` | **pushed**     |
+| `wi/064-free-period-plan`          | `docs/free-period-plan.md`, `docs/roadmap.md`, `WI-064.md`                        | **pushed**     |
+
+**`wi/038-borrow-rule-gate` is the only branch holding work that is not on
+origin**, so CI cannot gate it. Its work is one CI step and one manifest
+entry — the borrow-rule gate — and a queued Probe task (`task_63e621ad515f`)
+is meant to verify it. **A branch nobody pushed is a branch nobody gated.**
+
+**Nine worktrees are stale leftovers** — `022`, `032`, `036`, `037`, `041`, and
+two each for `067` and `068` — every one clean, every one an ancestor of
+`main`. **"A worktree exists" is therefore not a signal that anything is
+happening.** The two `WI-067` branches and the two `WI-068` branches are **the
+same items' leftovers, not two items each**: both `067` branches sit on
+`afc2811` and both `068` branches are merged, so **the number space did not
+collide — there are four worktrees and two items.**
+
+### What the owner has
+
+**The push.** Local `main` is `71c9297`, `origin/main` is `e18bfff`, and
+**14 commits are unpushed** — WI-045's merge, the watchdog, and the ledger
+among them. **`main` waits for the owner's word**, and this sweep does not
+spend it.
+
+**The WI-039 lane tiebreak** — wait for `wi/046`, or scope the check to the
+WI-039 entry alone.
+
+**And the two contract calls already open** — WI-021 publishes no entry in
+`CONTRACTS.md` at all, so the refusal's shape is published nowhere, and
+WI-069's contract half waits on the owner's answer. Both are already on the
+record and neither is new.
+
+**Nothing else needs the owner.** The queue is moving, no slot is stuck, and
+the four items above wait on a dispatch, not on a decision.
