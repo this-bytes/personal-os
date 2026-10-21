@@ -561,7 +561,7 @@ export async function createMcpServer(options: McpServerOptions): Promise<McpSer
       },
       async (args) => {
         try {
-          guard('resource.template.get');
+          await guard('resource.template.get');
           return jsonResult(
             options.capabilities.resourceTemplateGet({
               id: args.id,
