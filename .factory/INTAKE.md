@@ -49,19 +49,19 @@ tree. During the 48-hour build that is the session running the push below,
 and it holds the block **WI-090 to WI-097** so that two sessions cannot claim
 the same number.
 
-| Number | Item                                                                                     | Owner  |
-| ------ | ---------------------------------------------------------------------------------------- | ------ |
-| WI-087 | The stranded branches, and what is actually worth keeping                                | worker |
-| WI-088 | The ledger split into what it is and what it was                                         | worker |
-| WI-090 | The substrate the product's own two measures stand on                                    | worker |
-| WI-091 | The gate that notices when a published contract goes false                               | worker |
-| WI-092 | The bundle-budget test's five-second timeout                                             | peer   |
-| WI-093 | The pin that says the old rule instead of the current one                                | worker |
-| WI-094 | The pin reads the rule out of a phrase — **folded into WI-093**, one file, one live item | peer   |
-| WI-095 | The resolver does not throw on a policy row that lost a field                            | worker |
-| WI-096 | Publish what WI-082 changed, and stop the product denying it                             | worker |
-| WI-097 | The guide, the filling, and where a resource came from                                   | worker |
-| WI-106 | Land the five domains on the integration vehicle — **was WI-104, renumbered**                | worker |
+| Number | Item                                                                                                 | Owner  |
+| ------ | ---------------------------------------------------------------------------------------------------- | ------ |
+| WI-087 | The stranded branches, and what is actually worth keeping                                            | worker |
+| WI-088 | The ledger split into what it is and what it was                                                     | worker |
+| WI-090 | The substrate the product's own two measures stand on                                                | worker |
+| WI-091 | The gate that notices when a published contract goes false                                           | worker |
+| WI-092 | The bundle-budget test's five-second timeout                                                         | peer   |
+| WI-093 | The pin that says the old rule instead of the current one                                            | worker |
+| WI-094 | The pin reads the rule out of a phrase — **folded into WI-093**, one file, one live item             | peer   |
+| WI-095 | The resolver does not throw on a policy row that lost a field                                        | worker |
+| WI-096 | Publish what WI-082 changed, and stop the product denying it                                         | worker |
+| WI-097 | The guide, the filling, and where a resource came from                                               | worker |
+| WI-106 | Land the five domains on the integration vehicle — **was WI-104, renumbered**                        | worker |
 | WI-107 | The effective policy is composed by the one module that may read across — **was WI-105, renumbered** | worker |
 
 **WI-089 is not in this block and does not belong to it.** The peer session
@@ -78,8 +78,8 @@ reused, never: the item moved and the record moved with it.
 
 **WI-104 is the peer session's, and this push's landing item moved to WI-106.**
 The peer opened WI-104 on `main` at 04:50 — "the published id is not the id the
-route takes" — and its own file says: *"If another session has taken WI-104 in
-the meantime, this item is renumbered and the table is corrected."* **This
+route takes" — and its own file says: _"If another session has taken WI-104 in
+the meantime, this item is renumbered and the table is corrected."_ **This
 session was dispatched at about 04:05 and did not write its item file into the
 ledger until after 05:00**, so the peer's read of the number space was correct
 when it was taken: WI-104 was in no item file, no dispatch record and no commit.
