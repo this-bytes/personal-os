@@ -46,6 +46,34 @@ The built-in **Echo** agent works without any external setup, so you can exercis
 whole loop — mention an agent in a conversation, watch it reply — before connecting a
 real agent.
 
+### One command for all three
+
+The three processes can also be started together:
+
+```bash
+npm run dev:stack
+```
+
+The stack runs the shared packages from their TypeScript rather than from their
+compiled output, so a change to a contract or to an adapter reaches the running
+instance instead of waiting for a rebuild. It watches the server, the worker, the
+contracts and the adapters, and restarts only what a change affects. The web
+client reloads in place.
+
+**The worker is never stopped in the middle of a turn.** A turn that is killed
+leaves a job whose lease expires, and the queue runs that turn a second time — so
+the worker is asked to stop, finishes the turn it is running, and exits.
+
+`PERSONAL_OS_PORT` and `PERSONAL_OS_WEB_PORT` move the stack off the default
+ports, which is how it runs beside a deployment that already holds them:
+
+```bash
+PERSONAL_OS_PORT=4318 PERSONAL_OS_WEB_PORT=5174 npm run dev:stack
+```
+
+This is an iteration tool, not a deployment. The deployment is the Compose stack
+below, and it runs the compiled code.
+
 ### There are no default credentials
 
 Personal OS has no built-in login. The owner account is created the first time you
@@ -104,6 +132,11 @@ directory (`./data`) holds the SQLite database, generated files and the secret k
 they must always be given the same value. Generate one with
 `openssl rand -base64 32`.
 
+**Replacing the stack does not re-run an agent turn.** The worker is given
+fifteen minutes to finish the turn it is running before it is stopped, because a
+turn that is killed leaves a job whose lease expires — and the queue runs that
+turn a second time.
+
 #### Running the stack from WSL
 
 The compose file works unchanged from a WSL distribution. The repository is
@@ -121,6 +154,15 @@ ln -sf "/mnt/c/Program Files/Docker/Docker/resources/bin/docker-credential-deskt
 
 docker compose -f deploy/compose.yaml up -d --build
 ./scripts/verify-deployment.sh http://127.0.0.1:4317 "<owner email>" "<owner password>"
+```
+
+To replace a running stack with new code, build the images and bring the stack
+back up without `--build`. The build is the slow part, and the data volume is not
+recreated, so the owner account and everything in it survive the replacement:
+
+```bash
+docker compose -f deploy/compose.yaml build
+docker compose -f deploy/compose.yaml up -d
 ```
 
 `scripts/verify-deployment.sh` checks a running deployment end to end: the client
