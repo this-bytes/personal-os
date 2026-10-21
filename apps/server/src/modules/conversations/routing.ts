@@ -60,6 +60,7 @@ export type RoutingBlockReason =
   | 'depth_limit'
   | 'no_active_agent'
   | 'not_coordinator'
+  | 'unknown_target'
   | 'unconfirmed';
 
 export interface RoutingDecision {
@@ -129,7 +130,16 @@ export function planRouting(input: RoutingInput): RoutingDecision {
       .filter((id): id is string => typeof id === 'string'),
   );
 
-  const explicit = (input.explicitTargets ?? []).filter((id) => enabledConnectionIds.has(id));
+  // The ids the caller named, and the ones that match nobody.
+  //
+  // The engine speaks in connection ids, and a connection id that matches no
+  // participant is an id the caller gave that nobody here answers to. Dropping
+  // it here is what left a delegation that named nobody with a refusal that
+  // named nobody either, so the unmatched ids are kept and the refusal says
+  // which they were.
+  const requestedTargets = unique(input.explicitTargets ?? []);
+  const explicit = requestedTargets.filter((id) => enabledConnectionIds.has(id));
+  const unmatchedTargets = requestedTargets.filter((id) => !enabledConnectionIds.has(id));
 
   const mentioned = resolveMentions(message.text, participants)
     .map((participant) => participant.agentConnectionId)
@@ -190,6 +200,18 @@ export function planRouting(input: RoutingInput): RoutingDecision {
               `${senderName(message, participants)} is not the coordinator, ` +
               `so ${notWokenClause(delegated, participants)}.`,
             blocked: 'not_coordinator',
+          };
+        }
+
+        // A delegation that names an id matching no participant names nobody,
+        // and that is not the same as a message that named nothing at all. The
+        // refusal says which one it is and names the id, so a client can
+        // branch on the reason instead of reading the prose.
+        if (unmatchedTargets.length > 0) {
+          return {
+            targets: [],
+            reason: nobodyNamedClause(unmatchedTargets, participants),
+            blocked: 'unknown_target',
           };
         }
 
@@ -345,12 +367,28 @@ function senderName(message: RoutingMessage, participants: RoutingParticipant[])
  * The engine names agents by their connection id and the owner knows them by
  * their display name, so a refusal that says who was not woken has to speak
  * the owner's language. A connection that matches no participant is named by
- * its id, because saying nothing would be worse than saying something.
+ * its id, because saying nothing would be worse than saying something — and
+ * the refusal that names nobody is where that happens.
  */
 function participantName(connectionId: string, participants: RoutingParticipant[]): string {
   return (
     participants.find((p) => p.agentConnectionId === connectionId)?.displayName ?? connectionId
   );
+}
+
+/**
+ * The refusal for a delegation that named nobody.
+ *
+ * The id is named the way the caller spelled it, because a connection that
+ * matches no participant has no display name to be called by. The sentence
+ * says that no agent here matches it, so nothing reads as if something had
+ * been woken.
+ */
+function nobodyNamedClause(connectionIds: string[], participants: RoutingParticipant[]): string {
+  const names = unique(connectionIds).map((id) => participantName(id, participants));
+  const subject = joinNames(names);
+  const target = names.length === 1 ? 'the delegation target' : 'the delegation targets';
+  return `No agent in this conversation matches ${target} ${subject}, so nothing was woken.`;
 }
 
 /**

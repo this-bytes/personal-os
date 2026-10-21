@@ -60,7 +60,17 @@ const badgeVariants = cva(
       variant: {
         default: 'border-slate-700 bg-slate-800 text-slate-200',
         success: 'border-emerald-800 bg-emerald-950 text-emerald-300',
-        warning: 'border-amber-800 bg-amber-950 text-amber-300',
+        /*
+         * A caution is a notice, not a failure, so it is not red: red is
+         * reserved for the things that actually failed. It is neutral, and
+         * whatever wears it carries an icon or a label of its own.
+         */
+        warning: 'border-slate-700 bg-slate-900 text-slate-300',
+        /*
+         * The accent, and the only thing that is allowed to be it: live
+         * work, or work waiting on the owner. See PRODUCT.md 11.
+         */
+        accent: 'border-accent-border bg-accent-surface text-accent-text',
         danger: 'border-red-800 bg-red-950 text-red-300',
         info: 'border-indigo-800 bg-indigo-950 text-indigo-300',
         outline: 'border-slate-700 text-slate-300',
