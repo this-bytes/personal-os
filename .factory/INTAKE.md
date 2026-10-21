@@ -3615,3 +3615,21 @@ condition the owner attached to that restart.
 served `README.md` line 3 and manifest description read the product's own sentence. **The
 owner said "before anyone finds it", and the repository still has zero readers.** That is why
 the lead executed the change itself rather than waiting for a queue.
+
+## 2026-10-22 09:55 — Chief: the platform's verdict on the published tip
+
+**The published tip is `2806f72`, and it is green on both workflows.** **CI run `39688717116` on
+`2806f72`: `completed/success`. CodeQL run `39688717169` on `2806f72`: `completed/success`.**
+
+**And it is a verdict on the front page's code.** The tree behind `2806f72` is byte-identical to
+`ce51521` — the tree that carries the corrected front page — and
+`git diff --name-only ce51521..2806f72` touches **only `.factory/**`\*\*. The commits between
+them are records: the landing's own record, and the record of the verifier decision and the
+ceiling.
+
+**And the runs this one supersedes.** The run on the middle commit `4047fef` was overtaken by the
+last push of the batch. **The record's own rule applies: a push that was overtaken is not a red
+build and not a failed gate — it is a push that was overtaken, and the run that judges it is the
+next one.** That next run is the one on `2806f72`, and it is green. **One push at a time, and
+the verdict read after each** — which is what the three pushes this turn were: `ce51521` (the
+front page), `4047fef` (records), `2806f72` (records).
