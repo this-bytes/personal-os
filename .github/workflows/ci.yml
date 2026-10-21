@@ -98,6 +98,22 @@ jobs:
       - name: Audit
         run: npm audit --audit-level=high
 
+      # A dependency can also arrive with a licence nobody approved, or with a
+      # licence that changed under a version bump, and the audit above says
+      # nothing about either.
+      #
+      # The ground truth is the record this factory keeps:
+      # `docs/dependency-licences.json` — one entry per package, each with the
+      # file its licence was read from, and the set of licences this project
+      # accepts. The gate carries **no second copy** of the licences: the
+      # record is the only list, so a licence is approved in exactly one place
+      # and the gate compares the lockfile against it.
+      #
+      # The gate's own output is printed here, so a reader of this run can see
+      # what it compared and what it found, and not only that it failed.
+      - name: The dependencies carry the licences we approved
+        run: npm run verify:licences
+
   docker:
     name: Build and run the stack
     runs-on: ubuntu-latest

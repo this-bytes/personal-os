@@ -33,6 +33,7 @@
     "reset:owner-password": "tsx scripts/reset-owner-password.ts",
     "verify:bundle": "tsx scripts/verify-bundle-size.ts",
     "verify:stack": "tsx scripts/verify-stack.ts",
+    "verify:licences": "tsx scripts/verify-licences.ts",
     "work:item": "tsx scripts/work-item.ts",
     "db:migrate": "npm run db:migrate -w @personal-os/server",
     "db:generate": "npm run db:generate -w @personal-os/server",
