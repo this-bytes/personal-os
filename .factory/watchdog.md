@@ -372,6 +372,14 @@ host is not running, the tasks are not the fault, and restarting the runtime
 fixes it for free.** Cancelling them would have thrown away two tasks that were
 only unmarked.
 
+**And the runtime's own README says what `unknown` means, and it is not a
+state with work in it:** _"After a restart, work that never started stays
+queued. Interrupted executions become `unknown` and are not replayed
+automatically."_ (`.../minimax-bot/README.md:36`.) **So `unknown` is the
+documented end state of an interrupted execution, and cancelling one would
+tidy the board and free nothing** — which is the reason the repair is a
+restart and not a cancellation.
+
 **5. A task marked `failed` may be work that _landed_.** The fleet state is
 not a record of whether the work arrived. Measured on 2026-10-21 at 19:57:
 **six tasks are marked `failed` with `BUSY`** — WI-021 (twice), WI-046,
