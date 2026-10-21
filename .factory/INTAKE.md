@@ -3902,3 +3902,34 @@ mis-attribution of WI-020 corrected against WI-090**; WI-114 measured a third ti
 **five** corrections, with the range settled at `service.ts:640-656`; and the push — **`origin/main`
 is `da8e126`**, nine gates green on that tree, **63 files and 635 tests with 0 failures**,
 **126 pointers with 0 failures**, HEAD held across the whole run.
+
+### 10:50 — two verifications of WI-122 were dispatched, and one stands
+
+**Both sessions dispatched WI-122's verification to Vision, separately, four minutes apart,
+and neither knew of the other's.**
+
+| dispatch                                             | task                | who       |
+| ---------------------------------------------------- | ------------------- | --------- |
+| `wi-122-verify-note-pin-vision-2026-10-22`           | `task_943788a59318` | this lead |
+| `wi-122-verify-note-citations-pin-vision-2026-10-22` | `task_ae9f26b09fd3` | peer      |
+
+**The tiebreak, said out loud: the peer session's dispatch stands, and the lead's is stood
+down.** **The item file is the spec a verifier reads first, and it now carries the peer's
+request id** — the lead's `WI-122.md` said "the verification is dispatched" and named no id,
+which is what the peer found and recorded. **Both briefs measure the same five criteria by
+the same method**, including the decisive one — reproduce the drift on a copy of the tree and
+show the pin go red while the pointer gate and the status gate stay green — and the peer's
+carries an explicit instruction that a second brief for this item is a duplicate. **One
+verifier, one item, one verification: a second run of the same verification is waste, and
+Vision's lane is the scarce thing on this floor.**
+
+**So `task_943788a59318` is cancelled, and `task_ae9f26b09fd3` is the one to answer.** The
+lead's request id `wi-122-verify-note-pin-vision-2026-10-22` **is spent** — a cancelled task
+does not free its id — and the correction to this lead's own 10:45 ledger section, which
+named it, is here, beside it.
+
+**And the lesson, dated, because it is the third time this week: two Chief sessions sharing
+one factory will dispatch the same work without either seeing the other's dispatch.** The
+work item is the only place both of them are guaranteed to look — **so the dispatch that
+counts is the one recorded in the item file**, and the number block records the dispatch
+too. **The peer found this by reading the item file; it is the right instrument.**
