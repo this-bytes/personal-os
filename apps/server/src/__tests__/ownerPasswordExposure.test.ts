@@ -34,6 +34,9 @@ import { createAuthService } from '../modules/auth/service.js';
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..', '..', '..');
 
+/** Where the helper script that reads the process table is written. */
+const scriptDir = fs.mkdtempSync(path.join(os.tmpdir(), 'pos-cmdline-'));
+
 /** A password that is impossible to confuse with anything else in the output. */
 const NEW_PASSWORD = 'exposure-canary-7Q4x2Zp9';
 const OLD_PASSWORD = 'correct horse battery';
@@ -54,38 +57,81 @@ function readCommandLine(pid: number): string | null {
   }
 
   if (process.platform === 'win32') {
-    const result = spawnSync(
-      'powershell.exe',
-      [
-        '-NoProfile',
-        '-NonInteractive',
-        '-Command',
-        `(Get-CimInstance Win32_Process -Filter "ProcessId=${pid}").CommandLine`,
-      ],
-      { encoding: 'utf8' },
-    );
-    const text = (result.stdout ?? '').trim();
-    return text.length > 0 ? text : null;
+    return readWindowsCommandLine(pid);
   }
 
   return null;
 }
 
-/** Whether this platform lets one process read the command line of another. */
-function canReadCommandLines(): boolean {
-  if (fs.existsSync(path.join('/proc', String(process.pid), 'cmdline'))) return true;
-  if (process.platform !== 'win32') return false;
+/**
+ * The command line of a process, as Windows reports it.
+ *
+ * The obvious way to ask is PowerShell, and it is the wrong way here.
+ * Starting powershell.exe costs several seconds on a loaded machine — measured
+ * at 5.7 s on this one, before it has asked anything — and the reset this file
+ * reads is held alive by a database lock that it gives up on after five
+ * seconds. The read and the process were racing, and the read lost.
+ *
+ * The legacy WMI service answers the same question in a fraction of that:
+ * 267 ms measured against the same 5.7 s. PowerShell stays as the fallback
+ * for a machine without a script host, because a slower answer is better than
+ * no answer. The smoke script reads the process table the same way.
+ */
+function readWindowsCommandLine(pid: number): string | null {
+  const script = windowsCommandLineScript();
+  if (script) {
+    const result = spawnSync('cscript.exe', ['//nologo', script, String(pid)], {
+      encoding: 'utf8',
+    });
+    const text = (result.stdout ?? '').trim();
+    if (text.length > 0) return text;
+  }
+
   const result = spawnSync(
     'powershell.exe',
     [
       '-NoProfile',
       '-NonInteractive',
       '-Command',
-      `(Get-CimInstance Win32_Process -Filter "ProcessId=${process.pid}").CommandLine`,
+      `(Get-CimInstance Win32_Process -Filter "ProcessId=${pid}").CommandLine`,
     ],
     { encoding: 'utf8' },
   );
-  return (result.stdout ?? '').trim().length > 0;
+  const text = (result.stdout ?? '').trim();
+  return text.length > 0 ? text : null;
+}
+
+/**
+ * The script that asks the WMI service for a command line.
+ *
+ * It is written once, into a directory of this file's own, and it answers one
+ * question: the command line of the process with this id.
+ */
+function windowsCommandLineScript(): string | null {
+  const script = path.join(scriptDir, 'command-line.vbs');
+  if (fs.existsSync(script)) return script;
+  if (spawnSync('cscript.exe', ['//nologo'], { encoding: 'utf8' }).error) return null;
+
+  fs.writeFileSync(
+    script,
+    [
+      'Dim svc, items, out',
+      'Set svc = GetObject("winmgmts:")',
+      'Set items = svc.ExecQuery("select CommandLine from Win32_Process where ProcessId=" & WScript.Arguments(0))',
+      'For Each item In items',
+      '  out = item.CommandLine',
+      'Next',
+      'WScript.Echo out',
+    ].join('\r\n'),
+  );
+  return script;
+}
+
+/** Whether this platform lets one process read the command line of another. */
+function canReadCommandLines(): boolean {
+  if (fs.existsSync(path.join('/proc', String(process.pid), 'cmdline'))) return true;
+  if (process.platform !== 'win32') return false;
+  return readWindowsCommandLine(process.pid) !== null;
 }
 
 /** Wait until the command line of a process contains a given string. */
@@ -195,6 +241,7 @@ afterAll(async () => {
     resetProcess.kill('SIGKILL');
   }
   fs.rmSync(dataDir, { recursive: true, force: true });
+  fs.rmSync(scriptDir, { recursive: true, force: true });
 });
 
 describe('the command line of the recovery path', () => {
