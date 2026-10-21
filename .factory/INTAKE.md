@@ -3564,8 +3564,8 @@ the lead executed the two-line change itself, **borrowing `README.md` from Wren*
 manifest's description inside WI-120's item. **Probe still verifies it, and the lead cannot
 accept its own work:** the verification is dispatched as
 `wi-120-verify-published-front-page-2026-10-22`, task `task_f8085b21663f`, against the
-**published** artefact. **WI-120 is in `review` and not accepted until that verdict comes
-back.**
+**published** artefact — **that dispatch was cancelled and replaced, and the section below
+says why.** **WI-120 is in `review` and not accepted until a verdict comes back.**
 
 **Six — WI-121 is dispatched and waiting for a slot.** Vision's blocked-agent want — _"the
 decision surface carries what an agent is blocked on"_ — is numbered, filed and dispatched to
@@ -3576,3 +3576,42 @@ was executed by the lead rather than by its owner.
 **Seven — one push at a time.** This record travels in the next push, and that push's run is
 the one that judges the tree. **The code is byte-identical to `ce51521`**, so the verdict
 cannot differ for a reason that touches code.
+
+## 2026-10-22 09:55 — Chief: the verifier, and the ceiling that made the substitution
+
+**One — WI-120's verification stands with Vision, not Probe.** Probe's dispatch was made
+first (`wi-120-verify-published-front-page-2026-10-22`, task `task_f8085b21663f`) and was
+**cancelled** when it was measured to be **queued behind a full dispatch ceiling rather than
+refusing** — and a second verifier on one item is exactly the duplicate work a ceiling of
+**two** cannot afford. **Vision is the substituted verifier**
+(`wi-120-verify-published-front-page-vision-2026-10-22`, task `task_faa2e8e0f9f1`), and the
+condition for a substitute is met: **Vision wrote none of this work.** WI-120 is in `review`
+and **not accepted** until that verdict comes back. **The lead wrote the change and cannot
+accept its own work**, and that is the whole point of the separation.
+
+**Two — the ceiling, measured, and what it is actually made of.** Three dispatches were
+queued in ten minutes — Wren's WI-120, Cog's WI-121, and the verifications — and **none of
+them started**. The two slots are held by `task_2a34be8fd7d9` (the 08:55 relay, **90
+minutes** old) and `task_9f6a55468fe9` (Cog's WI-086, **whose result was delivered and whose
+landing is on `main` at `06c1b2f`**). **Both are `waiting_for_tasks`, not working**: each
+waits on dependency batches whose floor posts are still `reviewed: false`, and **the floor
+has been locked since 07:04:29**. The floor's own messages say why — each relayed result is
+followed by a bot message with **`status: error` and empty text**, which is a Chief turn on
+the floor that died rather than answered. **So the factory's capacity is two finished tasks
+and a locked floor, and the backlog behind them is real work: WI-120's verification and
+WI-121's implementation.**
+
+**Three — what was NOT done, deliberately.** The two parked tasks were **not cancelled**. They
+have produced their results, their deliveries are recorded, and cancelling them would mark
+delivered work as cancelled **without touching the cause** — the unreviewed floor posts and
+the lock behind them. **Cancelling is not the repair; the lock is.** The peer's own record
+of the same diagnosis is that a restart buys the floor, the wasted slot and the lanes, at the
+price of the turn in flight — and **Cog's WI-086 turn has now landed**, which was the
+condition the owner attached to that restart.
+
+**Four — the front page does not wait for any of this.** It is published, measured and green:
+`ce51521` merged, `npm run gates` exit 0 with all nine gates, **CI run `39687241876`
+`completed/success` and CodeQL run `39687241897` `completed/success` on that sha**, and the
+served `README.md` line 3 and manifest description read the product's own sentence. **The
+owner said "before anyone finds it", and the repository still has zero readers.** That is why
+the lead executed the change itself rather than waiting for a queue.
