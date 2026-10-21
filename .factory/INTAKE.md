@@ -482,9 +482,10 @@ second dispatch.
 | `wi-031-contract-verify-again-2026-10-22` | WI-031 — the contract's route entry, verified once more | Probe | `task_f93c4f09452d` | **DISPATCHED AT 03:30 — the verification WI-031 has never had.** Batch `batch_3bbb068fb6cf`, **queued** at Probe — **AND IT DIED: refused `BUSY` after 4m23s (03:10:18 → 03:14:41) with a zero-length answer, so that id is spent.** **The live dispatch is now Wren's**: `wi-031-contract-verify-wren-2026-10-22`, `task_c07c22d8d6b5`, batch `batch_5529c0595838`, queued at Wren at 03:34 — see the row below. The second attempt (`wi-031-contract-verify-2026-10-22`, `task_30847905e60e`) was refused `BUSY` after 28 seconds with no report, so **that id is spent** and this is a new id and a new title. The correction merged at `e125039`: the contract says the code implements `/api/executions` and names **both** writers of an execution's outcome. **The tree is green at `7c4bc45`** — so any red the verifier finds is real, and the three reds in `forge-briefs.test.ts` that an earlier version of this brief warned about are gone (WI-093's pin, merged `203b7e0`). **Re-measure every pointer and say which commit you measured at**, because `CONTRACTS.md` moved under the earlier brief. **Do not verify WI-069's contract half** — one file, one live item, and that half waits on the owner |
 | `wi-080-stale-contract-comment-verify-third-2026-10-22` | WI-080 — the code comment that describes the contract, verified at last | Probe | `task_5152a57d9d84` | **DISPATCHED AT 03:30 — the verification WI-080 has never had.** Batch `batch_02f40bf03433`, **queued** at Probe — **AND IT DIED: refused `BUSY` after 4m40s (03:10:29 → 03:15:09) with a zero-length answer, so that id is spent.** **The live dispatch is now Wren's**: `wi-080-stale-contract-comment-verify-wren-2026-10-22`, `task_6a3e9baccce4`, batch `batch_292830de9d51`, queued at Wren at 03:27 — see the row below. Both earlier attempts were refused `BUSY` after 28 seconds with no result — `task_9f0c155958f9` and `task_0d1955cb7610` — so **both ids are spent**. The implementation (Cog's, `task_9d753ce22c6b`) merged at `ceed799`: the comment at `apps/server/src/modules/mcp/server.ts:145-151` now says the contract states the rule, that it is the same rule the writes carry, and where it is published. **The verifier is Probe because the implementation was Cog's.** **The tree is green at `7c4bc45`**, so any red is real; and the brief says the `CONTRACTS.md` line numbers have moved since the brief was written, so **re-measure them**. **Do not edit `CONTRACTS.md`** — one file, one live item, and WI-031's correction, WI-034's citation drift and WI-034's new check all live there |
 | `wi-010-direction-document-verify-cog-2026-10-22` | WI-010 — the repaired direction document, verified by a second hand | Cog | `task_0398b06e6479` | **DISPATCHED AT 03:27 — THE VERIFICATION, ON A LANE THAT CAN TAKE IT.** Probe's chat has refused twenty-eight delegations and nothing in it has succeeded since 02:11:29, so the verification dispatched to Probe at 03:11 (`task_f99a95269325`, the row above) was refused `BUSY` after 9m47s with a zero-length answer. **Vision wrote the direction document, so Vision cannot verify it; Cog did not write it, so Cog is independent of the work; the lead accepts.** Batch `batch_a352306b01f5`, queued at Cog. **The tiebreak is said out loud in the brief itself, so the verifier knows why it was chosen and what is already settled:** WI-024's briefs repair merged (`69c250b`), **WI-093's pin merged (`203b7e0`) and reads the rule out of the document, so there is nothing left to re-point** — which is what an earlier dispatch asked for; WI-098 (the ADR's own copy) is a separate item and not this item's defect; and **the resource editor's placement is the owner's open question, so the document's silence about it is not a defect.** The brief says: **measure everything yourself and say which commit you measured at**, edit nothing (`prototypes/DIRECTION.md` is Vision's file and `CONTRACTS.md` is one file one live item), and **an unmet criterion is a finding, not a failed report** |
-| `wi-080-stale-contract-comment-verify-wren-2026-10-22` | WI-080 — the code comment that describes the contract, verified | Wren | `task_6a3e9baccce4` | **DISPATCHED AT 03:27 — the verification, on a lane that can take it.** Probe's chat has refused twenty-eight delegations and nothing in it has succeeded since 02:11:29: **both attempts to Probe (`task_9f0c155958f9`, `task_0d1955cb7610`) and the peer session's third (`task_5152a57d9d84`) were refused `BUSY` with a zero-length answer**, so three ids are spent and WI-080 had no live verification at all. **Cog implemented this item (`task_9d753ce22c6b`, merged `ceed799`) and cannot verify it; Wren did not write it.** Batch `batch_292830de9d51`, queued at Wren. The brief says the implementation merged as `ceed799`, that the comment at `apps/server/src/modules/mcp/server.ts:145-151` must be read against **the contract as it is published now**, and that **the published places are to be found from the contract and not from line numbers, because `CONTRACTS.md` has moved under earlier briefs**; **edit nothing** (`CONTRACTS.md` is one file one live item, and `forge-briefs.test.ts` is Probe's file); and **an unmet criterion is a finding, not a failed report** |
+| `wi-080-stale-contract-comment-verify-wren-2026-10-22` | WI-080 — the code comment that describes the contract, verified | Wren | `task_6a3e9baccce4` | **DISPATCHED AT 03:27 — the verification, on a lane that can take it.** Probe's chat has refused twenty-eight delegations and nothing in it has succeeded since 02:11:29: **both attempts to Probe (`task_9f0c155958f9`, `task_0d1955cb7610`) and the peer session's third (`task_5152a57d9d84`) were refused `BUSY` with a zero-length answer**, so three ids are spent and WI-080 had no live verification at all. **Cog implemented this item (`task_9d753ce22c6b`, merged `ceed799`) and cannot verify it; Wren did not write it.** Batch `batch_292830de9d51`, queued at Wren. The brief says the implementation merged as `ceed799`, that the comment at `apps/server/src/modules/mcp/server.ts:145-151` must be read against **the contract as it is published now**, and that **the published places are to be found from the contract and not from line numbers, because `CONTRACTS.md` has moved under earlier briefs**; **edit nothing** (`CONTRACTS.md` is one file one live item, and `forge-briefs.test.ts` is Probe's file); and **an unmet criterion is a finding, not a failed report** — **AND THE VERDICT CAME BACK, AND IT IS "VERIFIED": WI-080 IS ACCEPTED BY CHIEF, 2026-10-22.** Wren's report: **every claim in the comment is true of the contract as published**, read against the contract and not against the brief's line numbers — `:754` carries the tool table's row for `resource.get` ("Read a resource. Not another agent's own memory."), `:739` is the heading `### MCP exposure`, `:768-770` carry "who owns a resource is settled before it is handed over — the same rule the writes carry", `:676` and `:771-773` carry "the rule is stated once" and the three tools, and `:776` with `:705-706` and `:780-782` carry the owner's API being out of reach. **The lead re-measured it rather than taking it on trust:** `:754` and `:739` read as quoted, and the diff `ceed799^1..ceed799` is **8 comment lines in and 6 out with every changed line a comment line**, so this row's "all 14 changed lines are comment lines" is true. Gates at `297a387`: typecheck 0, test 0 (48 files, 452 tests), format:check 0, build 0. **The acceptance is the lead's and the lead did not write the work.** **AND THE MERGE THAT DELIVERED IT BROKE EIGHT OF THE CONTRACT'S POINTERS INTO THE SAME FILE — the comment grew by two lines, so every line of `server.ts` below it moved +2 and `CONTRACTS.md` did not follow** (`:636`, `:638`, `:639`, `:640`, `:724`, `:725` and `:726` twice; plus `:1343`'s `:368`, already stale, which should be `:395`). **Measured line by line by the lead.** **That is WI-103**, dispatched to Wren as `wi-103-contract-pointers-after-wi-080-2026-10-22`, `task_b0c1dbb8ab05` — **and this acceptance does not waive it** |
 | `wi-031-contract-verify-wren-2026-10-22` | WI-031 — the contract's route entry, verified by a second hand | Wren | `task_c07c22d8d6b5` | **DISPATCHED AT 03:34 — and WI-031 still has no verification report of any kind.** The attempt at 02:35 (`task_30847905e60e`) and the peer session's at 03:30 (`task_f93c4f09452d`) were both refused `BUSY` with a zero-length answer, so **three request ids are spent on this item and nothing was measured.** **Cog wrote the correction; Wren did not, and `CONTRACTS.md` is Wren's file.** Batch `batch_5529c0595838`, queued at Wren. The brief carries the nine criteria and says three things: **re-measure every pointer and say which commit you measured at**, because the tree moves; **the criterion that a test pins it was written for Probe to write — since Probe cannot be reached, the substituted verifier satisfies it on her own branch, not merged, or reports it as a finding against the criterion rather than waiving it silently**; and **do not verify WI-069's contract half** (one file, one live item — that half waits on the owner) |
 | `wi-036-record-reverification-vision-2026-10-22` | WI-036 — the licence record, re-verified against the merged successor | Vision | `task_8609cdc160f8` | **DISPATCHED AT 03:35 — the third brief, on a lane that can take it.** The third brief to Probe (`task_762f49d237f9`) was refused `BUSY` after 28 seconds with a zero-length answer, so that id is spent and **WI-036's re-verification had no live dispatch at all.** **Wren wrote the successor (`38e1a9a`) and a Chief session merged it, so neither can verify it; Vision did not write it.** Batch `batch_49d7c93ab481`, queued at Vision. The brief spells the premise out so it can be checked rather than believed: **the record's change must be exactly two summary numbers — 500 lockfile entries and 11 distinct licences — re-derived and not read out of the record, and seventeen re-quoted evidence strings, each of which must be the verbatim head of the file it names, with no quote still stopping before the grant** (a quote ending at "All rights reserved." is a false statement about a permissive licence). **`docs/strategy.md` is out of scope** — it is live in another item — and `docs/**` is not to be edited: this is a verification, and a defect is a finding in the report |
+| `wi-103-contract-pointers-after-wi-080-2026-10-22` | WI-103 — the contract's pointers into the code file it corrected | Wren | `task_b0c1dbb8ab05` | **DISPATCHED AT 04:17 — THE NUMBER IS THE LEAD'S (WI-103, the next free number above WI-102), AND THE DEFECT WAS FOUND BY WI-080's VERIFICATION AND MEASURED BY THE LEAD.** WI-080's merge (`ceed799`) replaced a 24-line doc comment with a 26-line one — 8 lines in, 6 out, every one a comment line — so **every line of `apps/server/src/modules/mcp/server.ts` below the comment moved +2, and `CONTRACTS.md`'s pointers into that file did not follow.** Nine citations are wrong: `:636` (`:465-481` → `:467-483`), `:638` (`:361` → `:363`), `:639` (`:373-377` → `:375-379`), `:640` (`:382-384` → `:384-386`), `:724` (`:153` → `:155`), `:725` (`:386` → `:388`), `:726` (`:447` → `:449` and `:417` → `:419`), and `:1343` (`:368` → `:395`). **The ninth was already stale before WI-080** — `22ef5ba` moved it to `:393` without updating the citation — **so the +2 arithmetic explains eight of the nine and not the ninth, which is why the brief says to measure and not to add.** Batch `batch_6158711cfd29`, queued at Wren. **The scope is `CONTRACTS.md` only: the code is correct and the contract's pointers are what is wrong.** **One file, one live item — WI-034's citation drift was live in `CONTRACTS.md`, and the lead landed it first** (measured before it was taken: `merge-tree` named no conflicted file, and the three corrected citations were re-measured line by line — `resources/service.ts:525` is the enqueue, `audit/service.ts:79` is the `success` default, `app.ts:190` is the error handler) **so the lane is clear.** The brief also says: check every other pointer `CONTRACTS.md` holds into that file and **report the wrong ones, do not fix them** |
 
 **A cancelled task is not a dispatch — but a cancelled dispatch does not free its
 request id.** That second half was wrong here, and it is corrected now rather
@@ -1396,6 +1397,85 @@ push.** The peer session pushed `a08f206` (03:40) and `95e5165` (03:52) — **an
 suite was re-run over the changed document and stayed green, which is the
 measurement that matters for WI-010's verification.** **This session's push
 carries the ledger record and the record of the tree's own gates, and no code.**
+
+**And the platform's verdict on that push, read afterwards and from outside this
+machine.** `af43b08` — **CodeQL `completed/success`** (Analyze
+javascript-typescript) and **CI `completed/success`** (Lint the workflows,
+Dependency audit, Build and test, Build and run the stack) — **VERDICT: GREEN.**
+**Green is a property of the HEAD being pushed: the local gates on that tree, and
+the platform's verdict read afterwards and recorded here.** `origin/main` =
+`af43b08` = local `main`, `rev-list --left-right --count origin/main...main` =
+`0 0`. **This paragraph is the one commit this session leaves unpushed** — the
+verdict above is for `af43b08`, which is on `origin/main`, and the next push
+carries this record; the verdict for that push is read then, and read the same
+way.
+
+---
+
+**Chief's section — 2026-10-22 04:25 — the first verification to land on a
+substituted lane came back VERIFIED, and the merge that delivered it broke
+eight of the contract's pointers into the same file.**
+
+**WI-080 is accepted.** Wren's verdict — read against the contract and not
+against the brief's line numbers — is that **every claim in the comment is true
+of the contract as published**: `:754` carries the tool table's row for
+`resource.get`, `:739` is the heading `### MCP exposure`, `:768-770` carry
+"who owns a resource is settled before it is handed over — the same rule the
+writes carry", `:676` and `:771-773` carry "the rule is stated once" and the
+three tools, and `:776` with `:705-706` and `:780-782` carry the owner's API
+being out of reach. **The lead re-measured it rather than taking it on trust:**
+`:754` and `:739` read as quoted, and the diff `ceed799^1..ceed799` on
+`server.ts` is **8 comment lines in and 6 out, every changed line a comment
+line**, so this factory's earlier "all 14 changed lines are comment lines" is
+true. Gates at `297a387`: typecheck 0, test 0 (48 files, 452 tests),
+format:check 0, build 0. **The lead accepts, and the lead did not write the
+work.** The item's own record says so under "Accepted — 2026-10-22, Chief
+(Wren verified)", and its `State:` line — which still read "implement — opened,
+briefed in full, and NOT dispatched" — is corrected in place rather than
+overwritten, with the history kept.
+
+**And the merge that delivered WI-080 broke eight of the contract's pointers
+into the same file — the merge made the comment true and moved the code the
+contract points at.** The comment grew by two lines, so every line of
+`apps/server/src/modules/mcp/server.ts` below it moved +2, and `CONTRACTS.md`
+did not follow: `:636` (`:465-481` → `:467-483`), `:638` (`:361` → `:363`),
+`:639` (`:373-377` → `:375-379`), `:640` (`:382-384` → `:384-386`), `:724`
+(`:153` → `:155`), `:725` (`:386` → `:388`) and `:726` (`:447` → `:449`, `:417`
+→ `:419`) now point at lines that hold a comment or a different statement, and
+`:1343`'s `:368` was **already** stale before WI-080 — it should be `:395`.
+**Every one of the nine was measured line by line by the lead**, and the ninth
+one is the reason the brief tells the fixer to measure rather than to add two:
+`22ef5ba` moved that line to `:393` without updating the citation, and WI-080's
++2 took it to `:395`. **WI-080's acceptance does not waive any of it.**
+
+**So the drift is WI-103, and the lead has numbered it** (the next free number
+above WI-102) and dispatched it to Wren: `wi-103-contract-pointers-after-wi-080-2026-10-22`,
+`task_b0c1dbb8ab05`, batch `batch_6158711cfd29`. **Scope is `CONTRACTS.md`
+only — the code is correct and the contract's pointers are what is wrong** — and
+the brief also says to check every other pointer `CONTRACTS.md` holds into that
+file and **report the wrong ones, not fix them**.
+
+**And WI-034's own citation drift was landed first, because `CONTRACTS.md` is one
+file and one live item.** The branch `wi/034-citation-drift` at `7e58b8d` was
+pushed and unmerged, and it was holding the file that WI-103 needs. **The lead
+measured the merge before taking it** — `merge-tree` named no conflicted file —
+and **re-measured the three corrected citations against the tree**:
+`resources/service.ts:525` is the enqueue, `audit/service.ts:79` is the
+`result: input.result ?? 'success'` default, and `app.ts:190` is the error
+handler, where each old citation pointed somewhere else. **Merged as `26fb68e`,
+"Merge WI-034's citation drift: the audit outcome entry cites the lines that
+carry its claims", and the merge message says out loud that the merge is the
+lead's.** The gates, on the merged tree: **typecheck 0, format:check 0, build
+0, test 0 — server 28 files / 295 tests, web 9 / 82, worker 5 / 31,
+agent-adapters 2 / 16, contracts 4 / 28** (48 files, 452 tests).
+
+**And what this section is worth, stated plainly: the substitution worked.**
+The first verification to come back on a lane other than Probe's was **not a
+thinner report** — it carried a claim-by-claim table, the gates, and **two
+findings of its own, one of which was a regression in the published contract
+that nobody had looked for** and which would have stayed false in `main`
+otherwise. **That is the evidence for the owner's second question, and the lead
+does not answer it — but the lead puts it in front of the owner.**
 
 **The owner's open decision, and it is the only thing that restores the lane.**
 **`miniapp restart minimax-bot`** clears the wedged session and is the only thing
