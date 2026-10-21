@@ -2742,3 +2742,21 @@ in `.factory/work/WI-117.md`.** This item is **WI-117**, read immediately before
 was taken: `main` runs to WI-116, the peer holds WI-113, WI-114 and WI-115 are
 taken, WI-116 is reserved for the contract-publication item, and WI-117 appeared
 in no item file, no dispatch record and no commit.
+
+### One correction to the section above, dated, and it is about the preserved branch
+
+**`wi/072-queue-index` is red on CI, and it is red for exactly the reason its
+commit message names:** the platform's verdict is `Build and test = failure`,
+every other check green or skipped, and reproduced locally the failure is the
+vitest suite and nothing else — **2 failed, 12 passed, of 14**.
+
+**And it must not be landed as-is.** Its `package.json` was written against a
+tree that predates `main`'s, and the diff against `main` **removes**
+`verify:contracts`, `gates`, `dev:stack` and the `license` field — all four of
+which `main` now has, and **one of which CI runs** (`ci.yml:126`,
+`npm run verify:contracts`). The three-way merge is clean on `package.json`
+(verified in a scratch worktree: all four survive, because `main`'s side is
+the one that changed), but the branch's _intent_ for that file is a deletion.
+**Re-base it and take only the ledger migration.** The seven files that
+conflict on merge are all `.factory/work/WI-*.md` — the ledger files the item
+exists to migrate.
