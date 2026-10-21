@@ -7827,3 +7827,65 @@ wrongly.
 **This is now the watchdog's fifth correction**, and it is the same shape as
 the first: a task's `result` is not its output. **"Failed" and "lost" are
 different words, and the state file uses the first one to mean the second.**
+
+## Correction — 2026-10-21 19:58: a timestamp of mine was wrong, and the transport's cause was not what I said
+
+**Two things in this session's own records are wrong, and one of them is a
+timestamp a reader would use.**
+
+**1. The cancellation time.** The 19:47 table above says `task_797badb7e918`
+was "cancelled at 19:04:50". **It was cancelled at 18:58:10** — the peer
+session cancelled it, and the `endedAt` in the fleet state is `1792569490928`,
+which is **18:58:10** local. **I wrote the time from an estimate instead of
+from the field, and a correction that misstates when something happened is
+still a false claim.**
+
+**2. The transport's cause.** The 19:47 section says the plugin's MCP server is
+a node service, that "no node process is running for it", and concludes that
+the transport was down. **The cause was different and it is now known: the
+Mini App runtime that hosts the dispatcher had stopped, and it takes the
+plugin's MCP server down with it.** The peer session restarted the Mini App at
+**18:56:54** with `miniapp restart`, and **the dispatcher and the MCP server
+both came back.** The two orphaned tasks were **released, not cancelled**, and
+**both slots refilled within seconds** — the queue went **29 → 27 → 26**.
+
+**What is still true, measured, and worth keeping: the restart did not reach
+this session.** `mavis mcp list` returns **no servers** here, at 19:41 and
+again at 19:52, while the peer session cancelled tasks at **18:58:10** and
+**19:14:20**. **So the registration is per-session, and a session that was
+live when the runtime stopped keeps its empty tool set.** The cancellations
+were done by the session that had the tools, and **this session still cannot
+post, dispatch or cancel.**
+
+### What the peer session cancelled at 19:14, and why it was right
+
+`task_a4d24aa2dc24` — WI-068's half for `CONTRIBUTING.md` — was **cancelled at
+19:14:20**, and the reason is the owner's decision rather than the factory's
+schedule: **its brief told Wren to write "the licence is deliberately
+undecided" into a file that the owner's 19:08 answer had just made false.** A
+brief that instructs a worker to write a falsehood is cancelled, not run.
+
+### The three files taken under the tiebreak, and who owes the acceptance
+
+`FACTORY.md:38` says **"Chief is the tiebreaker: when two roles want the same
+file, Chief decides and says so in the group."** The peer session took Wren's
+`README.md`, `docs/dependency-licences.json` and `docs/strategy.md` under that
+tiebreak rather than queue behind Wren's nine-deep lane, **and the content is
+the owner's decision transcribed and nothing else.**
+
+**The acceptance of those three is not the peer's — and it is not yet mine
+either.** One is already covered: **`README.md` is WI-041, and WI-041 is in
+`verify` with Probe on it.** **One raises a question nobody has asked:** the
+licences record `docs/dependency-licences.json` is **WI-036, and WI-036 is
+`accepted`** — accepted, with Probe's verification done, on a record that said
+the licence was unsettled. **The peer then changed that accepted file's six
+per-package notes to say MIT.** **So WI-036's acceptance was given to a version
+of the file that is no longer the file.** Whether the five criteria still hold
+against the changed record is a question for the verifier, not for a lead, and
+**nobody has asked it.** The strategy document's licence statements changed on
+the same commit, and which item's acceptance covered them needs the same
+question asked.
+
+**And this session cannot dispatch that verification** — the transport is not
+in this session's hands — **so it is recorded here, for the session that has
+the tools.**
