@@ -137,14 +137,25 @@ describe('a note that no longer matches the tree', () => {
     expect(result.stdout).toContain('theThing');
   }, 60_000);
 
-  it('fails on this repository, on the note the contract publishes today', async () => {
-    // The real drift, in the shape the gate would catch if the note had a
-    // claim: the contract's template record says the code does not implement
-    // it, and WI-017 put `resource.template.list` in the tree. The contract
-    // is copied so that the copy is what the gate reads, and the table is
-    // written for the copy.
+  it('fails on this repository, on a note the tree contradicts', async () => {
+    // The real drift, in the shape the gate catches: a note says the code
+    // does not implement something, and the tree has it. WI-017 put
+    // `resource.template.list` in the tree, so that is what the note claims
+    // is absent.
     const root = scratch('contract-status-real-drift-');
-    fs.copyFileSync(path.join(repoRoot, 'CONTRACTS.md'), path.join(root, 'CONTRACTS.md'));
+
+    // The scratch copy is the real contract with one section added to it, and
+    // the added section carries the false note. The section is added rather
+    // than an existing note rewritten, so the proof does not depend on what
+    // any one note in the contract happens to say today — the contract's own
+    // notes are corrected from time to time, and a proof that broke when one
+    // of them was corrected would be a proof that stopped proving.
+    const contract = fs.readFileSync(path.join(repoRoot, 'CONTRACTS.md'), 'utf8');
+    write(
+      root,
+      'CONTRACTS.md',
+      `${contract}\n## A drift, introduced for the proof\n\n**The code does not implement this yet.**\nNothing in the tree carries it.\n`,
+    );
     write(
       root,
       'table.json',
@@ -153,8 +164,8 @@ describe('a note that no longer matches the tree', () => {
           contract: 'CONTRACTS.md',
           claims: [
             {
-              id: 'the-template-record',
-              section: 'The template record',
+              id: 'a-drift',
+              section: 'A drift, introduced for the proof',
               note: 'The code does not implement this yet',
               claim: 'not-implemented',
               expect: [
@@ -183,7 +194,7 @@ describe('a note that no longer matches the tree', () => {
 
     expect(result.status).toBe(1);
     expect(result.stdout).toContain('FAIL');
-    expect(result.stdout).toContain('CONTRACTS.md:622');
+    expect(result.stdout).toContain('[a-drift]');
     expect(result.stdout).toContain('not-implemented');
     expect(result.stdout).toContain('packages/contracts/src/mcp.ts');
     expect(result.stdout).toContain('resource.template.list');
@@ -331,12 +342,20 @@ describe('a note the gate cannot read', () => {
 });
 
 describe('the tree as it stands', () => {
-  it('passes, with the claims it checked', async () => {
+  it('passes, with every claim in the table checked', async () => {
     const result = await runGate([]);
+
+    // The count is read from the table rather than written down here, so the
+    // assertion keeps its meaning when a claim is added to the table — which
+    // is what happens every time a note is given a claim.
+    const table = JSON.parse(
+      fs.readFileSync(path.join(repoRoot, 'scripts', 'contract-status.json'), 'utf8'),
+    ) as { claims: unknown[] };
 
     expect(result.status).toBe(0);
     expect(result.stdout).toContain('Every claim in the table matches the tree.');
-    expect(result.stdout).toContain('Checked (9)');
+    expect(result.stdout).toContain(`Checked (${table.claims.length})`);
+    expect(result.stdout).toContain('Failures (0)');
   }, 60_000);
 
   it('says it could not run when the claim table is not there', async () => {
