@@ -89,7 +89,7 @@ turn derived from one human request together. `origin` records who spoke and how
 the delegation chain has travelled — the basis of the echo-loop guard. `executionId`
 names the execution the message belongs to — the execution is the run itself, and
 the message it produced is that run's own record
-(`apps/server/src/modules/conversations/service.ts:53-54`). **`detail` is the
+(`apps/server/src/modules/conversations/service.ts:56-57`). **`detail` is the
 server's own sentence about how the message ended** — a message that did not finish
 says why, in the server's words
 (`packages/contracts/src/conversation.ts:90`), and the client shows it as it is
@@ -787,7 +787,7 @@ the connection is granted them, the way every other tool on that surface is
 (`apps/server/src/modules/mcp/server.ts:532-576`). `resource.create` takes the
 `template` input at `:428`, merges the caller's values into the template's spec at
 `:446-448`, and passes the template's id and version on at `:458`. The merge rules
-themselves are at `apps/server/src/modules/resources/templates.ts:496-543`, and the
+themselves are at `apps/server/src/modules/resources/templates.ts:497-543`, and the
 resource records them at
 `apps/server/src/modules/resources/service.ts:191-192` and `:374-375`.
 
@@ -940,7 +940,7 @@ workspace gets its own.
 **Reading the policy is not one of the actions the policy governs.** The tool
 answers even when the policy refuses that agent's other actions, because an agent
 that cannot see why it was refused cannot do anything sensible about it
-(`apps/server/src/modules/mcp/server.ts:109-110`).
+(`apps/server/src/modules/mcp/server.ts:110`).
 
 **`resource.template.get` is in the default grant list, so every agent connection
 gets it.** The same default set carries it beside `resource.template.list`
@@ -1112,7 +1112,7 @@ goals, and not per chain, which is the whole difference between a daily cap and
 **A cap is only as good as the number it is measured against.** The daily cap is
 measured against the spend units recorded on the executions, and a turn's cost is
 one spend unit — the measure the product already has
-(`apps/server/src/modules/conversations/routing.ts:305-306`). **The product does
+(`apps/server/src/modules/conversations/routing.ts:306`). **The product does
 not yet record it against an execution**: every execution is written with no spend
 units (`apps/server/src/modules/conversations/dispatch.ts:171`,
 `apps/server/src/modules/factory/service.ts:368`), and the column defaults to zero
@@ -1417,7 +1417,7 @@ execution is created with `spendUnits: 0`
 (`apps/server/src/modules/conversations/dispatch.ts:146`) and nothing writes the
 column afterwards — the turn count the router uses to enforce a spend limit is
 computed in memory and never stored
-(`apps/server/src/modules/conversations/routing.ts:279-284`). A client that shows
+(`apps/server/src/modules/conversations/routing.ts:281-284`). A client that shows
 the cost shows `0`, and that is a true statement about what is recorded rather
 than a measure of what the work was worth.
 
@@ -1922,7 +1922,7 @@ automation or task is recorded as authored by the agent that made it.
 write one from the service layer — `POST /api/approvals/:id/decide` and `POST
 /api/agui/runs/:runId/resume`, both at
 `apps/server/src/modules/approvals/resume.ts:53`, and `PATCH /api/tasks/:id` at
-`apps/server/src/modules/factory/service.ts:315`, and that one only when the task
+`apps/server/src/modules/factory/service.ts:317`, and that one only when the task
 leaves `unknown`. **No mutating route writes none.**
 
 The twelve that used to write none write one each, at the route:

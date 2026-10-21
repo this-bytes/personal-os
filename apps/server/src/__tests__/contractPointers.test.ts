@@ -10,9 +10,16 @@
  * `CONTRACTS.md` cites the code by line number, and a citation goes stale
  * every time a nearby line changes: WI-034, WI-103 and the publication that
  * is landing now have each spent an item correcting citations by hand. A
- * citation that points at a blank line, a comment or a closing brace says
- * nothing about the code, and a citation of a file that is not in the tree
- * says nothing at all.
+ * citation that points at a blank line or a comment says nothing about the
+ * code, and a citation of a file that is not in the tree says nothing at all.
+ *
+ * **A closing brace is code.** The gate once asked a line for a letter and
+ * called `}` a line with nothing on it, so a citation of a whole function was
+ * reported as pointing at nothing and a function could not be cited by its
+ * closing brace. The rule here is the corrected one, and the cases below hold
+ * it to the corrected rule: a brace passes, a range passes when it starts and
+ * ends on code even if there is a blank line inside it, and a range that
+ * starts on a comment or ends on a blank line fails.
  *
  * The script is spawned rather than imported, so what is exercised is the
  * gate as CI runs it — the arguments, the output and the exit code — and not
@@ -109,18 +116,31 @@ describe('a citation that points at code', () => {
     expect(result.stdout).toContain('Every one of the 1 pointers points at code.');
   }, 60_000);
 
-  it('passes on a range whose every line holds code', async () => {
+  it('passes on a range that starts and ends on code', async () => {
+    // The range covers a line of code, a blank line and a closing brace. The
+    // blank line in the middle is not a fault: the range names a block, and
+    // the block starts on code and ends on code.
     const root = scratch('contract-pointers-range-');
     write(
       root,
       'CONTRACTS.md',
-      ['# Contracts', '', 'The thing is at `src/thing.ts:1-2`.', ''].join('\n'),
+      ['# Contracts', '', 'The thing is at `src/thing.ts:2-4`.', ''].join('\n'),
     );
     write(
       root,
       'src/thing.ts',
-      ['export const theThing = 1;', 'export const theOtherThing = 2;', ''].join('\n'),
+      ['// a comment about the thing', 'export const theThing = 1;', '', '}', ''].join('\n'),
     );
+
+    const result = await runGate(['--root', root, '--contract', 'CONTRACTS.md']);
+
+    expect(result.status).toBe(0);
+    expect(result.stdout).toContain('Every one of the 1 pointers points at code.');
+  }, 60_000);
+
+  it('passes on a citation of a closing brace, because a brace is code', async () => {
+    // The line is `}`. It carries no letter, and it is code.
+    const root = treeWith(['# Contracts', '', 'The thing is at `src/thing.ts:4`.', ''].join('\n'));
 
     const result = await runGate(['--root', root, '--contract', 'CONTRACTS.md']);
 
@@ -179,19 +199,21 @@ describe('a citation that points at nothing', () => {
     expect(result.stdout).toContain('the cited line holds no code (it is empty)');
   }, 60_000);
 
-  it('fails on a citation of a closing brace, which holds no letter', async () => {
-    const root = treeWith(['# Contracts', '', 'The thing is at `src/thing.ts:4`.', ''].join('\n'));
+  it('fails on a range that starts on a comment', async () => {
+    // The range opens on the comment above the thing, so it names a block
+    // that begins in prose.
+    const root = treeWith(['# Contracts', '', 'The thing is at `src/thing.ts:1-4`.', ''].join('\n'));
 
     const result = await runGate(['--root', root, '--contract', 'CONTRACTS.md']);
 
     expect(result.status).toBe(1);
-    expect(result.stdout).toContain('[src/thing.ts:4]');
-    expect(result.stdout).toContain('the cited line holds no code (it holds no letter)');
+    expect(result.stdout).toContain('[src/thing.ts:1-4]');
+    expect(result.stdout).toContain('the cited range starts on a line that holds no code');
   }, 60_000);
 
-  it('fails on a range that holds a blank line', async () => {
+  it('fails on a range that ends on a blank line', async () => {
     // The range covers a line of code and the blank line under it, so the
-    // blank line is the first thing in the range that holds nothing.
+    // range ends somewhere that holds nothing.
     const root = treeWith(
       ['# Contracts', '', 'The thing is at `src/thing.ts:2-3`.', ''].join('\n'),
     );
@@ -200,7 +222,7 @@ describe('a citation that points at nothing', () => {
 
     expect(result.status).toBe(1);
     expect(result.stdout).toContain('[src/thing.ts:2-3]');
-    expect(result.stdout).toContain('the cited range holds no code (line 3 is empty)');
+    expect(result.stdout).toContain('the cited range ends on a line that holds no code (line 3 is empty)');
   }, 60_000);
 
   it('fails on a citation that names no path', async () => {
@@ -259,15 +281,16 @@ describe('a citation that points at nothing', () => {
 });
 
 describe('this repository', () => {
-  it('runs against the real contract without failing to run', async () => {
-    // The contract's citations are corrected by other items, and this gate
-    // lands after them, so the number of findings here is not fixed. What has
-    // to hold is that the gate reads the real tree: it finds the contract,
-    // it reads the files it cites, and it does not fall over.
+  it('passes against the real contract, because the gate lands with the corrections', async () => {
+    // The gate is a CI job, so it has to be green on the contract this tree
+    // ships. **A gate that passes because nobody looked is not a gate.** The
+    // number of pointers moves with the contract; what does not move is that
+    // every one of them points at code.
     const result = await runGate(['--root', repoRoot, '--contract', 'CONTRACTS.md']);
 
-    expect(result.status).not.toBe(2);
     expect(result.stdout).toContain('The contract pointer gate');
-    expect(result.stdout).toContain('pointers  ');
+    expect(result.stdout).toContain('Every one of the');
+    expect(result.stdout).toContain('pointers points at code.');
+    expect(result.status).toBe(0);
   }, 60_000);
 });

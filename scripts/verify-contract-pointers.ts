@@ -130,14 +130,19 @@ export function readPointers(lines: string[]): Pointer[] {
 /**
  * Why a line of code is not worth citing, or null when it is.
  *
+ * A line holds code when it is not blank and not a comment. **A closing brace
+ * is code.** The earlier test asked a line for a letter, and `}` and `]);`
+ * have none — so a citation of a whole function was reported as pointing at
+ * nothing, and a function cannot be cited by its closing brace alone. A
+ * bracket is code, and so is a line that carries only one.
+ *
  * The phrase is written so that it reads after both "it" and "line 465": "is
- * empty", "is a comment", "holds no letter".
+ * empty", "is a comment".
  */
 function codeFault(line: string): string | null {
   const trimmed = line.trim();
   if (trimmed.length === 0) return 'is empty';
   if (COMMENT_MARKERS.some((marker) => trimmed.startsWith(marker))) return 'is a comment';
-  if (!/[A-Za-z]/.test(trimmed)) return 'holds no letter';
   return null;
 }
 
@@ -179,13 +184,27 @@ export function checkPointer(root: string, pointer: Pointer): string | null {
     return `the cited range runs past the end of the file (the file has ${lines.length} lines)`;
   }
 
-  for (let line = pointer.from; line <= pointer.to; line += 1) {
-    const fault = codeFault(lines[line - 1] ?? '');
-    if (fault === null) continue;
-    if (pointer.from === pointer.to) {
-      return `the cited line holds no code (it ${fault})`;
-    }
-    return `the cited range holds no code (line ${line} ${fault})`;
+  // A citation that names one line must name a line of code. A citation that
+  // names a range must name a block of code: its first line and its last line
+  // both hold code, so the range starts and ends on code and cannot be a
+  // comment that happens to sit between two lines.
+  //
+  // The earlier rule asked every line in the range to hold code. **That rule
+  // was wrong twice over.** It called a closing brace a line with no code, so
+  // a citation of a whole function failed for ending in `}`; and it made a
+  // long block uncitable, because a block of code always contains a blank
+  // line or a brace somewhere in the middle — thirty-seven lines of template
+  // guides could never be cited as a block again.
+  const first = codeFault(lines[pointer.from - 1] ?? '');
+  if (first !== null) {
+    return pointer.from === pointer.to
+      ? `the cited line holds no code (it ${first})`
+      : `the cited range starts on a line that holds no code (line ${pointer.from} ${first})`;
+  }
+
+  const last = codeFault(lines[pointer.to - 1] ?? '');
+  if (last !== null) {
+    return `the cited range ends on a line that holds no code (line ${pointer.to} ${last})`;
   }
 
   return null;
