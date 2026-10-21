@@ -15,20 +15,17 @@ dot on the active room. It replaces nothing that is lost — the current navigat
 it.
 
 **The rooms.** The boundary rule decides what is in which room, and the rule is
-now settled and corrected: _if it is a picture of the system, it is in the
-orientation room; if it is a place where work is inspected or decided, it is in the
-execution room — with one declared exception, the Needs-you rail._ The rail is
-brief 05's.
+now settled and corrected, quoted exactly as the direction document states it: _If it is a picture of the system, it is in the orientation room. If it is a place where work is inspected or decided, it is in the execution room — with two declared exceptions, the Needs-you rail and the constellation, which carry decisions in the orientation room because a decision is taken where the list is._ The rail is brief 05's and the constellation is brief 06's.
 
-| Surface | Room | Where it goes |
-| ------- | ---- | ------------- |
-| The constellation (the map) | Orientation | the Map room's canvas — brief 06 |
-| The agent list | Orientation | it **is** the constellation, spatialised. A flat roster beside it would build the same information twice |
-| The factory board | Execution | a view in the Work room |
-| The automation runs | Execution | a view in the Work room |
-| The dashboards | Orientation | the Dashboards room — brief 04 |
-| The conversation | Execution | the Work room's transcript, with brief 03's trace beside it |
-| The built resources | Orientation | the Map room's tiles |
+| Surface                     | Room        | Where it goes                                                                                            |
+| --------------------------- | ----------- | -------------------------------------------------------------------------------------------------------- |
+| The constellation (the map) | Orientation | the Map room's canvas — brief 06                                                                         |
+| The agent list              | Orientation | it **is** the constellation, spatialised. A flat roster beside it would build the same information twice |
+| The factory board           | Execution   | a view in the Work room                                                                                  |
+| The automation runs         | Execution   | a view in the Work room                                                                                  |
+| The dashboards              | Orientation | the Dashboards room — brief 04                                                                           |
+| The conversation            | Execution   | the Work room's transcript, with brief 03's trace beside it                                              |
+| The built resources         | Orientation | the Map room's tiles                                                                                     |
 
 **The landing screen.** The root route lands on the **Map room**, and the
 Conversations page moves out of the root into the **execution room**: its thread
@@ -41,9 +38,10 @@ decision list is not what a landing screen should be: the owner opens the panel 
 orient and to work, and a room that greets them with a queue of decisions before
 they can see the system is the wrong first impression. The decision list itself
 does not go away and the owner does not leave the landing screen to decide — the
-rail is in the Map room and it decides in place, which is the boundary rule's one
-declared exception and the direction's second mitigation. **What changes is that
-the decision list is no longer the page, and what is on the page is the system.**
+rail is in the Map room and it decides in place, which is one of the boundary
+rule's two declared exceptions and the direction's second mitigation. **What
+changes is that the decision list is no longer the page, and what is on the page
+is the system.**
 
 **The one place this room and the execution room overlap.** The conversation's
 thread list is in the Work room and the rail is in the Map room, and both hold
@@ -97,8 +95,7 @@ brief 05's half of the rail is not mistaken for the whole of it.
 
 - [ ] The room switch is in the top bar, and the active room is marked.
 - [ ] The root route lands on the Map room.
-- [ ] Every surface in the boundary table is in the room the rule puts it in, and
-      the rule's one declared exception is the rail.
+- [ ] Every surface in the boundary table is in the room the rule puts it in, and the rule's exceptions are the two it declares: _with two declared exceptions, the Needs-you rail and the constellation, which carry decisions in the orientation room because a decision is taken where the list is._
 - [ ] The two densities are real: the execution room is denser than the
       orientation room, and the difference is the material's, not a different
       stylesheet.
