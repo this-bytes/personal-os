@@ -38,6 +38,14 @@ export interface Actor {
   agentConnectionId?: string;
 }
 
+/**
+ * The kinds of object the id-addressed tools name.
+ *
+ * Each of them belongs to exactly one workspace, and that is the thing a
+ * caller's scope is checked against.
+ */
+export type ScopedObjectKind = 'conversation' | 'task' | 'resource' | 'automation';
+
 export interface ConversationSnapshot {
   conversation: Conversation;
   participants: Participant[];
@@ -47,6 +55,18 @@ export interface ConversationSnapshot {
 export interface CapabilitiesService {
   workspaceList(): Workspace[];
   workspaceGet(id: string): Workspace;
+
+  /**
+   * The workspace an object belongs to.
+   *
+   * The id-addressed capabilities are address-by-id only: they are not told
+   * who is asking, so they cannot judge a caller's scope themselves. This is
+   * the other half of an address — where the object it names actually lives.
+   *
+   * An id that names nothing is not found, exactly as the capability that
+   * reads it would say.
+   */
+  workspaceOf(target: { kind: ScopedObjectKind; id: string }): string;
 
   conversationList(workspaceId: string): Conversation[];
   conversationRead(conversationId: string): ConversationSnapshot;
@@ -122,6 +142,20 @@ export function createCapabilitiesService(
 ): CapabilitiesService {
   const { workspaces, conversations, agents, factory, resources, automations } = options;
 
+  /**
+   * Where each kind of object lives.
+   *
+   * The lookup is the object's own row, so the workspace it answers with is
+   * the one the object was written in — not the one a caller claims, and not
+   * anything read out of the id.
+   */
+  const workspaceResolvers: Record<ScopedObjectKind, (id: string) => string> = {
+    conversation: (id) => conversations.get(id).workspaceId,
+    task: (id) => factory.getTask(id).workspaceId,
+    resource: (id) => resources.get(id).workspaceId,
+    automation: (id) => automations.get(id).workspaceId,
+  };
+
   return {
     workspaceList(): Workspace[] {
       return workspaces.list();
@@ -129,6 +163,10 @@ export function createCapabilitiesService(
 
     workspaceGet(id): Workspace {
       return workspaces.get(id);
+    },
+
+    workspaceOf(target): string {
+      return workspaceResolvers[target.kind](target.id);
     },
 
     conversationList(workspaceId): Conversation[] {
