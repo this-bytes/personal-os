@@ -173,7 +173,7 @@ export function createResourcesService(options: ResourcesServiceOptions): Resour
   ): ResourceProvider<z.infer<T>> {
     return {
       type,
-      validate: (data: unknown) => schema.parse(data),
+      validate: (data: unknown) => parseSpec(schema, data, type),
       create(input): Resource<z.infer<T>> {
         const id = newId('res');
         const now = new Date().toISOString();
@@ -249,13 +249,15 @@ export function createResourcesService(options: ResourcesServiceOptions): Resour
     }> = {
       type: 'automation',
       validate(data: unknown) {
-        const parsed = z
-          .object({
+        const parsed = parseSpec(
+          z.object({
             trigger: automationTriggerSchema,
             action: automationActionSchema,
             enabled: z.boolean().default(false),
-          })
-          .parse(data);
+          }),
+          data,
+          'automation',
+        );
         validateAutomationConfig(parsed.trigger, parsed.action);
         return parsed;
       },
@@ -699,6 +701,46 @@ export function createResourcesService(options: ResourcesServiceOptions): Resour
   };
 
   return service;
+}
+
+/**
+ * How a kind is named in a sentence.
+ *
+ * The contract names a kind by its published name, and a sentence needs the
+ * word rather than the slug.
+ */
+const kindNames: Record<ResourceType, string> = {
+  dashboard: 'dashboard',
+  document: 'document',
+  'data-source': 'data source',
+  automation: 'automation',
+  memory: 'memory',
+  task: 'task',
+};
+
+/**
+ * Parse a spec against the contract that owns it, and refuse the way the
+ * product refuses.
+ *
+ * A spec that breaks its contract is a bad request, not a server fault: the
+ * caller sent something the contract does not allow, so the answer says so
+ * and carries the schema's own issues. The task and the memory provider
+ * already refuse this way, and the four that answered a broken spec with a
+ * server fault are brought into line with them.
+ */
+function parseSpec<T extends z.ZodTypeAny>(
+  schema: T,
+  data: unknown,
+  type: ResourceType,
+): z.infer<T> {
+  const parsed = schema.safeParse(data);
+  if (!parsed.success) {
+    throw errors.validation(
+      `This ${kindNames[type]} does not satisfy the ${type} contract.`,
+      parsed.error.issues,
+    );
+  }
+  return parsed.data;
 }
 
 /** Validate an automation configuration before it can be enabled. */
