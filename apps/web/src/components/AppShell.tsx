@@ -12,7 +12,7 @@ import {
   Workflow,
   X,
 } from 'lucide-react';
-import { Button, Select } from '@personal-os/ui';
+import { Badge, Button, Select } from '@personal-os/ui';
 import { cn } from '@personal-os/ui';
 import { useAuth } from '../state/auth';
 import { useServerEvents } from '../state/events';
@@ -167,9 +167,9 @@ export function AppShell(): React.JSX.Element {
 
           <div className="ml-auto flex items-center gap-2">
             {streamStatus === 'reconnecting' || streamStatus === 'error' ? (
-              <span className="hidden rounded-full border border-amber-800 bg-amber-950 px-2 py-0.5 text-[11px] text-amber-300 sm:inline">
+              <Badge variant="warning" className="hidden sm:inline">
                 live updates interrupted
-              </span>
+              </Badge>
             ) : null}
             <div className="hidden text-right sm:block">
               <p className="text-xs font-medium leading-tight text-slate-200">
