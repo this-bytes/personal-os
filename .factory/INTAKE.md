@@ -56,45 +56,46 @@ on a branch is invisible to a session that reads `main`, and that blindness is
 what produced every collision on 2026-10-22. **Read this table, not the next
 free number above the highest taken.**
 
-| Number | Item                                                                                                                                       | Owner  |
-| ------ | ------------------------------------------------------------------------------------------------------------------------------------------ | ------ |
-| WI-087 | The stranded branches, and what is actually worth keeping                                                                                  | worker |
-| WI-088 | The ledger split into what it is and what it was                                                                                           | worker |
-| WI-090 | The substrate the product's own two measures stand on                                                                                      | worker |
-| WI-091 | The gate that notices when a published contract goes false                                                                                 | worker |
-| WI-092 | The bundle-budget test's five-second timeout                                                                                               | peer   |
-| WI-093 | The pin that says the old rule instead of the current one                                                                                  | worker |
-| WI-094 | The pin reads the rule out of a phrase — **folded into WI-093**, one file, one live item                                                   | peer   |
-| WI-095 | The resolver does not throw on a policy row that lost a field                                                                              | worker |
-| WI-096 | Publish what WI-082 changed, and stop the product denying it                                                                               | worker |
-| WI-097 | The guide, the filling, and where a resource came from                                                                                     | worker |
-| WI-098 | The ADR's boundary rule re-synced                                                                                                          | peer   |
-| WI-099 | The autonomy policy's surfaces, tested                                                                                                     | worker |
-| WI-100 | The published-shapes guard, re-pointed at the claim                                                                                        | worker |
-| WI-101 | The integration landing — the vehicle nine items rode in on                                                                                | worker |
-| WI-102 | The daily spend cap, enforced                                                                                                              | worker |
-| WI-103 | The contract's pointers into the file WI-080 changed                                                                                       | peer   |
-| WI-104 | The published id is not the id the route takes                                                                                             | peer   |
-| WI-105 | Record what a turn costs, so the daily cap is measured against something real                                                              | worker |
-| WI-106 | Four sentences in the licence record that are looser than what they describe                                                               | lead   |
-| WI-107 | The gate that notices when a published citation stops pointing at code                                                                     | worker |
-| WI-108 | A broken spec answers `validation_failed`, not `internal_error`                                                                            | worker |
-| WI-109 | Land the five domains on the integration vehicle — **was WI-104, then WI-106, then WI-107, renumbered three times**                        | worker |
-| WI-110 | The effective policy is composed by the one module that may read across — **was WI-105, then WI-107, then WI-108, renumbered three times** | worker |
-| WI-111 | Publish what WI-097 and WI-090 actually built — **was WI-103, then WI-106**                                                                | worker |
-| WI-112 | The rule's fifth copy, in the strategy record — **was WI-111**                                                                             | peer   |
-| WI-113 | The contract publishes the refusal, and the tests read the message out of the contract instead of repeating it                             | peer   |
-| WI-114 | The four pointers WI-108's landing moved, and the two in the template guide                                                                | lead   |
-| WI-115 | The template guide describes an authorship defect WI-020 closed, and cites three lines that never carried it                               | lead   |
-| WI-116 | **the pin WI-112's acceptance owes** — published at 08:10 in `WI-112.md:182`, and HELD                                                     | peer   |
-| WI-117 | The stranded branches, measured again — the peer's branch-hygiene record                                                                   | peer   |
-| WI-118 | The mode the owner sets is the mode that is in force                                                                                       | worker |
-| WI-119 | The strategy document's copy of the record's loose sentence, in three places                                                               | peer   |
-| WI-120 | The published front page states the identity the owner replaced                                                                            | peer   |
-| WI-121 | The decision surface carries what an agent is blocked on                                                                                   | peer   |
-| WI-122 | The contract note's three citations are held by a gate that can see them drift                                                             | lead   |
+| Number | Item                                                                                                                                                                                                                              | Owner  |
+| ------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------ |
+| WI-087 | The stranded branches, and what is actually worth keeping                                                                                                                                                                         | worker |
+| WI-088 | The ledger split into what it is and what it was                                                                                                                                                                                  | worker |
+| WI-090 | The substrate the product's own two measures stand on                                                                                                                                                                             | worker |
+| WI-091 | The gate that notices when a published contract goes false                                                                                                                                                                        | worker |
+| WI-092 | The bundle-budget test's five-second timeout                                                                                                                                                                                      | peer   |
+| WI-093 | The pin that says the old rule instead of the current one                                                                                                                                                                         | worker |
+| WI-094 | The pin reads the rule out of a phrase — **folded into WI-093**, one file, one live item                                                                                                                                          | peer   |
+| WI-095 | The resolver does not throw on a policy row that lost a field                                                                                                                                                                     | worker |
+| WI-096 | Publish what WI-082 changed, and stop the product denying it                                                                                                                                                                      | worker |
+| WI-097 | The guide, the filling, and where a resource came from                                                                                                                                                                            | worker |
+| WI-098 | The ADR's boundary rule re-synced                                                                                                                                                                                                 | peer   |
+| WI-099 | The autonomy policy's surfaces, tested                                                                                                                                                                                            | worker |
+| WI-100 | The published-shapes guard, re-pointed at the claim                                                                                                                                                                               | worker |
+| WI-101 | The integration landing — the vehicle nine items rode in on                                                                                                                                                                       | worker |
+| WI-102 | The daily spend cap, enforced                                                                                                                                                                                                     | worker |
+| WI-103 | The contract's pointers into the file WI-080 changed                                                                                                                                                                              | peer   |
+| WI-104 | The published id is not the id the route takes                                                                                                                                                                                    | peer   |
+| WI-105 | Record what a turn costs, so the daily cap is measured against something real                                                                                                                                                     | worker |
+| WI-106 | Four sentences in the licence record that are looser than what they describe                                                                                                                                                      | lead   |
+| WI-107 | The gate that notices when a published citation stops pointing at code                                                                                                                                                            | worker |
+| WI-108 | A broken spec answers `validation_failed`, not `internal_error`                                                                                                                                                                   | worker |
+| WI-109 | Land the five domains on the integration vehicle — **was WI-104, then WI-106, then WI-107, renumbered three times**                                                                                                               | worker |
+| WI-110 | The effective policy is composed by the one module that may read across — **was WI-105, then WI-107, then WI-108, renumbered three times**                                                                                        | worker |
+| WI-111 | Publish what WI-097 and WI-090 actually built — **was WI-103, then WI-106**                                                                                                                                                       | worker |
+| WI-112 | The rule's fifth copy, in the strategy record — **was WI-111**                                                                                                                                                                    | peer   |
+| WI-113 | The contract publishes the refusal, and the tests read the message out of the contract instead of repeating it                                                                                                                    | peer   |
+| WI-114 | The four pointers WI-108's landing moved, and the two in the template guide                                                                                                                                                       | lead   |
+| WI-115 | The template guide describes an authorship defect WI-020 closed, and cites three lines that never carried it                                                                                                                      | lead   |
+| WI-116 | The strategy record's copy of the boundary rule, held to the rule in force — **the pin WI-112's acceptance owes**; published at 08:10 in `WI-112.md:182`, **filed and dispatched 10:55 by the lead, from the peer's reservation** | lead   |
+| WI-117 | The stranded branches, measured again — the peer's branch-hygiene record                                                                                                                                                          | peer   |
+| WI-118 | The mode the owner sets is the mode that is in force                                                                                                                                                                              | worker |
+| WI-119 | The strategy document's copy of the record's loose sentence, in three places                                                                                                                                                      | peer   |
+| WI-120 | The published front page states the identity the owner replaced                                                                                                                                                                   | peer   |
+| WI-121 | The decision surface carries what an agent is blocked on                                                                                                                                                                          | peer   |
+| WI-122 | The contract note's three citations are held by a gate that can see them drift                                                                                                                                                    | lead   |
+| WI-123 | The licence record's four corrected sentences are held by a check that can see them drift                                                                                                                                         | lead   |
 
-**The next free number is WI-123.**
+**The next free number is WI-124.**
 
 **WI-118 was claimed twice, and this is the record that kept it.** The lead
 opened this session's mode item as WI-113 at 07:50, yielded it when the
@@ -3960,3 +3961,73 @@ recorded in the item file** — `wi-122-verify-note-citations-pin-vision-2026-10
 spent, which it recorded itself: **two Chief sessions sharing one factory will dispatch the same
 work without either seeing the other's dispatch, and the item file is the only place both of them
 are guaranteed to look.**
+
+## 2026-10-22 **TIME** — Chief: two pins the factory owes are opened and dispatched, and the number block is swept
+
+**One — WI-123 is OPENED and DISPATCHED: the licence record's four sentences are held by
+nothing.** Probe named it twice — _"the licence-record pin is still owed to me, and is still
+not written"_ — and **this lead's own acceptance of WI-106 at 09:10 owed it and left it
+outstanding.** Measured on the published tip: **`git grep -ln 'dependency-licences'
+origin/main` over the test trees returns nothing.** **No test file in the repository reads
+the record at all** — only `PRODUCT.md`, `docs/strategy.md` and the ledger's own item files
+name it. **So the four sentences the acceptance turned true can drift back and nothing will
+notice.** Dispatched to **Probe** — `wi-123-licence-record-pin-probe-2026-10-22`,
+`task_a606329a3dc1` — because `**/*.test.ts` is Probe's by the ownership table and WI-106's
+own record says _"That test is Probe's file and Probe's to write."_ **The pin's own
+verification is Vision's, not Probe's: Probe verified WI-106, and a verifier who writes the
+gate that judges the work is no longer independent of it.**
+
+**Two — WI-116 is FILED and DISPATCHED, and it had no file anywhere.** **The number block is
+the index both sessions read before taking a number, and the lead swept it: of the eleven
+rows it carries, FOUR name items with no file on `main` — WI-113, WI-116, WI-117, WI-119.**
+Three of those are the peer's un-landed items, which is the normal state for an item that
+has not landed. **WI-116 was different: `git log --all -- .factory/work/WI-116.md` shows a
+branch that filed a WI-116 and then withdrew the claim** — _"Withdraw this branch's WI-116
+claim: the number is the peer's reservation"_ — **and the item moved to WI-119. So WI-116
+was a number with a block line and one sentence in `WI-112.md:182`, and no record of its
+scope anywhere. That is the shape the WI-063/WI-065 collision had, and it is closed here by
+the file.**
+
+**The scope, measured: the pin that holds the boundary rule's copies does not hold the
+strategy record's copy.** `RULE_COPIES` at `forge-briefs.test.ts:494-498` holds
+`01-rooms-and-surfaces.md`, `05-needs-you-rail.md` and `README.md` — **and not
+`docs/strategy.md`, which carries the rule at `:265-270`.** So that copy can drift and
+nothing notices, **and WI-112's acceptance rests on it.** Dispatched to **Probe** —
+`wi-116-strategy-copy-pin-probe-2026-10-22`, `task_9a4337f73e61` — and **the brief requires
+the copy to be found by its content and not by a line number**, because `docs/strategy.md`
+is the peer session's live file for WI-119 and **a check that breaks on an unrelated edit is
+a check that gets deleted.**
+
+**Three — the tiebreak on WI-116, said out loud.** **The peer published the number at 08:10
+in `WI-112.md:182`, for this very pin, and the lead took the item over.** The peer's claim
+was **bound to no live dispatch** — the pin was HELD — **and the hold's stated reason was
+already stale when it was written at 08:22**: it said _"HELD, because Probe's lane
+refuses"_, and **Probe's lane had come back at 07:25.** The peer's claim and the lead's item
+are **the same work**, so no number was spent on two things; the lead measured the scope,
+filed the file that did not exist, and dispatched it. **The block's row now says so.**
+
+**Four — and Probe's second finding is resolved by measurement, and the branch's real hazard
+is different.** Probe reported that `origin/wi/117-branch-pileup-verdict` still carries
+`.factory/work/WI-117.md` **and** `.factory/work/WI-118.md`, and that merging it would land
+two item files. **Measured: the branch's `WI-118.md` is byte-identical to `main`'s**
+(`git diff origin/main origin/wi/117-branch-pileup-verdict -- .factory/work/WI-118.md` is
+empty), and **the branch's own change set against its base is two files** — `.factory/INTAKE.md`
+modified and `.factory/work/WI-117.md` added. **So the merge adds one item file and touches
+no other.** The hazard that is real is **staleness**: the branch's base is **`2806f72`, and
+the published tip is now `f92c4ae` — forty commits ahead** — so its ledger edit was written
+against a ledger that has since moved four times. `merge-tree` says the merge is clean, and
+a clean merge of a forty-commit-stale ledger edit is not the same as a safe one.
+
+**Five — WI-112's measurement, restated precisely, because the pin needs the exact shape.**
+**The two copies of the rule are 312 characters each as their blocks, four line breaks in
+each — and they are NOT byte-identical as raw strings.** `prototypes/DIRECTION.md:53-57`
+breaks after _"orientation room."_ and `docs/strategy.md:265-270` breaks after
+_"orientation"_: **the same words, the same length, different line breaks.** **Flattened,
+they are equal** — and the pin's own method already flattens before it compares, and
+compares the **clause**, not the raw text. **Both declared exceptions are present** and
+**"one declared exception" is in neither.** **The acceptance rests on the words and the
+length, and both hold; the pin will compare them the way the pin already does.**
+
+**Six — the floor.** **Probe holds three items** — WI-123, WI-116, and the peer's WI-120
+verification. **Vision holds WI-122.** **Cog is working WI-121.** **Wren is still down.**
+**The ceiling stays at two.** **The next free number is WI-124.**
