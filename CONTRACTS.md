@@ -746,17 +746,17 @@ the template to start from, and its `type` must equal the `type` the call asks f
 `spec` with those values merged into it. **A call that carries both is no longer
 refused — it is answered**, and the values the call did not name are the template's.
 A template whose spec the owning provider refuses is `validation_failed`
-(`apps/server/src/modules/resources/service.ts:645-650`), and a template of another
+(`apps/server/src/modules/resources/service.ts:648-653`), and a template of another
 kind is refused the same way
-(`apps/server/src/modules/resources/service.ts:660-662`); an unknown template id is
+(`apps/server/src/modules/resources/service.ts:662-666`); an unknown template id is
 `not_found`. Those codes are already published in
 [Error envelope](#error-envelope); this entry adds none. The tool's visibility
 follows the same grant rule as every other tool on that surface, published in
 [MCP exposure](#mcp-exposure).
 
 **The merge rules are these.** They are implemented by `mergeTemplateSpec`
-(`apps/server/src/modules/resources/templates.ts:522`), and the rules per kind
-are at `apps/server/src/modules/resources/templates.ts:497`:
+(`apps/server/src/modules/resources/templates.ts:534`), and the rules per kind
+are at `apps/server/src/modules/resources/templates.ts:509-522`:
 
 - **Objects merge key by key.** A key the caller's values do not name keeps the
   template's value, and the merge is recursive: a nested object merges the same way.
@@ -800,7 +800,7 @@ the connection is granted them, the way every other tool on that surface is
 values into the template's spec at
 `apps/server/src/modules/mcp/server.ts:446-448`, and passes the template's id and
 version on at `apps/server/src/modules/mcp/server.ts:458`. The merge rules
-themselves are at `apps/server/src/modules/resources/templates.ts:497`, and the
+themselves are at `apps/server/src/modules/resources/templates.ts:509-522`, and the
 resource records them at
 `apps/server/src/modules/resources/service.ts:191-192` and
 `apps/server/src/modules/resources/service.ts:374-375`.
@@ -819,7 +819,7 @@ at `apps/server/src/modules/resources/templates.ts:21`:
 
 Each is published at version 1, each carries a guide, and every one is checked
 against the provider that owns its kind when the service is built
-(`apps/server/src/modules/resources/service.ts:459`), so a template that drifted
+(`apps/server/src/modules/resources/service.ts:461-463`), so a template that drifted
 is caught at the door rather than by an agent that reached for it.
 
 **A client may now call `resource.template.list` and `resource.template.get`, and may
