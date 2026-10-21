@@ -173,7 +173,7 @@ different product with a different trust boundary, and nobody has asked for it.
 
 ## 7. The product reports on itself
 
-The product answers two questions about itself, and shows both in the panel:
+The product answers two questions about itself:
 
 1. **The share of features authored by agents in-instance** — of the resources that
    exist, how many an agent made rather than the owner.
@@ -198,15 +198,18 @@ action succeeded or not — `POST /api/resources/:id/execute` records one for a 
 that was merely queued. The second measure's denominator is therefore a real
 question, and it is part of what the owner has not settled.
 
-**Nothing counts them yet**, and the panel does not show these numbers today.
-Counting them is sized and waiting on the owner, because a route that returns them
-is a published contract.
+**The measures are funded and in flight.** The owner approved the measures route at
+06:01 on 2026-10-21, and the item is WI-020. The band ships only the counts it can
+defend — the first measure's counts, and the second measure named as not yet
+countable — because the audit trail records that something happened, not what
+happened. A number whose inputs are known to be wrong is not a number with a caveat
+beside it, and no ratio is shown for either measure.
 
 **No ratio whose denominator is zero.** For a long while the honest value of "the
 share of features authored by agents" is zero or undefined, because no agent has
 authored a feature in-instance yet. A panel that greets its owner with 0% reads as
 broken, and the product's first report on itself must not be a lie by omission. So
-the counts are shown — N features, M operations — and a ratio is shown only when
+the counts are shown as they can be defended, and a ratio is shown only when
 there is a denominator to divide by.
 
 ## 8. What an agent-authored artefact needs
@@ -223,9 +226,14 @@ evidence → acceptance. An execution carries the evidence the run produced, and
 task is closed by an explicit acceptance decision rather than by the agent's own
 report that it is done. The check is the acceptance; the ledger is the shape.
 
-## 9. The extension surface — a recommendation, not a decision
+## 9. The extension surface — the boundary is settled, the mechanism is not
 
-_This section records a recommendation. The owner has not chosen it yet._
+_The boundary in this section is settled, and the extension mechanism in it is not.
+The owner's answer, set 2026-10-20: the panel's agent-facing surface is MCP and AG-UI,
+ACP and A2A are the agent-connection side, which we speak when we connect out to an
+agent, our resources, tasks and goals stay ours, and no protocol is forked. **MCP Apps,
+for agent-created UI, is a proposal and the recommendation, and the owner has not
+ratified it.**_
 
 **MCP Apps (SEP-1865)** is the standard for a server shipping its own UI to a host:
 pre-declared `ui://` templates the host can review before execution, plain MCP
@@ -260,10 +268,11 @@ consequence of it.
 ACP, A2A, MCP and the OpenAI-compatible API shape. "Our spec" means our domain
 model, not our dialect of someone else's protocol.
 
-**Where the boundary falls exactly is still open.** The reading in front of the
-owner is recorded in ADR 7: the panel's agent-facing surface conforms to MCP and
-AG-UI, ACP and A2A are the agent-connection side, and our resources, tasks and goals
-stay ours. The owner is being asked to settle it.
+**The boundary is settled, and the doctrine holds it.** The interface rule above is the
+owner's, set 2026-10-20, and the doctrine keeps it in [FACTORY.md](FACTORY.md). Our
+resources, tasks and goals stay ours — the panel's agent-facing surface is MCP and
+AG-UI, and ACP and A2A are the agent-connection side, which Personal OS speaks when it
+connects out to an agent.
 
 ## 11. The panel's own rules
 
