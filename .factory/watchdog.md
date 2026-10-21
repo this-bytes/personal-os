@@ -112,6 +112,10 @@ a turn starts and flips it to `done`, `error` or `aborted` when it ends. So
 _"the last message from that bot started N minutes ago and is still streaming"_
 means a turn is live right now.
 
+**And that sentence was still not enough — see the third correction below.**
+`streaming` means a turn **was** started. It does not mean the turn is still
+running.
+
 **The idle window was real, and it was five hours:** 11:51:26 (the result) to
 16:59:05 (the next turn). The task was dead for five hours and then woke up.
 **A check run at 13:00 would have been right to cancel it; a check run at
@@ -123,19 +127,67 @@ left written but uncommitted and unformatted. Everything else — three commits
 and a dispatch — had already landed. **The cost was small because the work was
 already committed, which is the same reason the cancellation was safe.**
 
+## The third stall — a crashed runtime, and the third correction
+
+**The second correction was right and still not enough, and it was this
+session that proved it. The correction is here rather than overwritten.**
+
+At 18:31 on 2026-10-21 two tasks were running for 62 and 64 minutes with
+**0 characters of `result`**, their chat messages stuck at `status: 'streaming'`
+with empty text, and **nothing had closed in the factory for an hour**. Both
+were over the threshold, and the corrected rule said **both were live** — so
+nothing was cancelled. **That was wrong.**
+
+The third signal is the **session's status**, and it has a third value this file
+had never seen:
+
+| Session status    | What it means                                                                                                |
+| ----------------- | ------------------------------------------------------------------------------------------------------------ |
+| `started`         | the agent is **in** the turn — the turn is live                                                              |
+| `idle`            | no turn is running in that session                                                                           |
+| **`interrupted`** | **"This session was interrupted because the previous local runtime stopped."** `errorSource: crash-recovery` |
+
+Both sessions carried the crash-recovery message. **The local runtime had
+stopped and come back, and it left two tasks `running` with dead turns inside
+them.** Their chat messages stayed `streaming` because the turn that would have
+filled them never finished.
+
+**So `streaming` means a turn _was_ started, not that a turn _is_ running.**
+The session's status is what says whether the agent is still in it — and
+reading it **now**, before any intervention, is not the circular error this
+file already made once. The circular error was reading it _after_ the abort.
+**This is the same field, read at the right moment, for a different question:
+not "did this turn die?" but "is anyone still in it?"**
+
+**And this stall was the safest one to cancel of the three**, precisely because
+the turns were dead: **there was no work in flight to lose.** The 462-minute
+stall had a live turn eleven minutes before it was cancelled, and the cost of
+cancelling it was a half-written acceptance. This one had produced nothing and
+had nothing running. **A dead turn is not a risky cancellation; it is the only
+kind of cancellation that cannot cost anything.**
+
+**It was not cancelled, because the fleet's own tools were gone.** The runtime
+that crashed is the runtime that owns the bot's MCP server, and the server's
+registration did not come back: `mavis mcp list` returns no servers, and
+`cancel_tasks`, `post_group` and `list_schedules` are all "not found" — in this
+session and in the peer session alike. **So the stall could be measured but not
+acted on, by anyone.** That is a host-level failure, not a repository one, and
+no file in this repository can fix it. **A factory whose transport is down
+cannot be repaired by its own workers.**
+
 ## The check, and what it refuses to do
 
 ### What is measurable
 
-| Signal                                                                  | Read from                     | Verdict                                                              |
-| ----------------------------------------------------------------------- | ----------------------------- | -------------------------------------------------------------------- |
-| elapsed time on a `running` task                                        | the fleet state               | **works, but cannot separate** (see below)                           |
-| `result` / `messageId` / `endedAt` empty                                | the fleet state               | **always true while running** — no signal                            |
-| **`result` is old**                                                     | the fleet state               | **NOT a liveness signal** — see the second correction above          |
-| **the chat's last message from that bot: its `startedAt` and `status`** | the chat's message store      | **the sound liveness signal** — `streaming` means a turn is live now |
-| the session's status                                                    | `mavis session get`           | **circular** — see the correction above                              |
-| the session's `updatedAtMs` on disk                                     | the session's `manifest.json` | **stale** — it is creation time, not liveness                        |
-| the bot's last message in its chat                                      | the chat's message store      | **empty while a turn is in flight** — no signal                      |
+| Signal                                                                  | Read from                     | Verdict                                                                                                         |
+| ----------------------------------------------------------------------- | ----------------------------- | --------------------------------------------------------------------------------------------------------------- |
+| elapsed time on a `running` task                                        | the fleet state               | **works, but cannot separate** (see below)                                                                      |
+| `result` / `messageId` / `endedAt` empty                                | the fleet state               | **always true while running** — no signal                                                                       |
+| **`result` is old**                                                     | the fleet state               | **NOT a liveness signal** — see the second correction above                                                     |
+| **the chat's last message from that bot: its `startedAt` and `status`** | the chat's message store      | **a turn was started** — `streaming` alone does not mean it is still running; read it with the session's status |
+| **the session's status** (`started` / `idle` / `interrupted`)           | `mavis session get`           | **the third signal** — see the third correction below                                                           |
+| the session's `updatedAtMs` on disk                                     | the session's `manifest.json` | **stale** — it is creation time, not liveness                                                                   |
+| the bot's last message in its chat                                      | the chat's message store      | **empty while a turn is in flight** — no signal                                                                 |
 
 **The elapsed time cannot separate a stall from a long task.** Measured over the
 82 tasks that completed on 2026-10-21:
@@ -207,16 +259,34 @@ stalled turn had produced was already committed** (`e1f50ae`, in `main`), that
 two hours**. A judgement made on that evidence is defensible. **A rule that
 cancels on elapsed time alone is not.**
 
-**And it has two conditions, not one.** The 462-minute stall was cancelled with
-both met; a check at 17:05 would have met only one. **Cancel only when:**
+**And it has three conditions, not one.** The 462-minute stall was cancelled with
+both of the first two met; a check at 17:05 would have met only one. **Cancel
+only when:**
 
 1. the task is over the 45-minute threshold, **and**
-2. **the chat's last message from that bot is not `streaming`** — no turn has
-   been in flight since the last one ended.
+2. **the session is not `started`** — the agent is not in the turn, so **there is
+   nothing in flight to lose**, **and**
+3. **the chat's last message from that bot is `streaming`** — a turn was started
+   and never finished — or the session is `interrupted` with the same message
+   stuck.
 
 **Condition 2 is what the first version of this file got wrong**, and getting it
 wrong cost a live turn's last eleven minutes. "The task's `result` is old" is
 not condition 2. **The chat's message record is condition 2.**
+
+**And when the session _is_ `started`, the check reports and does not cancel.**
+A livelocked turn and a slow turn look identical from outside: both leave the
+session `started` and both leave the chat's last message empty. **The
+distinction between them was made by a person, after reading the turn's
+output, and not by a rule** — and the 13:13 livelock was cancelled on that
+judgement, which was right. **A check that cannot tell the two apart must not
+kill one of them.**
+
+**A dead turn, by contrast, is safe by construction.** A session that is
+`interrupted` — "the previous local runtime stopped" — with the chat's message
+stuck at `streaming` is a turn that will never finish, and **there is no work
+in flight to lose.** That is the one case where cancelling is not a judgement
+call at all.
 
 **When a stall is confirmed**, the order is:
 

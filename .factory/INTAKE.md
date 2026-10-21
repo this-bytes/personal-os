@@ -6976,3 +6976,68 @@ now in the rule.
 so the code's verdict carries forward; each pushed sha's run is read and
 reported, and **the verdict recorded here is the one on the code** — so the
 record terminates instead of chasing its own tail.
+
+## The third stall, and a correction to this session's own record — 2026-10-21 18:35
+
+**The commit `5663545` in this file says that two long-running tasks were
+"live — not cancelled" because a turn was in flight in both chats. That was
+wrong, and the correction is here rather than overwritten.**
+
+**What `5663545` measured:** two tasks over the 45-minute threshold —
+`task_de340ccec5c2` in the Personal OS Factory group, 51 minutes, and
+`task_6274afe1abc1` in Wren's chat, 53 minutes — and **both chats' last
+messages from those bots were `status: 'streaming'`**. The reading was that a
+turn was in flight, so neither was cancelled.
+
+**What it did not read, and what the reading missed.** The **session's status**.
+At 18:33 those two sessions reported:
+
+| Session                                | Task                | Status                                                                                                                  |
+| -------------------------------------- | ------------------- | ----------------------------------------------------------------------------------------------------------------------- |
+| `mvs_da4fd6a55d284724835efedd6434bfcc` | `task_de340ccec5c2` | **`idle`** — _"This session was interrupted because the previous local runtime stopped."_ `errorSource: crash-recovery` |
+| `mvs_dff627414f0e47fbbdf7501b11dfdd06` | `task_6274afe1abc1` | **`interrupted`** — the same message, the same `errorSource`                                                            |
+
+**The local runtime had stopped and come back, and it left two tasks `running`
+with dead turns inside them.** Their chat messages stayed `streaming` because
+the turn that would have filled them never finished. Both tasks had **0
+characters of `result`**, and the factory had closed nothing since 17:29.
+
+**So `streaming` means a turn _was_ started, not that a turn _is_ running.**
+The session's status is what says whether the agent is still in it. **And
+reading it now, before any intervention, is not the circular error this
+factory already made once** — that error was reading it _after_ the abort.
+**Same field, right moment, different question: not "did this turn die?" but
+"is anyone still in it?"**
+
+**This stall was the safest of the three to cancel, precisely because the turns
+were dead: there was no work in flight to lose.** The 462-minute stall had a
+live turn eleven minutes before it was cancelled, and cancelling it cost a
+half-written acceptance. **A dead turn is not a risky cancellation. It is the
+only kind of cancellation that cannot cost anything.**
+
+**And it could not be cancelled, by anyone.** The runtime that crashed is the
+runtime that owns the bot's MCP server, and the registration did not come back:
+`mavis mcp list` returns **no servers**, and `cancel_tasks`, `post_group` and
+`list_schedules` are all **"not found"** — in this session and in the peer
+session alike. **The stall could be measured but not acted on.** That is a
+host-level failure, and **no file in this repository can fix it: a factory
+whose transport is down cannot be repaired by its own workers.**
+
+**Three things are owed when the transport comes back**, and they are recorded
+here so they are not lost:
+
+1. **`task_de340ccec5c2`** — WI-007's verification. **Its result was delivered
+   at 17:29** (7356 characters in the group), so the task is an orphan holding
+   a slot and **cancelling it loses nothing.**
+2. **`task_6274afe1abc1`** — WI-065, Wren's turn. Dead, 0 characters produced.
+   Cancelling frees the second slot; **WI-065 then needs re-running**, because
+   it produced nothing.
+3. **`task_797badb7e918`** — WI-007's re-verification, still queued.
+   **WI-007 now has a completed verification, so this would be a second
+   verification of an accepted item.** Cancel it rather than let it take a slot.
+
+**And the standing report is still owed:** the stall report to the group,
+request id `factory-group-stall-report-2026-10-21-1712`, whose content is the
+section "The 462-minute stall" above. **It is refused while a group round is
+open, and it is owed to a group whose round this stall holds open** — which is
+the report channel failing exactly when it is needed.
