@@ -9280,3 +9280,103 @@ flagged the duplicate himself. **That request id is spent.**
 **And the lanes are not the same lane.** Cog takes work. Vision is verifying WI-108. **Wren's session advances while her delegations are refused — busy, not dead** — and the lead's two dispatches into that chat were refused in 28 and 29 seconds, both ids spent. **The lead is not spending another id into a refusing lane**: the request id for WI-106's next attempt is recorded and **unused**, and WI-112's work is already in flight on the peer session's branch with tests running since 06:40.
 
 **The gates on the merged tree:** typecheck 0, format:check 0, build 0, test 0.
+
+## 2026-10-22 07:58 — The push lands, WI-108 is accepted, and the landing of WI-108 waits behind one correction
+
+**An hour of blocked pushes ends.** The peer's vehicle landed on `origin/main` while
+this session's eleven commits sat unpushed, and the push came back non-fast-forward.
+The fix was a merge, not a force: `origin/main` into this session's tree as `9a88ebe`,
+two conflicts resolved by measurement, the merged tree measured green — **typecheck 0,
+format:check 0, build 0, test 0, 49 files and 602 tests, 0 failures** — and pushed.
+**The conflicts were both Chief's own files.** `WI-112.md` was an add/add with the
+peer's later copy on one side and this session's earlier, malformed copy on the other;
+**the peer's won, because it is the later one and records the settlement.** `INTAKE.md`
+kept both sides' rows, the base row dropped because this session's corrected row
+supersedes it, and this session's WI-112 row now says in the open that **the item is
+recorded twice, one row per session, under one spent request id** — nothing deleted,
+nothing hidden, one disclosure in the cell where a reader would otherwise be misled.
+
+**WI-108 is accepted.** Vision's verification is unambiguous — _"the item's work is
+sound and I would accept it"_ — six checks met, the error shape measured before and
+after on the same call, the mutation proof judged independently at **six red of
+thirty-six**, every gate green at `a65ff32`. **What the product can now do: a
+dashboard, document, data source or automation whose spec breaks its contract is
+refused, not crashed** — `validation_failed` and HTTP 422, in the published error
+envelope, carrying the schema's own issues as `details`, the same refusal in the same
+shape a task or a memory has always given. Four kinds used to answer `internal_error`
+and HTTP 500 with the raw `ZodError` in the message.
+
+**And the lead merged it, measured the merge, and did not publish a red line.** The
+merge is clean — five files, three commits — and the merged tree is **red in two
+gates**: the pointer gate finds five citations into two moved files that point at the
+wrong lines, and the audit gate finds the contract's citation for the automation
+enqueue pointing at a line that no longer enqueues. **The cause is WI-108's own line
+shift.** The helper moves everything below it, and eleven of the contract's citations
+into those two files did not follow. **The code is right; the contract is stale, and
+the contract is Wren's.**
+
+**So the order is named, because a lead names the order: WI-086 lands first — it is
+live on `CONTRACTS.md` right now — then WI-108's merge, then ONE correction pass.
+One pass.** The factory has spent four items re-pointing citations by hand; this one
+will not spend a fifth and a sixth on a single change. **WI-108's merge waits on
+`wi/108-landing`, and `main` stays green and published until the correction can land
+with it.**
+
+**Two items come out of that measurement, and both are held.** **WI-114** carries the
+thirteen corrections, measured one by one, **and names the six that did not move so
+they are not "fixed"**. **WI-115** is a different kind of find: the template guide
+says automations and tasks "report `createdBy: 'system'` regardless of who created
+them", citing three lines that read `},`, `action: AutomationAction;` and a comment
+about the registry — **and the defect it describes was fixed by WI-020**, so the guide
+describes a closed bug and calls the product's authorship measure "wrong, not merely
+uncounted". **The numbers were read immediately before they were taken**: `main` runs
+to WI-112, the peer took WI-113 at 07:27 for the contract publishing the refusal, and
+that claim is earlier and unbound to a live dispatch, so **WI-113 is the peer's** and
+this session took WI-114 and WI-115.
+
+**The peer's finding about WI-098's record is stale, and the lead says so with the
+lines.** The peer named four stale sentences in `.factory/work/WI-098.md`. **Three are
+already corrected in context** — "character for character" is the rewritten criterion
+that goes on to say the raw ranges are _not_ byte-identical; "Probe's pin" says the pin
+is Probe's and that WI-094 is its re-point; "402 lines" is the sentence that
+distinguishes 401 by newline count from 402 with the trailing empty element and 403 on
+today's `main` — **and the fourth, "366 lines", is WI-025.md's stale figure being
+reported, not edited.** The file is **Chief's**, not Wren's, and the acceptance of
+WI-098 stands, published at `9a88ebe`.
+
+**The refusals are the host's, not the lanes'.** Wren's last two delegations came back
+`"Too many Bots are running at once. Try again shortly"`, `errorCode: BUSY`,
+`retried: 2` — **host capacity, not an occupied chat.** That error says nothing about
+Wren, and a lead that calls a lane "refusing" because the host was full is naming the
+wrong thing. **The floor is short of slots and of healthy lanes, and the two-lane
+ceiling is the mechanism.**
+
+**The restart is still the owner's, and this lead's position has not changed:** the
+runtime has been up since 2026-10-21 23:37:39 and **no restart has happened**; a
+restart is the only untested lever for Probe's chat, since nobody has dispatched into
+it since 04:25:20; **its price is that it cuts the turn it lands in**, so it goes at
+the end of a cycle with nothing started; and **the ceiling stays at two**, because it
+is vendor code in a content-addressed cache and a patch there vanishes silently on the
+next plugin update — **a capacity decision a vendor update can erase is not a decision.**
+
+**The correction, dated, and it is the lead's own.** The lead wrote above that WI-108's
+merge was held back because it turned two gates red. **The peer session had already
+published it at 07:30**, on its own branch and its own path, and **that landing
+re-pointed nine of the eleven citations the lead had measured as moved.** The lead's red
+was measured on its own merge commit, two commits behind the published one. **The tree
+that publishes WI-108 is green — typecheck 0, format:check 0, build 0, test 0, 61 files
+and 615 tests with 0 failures, and the pointer gate reads 122 pointers and 0 failures.**
+The lead's back-out at 07:37 undid nothing that was public; the merge at 07:47 put the
+two lines together.
+
+**So WI-114 shrinks from thirteen corrections to four**, and the four are named in its
+file. **Two of them are the ones no gate can see** — `CONTRACTS.md:806` and `:1946`
+point at code, and the code is not the claim — which is the whole argument for reading
+a cited line against its sentence instead of trusting a gate that only asks _is this
+code?_
+
+**And the lesson, which cost this factory an hour of blocked pushes and then a
+false alarm: a red measurement is true of the tree it was measured on, and the trees
+here move under you.** The lead's own back-out was a reasonable act on a tree that was
+no longer the published one. **Measure the tree that publishes the work, and say which
+tree you measured.**
