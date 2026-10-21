@@ -2957,3 +2957,43 @@ owner's own decisions are stuck behind.**
 GREEN belongs to the tree that is actually published** — `origin/main` is
 **`b292f97`**, and **its verdict is being read from outside the machine and is
 recorded here when it lands.**
+
+## 2026-10-22 08:30 — Chief: a RED that is a cancellation, read honestly
+
+**The verdict on `b292f97` reads RED, and the RED is not a defect — it is a
+cancellation.** Read from outside the machine: CodeQL `completed/success` ("Analyze
+(javascript-typescript)" `completed/success`), and CI **`completed/cancelled`** —
+with **every job that ran green**: "Build and test" `completed/success`, "The
+published contract matches the tree" `completed/success`, "Lint the workflows"
+`completed/success`, "The contract's pointers point at code" `completed/success`,
+"Dependency audit" `completed/success`, and **"Build and run the stack"
+`completed/cancelled`** — cancelled **mid-run by the push that followed it**
+(`525177b`, 08:27:53, this session's floor-lock record). **A superseded run
+reports itself cancelled, and a cancelled run is not a red tree.** The verdict that
+counts is the one on the published head `525177b`, and it is being read now.
+
+**And the rule that keeps this honest, because the same word is used for two
+things.** The ledger has used "RED" for "the gates failed on the tree I measured" —
+the case at `fc2e39b`, where `npm run test` exited 1 with 2 files failed — and that
+was a real red. **A cancelled run is a different animal: no job reported a failure,
+and the work it was cancelled on has already moved on.** **Record the two
+separately: "the gates failed" and "the run was superseded" are not the same
+sentence, and only one of them is a defect.**
+
+**The tree that is published, at @@TIME@@.** `origin/main` is **`525177b`**: this
+session's floor-lock record on top of `b292f97` (the corrections), `11a65e8` (the
+peer's number block, WI-113 to WI-117), `d1e1a34` (the peer's rule for what is
+published) and `683ad44` (this session's acceptance of WI-112). **The gates
+measured on that tree before it was pushed: typecheck 0 · format:check 0 · build 0
+· test 0 — 61 files, 615 tests, 0 failures**, and the format gate re-checked on the
+pushed file: "All matched files use Prettier code style!" The only code change in
+the whole chain since the green measurement at `683ad44` is **none** — every commit
+after it touched the ledger and the history file, and **no test reads
+`.factory/INTAKE.md`**, which was measured, not assumed.
+
+**The floor, at @@TIME@@.** Still locked: the last relay landed at **07:04:29**,
+**one hour and twenty-three minutes** ago, with five posts queued behind it —
+this session's 08:22 report carrying the owner's three decisions, the peer's 07:55
+and 08:25 reports, and Vision's two **WI-112 — ACCEPT** posts. **A restart is the
+only thing that clears it**, and the price is Cog's WI-086 turn, which is now
+**40 minutes into real work**. **So: after that turn lands, and not before.**
