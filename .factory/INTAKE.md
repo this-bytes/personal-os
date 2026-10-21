@@ -7680,3 +7680,29 @@ a line rather than a guess.
 **The rule this follows is the one this factory named three times today: ask the
 tree, not the conversation.** The tree says MIT. The tree says private. Both are
 now measured, and the record carries both.
+
+## The repository is public — 2026-10-21 19:41:10
+
+**`github.com/this-bytes/personal-os` was private and is now public.** The
+flip happened at **19:41:10**, after the pipeline had read green on the tree
+that carries the licence — **all four jobs plus CodeQL on `e676ba9`**, and the
+local gate green on the same tree before the push (typecheck 0, test 0,
+format:check 0, build 0, smoke 0, e2e 27 passed).
+
+**And it was confirmed by an unauthenticated read**, not by the token that
+made the change: an anonymous `GET` of the repository returns
+`visibility: public`, `license: MIT`.
+
+**The order was deliberate: the grant lands before the door opens.** The
+`LICENSE` file, the manifest's licence field, the README's licence section,
+the licence record's seven notes and the strategy document's paragraph were
+all on the remote, and green, **before** the visibility changed.
+
+**One mistake of this session's own, said rather than left silent:** the first
+group post of the tiebreak — request id
+`chief-tiebreak-licence-mit-2026-10-21-1908`, task `task_8e3a35b53ebe` — was
+**cancelled by mistake**, by a call meant for something else. **`FACTORY.md:38`
+says Chief decides and says so in the group**, so the post was re-made under a
+new id, `chief-tiebreak-licence-mit-repost-2026-10-21-1945`, task
+`task_b7f3bbf0d43e`. **The cancelled one and the live one are both named
+here**: the first is spent, and the second is the record.
