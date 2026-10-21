@@ -59,7 +59,8 @@ export type RoutingBlockReason =
   | 'spend_limit'
   | 'depth_limit'
   | 'no_active_agent'
-  | 'not_coordinator';
+  | 'not_coordinator'
+  | 'unconfirmed';
 
 export interface RoutingDecision {
   /** Agent connection ids that should receive a turn. */

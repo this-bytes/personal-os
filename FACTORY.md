@@ -58,6 +58,7 @@ scripts/verify-*.ts         Probe
 .github/workflows/**        Chief
 package.json (root)         Chief
 package-lock.json           Chief
+LICENSE (root)              Chief
 FACTORY.md, .factory/**     Chief
 ```
 
@@ -171,6 +172,17 @@ each was an item that could never have been accepted. **The queue of things
 waiting for acceptance is the factory's real capacity**, so dispatching the
 verification is part of finishing the implementation, not an afterthought to
 it.
+
+**The factory runs two tasks at once, and a slot can be held by a turn that is
+not working.** `MAX_RUNNING = 2` is hard-coded in the runtime's dispatcher and
+no setting in this repository changes it, so **half the factory is one slot**.
+On 2026-10-21 a turn livelocked — restarting the same investigation without
+concluding — and held a slot for **119 minutes** while the other slot ran real
+work: the factory ran at half speed, **27 tasks queued**, and Probe's chat sat
+**idle**. Nothing raised an error. **A stall is found by
+[`.factory/watchdog.md`](.factory/watchdog.md)**, which reports it; **cancelling
+it is Chief's judgement**, because elapsed time alone cannot tell a stall from a
+long task — five legitimate tasks that day ran past two hours and all finished.
 
 ## Definition of done
 

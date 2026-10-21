@@ -535,6 +535,7 @@ async function executeChatTurn(context: ExecutorContext, job: QueueJob): Promise
       db,
       events,
       queue: runtime.queue,
+      audit: runtime.audit,
       conversationId: payload.conversationId,
       message: {
         id: updated.id,

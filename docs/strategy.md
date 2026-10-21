@@ -91,12 +91,18 @@ Apache-2.0, AGPLv3 and a proprietary enterprise licence. A licence can change wh
 the product is.
 
 **This repository's own licence is unsettled, and the record says so rather than
-implying otherwise.** A root `LICENSE` file (MIT) has been tracked since the initial
-commit; the root manifest's `"license": "MIT"` was removed on 2026-10-21 because the
-licence is deliberately undecided; the README still says MIT (being corrected); and
-the owner's answer at 08:54 was _"Private for now — push it, and decide visibility
-later."_ None of that is settled, and a licence gate that reads the dependency set
-cannot speak to any of it.
+implying otherwise.** The root `LICENSE` file (MIT) was tracked since the initial
+commit and was **removed** on 2026-10-21 — it granted a licence nobody had chosen,
+and it had no owner in the ownership table, which `FACTORY.md` now fixes by naming
+it. That removal rests on a reading the owner has been asked to confirm: _the
+repository carries no licence file_, rather than _it is not adding one now_. The root
+manifest's `"license": "MIT"` was removed earlier the same day, for the same reason.
+The README says the licence is deliberately undecided and that the repository is
+private for now — a correction that tells the truth rather than a licence that was
+never chosen — and `CONTRIBUTING.md` still claims MIT, which WI-068 is correcting.
+And the owner's answer at 08:54 was _"Private for now — push it, and decide
+visibility later."_ None of that is settled, and a licence gate that reads the
+dependency set cannot speak to any of it.
 
 **The owner's hard case, and what can actually catch it.** Vendoring AGPL-3.0 code
 into this repository's own tree changes this project's licence. **A gate over the
@@ -138,10 +144,12 @@ recommendation was the owner's to reject; see decision 1.
 **The set that ships, and the state it is in.** WI-017 has built one template per
 kind, all six: `dashboard.metrics`, `document.brief`, `data-source.json`,
 `automation.manual-prompt`, `task.deliverable`, `memory.decision-note` — against
-WI-030's landed contract entry. **The item is built and not yet accepted**: Probe
-has not verified it, and WI-017 ships when both halves land. This pillar's gap is
-closing, not closed, and this document should not be read as saying the template
-half is finished.
+WI-030's landed contract entry. **The item is built and not yet accepted**: Probe's
+verification of it was dispatched late, and WI-063 was opened because WI-017's
+implementation landed before the contract's statement about it did — the same drift
+the pipeline caught in the published counts. This pillar's gap is closing, not
+closed, and this document should not be read as saying the template half is
+finished.
 
 ### Pillar 2 — One truth, one history, and a way back
 
@@ -287,6 +295,18 @@ recorded read from its repository, and the build fails when a licence changes or
 unapproved one appears. That splits into two wants, because the record and the gate
 are different files and different owners — W5 records it, W7 checks it.
 
+**The record half is done and accepted; the gate is in flight.** WI-036 wrote the
+record — 494 packages, one copy, in `docs/dependency-licences.json` — and it was
+**accepted** on 2026-10-21: Probe re-derived the numbers its own way rather than
+trusting the record, and **all five criteria hold**.
+**WI-038 (W7) is the half that makes this a check rather than a record, and it has
+started**: the CI step and the root manifest entry are written on
+`wi/038-borrow-rule-gate`, and the gate script is **queued, not written** — its
+first brief was cancelled because it stated one fact about the record wrongly, and
+the corrected brief is waiting. **Until that script lands and the gate runs, the
+borrow rule is a claim with a ground truth attached, and not a fact the build
+proves.**
+
 **What the check does not cover, said before anyone assumes that it does.** It reads
 the **dependency set**. The owner's hard case — vendoring AGPL-3.0 code into this
 repository's own tree — is not a dependency, is not in the lockfile, and is outside
@@ -327,9 +347,9 @@ came out of this document's own review and was numbered later, as WI-044.
 | W2   | accepted, rescoped   | [WI-034](../.factory/work/WI-034.md) | Wren  | The published shape for W1. Lands **before** W1. **Rescoped at 11:10** — it publishes the outcome vocabulary and the migration note, not the authorship definition, which WI-030 already published.                           |
 | W3   | **deferred**         | [WI-035](../.factory/work/WI-035.md) | Cog   | The largest of the seven. Starts after Forge. **The deferral is capacity, not judgement** — Cog's lane is full — and it is numbered so it is not lost.                                                                        |
 | W4   | **folded**           | [WI-007](../.factory/work/WI-007.md) | Cog   | The same subject under a different name. **The fold is recorded in `.factory/INTAKE.md`, not in WI-007's own file** — that item does not yet name the fold, which is a gap in the item, not in this record.                   |
-| W5   | accepted             | [WI-036](../.factory/work/WI-036.md) | Wren  | The record the gate compares against. Lands **before** W7.                                                                                                                                                                    |
-| W6   | accepted             | [WI-037](../.factory/work/WI-037.md) | Wren  | The cheapest item in the set and the most overdue.                                                                                                                                                                            |
-| W7   | accepted             | [WI-038](../.factory/work/WI-038.md) | Chief | The gate. Lands **after** W5 — a gate that compares against nothing catches nothing.                                                                                                                                          |
+| W5   | **accepted**         | [WI-036](../.factory/work/WI-036.md) | Wren  | The record the gate compares against. **Accepted** — Probe re-derived the numbers its own way rather than trusting the record: 494 packages, one copy, in `docs/dependency-licences.json`. Lands **before** W7.               |
+| W6   | accepted, landed     | [WI-037](../.factory/work/WI-037.md) | Wren  | The cheapest item in the set and the most overdue. **Landed — at verify**: the product record now says Forge.                                                                                                                 |
+| W7   | accepted, in flight  | [WI-038](../.factory/work/WI-038.md) | Chief | The gate. Lands **after** W5 — a gate that compares against nothing catches nothing — and W5 has landed, so it can. The CI step and manifest entry are written; the gate script is **queued, not written**.                   |
 | W8   | **funded, deferred** | [WI-044](../.factory/work/WI-044.md) | Chief | The check over this repository's own sources. Numbered so it is not lost, and **not dispatched** — the inventory is worth writing against a settled repository, and the repository's visibility is the owner's open decision. |
 
 **Two of the lead's decisions are worth carrying here, because they are judgements
@@ -425,10 +445,21 @@ so the resume is proved for the first and the published exception for the second
 **Owner:** Wren. **File:** `docs/strategy.md`, and a note in PRODUCT.md §10.
 
 Each dependency in the lockfile has its licence read from the repository and
-recorded here, with what that licence permits and what it forbids — and the
-landscape table above is brought under the same rule, because a comparator's
-licence is part of what it teaches. This is the **record** half of the owner's
-answer that the borrow rule becomes a check; W7 is the gate.
+recorded — and the landscape table above is brought under the same rule, because a
+comparator's licence is part of what it teaches. This is the **record** half of the
+owner's answer that the borrow rule becomes a check; W7 is the gate.
+
+**And the record is written.** WI-036 landed and was **accepted** on 2026-10-21 —
+**494 packages, one entry each, every entry naming the file its licence was read
+from** — 375 read in
+place from the licence file the package itself ships, 16 from the `license` field of
+a package's own `package.json` because it ships no licence file, 97 optional
+packages for other platforms recorded by the identifier the project publishes for
+that exact version, and the six `@personal-os/*` workspaces marked as this
+repository's own. There is **one copy of the record** —
+[`docs/dependency-licences.json`](dependency-licences.json) — and the section
+[below](#the-dependency-licences) points at it rather than repeating it, because
+two copies of the same licences are a record that can disagree with itself.
 
 **It also produces the approved set**, because a check cannot decide what is
 approved unless something says what is: the licences this project accepts, the
@@ -443,14 +474,23 @@ against the actual dependency set, naming the dependency and the licence**, so
 "answered" is a place and not a mood; a note in this document says when the column
 was read.
 
+**The record is written.** It is
+[`docs/dependency-licences.json`](dependency-licences.json), read on 2026-10-21,
+and [The dependency licences](#the-dependency-licences) says what was read, from
+where, and answers the owner's AGPL question against this set.
+
 ### W6 — The product record says Desk (B); the owner chose Forge
 
 **Owner:** Wren. **File:** `PRODUCT.md`.
 
-PRODUCT.md §11 still says the direction that would fix the accent is "Desk (B), it
-is recommended rather than decided, and the owner has one word to say about it". The
+PRODUCT.md §11 said the direction that would fix the accent is "Desk (B), it is
+recommended rather than decided, and the owner has one word to say about it". The
 owner said their word on 2026-10-21: **D — Forge**. A product record that states
 the opposite of the decision is the one thing it cannot carry.
+
+**And it has been corrected** — WI-037 landed (`0024f88`, _"Make the product record
+say Forge, with the date and the recommendation"_) and is at verify. §11 now names
+Forge, with the date and the fact that the factory recommended B.
 
 **Acceptance:** §11 names Forge, with the date and the fact that the factory
 recommended B; the accent rule's statement matches ADR 0007; nothing else in the
@@ -506,6 +546,78 @@ as W5 and W7.
 is recorded in `.factory/INTAKE.md`: _the inventory it needs is worth writing
 against a settled repository, and the repository's visibility is the owner's open
 decision._ So the want is neither lost nor pretended done.
+
+---
+
+## The dependency licences
+
+**The record is [`docs/dependency-licences.json`](dependency-licences.json), and it
+was read on 2026-10-21.** One entry for every one of the 494 packages in
+`package-lock.json`, and every entry names the file its licence was read from.
+**There is one copy of the record and it is that file**: this section points at it
+and does not repeat it, because two copies of the same licences is a record that
+can disagree with itself.
+
+**What was read, and from where.** 375 entries were read in place, from the
+licence file the package itself ships. 16 were read from the `license` field of
+the package's own `package.json`, because those packages ship no licence file —
+a published field is what the project publishes, and the entry says which field.
+97 are optional packages for other platforms: they are in the lockfile but are not
+installed on the machine that read them, so the identifier recorded is the one
+the project publishes for that exact version, and the entry says that too. The
+six `@personal-os/*` packages are this repository's own workspaces rather than
+dependencies, and they are marked as such. **Every entry carries the first
+identifying lines of the file it was read from**, so a later reader can tell a
+licence from the name of a licence — which is the whole difference between a
+directory listing and a reading.
+
+**The set, as read on 2026-10-21.** This is a census of the reading, not a second
+copy of the record: the licences themselves are in the JSON, each with what it
+permits, what it requires and what it forbids, read from the licence text. If this
+table ever disagrees with the JSON, the JSON is the record.
+
+| Licence         | Packages |
+| --------------- | -------- |
+| `MIT`           | 423      |
+| `ISC`           | 19       |
+| `Apache-2.0`    | 12       |
+| `MPL-2.0`       | 12       |
+| `BSD-3-Clause`  | 8        |
+| `BlueOak-1.0.0` | 6        |
+| `BSD-2-Clause`  | 3        |
+| `MIT-0`         | 2        |
+| `CC-BY-4.0`     | 1        |
+| `CC0-1.0`       | 1        |
+| `0BSD`          | 1        |
+
+Six more entries in the lockfile are this repository's own `@personal-os/*`
+workspaces, which carry no licence of their own; see below.
+
+**The owner's AGPL question, answered against this set.** _Is anything this
+product depends on AGPL?_ **No.** Every dependency in the lockfile was read, and
+**not one of them is licensed under the GNU Affero General Public License**; none
+is under the GPL or LGPL either. The only copyleft in the set is **MPL-2.0**, and
+it is one package: `lightningcss` and its eleven platform variants
+(`lightningcss@1.32.0` and the `lightningcss-*` binaries), all read from the
+package's own `LICENSE`. That is file-level copyleft, not network-level: it
+obliges a modified MPL-covered file to be published under the MPL, and this
+project does not modify them — `lightningcss` is a build-time dependency of
+Tailwind's CSS pipeline.
+
+Two things that answer should not be read as more than it is. **The six
+`@personal-os/*` packages in the lockfile carry no licence at all**, because the
+owner answered on 2026-10-21 that this repository is private for now with no
+LICENSE yet; that is about this repository, not about what it depends on, and
+"no AGPL in the dependency set" is not "everything here may be redistributed".
+And **the one attribution obligation in the set rides on `caniuse-lite`**
+(`CC-BY-4.0`), a browser-support data set used at build time: whether that data
+reaches the built client is worth settling before the gate is written.
+
+**The approved set is in the same file.** `approvedSet` names the licences this
+project accepts and the reason each is accepted — it is what WI-038's gate
+compares the lockfile against, so a licence outside the set, or a change inside
+it, fails the build. The set as read on 2026-10-21 accepts all eleven licences
+above; the owner may narrow it, and the record is one edit to change.
 
 ---
 
