@@ -97,7 +97,11 @@ describe('the two published shapes', () => {
 
     // Two of the mutating routes write their audit entry from the service
     // layer rather than the route; the entry names them.
-    const fromTheServiceLayer = new Set(['POST /api/approvals/:id/decide', 'PATCH /api/tasks/:id']);
+    const fromTheServiceLayer = new Set([
+      'POST /api/approvals/:id/decide',
+      'POST /api/agui/runs/:runId/resume',
+      'PATCH /api/tasks/:id',
+    ]);
     const unaudited = routes
       .filter((entry) => !entry.audited && !fromTheServiceLayer.has(entry.route))
       .map((entry) => entry.route)

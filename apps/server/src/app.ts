@@ -37,6 +37,7 @@ import { registerWaitingRoutes } from './api/waiting.js';
 import { registerAuditRoutes } from './api/audit.js';
 import { registerMeasuresRoutes } from './api/measures.js';
 import { registerEventRoutes } from './api/events.js';
+import { registerAgUiRoutes } from './api/agui.js';
 
 export interface BuildAppOptions {
   config?: AppConfig;
@@ -224,6 +225,7 @@ export async function buildApp(options: BuildAppOptions = {}): Promise<FastifyIn
   registerAuditRoutes(app);
   registerMeasuresRoutes(app);
   registerEventRoutes(app);
+  registerAgUiRoutes(app);
 
   // MCP endpoint. The actor is resolved from the bearer token or the
   // session cookie; an agent token is scoped to that agent connection.

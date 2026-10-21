@@ -1246,6 +1246,8 @@ is not left deleting the database.
 | `GET`              | `/api/audit`                                         | Read the audit trail. See [the entry](#the-audit-outcome).                              |
 | `GET`              | `/api/measures`                                      | The product's two measures of itself. See below.                                        |
 | `GET`              | `/api/events`                                        | Server-sent event stream.                                                               |
+| `GET`              | `/api/agui/events`                                   | The same stream in AG-UI. See [the AG-UI stream](#the-ag-ui-stream).                    |
+| `POST`             | `/api/agui/runs/:runId/resume`                       | Answer the interrupts of an AG-UI run. See [the AG-UI stream](#the-ag-ui-stream).       |
 | `ANY`              | `/mcp`                                               | MCP streamable HTTP endpoint.                                                           |
 
 ### The measures route
@@ -1309,12 +1311,13 @@ first measure is therefore a lower bound**: those resources sit in the
 denominator and can never sit in the count, so the ratio is a share over four of
 the six kinds, reported over all six.
 
-**Twelve of the thirty-five mutating routes write no audit entry at all.** Of the
-35 mutating routes in `apps/server/src/api/`, 21 write an audit entry at the
-route level, two more write one from the service layer — `POST
-/api/approvals/:id/decide` at `apps/server/src/modules/approvals/resume.ts:53`,
-and `PATCH /api/tasks/:id` at `apps/server/src/modules/factory/service.ts:275`,
-and that one only when the task leaves `unknown`. The other twelve write none:
+**Twelve of the thirty-six mutating routes write no audit entry at all.** Of the
+36 mutating routes in `apps/server/src/api/`, 21 write an audit entry at the
+route level, three more write one from the service layer — `POST
+/api/approvals/:id/decide` and `POST /api/agui/runs/:runId/resume`, both at
+`apps/server/src/modules/approvals/resume.ts:53`, and `PATCH /api/tasks/:id` at
+`apps/server/src/modules/factory/service.ts:275`, and that one only when the task
+leaves `unknown`. The other twelve write none:
 
 | Method   | Path                                                 |
 | -------- | ---------------------------------------------------- |
@@ -1427,3 +1430,109 @@ name and a JSON `data` payload.
 
 On connect the server replays the fifty most recent events, so a reconnecting client
 converges on the current state.
+
+### The AG-UI stream
+
+`GET /api/agui/events` carries the panel's events in **AG-UI 1.0** — the published
+agent-to-user protocol, at <https://docs.ag-ui.com>. It is the same event log the
+panel's own stream reads, projected into AG-UI's vocabulary at the API boundary:
+nothing under `apps/server/src/modules/` knows AG-UI exists, and no AG-UI type
+appears in `packages/contracts`. The projection is
+`apps/server/src/api/agui-protocol.ts`, and it is a pure function of the panel's
+event and the state it is handed — no I/O, no clock, nothing to undo.
+
+**`GET /api/events` does not move.** Its eight event names, its priming behaviour
+and its framing are what they were. The AG-UI route is additive: a new route
+beside it, for a consumer that speaks a published protocol rather than ours.
+
+The stream is Server-Sent Events, framed as the AG-UI HTTP+SSE binding frames it:
+each frame's `data` is exactly one AG-UI event as a JSON object, and the
+keep-alive is an SSE comment. The panel's own framing — an `event:` name and an
+`id:` — is not carried, because AG-UI consumers ignore those fields. On connect
+the server replays the fifty most recent events, as the panel's own stream does.
+`GET /api/agui/events?conversationId=<id>` narrows the stream to one
+conversation.
+
+**Runs.** An execution is a run. `threadId` is the conversation the execution
+belongs to, and `runId` is the execution id. An execution that belongs to no
+conversation — a factory task's execution — names the execution as its thread.
+A run opens with `RUN_STARTED` and closes with `RUN_FINISHED` or `RUN_ERROR`,
+and everything the run opened — an answer, a tool call — is closed before the
+run closes. A turn that continues after an approval is a **new** run, because
+AG-UI says a run that continues an interrupted one is a run of its own; it is
+named `<executionId>:2`, `:3` and so on, counting the runs of that execution.
+The producer declares its version on every `RUN_STARTED` as
+`protocolVersion: "1.0"`.
+
+**The mapping.** Every event the panel publishes has a stated counterpart, and
+every agent event has one too. An event with no counterpart is named as such
+rather than left out.
+
+| Panel event                                 | AG-UI                                                                                                                         |
+| ------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
+| `message.created` — the owner's own message | No event of its own. It is the input of a run rather than its output, and it is streamed inside the run that message started. |
+| `message.created` — the agent's answer      | `TEXT_MESSAGE_START`, after the message that started the turn                                                                 |
+| `message.updated`                           | `TEXT_MESSAGE_END`, when the run still has the answer open                                                                    |
+| `execution.event`                           | The agent event inside it, mapped below                                                                                       |
+| `task.updated`                              | `CUSTOM` named `task.updated`                                                                                                 |
+| `resource.updated`                          | `CUSTOM` named `resource.updated`                                                                                             |
+| `agent.status`                              | `CUSTOM` named `agent.status`                                                                                                 |
+| `automation.run`                            | `CUSTOM` named `automation.run`                                                                                               |
+| `heartbeat`                                 | None. A heartbeat is the transport's keep-alive, and the AG-UI binding carries that as an SSE comment.                        |
+
+| Agent event                              | AG-UI                                                                                                                                                                                                                                             |
+| ---------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `execution.status` — `queued`, `running` | `RUN_STARTED`, when the run is not open yet                                                                                                                                                                                                       |
+| `execution.status` — `completed`         | `RUN_FINISHED` with no outcome — the run succeeded                                                                                                                                                                                                |
+| `execution.status` — `failed`            | `RUN_ERROR`                                                                                                                                                                                                                                       |
+| `execution.status` — `cancelled`         | `RUN_FINISHED` with the cancelled outcome                                                                                                                                                                                                         |
+| `execution.status` — `unknown`           | `RUN_FINISHED` with the cancelled outcome, and metadata naming the outcome that could not be confirmed. AG-UI has no reading for "neither a success nor a failure", and a run stopped by a limit the producer enforces is the closest one it has. |
+| `execution.status` — `blocked`           | None. A blocked status carries no approval to name, and an interrupt needs one; the approval that blocks a run arrives as an approval request, and that is what closes the run.                                                                   |
+| `message.delta`                          | `TEXT_MESSAGE_CONTENT`, preceded by `TEXT_MESSAGE_START` when the answer is not open yet                                                                                                                                                          |
+| `message.completed`                      | `TEXT_MESSAGE_END`                                                                                                                                                                                                                                |
+| `tool.started`                           | `TOOL_CALL_START` and `TOOL_CALL_ARGS`                                                                                                                                                                                                            |
+| `tool.completed`                         | `TOOL_CALL_END` and `TOOL_CALL_RESULT`                                                                                                                                                                                                            |
+| `artifact.created`                       | `TOOL_CALL_START`, `TOOL_CALL_END` and `TOOL_CALL_RESULT` — a tool call named `artifact.created` whose result carries the artefact                                                                                                                |
+| `approval.requested`                     | `RUN_FINISHED` with the interrupt outcome                                                                                                                                                                                                         |
+| `execution.error`                        | `RUN_ERROR`                                                                                                                                                                                                                                       |
+
+**The approval round trip.** An approval request closes the run with an interrupt
+that carries **the approval's own id**, so an interrupt id and an approval id are
+the same thing. The interrupt publishes the answer it expects as its
+`responseSchema`:
+
+```json
+{ "approved": true, "reason": "It is my own homelab" }
+```
+
+`POST /api/agui/runs/:runId/resume` answers it. The body is AG-UI's resume list,
+one entry per interrupt answered:
+
+```json
+{
+  "resume": [{ "interruptId": "apr_1", "status": "resolved", "payload": { "approved": true } }]
+}
+```
+
+`status` is `resolved` when the interrupt was answered and `cancelled` when it was
+abandoned; an abandoned interrupt is a refusal, so the operation is not approved.
+The `payload` is validated against the schema the interrupt published, and an
+answer that does not match it is refused. The resume resolves the approval the
+interrupt id names, through the same path `POST /api/approvals/:id/decide` uses,
+and it refuses an interrupt that belongs to another run.
+
+**The limits.** Three, said plainly.
+
+**The route observes runs; it does not start them.** AG-UI's HTTP binding is a
+POST that opens a run and streams it back. This route is a GET that reports the
+runs the panel is already running, so no `RunAgentInput` is delivered and
+`RUN_STARTED` carries no input echo. It is a custom transport under the
+protocol's own rules: the event model, the patterns and the framing are the
+protocol's.
+
+**The run id of a continued turn depends on what a consumer saw.** The interrupt
+id does not: it is the approval's id, and it is what a resume names.
+
+**A consumer that connects late may see a run open that opened before it.** The
+projection is built from the events the consumer saw, so a run it connected to
+mid-way opens when it first sees material for that run.
