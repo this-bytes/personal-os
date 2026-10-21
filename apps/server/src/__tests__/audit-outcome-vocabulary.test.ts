@@ -177,17 +177,17 @@ describe('the code, as the section describes it', () => {
         what: 'the dispatch writes unknown',
       },
       {
-        citation: 'apps/server/src/modules/audit/service.ts:71',
+        citation: 'apps/server/src/modules/audit/service.ts:79',
         pattern: /result:\s*input\.result\s*\?\?\s*'success'/,
         what: 'the audit service defaults to success',
       },
       {
-        citation: 'apps/server/src/app.ts:185',
+        citation: 'apps/server/src/app.ts:190',
         pattern: /setErrorHandler/,
         what: 'the error handler that writes nothing',
       },
       {
-        citation: 'apps/server/src/modules/resources/service.ts:515',
+        citation: 'apps/server/src/modules/resources/service.ts:525',
         pattern: /queue\.enqueue\(/,
         what: 'the enqueue of an automation run',
       },
