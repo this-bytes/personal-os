@@ -260,8 +260,8 @@ export function ResourceEditor({
           </Field>
 
           {conflict ? (
-            <div className="rounded-md border border-amber-800/70 bg-amber-950/30 p-3">
-              <p className="flex items-start gap-2 text-[11px] text-amber-200">
+            <div className="rounded-md border border-err/40 bg-err/10 p-3">
+              <p className="flex items-start gap-2 text-[11px] text-err">
                 <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
                 {conflict}
               </p>

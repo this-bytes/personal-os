@@ -346,7 +346,7 @@ export function ConversationDetail(): React.JSX.Element {
               <div
                 className={`rounded-md border px-3 py-2 text-[11px] ${
                   routingNotice.routing.blocked
-                    ? 'border-amber-800/70 bg-amber-950/40 text-amber-200'
+                    ? 'border-err/40 bg-err/10 text-err'
                     : dispatchNames.length > 0
                       ? 'border-emerald-800/60 bg-emerald-950/30 text-emerald-200'
                       : 'border-slate-700 bg-slate-950/60 text-slate-400'
@@ -501,7 +501,7 @@ export function ConversationDetail(): React.JSX.Element {
           </Card>
 
           {current.paused ? (
-            <div className="flex items-start gap-2 rounded-md border border-amber-800/60 bg-amber-950/30 px-3 py-2 text-[11px] text-amber-200">
+            <div className="flex items-start gap-2 rounded-md border border-slate-700 bg-slate-950/60 px-3 py-2 text-[11px] text-slate-300">
               <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
               <span>
                 The conversation is paused. Messages are recorded but no agent is woken up.
