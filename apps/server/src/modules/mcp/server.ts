@@ -143,12 +143,14 @@ export async function createMcpServer(options: McpServerOptions): Promise<McpSer
    * outside reaches: a memory created for another agent is refused.
    *
    * A read is judged once, by the same question — the resource's current
-   * owner. The published contract describes `resource.get` as "Read a
-   * resource" and says nothing about who owns a resource, so the rule that
-   * answers that question is this one, and it answers it the same way for all
-   * three resource tools: create, update and get. The owner's own API is out
-   * of this rule's reach — it takes an owner session, and an agent token is
-   * refused there.
+   * owner. The published contract states that rule: `CONTRACTS.md` describes
+   * `resource.get` as "Read a resource. Not another agent's own memory.",
+   * and under "MCP exposure" it says that who owns a resource is settled
+   * before it is handed over — the same rule the writes carry. The rule is
+   * stated once, in "The agent memory scope", and it answers it the same way
+   * for all three resource tools: create, update and get. The owner's own API
+   * is out of this rule's reach — it takes an owner session, and an agent
+   * token is refused there.
    */
   const assertOwnMemory = (
     current: { type: string; data: unknown } | undefined,
