@@ -383,6 +383,7 @@ second dispatch.
 
 | `wi-031-contract-status-correction-2026-10-21` | WI-031 — the entry says the code does not implement it yet, and it does | Wren | `task_be25e082ae5c` | **queued** — **the correction of WI-031's stale status note**, found by Probe while verifying WI-027. `CONTRACTS.md:197-204` says the route is absent; it has been there since `414996c`. **It queues behind WI-065 on `CONTRACTS.md`** — Wren's lane is serialised, so one file carries one live item. **WI-031's acceptance is blocked until it lands** |
 | `wi-069-refusal-names-nobody-code-2026-10-21` | WI-069 — a delegation that names nobody is refused unreadably | Cog | — | **NOT DISPATCHED — held on purpose.** The finding is Probe's, from WI-021's verification. **Two reasons, both said out loud:** the owner's line at 15:40 — _"when a slot frees, lean on verification"_ — and the contract half needs the owner's answer. **Numbered so it is not lost**, with the brief written out in full in `.factory/work/WI-069.md` |
+| `wi-045-unconfirmed-turn-verify-2026-10-21` | WI-045 — an unconfirmed turn routes no further work, verified | Probe | `task_1df39fd407ea` | **queued** — **the verification of the owner's own answer**, dispatched the moment the implementation landed (`a4010bb`, merged into `main` at `66c86ad`). Six questions: the guard stops the routing, a confirmed turn is unaffected, **the stop is recorded where the unknown-outcome machinery is recorded**, the waiting list is unchanged, a test proves both halves, and what the contract publishes. **Chief's word is on the audit entry's target, and the doubt is named in the brief rather than hidden** |
 
 **A cancelled task is not a dispatch — but a cancelled dispatch does not free its
 request id.** That second half was wrong here, and it is corrected now rather
@@ -5445,3 +5446,58 @@ implements it is already running on its own schedule. **A refusal to post is a
 delivery failure, not a reason to leave the record unwritten** — which is why
 this section exists, and why the group's copy is a convenience and not the
 state.
+
+### WI-045 — the owner's answer is implemented, and its verification is dispatched
+
+**`a4010bb` "Stop an unconfirmed turn from routing work onward"** on
+`wi/045-unconfirmed-turn`, pushed to origin so CI gates it, and **merged into
+`main` at `66c86ad`**. Five files, 86 insertions: `dispatch.ts` (the guard and
+the audit entry), `service.ts` and `app.ts` (the audit service reaches the
+dispatcher), `routing.ts` and `executor.ts` (the call sites).
+
+**The guard.** `planAndDispatch` reads `message.status` before it routes
+anything (`apps/server/src/modules/conversations/dispatch.ts:69-88`).
+`complete` and `failed` are settled answers and route as they always did;
+`unknown` and `streaming` stop the routing — no execution, no queued job — and
+the routing decision says why, with a new block reason `unconfirmed`. Measured
+against a real server: a confirmed turn → 1 dispatch and 1 queued `chat.turn`;
+the same turn marked `unknown` → **0 dispatches, 0 queued jobs**.
+
+**Chief's word on Cog's one judgement, and the doubt is named rather than
+hidden.** Cog flagged that **the audit entry targets the message, not the
+execution.** Cog's first version targeted the execution, which broke Probe's
+verified assertion at
+`apps/worker/src/__tests__/unknown-outcome.test.ts:251` — that lookup keys on
+the target alone (`entries.find((item) => item.targetId === 'exe_1')`) and the
+trail is newest-first, so **a second entry on the same target shadows the one
+that was pinned.** Cog did not touch the test.
+
+**The ruling: the stop targets the message.** The message is the thing that
+was not routed and the thing the owner reads; the execution id is not lost and
+travels in `metadata.executionId`; and **the audit trail is keyed by target**,
+so a second entry on one target makes a target-keyed lookup ambiguous — and
+that lookup is pinned and verified. **The criterion is not rewritten.**
+Criterion 3 says _the stop is recorded where the rest of the unknown-outcome
+machinery is recorded_, and **that wording is what Probe judges it against.**
+Chief's ruling resolves the ambiguity in the implementation; it does not move
+the goalposts.
+
+**The verification is dispatched** — `wi-045-unconfirmed-turn-verify-2026-10-21`,
+`task_1df39fd407ea` — with six questions. One is the criterion above. **One is
+the question Cog's change raises and nobody has answered yet: `streaming` is
+not an unconfirmed outcome, it is a turn in progress**, and the owner answered
+about an _unconfirmed_ turn. Probe is to say whether any legitimate path calls
+`planAndDispatch` with a streaming message, and what it does now.
+
+**And the owner has closed the second-verifier question**, so this section does
+not ask again: **no — one verifier plus the stall watchdog**, the question is
+closed, and the first question when the accept queue stops moving is whether a
+slot is stuck. The other Chief session recorded that answer at `671f9f2`, and
+**this session had the question open in its own report and does not reopen
+it.**
+
+**The queue is moving.** WI-027's verification landed at 15:27 — the first
+accept-queue item to close since 09:48 — and **WI-036's verification started
+at 15:38**. The livelocked turn that held half the factory was cancelled, and
+in the sixteen minutes after the release two tasks completed with a
+**16-minute median**, against two in the hour before with a 278-minute median.
