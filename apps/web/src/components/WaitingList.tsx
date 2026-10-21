@@ -379,9 +379,16 @@ function labelFor(item: WaitingItem): string {
   return 'Blocked';
 }
 
-function variantFor(item: WaitingItem): 'warning' | 'info' | 'danger' {
-  if (item.kind === 'approval') return 'warning';
-  if (item.reason === 'review') return 'info';
+/**
+ * What colour the item is.
+ *
+ * An approval and a task in review are both waiting on the owner, and the
+ * accent is what says the owner is needed. An item whose outcome is unknown
+ * is a caution — something to check, not a decision — so it stays neutral.
+ */
+function variantFor(item: WaitingItem): 'accent' | 'warning' | 'danger' {
+  if (item.kind === 'approval') return 'accent';
+  if (item.reason === 'review') return 'accent';
   if (item.reason === 'unknown') return 'warning';
   return 'danger';
 }
