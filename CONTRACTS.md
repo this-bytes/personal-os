@@ -1034,13 +1034,31 @@ closed — `message.send`, `tool.call` and `artifact.create` — and an action o
 it is refused rather than passed.
 
 **The limits, the allowed actions and the approvals are enforced.** The worker holds
-a turn to the effective policy: before the turn starts it checks the chain against
-the limits the policy sets on it
-(`apps/worker/src/executor.ts:1343-1362`), the policy's duration limit caps the turn
+a turn to the effective policy: the chain's turn count and its spend, and the
+workspace's spend for the day, before the turn starts
+(`apps/worker/src/executor.ts:1348-1375`), the policy's duration limit caps the turn
 while it runs, and every action the agent announces is checked against what the
 policy allows. The MCP surface refuses an action the policy does not allow, and one
 the policy wants the owner to approve until the owner has decided. A turn that
 exceeds a limit stops, and the outcome is recorded rather than silently truncated.
+
+**A daily cap is a cap on the workspace.** The workspace's spend for the day is the
+sum of the spend units on the executions of that workspace since 00:00 UTC, and it
+is the same day for every workspace — the system stores ISO timestamps everywhere
+and has no per-workspace timezone. A daily cap of zero is no cap, as it is for the
+chain's spend limit. The cap applies across the workspace's conversations and
+goals, and not per chain, which is the whole difference between a daily cap and
+`maxSpendUnits`.
+
+**A cap is only as good as the number it is measured against.** The daily cap is
+measured against the spend units recorded on the executions, and a turn's cost is
+one spend unit — the measure the product already has
+(`apps/server/src/modules/conversations/routing.ts:305-306`). **The product does
+not yet record it against an execution**: every execution is written with no spend
+units (`apps/server/src/modules/conversations/dispatch.ts:171`,
+`apps/server/src/modules/factory/service.ts:368`), and the column defaults to zero
+(`apps/server/src/db/schema.ts:231`). **So the workspace's spend for the day is
+zero today, and the cap cannot bite until the cost is recorded.**
 
 **The mode is resolved, readable, and enforced nowhere.** It is carried through the
 resolver and it is readable wherever the policy is, but no enforcement point reads
@@ -1100,7 +1118,7 @@ supports, and the capability to do it is already modelled and negotiated.
 This entry is the contract for **WI-007**, and the code implements it — as of
 `5f019b9`. `resumeSession` is implemented at
 `packages/agent-adapters/src/acp.ts:213` and called at
-`apps/worker/src/executor.ts:424`, and the gate is the capability and the session
+`apps/worker/src/executor.ts:429`, and the gate is the capability and the session
 id together: `canResume = capabilities?.persistentSessions === true &&
 Boolean(execution.externalRef)`.
 
@@ -1688,7 +1706,7 @@ audit entry — there is no audit call anywhere in
 tools call, which reach the resources service directly rather than through the
 auditing route. The only writer of the trail that is not an owner HTTP route is
 the worker — its `unknown` record (`apps/worker/src/executor.ts:105`) and the
-policy refusals it writes (`apps/worker/src/executor.ts:1392`). So every audited
+policy refusals it writes (`apps/worker/src/executor.ts:1430`). So every audited
 operation is an owner operation, except the worker's own entries, which carry
 `actorType: 'agent'`. **The second measure does not count the work an agent does
 through MCP**: an agent can create, update and publish resources all day and the
@@ -1705,7 +1723,7 @@ produce come from the worker: the `unknown` of
 [The unknown outcome](#the-unknown-outcome)
 (`apps/worker/src/executor.ts:112`), and the `failure` it writes when the
 autonomy policy refuses a turn or an action
-(`apps/worker/src/executor.ts:1399`). **An operation that failed at the route is
+(`apps/worker/src/executor.ts:1437`). **An operation that failed at the route is
 counted here as an operation that completed.**
 
 **The route exists.** It answers with the shape above, member for member: the

@@ -110,8 +110,9 @@ agents. **The third half of that is built.** The product publishes a template fo
 each of the six kinds, and an agent lists them and creates from one: the templates
 are on the MCP surface as `resource.template.list`
 (`packages/contracts/src/mcp.ts:21`), and `resource.create` takes a template and
-builds the resource from the template's own spec
-(`apps/server/src/modules/mcp/server.ts:363`, `:384-386`). A template is an
+builds the resource from the template's spec, with the caller's own values merged
+into it
+(`apps/server/src/modules/mcp/server.ts:428`, `:446-448`). A template is an
 example, and the spec it carries is validated by the owning provider exactly as a
 hand-written spec is.
 
