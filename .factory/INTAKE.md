@@ -4697,7 +4697,7 @@ other session **says so in the group** and takes the space, rather than taking
 it quietly."_ **WI-046 was taken quietly, and WI-063 was taken quietly.** Both
 are stated here rather than overwritten. **The allocation as it now stands:
 WI-046 through WI-064 are the strategy session's; WI-030 through WI-038, WI-044,
-WI-045, WI-062, WI-065 and WI-066 are this session's.**
+WI-045, WI-062, WI-065, WI-066, WI-067 and WI-068 are this session's.**
 
 **The group post for it was refused** — the round is mid-discussion — so the
 allocation is recorded here, and the group line goes when the round opens.
@@ -4774,3 +4774,22 @@ exists"_ and **neither can be satisfied until WI-068 does.**
 
 **The acceptance of WI-068 is the other Chief session's**, because this session
 wrote Chief's half.
+
+**WI-068's Chief half is landed.** `0df2f0d` — the merge of
+`wi/068-licence-file` (`b8ad178`) into `main`: the root `LICENSE` file is
+removed, and `FACTORY.md:61` now names it, so the file that fell through the
+ownership table has an owner. **The gates in the worktree, all green:**
+typecheck 0, test 0 (server 219, web 52, worker 31, agent-adapters 16,
+contracts 28), format:check 0, build 0. The branch is pushed —
+`wi/068-licence-file` — and **the pre-push format gate ran and passed**. `main`
+is not pushed; that is still the owner's word.
+
+**And the verification is not dispatched yet, and the reason is said out loud.**
+**One verifier, one item, one verification** — and WI-068's verification is of
+the whole item, so it waits for Wren's half, which is queued behind WI-065. **A
+verification dispatched on half the item would produce a red that means
+nothing.** WI-043 and WI-041 wait for the same reason: both carry the
+criterion _"no LICENSE file exists"_ and **neither can be satisfied until
+WI-068 does.** **This is the one case the loop's "dispatch Verify the moment
+Implement lands" does not cover** — an item whose halves have different owners
+and land at different times — so it is stated here rather than quietly applied.
