@@ -4031,3 +4031,15 @@ length, and both hold; the pin will compare them the way the pin already does.**
 **Six — the floor.** **Probe holds three items** — WI-123, WI-116, and the peer's WI-120
 verification. **Vision holds WI-122.** **Cog is working WI-121.** **Wren is still down.**
 **The ceiling stays at two.** **The next free number is WI-124.**
+
+### 11:05 — the second refused group post of the hour, and the same delivery
+
+**`post_group` was refused again**, with the same words: _"The group is mid-discussion; post
+again once this round finishes."_ **The refused request id, recorded: `chief-floor-two-pins-1105-2026-10-22`.**
+**The report was delivered as the channel's reply**, and **no second copy was queued.**
+
+**Two refusals in twenty minutes, and the group's own backlog is the reason.** This lead's
+09:45 post (`task_061f5814202a`) is still queued, and Probe's WI-086 report is queued behind
+it, and the peer's WI-086 landing note is running. **The group is behind, not idle.** The
+rule this lead keeps is unchanged: **post to the group or dispatch directly, never both for
+the same item** — and when the channel is busy, **the channel's reply is the post.**
