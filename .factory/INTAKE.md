@@ -2699,3 +2699,75 @@ give. **A brief must cite a path `ls-tree` confirms.**
   **An item may name a file that does not exist yet; a claim about what the code does
   today may not.** And `apps/web/src/api/events.ts`, cited at `WI-024.md:443`, is not a
   false claim at all — that line says the file is _not_ there.
+
+## 2026-10-22 08:08 — Chief: the push is green, WI-112 is accepted on a substituted verification, and the pin it owes has a number
+
+**The verdict on this session's push: GREEN.** `76ce2a3` (07:59:52), read from
+outside the machine: **CodeQL `completed/success`** — "Analyze
+(javascript-typescript)" `completed/success` — and **CI `completed/success`** on
+every job: "Lint the workflows", "The published contract matches the tree", "The
+contract's pointers point at code", "Build and test", "Dependency audit", "Build
+and run the stack". **VERDICT: GREEN.** The gates measured on that tree before the
+push: **typecheck 0 · format:check 0 · build 0 · test 0 — 61 files, 615 tests, 0
+failures**, and the pointer gate reads **122 pointers, 0 failures**.
+
+**WI-112 is ACCEPTED, on a substituted verification, and the acceptance is written
+down.** Vision — the substituted verifier, Wren's and Probe's lanes refusing, and
+Vision wrote none of this work — reads: **"WI-112 — ACCEPT. All five criteria
+hold. Nothing in the work needs changing; four sentences in the item's own record
+do."** Measured at `origin/main` = `4e64f3d` in a clean detached worktree
+(`G:\code\personal-os-worktrees\verify-wi112`, dirty = 0) with the repository's
+pinned prettier 3.6.2, and **the verifier edited nothing**. The decisive
+measurement: `docs/strategy.md:265-270` holds the rule as
+`prototypes/DIRECTION.md:53-57` publishes it, and **compared as strings the two are
+equal — 312 characters each**, with the source's `**The rule.**` label stripped and
+the italics kept; both declared exceptions are present and "one declared
+exception" is in neither. Nothing else in the file moved: lines 1–264
+byte-identical, old 265–267 → new 265–270, the rest a shift of **+3**, 754 → 757
+lines. **The acceptance and the four record corrections are appended to
+`.factory/work/WI-112.md`, and the corrections are named there rather than
+rewritten** — a wrong claim stays standing with a dated correction beside it.
+
+**WI-116 is taken, and it is the pin the acceptance owes.** Vision: the pin "is
+owed, and it needs a number". The pin would live in
+`apps/web/src/__tests__/forge-briefs.test.ts` — the file that already holds this
+rule's copies and already resolves the repository root — and **that file is
+Probe's by the ownership table, so the verifier did not write it and will not: a
+verifier who writes the pin is no longer independent of it.** **WI-116: "a check
+pins the strategy record's copy of the rule, so a fifth copy cannot go stale
+unnoticed."** It is **HELD**, because Probe's lane refuses, and the restart is
+what releases it. It is numbered here so the number does not have to be taken
+again.
+
+**The floor post is up.** Request `chief-floor-0800-2026-10-22`, batch
+`batch_1cd57ed2962f`, task **`task_b1a2adb1db7e`**, posted to **"Personal OS
+Factory"** (`grp_cc2adeea48f4`) — **durably accepted and queued**; acceptance is
+not completion, and whether it has reached the group's log is a separate reading.
+It carries the owner's three decisions with their measurements, the green verdict,
+the correction to this session's own red measurement, the nine pointers measured
+independently, the number conceded, and the lanes.
+
+**The watchdog's report for this hour: two tasks over the 45-minute trigger, and
+nothing cancelled.** `task_cb4460d7e002` (Vision's WI-108 verification) is **83
+minutes** old and **`waiting_for_tasks`** — **over the trigger and protected**: a
+task in `waiting_for_tasks` is never cancelled, and its report has been read.
+`task_2a34be8fd7d9` (the WI-108 report relay) is **71 minutes** and `running`, and
+the cancel condition is not met either: the last message from the bot that owns it
+is a live `streaming` delegation, so **its session is started**, and the watchdog
+cancels only a task whose session is **not** started. **So: two reported, none
+cancelled, no group round interrupted.**
+
+**The lanes, at @@TIME@@.** Cog's **WI-086** is queued (`task_9f6a55468fe9`,
+request `wi-086-land-and-repoint-cog-2026-10-22-r2`, batch `batch_05f2a3ebbde7`) and
+`CONTRACTS.md` is its live file. Vision's WI-106 verification (`task_64ef89071335`)
+is **done**. The peer's WI-106 implementation is still queued at Wren
+(`task_44c894c402ef`). **Probe's lane still refuses** — 30 delegations refused
+since 2026-10-20 21:46:39, the last at 04:25:20 — and **no restart has happened**:
+`runtime.start_requested` and `runtime.ready` are both at **2026-10-21 23:37:39**,
+one run id `5bc9c2db`, `current: true`.
+
+**And two commits are deliberately unpushed, so the recorded GREEN belongs to the
+tree that is actually published.** This session's ledger record is on `origin/main`
+at `76ce2a3` with its verdict above; **this section and WI-112's acceptance sit in
+local commits that the next push carries**, and that push's own verdict is read
+the same way.
