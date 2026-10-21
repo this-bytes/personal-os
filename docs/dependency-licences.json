@@ -205,9 +205,9 @@
     ]
   },
   "summary": {
-    "lockfilePackageEntries": 494,
+    "lockfilePackageEntries": 500,
     "firstPartyWorkspaces": 6,
-    "distinctLicences": 12,
+    "distinctLicences": 11,
     "readFromLicenceFile": 375,
     "readFromPackageJsonField": 16,
     "readFromPublishedIdentifier": 97
@@ -1321,7 +1321,7 @@
       "source": {
         "kind": "licence-file",
         "file": "node_modules/@fastify/ajv-compiler/node_modules/fast-uri/LICENSE",
-        "evidence": "Copyright (c) 2011-2021, Gary Court until https://github.com/garycourt/uri-js/commit/a1acf730b4bba3f1097c9f52e7d9d3aba8cdcaae Copyright (c) 2021-present The Fastify team <https://github.com/fastify/fa",
+        "evidence": "Copyright (c) 2011-2021, Gary Court until https://github.com/garycourt/uri-js/commit/a1acf730b4bba3f1097c9f52e7d9d3aba8cdcaae Copyright (c) 2021-present The Fastify team <https://github.com/fastify/fastify#team> All rights reserved. Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met: * Redistributions of source code must retain the above copyright notice, this list of conditions and the following disclaimer. * Redistributions in binary form must reproduce the above copyright notice, this list of conditions and the following disclaimer in the documentation and/or other materials provided with the distribution. * The names of any contributors may not be used to endorse or promote products derived from this software without specific prior written permission.",
         "readOn": "2026-10-21"
       },
       "readOn": "2026-10-21",
@@ -4065,7 +4065,7 @@
       "source": {
         "kind": "licence-file",
         "file": "node_modules/convert-source-map/LICENSE",
-        "evidence": "Copyright 2013 Thorsten Lorenz. All rights reserved.",
+        "evidence": "Copyright 2013 Thorsten Lorenz. All rights reserved. Permission is hereby granted, free of charge",
         "readOn": "2026-10-21"
       },
       "readOn": "2026-10-21",
@@ -4897,7 +4897,7 @@
       "source": {
         "kind": "licence-file",
         "file": "node_modules/electron-to-chromium/LICENSE",
-        "evidence": "Copyright 2018 Kilian Valkhof Permission to use, copy, modify, and/or distribute this software for any purpose with or without fee is hereby granted, provided that the above copyright notice and this ",
+        "evidence": "Copyright 2018 Kilian Valkhof Permission to use, copy, modify, and/or distribute this software for any purpose with or without fee is hereby granted, provided that the above copyright notice and this permission notice appear in all copies.",
         "readOn": "2026-10-21"
       },
       "readOn": "2026-10-21",
@@ -4948,7 +4948,7 @@
       "source": {
         "kind": "licence-file",
         "file": "node_modules/entities/LICENSE",
-        "evidence": "Copyright (c) Felix Böhm All rights reserved.",
+        "evidence": "Copyright (c) Felix Böhm All rights reserved. Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met: Redistributions of source code must retain the above copyright notice, this list of conditions and the following disclaimer. Redistributions in binary form must reproduce the above copyright notice, this list of conditions and the following disclaimer in the documentation and/or other materials provided with the distribution.",
         "readOn": "2026-10-21"
       },
       "readOn": "2026-10-21",
@@ -5288,7 +5288,7 @@
       "source": {
         "kind": "licence-file",
         "file": "node_modules/fast-json-stringify/node_modules/fast-uri/LICENSE",
-        "evidence": "Copyright (c) 2011-2021, Gary Court until https://github.com/garycourt/uri-js/commit/a1acf730b4bba3f1097c9f52e7d9d3aba8cdcaae Copyright (c) 2021-present The Fastify team <https://github.com/fastify/fa",
+        "evidence": "Copyright (c) 2011-2021, Gary Court until https://github.com/garycourt/uri-js/commit/a1acf730b4bba3f1097c9f52e7d9d3aba8cdcaae Copyright (c) 2021-present The Fastify team <https://github.com/fastify/fastify#team> All rights reserved. Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met: * Redistributions of source code must retain the above copyright notice, this list of conditions and the following disclaimer. * Redistributions in binary form must reproduce the above copyright notice, this list of conditions and the following disclaimer in the documentation and/or other materials provided with the distribution. * The names of any contributors may not be used to endorse or promote products derived from this software without specific prior written permission.",
         "readOn": "2026-10-21"
       },
       "readOn": "2026-10-21",
@@ -5322,7 +5322,7 @@
       "source": {
         "kind": "licence-file",
         "file": "node_modules/fast-uri/LICENSE",
-        "evidence": "Copyright (c) 2011-2021, Gary Court until https://github.com/garycourt/uri-js/commit/a1acf730b4bba3f1097c9f52e7d9d3aba8cdcaae Copyright (c) 2021-present The Fastify team <https://github.com/fastify/fa",
+        "evidence": "Copyright (c) 2011-2021, Gary Court until https://github.com/garycourt/uri-js/commit/a1acf730b4bba3f1097c9f52e7d9d3aba8cdcaae Copyright (c) 2021-present The Fastify team <https://github.com/fastify/fastify#team> All rights reserved. Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met: * Redistributions of source code must retain the above copyright notice, this list of conditions and the following disclaimer. * Redistributions in binary form must reproduce the above copyright notice, this list of conditions and the following disclaimer in the documentation and/or other materials provided with the distribution. * The names of any contributors may not be used to endorse or promote products derived from this software without specific prior written permission.",
         "readOn": "2026-10-21"
       },
       "readOn": "2026-10-21",
@@ -5390,7 +5390,7 @@
       "source": {
         "kind": "licence-file",
         "file": "node_modules/fastq/LICENSE",
-        "evidence": "Copyright (c) 2015-2020, Matteo Collina <matteo.collina@gmail.com> Permission to use, copy, modify, and/or distribute this software for any",
+        "evidence": "Copyright (c) 2015-2020, Matteo Collina <matteo.collina@gmail.com> Permission to use, copy, modify, and/or distribute this software for any purpose with or without fee is hereby granted, provided that the above copyright notice and this permission notice appear in all copies.",
         "readOn": "2026-10-21"
       },
       "readOn": "2026-10-21",
@@ -5595,7 +5595,7 @@
       "source": {
         "kind": "licence-file",
         "file": "node_modules/glob/LICENSE.md",
-        "evidence": "All packages under `src/` are licensed according to the terms in their respective `LICENSE` or `LICENSE.md` files.",
+        "evidence": "All packages under `src/` are licensed according to the terms in their respective `LICENSE` or `LICENSE.md` files. The remainder of this project is licensed under the Blue Oak Model License, as follows:",
         "readOn": "2026-10-21"
       },
       "readOn": "2026-10-21",
@@ -5990,7 +5990,7 @@
       "source": {
         "kind": "licence-file",
         "file": "node_modules/json-schema-typed/LICENSE.md",
-        "evidence": "BSD 2-Clause License Original source code is copyright (c) 2019-2025 Remy Rylan",
+        "evidence": "BSD 2-Clause License Original source code is copyright (c) 2019-2025 Remy Rylan <https://github.com/RemyRylan> All JSON Schema documentation and descriptions are copyright (c): 2009 [draft-0] IETF Trust <https://www.ietf.org/>, Kris Zyp <kris@sitepen.com>, and SitePen (USA) <https://www.sitepen.com/>. 2009 [draft-1] IETF Trust <https://www.ietf.org/>, Kris Zyp <kris@sitepen.com>, and SitePen (USA) <https://www.sitepen.com/>. 2010 [draft-2] IETF Trust <https://www.ietf.org/>, Kris Zyp <kris@sitepen.com>, and SitePen (USA) <https://www.sitepen.com/>. 2010 [draft-3] IETF Trust <https://www.ietf.org/>, Kris Zyp <kris@sitepen.com>, Gary Court <gary.court@gmail.com>, and SitePen (USA) <https://www.sitepen.com/>. 2013 [draft-4] IETF Trust <https://www.ietf.org/>), Francis Galiegue <fgaliegue@gmail.com>, Kris Zyp <kris@sitepen.com>, Gary Court <gary.court@gmail.com>, and SitePen (USA) <https://www.sitepen.com/>. 2018 [draft-7] IETF Trust <https://www.ietf.org/>, Austin Wright <aaa@bzfx.net>, Henry Andrews <henry@cloudflare.com>, Geraint Luff <luffgd@gmail.com>, and Cloudflare, Inc. <https://www.cloudflare.com/>. 2019 [draft-2019-09] IETF Trust <https://www.ietf.org/>, Austin Wright <aaa@bzfx.net>, Henry Andrews <andrews_henry@yahoo.com>, Ben Hutton <bh7@sanger.ac.uk>, and Greg Dennis <gregsdennis@yahoo.com>. 2020 [draft-2020-12] IETF Trust <https://www.ietf.org/>, Austin Wright <aaa@bzfx.net>, Henry Andrews <andrews_henry@yahoo.com>, Ben Hutton <ben@jsonschema.dev>, and Greg Dennis <gregsdennis@yahoo.com>. All rights reserved. Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met: 1. Redistributions of source code must retain the above copyright notice, this list of conditions and the following disclaimer. 2. Redistributions in binary form must reproduce the above copyright notice, this list of conditions and the following disclaimer in the documentation and/or other materials provided with the distribution.",
         "readOn": "2026-10-21"
       },
       "readOn": "2026-10-21",
@@ -6024,7 +6024,7 @@
       "source": {
         "kind": "licence-file",
         "file": "node_modules/light-my-request/LICENSE",
-        "evidence": "Copyright (c) 2012-2014, Walmart Copyright (c) 2012-2017, Project contributors",
+        "evidence": "Copyright (c) 2012-2014, Walmart Copyright (c) 2012-2017, Project contributors Copyright (c) 2017-present The Fastify team <https://github.com/fastify/fastify#team> All rights reserved. Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met: * Redistributions of source code must retain the above copyright notice, this list of conditions and the following disclaimer. * Redistributions in binary form must reproduce the above copyright notice, this list of conditions and the following disclaimer in the documentation and/or other materials provided with the distribution. * The names of any contributors may not be used to endorse or promote products derived from this software without specific prior written permission.",
         "readOn": "2026-10-21"
       },
       "readOn": "2026-10-21",
@@ -7093,7 +7093,7 @@
       "source": {
         "kind": "licence-file",
         "file": "node_modules/qs/LICENSE.md",
-        "evidence": "BSD 3-Clause License Copyright (c) 2014, Nathan LaFreniere and other [contributors](https://github.com/ljharb/qs/graphs/contributors)",
+        "evidence": "BSD 3-Clause License Copyright (c) 2014, Nathan LaFreniere and other [contributors](https://github.com/ljharb/qs/graphs/contributors) All rights reserved. Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met: 1. Redistributions of source code must retain the above copyright notice, this list of conditions and the following disclaimer. 2. Redistributions in binary form must reproduce the above copyright notice, this list of conditions and the following disclaimer in the documentation and/or other materials provided with the distribution. 3. Neither the name of the copyright holder nor the names of its contributors may be used to endorse or promote products derived from this software without specific prior written permission.",
         "readOn": "2026-10-21"
       },
       "readOn": "2026-10-21",
@@ -7573,7 +7573,7 @@
       "source": {
         "kind": "licence-file",
         "file": "node_modules/secure-json-parse/LICENSE",
-        "evidence": "Copyright (c) 2019, Sideway Inc, and project contributors Copyright (c) 2019-present The Fastify team <https://github.com/fastify/fastify#team>",
+        "evidence": "Copyright (c) 2019, Sideway Inc, and project contributors Copyright (c) 2019-present The Fastify team <https://github.com/fastify/fastify#team> All rights reserved. The complete list of contributors can be found at: - https://github.com/hapijs/bourne/graphs/contributors - https://github.com/fastify/secure-json-parse/graphs/contributors Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met: 1. Redistributions of source code must retain the above copyright notice, this list of conditions and the following disclaimer. 2. Redistributions in binary form must reproduce the above copyright notice, this list of conditions and the following disclaimer in the documentation and/or other materials provided with the distribution. 3. Neither the name of the copyright holder nor the names of its contributors may be used to endorse or promote products derived from this software without specific prior written permission.",
         "readOn": "2026-10-21"
       },
       "readOn": "2026-10-21",
@@ -7658,7 +7658,7 @@
       "source": {
         "kind": "licence-file",
         "file": "node_modules/setprototypeof/LICENSE",
-        "evidence": "Copyright (c) 2015, Wes Todd Permission to use, copy, modify, and/or distribute this software for any",
+        "evidence": "Copyright (c) 2015, Wes Todd Permission to use, copy, modify, and/or distribute this software for any purpose with or without fee is hereby granted, provided that the above copyright notice and this permission notice appear in all copies.",
         "readOn": "2026-10-21"
       },
       "readOn": "2026-10-21",
@@ -7777,7 +7777,7 @@
       "source": {
         "kind": "licence-file",
         "file": "node_modules/siginfo/LICENSE",
-        "evidence": "Copyright (c) 2017, Emil Bay <github@tixz.dk> Permission to use, copy, modify, and/or distribute this software for any",
+        "evidence": "Copyright (c) 2017, Emil Bay <github@tixz.dk> Permission to use, copy, modify, and/or distribute this software for any purpose with or without fee is hereby granted, provided that the above copyright notice and this permission notice appear in all copies.",
         "readOn": "2026-10-21"
       },
       "readOn": "2026-10-21",
@@ -7811,7 +7811,7 @@
       "source": {
         "kind": "licence-file",
         "file": "node_modules/source-map-js/LICENSE",
-        "evidence": "Copyright (c) 2009-2011, Mozilla Foundation and contributors All rights reserved.",
+        "evidence": "Copyright (c) 2009-2011, Mozilla Foundation and contributors All rights reserved. Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met: * Redistributions of source code must retain the above copyright notice, this list of conditions and the following disclaimer. * Redistributions in binary form must reproduce the above copyright notice, this list of conditions and the following disclaimer in the documentation and/or other materials provided with the distribution. * Neither the names of the Mozilla Foundation nor the names of project contributors may be used to endorse or promote products derived from this software without specific prior written permission.",
         "readOn": "2026-10-21"
       },
       "readOn": "2026-10-21",
@@ -7828,7 +7828,7 @@
       "source": {
         "kind": "licence-file",
         "file": "node_modules/split2/LICENSE",
-        "evidence": "Copyright (c) 2014-2018, Matteo Collina <hello@matteocollina.com> Permission to use, copy, modify, and/or distribute this software for any",
+        "evidence": "Copyright (c) 2014-2018, Matteo Collina <hello@matteocollina.com> Permission to use, copy, modify, and/or distribute this software for any purpose with or without fee is hereby granted, provided that the above copyright notice and this permission notice appear in all copies.",
         "readOn": "2026-10-21"
       },
       "readOn": "2026-10-21",
@@ -8085,7 +8085,7 @@
       "source": {
         "kind": "licence-file",
         "file": "node_modules/tough-cookie/LICENSE",
-        "evidence": "Copyright (c) 2015, Salesforce.com, Inc. All rights reserved.",
+        "evidence": "Copyright (c) 2015, Salesforce.com, Inc. All rights reserved. Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met: 1. Redistributions of source code must retain the above copyright notice, this list of conditions and the following disclaimer. 2. Redistributions in binary form must reproduce the above copyright notice, this list of conditions and the following disclaimer in the documentation and/or other materials provided with the distribution. 3. Neither the name of Salesforce.com nor the names of its contributors may be used to endorse or promote products derived from this software without specific prior written permission.",
         "readOn": "2026-10-21"
       },
       "readOn": "2026-10-21",
@@ -8119,7 +8119,7 @@
       "source": {
         "kind": "licence-file",
         "file": "node_modules/tslib/LICENSE.txt",
-        "evidence": "Copyright (c) Microsoft Corporation. Permission to use, copy, modify, and/or distribute this software for any",
+        "evidence": "Copyright (c) Microsoft Corporation. Permission to use, copy, modify, and/or distribute this software for any purpose with or without fee is hereby granted.",
         "readOn": "2026-10-21"
       },
       "readOn": "2026-10-21",
@@ -8561,7 +8561,7 @@
       "source": {
         "kind": "licence-file",
         "file": "node_modules/webidl-conversions/LICENSE.md",
-        "evidence": "# The BSD 2-Clause License Copyright (c) 2014, Domenic Denicola",
+        "evidence": "# The BSD 2-Clause License Copyright (c) 2014, Domenic Denicola All rights reserved. Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met: 1. Redistributions of source code must retain the above copyright notice, this list of conditions and the following disclaimer. 2. Redistributions in binary form must reproduce the above copyright notice, this list of conditions and the following disclaimer in the documentation and/or other materials provided with the distribution.",
         "readOn": "2026-10-21"
       },
       "readOn": "2026-10-21",
