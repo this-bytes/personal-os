@@ -75,7 +75,7 @@
         "count": 1
       }
     ],
-    "firstPartyNote": "The six @personal-os/* packages in the lockfile are this repository’s own workspaces, not dependencies, and they carry no licence: the owner answered on 2026-10-21 that this repository is private for now, with no LICENSE yet. That is about this repository, not about what it depends on, and it is recorded here so that \"no AGPL in the dependency set\" is not read as \"everything here may be redistributed\"."
+    "firstPartyNote": "The six @personal-os/* packages in the lockfile are this repository’s own workspaces, not dependencies, and they are covered by this repository’s own licence: MIT, chosen by the owner on 2026-10-21, with the full text in the LICENSE file at the repository root. That is about this repository, not about what it depends on, and it is recorded here so that \"no AGPL in the dependency set\" is not read as \"everything here may be redistributed\"."
   },
   "approvedSet": {
     "note": "The licences this project accepts, and why each is accepted. This is what WI-038’s gate compares the lockfile against: a licence outside this set, or a change inside it, fails the build. The owner may narrow this set; it is the set as read on the date above.",
