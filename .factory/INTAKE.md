@@ -1158,3 +1158,32 @@ pin's successor was dispatched at 01:56 (`task_b804c88b7aa7`).
 queued. The engine's own note says the post is durably accepted and may still
 be queued: **acceptance is not completion**, and the group reads it when the
 queue serves it.
+
+**And then the briefs' merge added a THIRD red case, which the brief nobody
+had read would have missed.** With WI-024's briefs repair merged (`69c250b`),
+`apps/web/src/__tests__/forge-briefs.test.ts` is red on **three** cases, not two:
+
+```
+x is the rule in DIRECTION.md, exception included, and the briefs quote it with the exception
+x carries the reason the exception exists, in the brief that states the rule in full
+x puts every surface in the room the direction document puts it in
+```
+
+**The third one is a whitespace failure, not a room failure:**
+`brief 01 puts "The factory board" in the wrong room: expected '| The factory
+board           | Execu…' to contain '| Execution |'` — at
+`forge-briefs.test.ts:314`. The pin reads brief 01's table row as **raw text**
+and asks whether the row contains `| Execution |`; **the briefs repair rewrote
+that table and prettier aligned it**, so the cell now reads `| Execution          |`
+and the substring the pin looks for is not in it. **No surface moved.** So WI-094
+has three things to fix, not two, and **the third is not about the rule at all** —
+a table cell compared as padded text. The lead's correction is appended to
+`.factory/work/WI-094.md`, which the dispatched task tells Probe to read first:
+**compare the cell's value, not the row's raw text** — a document that re-aligns
+its own table is not a document that moved a surface.
+
+Everything else in the tree is green at `6a76b6c`: server 28 files / 295 tests,
+worker 5 / 31, agent-adapters 2 / 16, contracts 4 / 28, web 8 files / 68 tests
+with **3 failed, all three in this one file**. `forge-briefs.test.ts` is the
+only file in the tree that reads `DIRECTION.md`. **So `main` is still not
+pushed**, and the push waits on one thing: the pin's successor landing.
