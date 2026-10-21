@@ -20,6 +20,7 @@ import type { FastifyInstance } from 'fastify';
 import { buildApp } from '../app.js';
 import { loadConfig } from '../config.js';
 import { defaultAgentToolGrants, mcpToolNames } from '@personal-os/contracts';
+import type { AutonomyPolicy } from '@personal-os/contracts';
 
 /**
  * The policy the contract publishes for a workspace whose stored policy is
@@ -103,17 +104,39 @@ function listedTools(body: string): string[] {
   return names;
 }
 
+/**
+ * The tool result carried by an MCP response: whether it is an error, and the
+ * text the tool answered with.
+ *
+ * The transport answers with the JSON-RPC payload on the `data:` line of the
+ * event stream, and a tool that refused answers with its refusal as the text
+ * of the result.
+ */
+function toolResult(body: string): { isError: boolean; text: string } {
+  const dataLine = body.split('\n').find((line) => line.startsWith('data: '));
+  expect(dataLine, 'the MCP response carries no payload').toBeDefined();
+  const payload = JSON.parse((dataLine ?? '').slice('data: '.length)) as {
+    result?: { isError?: boolean; content?: { text?: string }[] };
+  };
+  const result = payload.result ?? {};
+  return {
+    isError: result.isError === true,
+    text: result.content?.[0]?.text ?? '',
+  };
+}
+
 /** An agent connection, and a token that speaks for it. */
 async function createAgent(
   name: string,
   toolGrants?: string[],
+  agentWorkspaceId: string = workspaceId,
 ): Promise<{ id: string; token: string }> {
   const agent = await app.inject({
     method: 'POST',
     url: '/api/agents',
     headers: { cookie: sessionCookie },
     payload: {
-      workspaceId,
+      workspaceId: agentWorkspaceId,
       name,
       adapterType: 'echo',
       config: { reply: 'hi' },
@@ -294,5 +317,227 @@ describe('the autonomy.read MCP tool', () => {
     // tool. The guard's own message is not what reaches the caller here.
     expect(response.body, 'the refusal names the tool').toContain('autonomy.read');
     expect(response.body, 'the refusal hands over no policy').not.toContain('maxDurationSeconds');
+  });
+});
+
+/** A workspace of the owner's own. */
+async function createWorkspace(name: string): Promise<string> {
+  const created = await app.inject({
+    method: 'POST',
+    url: '/api/workspaces',
+    headers: { cookie: sessionCookie },
+    payload: { name },
+  });
+  expect(created.statusCode).toBe(201);
+  return created.json().workspace.id as string;
+}
+
+/**
+ * A workspace whose stored policy is the one named.
+ */
+async function createWorkspaceWithPolicy(
+  name: string,
+  autonomyPolicy: AutonomyPolicy,
+): Promise<string> {
+  const id = await createWorkspace(name);
+  app.services.workspaces.update(id, { autonomyPolicy });
+  return id;
+}
+
+/**
+ * A policy that allows one action only.
+ *
+ * `tool.call` is what every MCP tool other than `conversation.post` stands
+ * for, so a policy that does not allow it refuses those calls.
+ */
+const RESTRICTED_POLICY: AutonomyPolicy = {
+  mode: 'manual',
+  allowedActions: ['message.send'],
+  approvalRequired: [],
+  maxTurns: 8,
+  maxDurationSeconds: 900,
+  maxSpendUnits: 0,
+  dailySpendUnits: 0,
+};
+
+/**
+ * A policy that allows every action, and wants the owner to approve one of
+ * them before an agent may take it.
+ */
+const APPROVAL_POLICY: AutonomyPolicy = {
+  mode: 'manual',
+  allowedActions: ['message.send', 'tool.call', 'artifact.create'],
+  approvalRequired: ['tool.call'],
+  maxTurns: 8,
+  maxDurationSeconds: 900,
+  maxSpendUnits: 0,
+  dailySpendUnits: 0,
+};
+
+/** The resources the owner can see in a workspace. */
+async function listResources(workspace: string): Promise<unknown[]> {
+  const response = await app.inject({
+    method: 'GET',
+    url: `/api/resources?workspaceId=${encodeURIComponent(workspace)}`,
+    headers: { cookie: sessionCookie },
+  });
+  expect(response.statusCode).toBe(200);
+  return response.json().resources as unknown[];
+}
+
+describe('the MCP surface under a policy that refuses an action', () => {
+  it('allows an action the policy allows, so the refusal below means something', async () => {
+    const { token } = await createAgent('agent-under-the-default-policy');
+    const before = await listResources(workspaceId);
+
+    const response = await mcp(token, 'tools/call', {
+      name: 'resource.create',
+      arguments: {
+        workspaceId,
+        type: 'document',
+        title: 'Allowed by the policy',
+        data: { format: 'markdown', content: 'x' },
+      },
+    });
+
+    expect(response.statusCode).toBe(200);
+    expect(toolResult(response.body).isError).toBe(false);
+    expect((await listResources(workspaceId)).length).toBe(before.length + 1);
+  });
+
+  it('refuses an action the policy does not allow, and does not pass it', async () => {
+    const restrictedId = await createWorkspaceWithPolicy(
+      'Restricted for the refusal',
+      RESTRICTED_POLICY,
+    );
+    const { token } = await createAgent(
+      'agent-under-a-restrictive-policy',
+      undefined,
+      restrictedId,
+    );
+    const before = await listResources(restrictedId);
+
+    const response = await mcp(token, 'tools/call', {
+      name: 'resource.create',
+      arguments: {
+        workspaceId: restrictedId,
+        type: 'document',
+        title: 'Refused by the policy',
+        data: { format: 'markdown', content: 'x' },
+      },
+    });
+
+    expect(response.statusCode).toBe(200);
+    const result = toolResult(response.body);
+
+    // The refusal is reported as an error and is not handed back as a result.
+    expect(result.isError).toBe(true);
+
+    // `forbidden` is the code the contract publishes for a refusal
+    // (`CONTRACTS.md:1621-1622`), and the refusal names the action it
+    // refused. The vocabulary is closed and published
+    // (`CONTRACTS.md:895-897`, `:1375`).
+    const refusal = JSON.parse(result.text) as { code?: string; message?: string };
+    expect(refusal.code).toBe('forbidden');
+    expect(refusal.message).toContain('tool.call');
+
+    // The action was refused rather than passed (`CONTRACTS.md:895-897`):
+    // nothing was created.
+    expect((await listResources(restrictedId)).length).toBe(before.length);
+  });
+
+  it('refuses an action the policy wants the owner to approve, until the owner decides', async () => {
+    const pendingId = await createWorkspaceWithPolicy('Waiting for the owner', APPROVAL_POLICY);
+    const { token } = await createAgent('agent-waiting-for-the-owner', undefined, pendingId);
+    const before = await listResources(pendingId);
+
+    const response = await mcp(token, 'tools/call', {
+      name: 'resource.create',
+      arguments: {
+        workspaceId: pendingId,
+        type: 'document',
+        title: 'Waiting for the owner',
+        data: { format: 'markdown', content: 'x' },
+      },
+    });
+
+    // The action is allowed by the policy, and the policy wants the owner to
+    // approve it, so it is refused until the owner has decided
+    // (`CONTRACTS.md:902-903`).
+    expect(response.statusCode).toBe(200);
+    const result = toolResult(response.body);
+    expect(result.isError).toBe(true);
+
+    const refusal = JSON.parse(result.text) as { code?: string; message?: string };
+    expect(refusal.code).toBe('forbidden');
+    expect(refusal.message).toContain('tool.call');
+
+    // Nothing was created while the decision was outstanding.
+    expect((await listResources(pendingId)).length).toBe(before.length);
+  });
+
+  it('answers with the policy even when the policy refuses that agent its other actions', async () => {
+    const restrictedId = await createWorkspaceWithPolicy(
+      'Restricted for the reading',
+      RESTRICTED_POLICY,
+    );
+    const { token } = await createAgent(
+      'agent-reading-a-restrictive-policy',
+      undefined,
+      restrictedId,
+    );
+
+    const response = await mcp(token, 'tools/call', {
+      name: 'autonomy.read',
+      arguments: { workspaceId: restrictedId },
+    });
+
+    // Reading the policy is not one of the actions the policy governs, so the
+    // tool answers even when the policy refuses that agent its other actions
+    // (`CONTRACTS.md:795-798`).
+    expect(response.statusCode).toBe(200);
+    const result = toolResult(response.body);
+    expect(result.isError).toBe(false);
+
+    const policy = JSON.parse(result.text) as Record<string, unknown>;
+    expect(Object.keys(policy).sort()).toEqual([...PUBLISHED_POLICY_MEMBERS].sort());
+    expect(policy['allowedActions']).toEqual(['message.send']);
+  });
+
+  it('refuses a workspace the caller may not reach', async () => {
+    const otherId = await createWorkspace('Elsewhere');
+    const { token } = await createAgent('agent-reaching-too-far');
+
+    const response = await mcp(token, 'tools/call', {
+      name: 'autonomy.read',
+      arguments: { workspaceId: otherId },
+    });
+
+    // An agent reads only the policy of a workspace it was granted
+    // (`CONTRACTS.md:791-793`).
+    expect(response.statusCode).toBe(200);
+    const result = toolResult(response.body);
+    expect(result.isError).toBe(true);
+
+    const refusal = JSON.parse(result.text) as { code?: string };
+    expect(refusal.code).toBe('forbidden');
+  });
+
+  it('answers with its own workspace policy when the caller names no workspace', async () => {
+    const { token } = await createAgent('agent-naming-no-workspace');
+
+    const response = await mcp(token, 'tools/call', {
+      name: 'autonomy.read',
+      arguments: {},
+    });
+
+    // A connection that names no workspace gets its own
+    // (`CONTRACTS.md:791-793`).
+    expect(response.statusCode).toBe(200);
+    const result = toolResult(response.body);
+    expect(result.isError).toBe(false);
+
+    const policy = JSON.parse(result.text) as Record<string, unknown>;
+    expect(policy['allowedActions']).toEqual([...PUBLISHED_DEFAULT_POLICY.allowedActions]);
   });
 });

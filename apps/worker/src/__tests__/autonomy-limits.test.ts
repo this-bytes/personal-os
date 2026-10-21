@@ -264,6 +264,55 @@ function setWorkspacePolicy(next: AutonomyPolicy): void {
     .run();
 }
 
+/** How many spend rows this test has written. */
+let spendRows = 0;
+
+/**
+ * Record spend against a workspace, the way the executions the product keeps
+ * record it.
+ *
+ * The spend is a query over those rows, so a test that wants the cap to bite
+ * writes the rows the product would have written.
+ */
+function addSpend(options: {
+  amount: number;
+  workspaceId?: string;
+  conversationId?: string | null;
+  createdAt?: string;
+}): void {
+  spendRows += 1;
+  handle.db
+    .insert(executions)
+    .values({
+      id: `exe_spend_${spendRows}`,
+      workspaceId: options.workspaceId ?? 'wsp_1',
+      conversationId: options.conversationId ?? 'cnv_1',
+      taskId: null,
+      externalRef: null,
+      agentConnectionId: 'agt_1',
+      executionOwner: 'personal-os',
+      status: 'completed',
+      error: null,
+      spendUnits: options.amount,
+      startedAt: null,
+      finishedAt: null,
+      createdAt: options.createdAt ?? new Date().toISOString(),
+    })
+    .run();
+}
+
+/** The start of the current UTC day, and of the day before it. */
+function utcDays(now: Date): { startOfToday: string; yesterday: string } {
+  return {
+    startOfToday: new Date(
+      Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate(), 0, 0, 0, 0),
+    ).toISOString(),
+    yesterday: new Date(
+      Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() - 1, 12, 0, 0, 0),
+    ).toISOString(),
+  };
+}
+
 function runTurn(): ReturnType<typeof executeJob> {
   return executeJob(
     context,
@@ -290,6 +339,7 @@ beforeEach(() => {
   } as NodeJS.ProcessEnv);
 
   workspacePolicy = policy();
+  spendRows = 0;
   script = [{ type: 'message.delta', executionId: 'exe_1', text: 'Here you go.' }];
   adapter = new ScriptedAdapter();
   adapter.script = script;
@@ -515,5 +565,128 @@ describe('a turn held to the effective policy', () => {
     const execution = handle.db.select().from(executions).where(eq(executions.id, 'exe_1')).get();
     expect(execution?.status).toBe('blocked');
     expect(execution?.finishedAt).toBeNull();
+  });
+});
+
+describe('a turn held to the daily spend cap', () => {
+  it('does not start when the workspace has reached its daily spend limit', async () => {
+    setWorkspacePolicy(policy({ dailySpendUnits: 10 }));
+    addSpend({ amount: 10 });
+
+    const outcome = await runTurn();
+
+    expect(outcome.status).toBe('failed');
+    expect(outcome.error).toContain('daily spend limit of 10');
+    expect(outcome.error).toContain('00:00 UTC');
+    // The refusal names the policy that set the cap, so the owner knows
+    // whether to change the workspace, the goal or the conversation.
+    expect(outcome.error).toContain("the workspace's policy");
+
+    // The turn did not happen, and the outcome says so rather than leaving a
+    // turn that quietly did nothing.
+    const execution = handle.db.select().from(executions).where(eq(executions.id, 'exe_1')).get();
+    expect(execution?.status).toBe('failed');
+    expect(execution?.error).toContain('daily spend limit of 10');
+
+    const refusal = handle.db
+      .select()
+      .from(auditLog)
+      .all()
+      .find((entry) => entry.action === 'policy.turn.refused');
+    expect(refusal?.result).toBe('failure');
+    expect((refusal?.metadata as { reason?: string })?.reason).toContain('daily spend limit of 10');
+  });
+
+  it('runs while the workspace is under its daily spend limit', async () => {
+    setWorkspacePolicy(policy({ dailySpendUnits: 10 }));
+    addSpend({ amount: 9 });
+
+    const outcome = await runTurn();
+
+    expect(outcome.status).toBe('completed');
+  });
+
+  it('imposes no limit when the daily spend limit is zero', async () => {
+    // Zero is how a policy says "no limit", the same as the chain's spend
+    // limit and the same as the resolver reads it.
+    setWorkspacePolicy(policy({ dailySpendUnits: 0 }));
+    addSpend({ amount: 1_000 });
+
+    const outcome = await runTurn();
+
+    expect(outcome.status).toBe('completed');
+  });
+
+  it('counts the spend of every conversation in the workspace', async () => {
+    setWorkspacePolicy(policy({ dailySpendUnits: 10 }));
+    handle.db
+      .insert(conversations)
+      .values({
+        id: 'cnv_2',
+        workspaceId: 'wsp_1',
+        title: 'Another conversation',
+        routingMode: 'mentions',
+        coordinatorId: null,
+        paused: false,
+        maxTurns: 8,
+        maxDurationSeconds: 900,
+        maxSpendUnits: 0,
+        createdAt: NOW,
+        updatedAt: NOW,
+      })
+      .run();
+    // Six units in one conversation and four in another: a daily cap is a cap
+    // on the workspace and not on one chain.
+    addSpend({ amount: 6, conversationId: 'cnv_2' });
+    addSpend({ amount: 4, conversationId: 'cnv_1' });
+
+    const outcome = await runTurn();
+
+    expect(outcome.status).toBe('failed');
+    expect(outcome.error).toContain('daily spend limit of 10');
+  });
+
+  it('does not count the spend of another workspace', async () => {
+    setWorkspacePolicy(policy({ dailySpendUnits: 10 }));
+    handle.db
+      .insert(workspaces)
+      .values({
+        id: 'wsp_2',
+        name: 'Another workspace',
+        slug: 'another-workspace',
+        description: '',
+        autonomyMode: 'manual',
+        autonomyPolicy: policy(),
+        createdAt: NOW,
+        updatedAt: NOW,
+      })
+      .run();
+    addSpend({ amount: 100, workspaceId: 'wsp_2' });
+
+    const outcome = await runTurn();
+
+    expect(outcome.status).toBe('completed');
+  });
+
+  it('counts the spend recorded at the first minute of the UTC day', async () => {
+    setWorkspacePolicy(policy({ dailySpendUnits: 10 }));
+    const { startOfToday } = utcDays(new Date());
+    addSpend({ amount: 10, createdAt: startOfToday });
+
+    const outcome = await runTurn();
+
+    expect(outcome.status).toBe('failed');
+    expect(outcome.error).toContain('daily spend limit of 10');
+  });
+
+  it('does not count the spend of yesterday', async () => {
+    setWorkspacePolicy(policy({ dailySpendUnits: 10 }));
+    const { yesterday } = utcDays(new Date());
+    addSpend({ amount: 100, createdAt: yesterday });
+
+    const outcome = await runTurn();
+
+    // Yesterday's spend is not today's spend, so the turn runs.
+    expect(outcome.status).toBe('completed');
   });
 });
