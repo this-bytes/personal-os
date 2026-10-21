@@ -8,6 +8,7 @@ import {
   isTriggerableEventType,
   memorySpecSchema,
   triggerableEventTypes,
+  RESOURCE_AUTHOR_SYSTEM,
   type AutomationAction,
   type AutomationTrigger,
   type MemorySpec,
@@ -19,6 +20,7 @@ import {
 import { z } from 'zod';
 import type { Database } from '../../db/client.js';
 import { automations, resources as resourcesTable } from '../../db/schema.js';
+import { authorOf, type Author } from '../../lib/author.js';
 import { errors } from '../../lib/errors.js';
 import { assertSafeUrl, assertReadableQuery } from '../../lib/guards.js';
 import { AGENT_ID_FORM, newId } from '../../lib/ids.js';
@@ -45,7 +47,11 @@ export interface ResourceInput<T = unknown> {
   workspaceId: string;
   title: string;
   data: T;
-  createdBy: string;
+  /**
+   * Who made the write. The value stored on the row is derived from it, so
+   * a caller cannot name an author the request did not authenticate.
+   */
+  author: Author;
 }
 
 export interface ResourceUpdate<T = unknown> {
@@ -70,7 +76,8 @@ export interface ResourceService {
     type: ResourceType;
     title: string;
     data: unknown;
-    createdBy: string;
+    /** Who made the write. Derived into the recorded author, never taken raw. */
+    author: Author;
   }): Resource;
   update(id: string, patch: { expectedRevision: number; title?: string; data?: unknown }): Resource;
   /** Mark a resource live. Dashboards become visible, automations become active. */
@@ -82,11 +89,11 @@ export interface ResourceService {
   /**
    * How many of the workspace's resources record an agent as their author.
    *
-   * The total is every resource in the workspace, across all six kinds. Two of
-   * the kinds — automations and tasks — hardcode `createdBy: 'system'` and have
-   * no column to keep an author in, so they are counted in the total and can
-   * never be counted as agent-authored. The count is therefore a lower bound,
-   * and the total is the honest denominator.
+   * The total is every resource in the workspace, across all six kinds. The
+   * rows written before the author was recorded keep the `system` they were
+   * written with, so they are counted in the total and can never be counted
+   * as agent-authored. The count is therefore a lower bound, and the total is
+   * the honest denominator.
    */
   authorshipCounts(workspaceId: string): { agentAuthored: number; total: number };
   /** The templates published for one kind, newest version of each. */
@@ -158,7 +165,7 @@ export function createResourcesService(options: ResourcesServiceOptions): Resour
             revision: 1,
             title: input.title,
             data,
-            createdBy: input.createdBy,
+            createdBy: authorOf(input.author),
             createdAt: now,
             updatedAt: now,
           })
@@ -200,7 +207,7 @@ export function createResourcesService(options: ResourcesServiceOptions): Resour
     revision: row.revision,
     title: row.title,
     data: { trigger: row.trigger, action: row.action, enabled: row.enabled },
-    createdBy: 'system',
+    createdBy: row.createdBy,
     updatedAt: row.updatedAt,
   });
 
@@ -241,6 +248,7 @@ export function createResourcesService(options: ResourcesServiceOptions): Resour
             enabled: false,
             lastRunAt: null,
             nextRunAt: null,
+            createdBy: authorOf(input.author),
             createdAt: now,
             updatedAt: now,
           })
@@ -282,7 +290,7 @@ export function createResourcesService(options: ResourcesServiceOptions): Resour
   }
 
   function taskProvider(): ResourceProvider<unknown> {
-    const toResource = (task: ReturnType<FactoryService['getTask']>): Resource => ({
+    const toResource = (task: ReturnType<FactoryService['getTask']>, author: string): Resource => ({
       id: task.id,
       workspaceId: task.workspaceId,
       type: 'task',
@@ -290,9 +298,12 @@ export function createResourcesService(options: ResourcesServiceOptions): Resour
       revision: task.revision,
       title: task.title,
       data: task,
-      createdBy: 'system',
+      createdBy: author,
       updatedAt: new Date().toISOString(),
     });
+
+    /** The author the task row records. A task nobody authored says `system`. */
+    const authorOfTask = (id: string): string => factory.taskAuthor(id) ?? RESOURCE_AUTHOR_SYSTEM;
 
     return {
       type: 'task',
@@ -311,11 +322,12 @@ export function createResourcesService(options: ResourcesServiceOptions): Resour
           goalId: data.goalId,
           assigneeId: data.assigneeId,
           acceptanceCriteria: data.acceptanceCriteria ?? [],
+          author: input.author,
         });
-        return toResource(task);
+        return toResource(task, authorOf(input.author));
       },
       get(id) {
-        return toResource(factory.getTask(id));
+        return toResource(factory.getTask(id), authorOfTask(id));
       },
       update(id, patch) {
         const current = factory.getTask(id);
@@ -328,7 +340,7 @@ export function createResourcesService(options: ResourcesServiceOptions): Resour
           ...(data?.description !== undefined ? { description: data.description } : {}),
           ...(data?.status !== undefined ? { status: data.status as never } : {}),
         });
-        return toResource(updated);
+        return toResource(updated, authorOfTask(id));
       },
     };
   }
@@ -437,17 +449,20 @@ export function createResourcesService(options: ResourcesServiceOptions): Resour
 
       const taskRows =
         type === 'task' || type === undefined
-          ? factory.listTasks(workspaceId).map((task) => ({
-              id: task.id,
-              workspaceId: task.workspaceId,
-              type: 'task' as ResourceType,
-              schemaVersion: 1,
-              revision: task.revision,
-              title: task.title,
-              data: task,
-              createdBy: 'system',
-              updatedAt: new Date().toISOString(),
-            }))
+          ? (() => {
+              const authors = factory.taskAuthors(workspaceId);
+              return factory.listTasks(workspaceId).map((task) => ({
+                id: task.id,
+                workspaceId: task.workspaceId,
+                type: 'task' as ResourceType,
+                schemaVersion: 1,
+                revision: task.revision,
+                title: task.title,
+                data: task,
+                createdBy: authors.get(task.id) ?? RESOURCE_AUTHOR_SYSTEM,
+                updatedAt: new Date().toISOString(),
+              }));
+            })()
           : [];
 
       return [...rows, ...automationRows, ...taskRows];
@@ -463,7 +478,7 @@ export function createResourcesService(options: ResourcesServiceOptions): Resour
         workspaceId: input.workspaceId,
         title: input.title,
         data: input.data,
-        createdBy: input.createdBy,
+        author: input.author,
       });
       events.publish({ type: 'resource.updated', resource }, { workspaceId: resource.workspaceId });
       return resource;
@@ -602,20 +617,25 @@ export function createResourcesService(options: ResourcesServiceOptions): Resour
 
       // The test is the id form, not a lookup: a connection that has since
       // been removed does not make the resources it authored owner-authored.
-      const agentAuthored = rows.filter((row) => row.createdBy.startsWith(AGENT_ID_FORM)).length;
+      const isAgentAuthored = (createdBy: string): boolean => createdBy.startsWith(AGENT_ID_FORM);
+      const agentAuthored = rows.filter((row) => isAgentAuthored(row.createdBy)).length;
 
-      // Automations and tasks keep no author at all: their projections say
-      // 'system'. They are in the total, and they can never be in the count.
+      // Automations and tasks keep the author they were created with. The rows
+      // written before the author was recorded say `system`, and they are in
+      // the total and never in the count.
       const automationRows = db
-        .select({ id: automations.id })
+        .select({ createdBy: automations.createdBy })
         .from(automations)
         .where(eq(automations.workspaceId, workspaceId))
         .all();
-      const taskRows = factory.listTasks(workspaceId);
+      const taskAuthors = factory.taskAuthors(workspaceId);
 
       return {
-        agentAuthored,
-        total: rows.length + automationRows.length + taskRows.length,
+        agentAuthored:
+          agentAuthored +
+          automationRows.filter((row) => isAgentAuthored(row.createdBy)).length +
+          [...taskAuthors.values()].filter(isAgentAuthored).length,
+        total: rows.length + automationRows.length + taskAuthors.size,
       };
     },
   };

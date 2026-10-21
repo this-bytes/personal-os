@@ -9,6 +9,7 @@ import {
 } from '@personal-os/contracts';
 import type { Database } from '../../db/client.js';
 import { evidence, executions, goals, tasks } from '../../db/schema.js';
+import { authorOf, type Author } from '../../lib/author.js';
 import { errors } from '../../lib/errors.js';
 import { newId } from '../../lib/ids.js';
 import type { EventsService } from '../events/service.js';
@@ -35,6 +36,17 @@ export interface FactoryService {
   ): Goal;
   listTasks(workspaceId: string, goalId?: string): FactoryTask[];
   getTask(id: string): FactoryTask;
+  /**
+   * The author a task records, or undefined when the task is unknown.
+   *
+   * The author lives in the task's storage and not in the published task
+   * shape, so a caller that needs it asks for it here.
+   */
+  taskAuthor(id: string): string | undefined;
+  /**
+   * The authors the workspace's tasks record, by task id.
+   */
+  taskAuthors(workspaceId: string): Map<string, string>;
   createTask(input: {
     workspaceId: string;
     goalId?: string;
@@ -43,6 +55,8 @@ export interface FactoryService {
     assigneeId?: string;
     executionOwner?: ExecutionOwner;
     acceptanceCriteria?: string[];
+    /** Who created the task. Recorded on the row, not taken from a body. */
+    author: Author;
   }): FactoryTask;
   updateTask(
     id: string,
@@ -207,6 +221,24 @@ export function createFactoryService(options: FactoryServiceOptions): FactorySer
       return toTask(row);
     },
 
+    taskAuthor(id): string | undefined {
+      const row = db
+        .select({ createdBy: tasks.createdBy })
+        .from(tasks)
+        .where(eq(tasks.id, id))
+        .get();
+      return row?.createdBy;
+    },
+
+    taskAuthors(workspaceId): Map<string, string> {
+      const rows = db
+        .select({ id: tasks.id, createdBy: tasks.createdBy })
+        .from(tasks)
+        .where(eq(tasks.workspaceId, workspaceId))
+        .all();
+      return new Map(rows.map((row) => [row.id, row.createdBy]));
+    },
+
     createTask(input): FactoryTask {
       const id = newId('tsk');
       const now = new Date().toISOString();
@@ -224,6 +256,7 @@ export function createFactoryService(options: FactoryServiceOptions): FactorySer
           acceptanceCriteria: input.acceptanceCriteria ?? [],
           evidenceResourceIds: [],
           externalRef: null,
+          createdBy: authorOf(input.author),
           createdAt: now,
           updatedAt: now,
         })

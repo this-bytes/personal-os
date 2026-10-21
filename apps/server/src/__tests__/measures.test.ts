@@ -15,8 +15,9 @@ import { createTestStack, type TestStack } from './helpers.js';
  *
  * The measures are read from the data the product already keeps, so the proof
  * is written as data: a resource that records an agent as its author, one
- * that records the owner, and the two kinds that record no author at all. A
- * number nobody can reproduce from real rows is a claim, not a measure.
+ * that records the owner, and the two kinds that record an author of their
+ * own now. A number nobody can reproduce from real rows is a claim, not a
+ * measure.
  */
 
 /** The id form of an agent connection, as it appears in `createdBy`. */
@@ -48,14 +49,14 @@ describe('the measures service', () => {
       type: 'document',
       title: 'Written by an agent',
       data: { format: 'markdown', content: '# Agent' },
-      createdBy: AGENT_ID,
+      author: { kind: 'agent', agentConnectionId: AGENT_ID },
     });
     stack!.resources.create({
       workspaceId: 'wsp_1',
       type: 'document',
       title: 'Written by the owner',
       data: { format: 'markdown', content: '# Owner' },
-      createdBy: OWNER_ID,
+      author: { kind: 'owner', userId: OWNER_ID },
     });
 
     const published = measures.measures('wsp_1');
@@ -65,12 +66,11 @@ describe('the measures service', () => {
     expect(published.agentAuthoredResources.ratio).toBe(0.5);
   });
 
-  it('leaves the resources that record no author in the denominator and never in the count', () => {
+  it('counts an automation and a task an agent created, the two kinds that used to record no author at all', () => {
     const measures = testMeasures();
-    // An automation and a task keep no author at all: their tables have no
-    // column to keep one in, so the projection says 'system' whatever the
-    // caller was. They are in the denominator and can never be in the count,
-    // which is what makes the first measure a floor.
+    // An automation and a task keep the author they were created with. Their
+    // tables have a column for it now, so an agent's two are in the count
+    // instead of being stuck at 'system' forever.
     stack!.resources.create({
       workspaceId: 'wsp_1',
       type: 'automation',
@@ -79,14 +79,41 @@ describe('the measures service', () => {
         trigger: { type: 'schedule', everyMinutes: 5 },
         action: { type: 'agent.prompt', agentConnectionId: AGENT_ID },
       },
-      createdBy: AGENT_ID,
+      author: { kind: 'agent', agentConnectionId: AGENT_ID },
     });
     stack!.resources.create({
       workspaceId: 'wsp_1',
       type: 'task',
       title: 'Ship the thing',
       data: {},
-      createdBy: AGENT_ID,
+      author: { kind: 'agent', agentConnectionId: AGENT_ID },
+    });
+
+    const published = measures.measures('wsp_1');
+
+    expect(published.agentAuthoredResources.count).toBe(2);
+    expect(published.agentAuthoredResources.denominator).toBe(2);
+    expect(published.agentAuthoredResources.ratio).toBe(1);
+  });
+
+  it('leaves the automation and the task the owner created out of the count', () => {
+    const measures = testMeasures();
+    stack!.resources.create({
+      workspaceId: 'wsp_1',
+      type: 'automation',
+      title: 'Nightly',
+      data: {
+        trigger: { type: 'schedule', everyMinutes: 5 },
+        action: { type: 'agent.prompt', agentConnectionId: AGENT_ID },
+      },
+      author: { kind: 'owner', userId: OWNER_ID },
+    });
+    stack!.resources.create({
+      workspaceId: 'wsp_1',
+      type: 'task',
+      title: 'Ship the thing',
+      data: {},
+      author: { kind: 'owner', userId: OWNER_ID },
     });
 
     const published = measures.measures('wsp_1');
@@ -154,14 +181,14 @@ describe('the measures service', () => {
       type: 'document',
       title: 'Here',
       data: { format: 'markdown', content: '# Here' },
-      createdBy: AGENT_ID,
+      author: { kind: 'agent', agentConnectionId: AGENT_ID },
     });
     stack!.resources.create({
       workspaceId: 'wsp_2',
       type: 'document',
       title: 'Elsewhere',
       data: { format: 'markdown', content: '# Elsewhere' },
-      createdBy: AGENT_ID,
+      author: { kind: 'agent', agentConnectionId: AGENT_ID },
     });
 
     const published = measures.measures('wsp_1');

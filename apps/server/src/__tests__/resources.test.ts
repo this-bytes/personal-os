@@ -16,7 +16,7 @@ describe('the shared resource API', () => {
       type: 'document',
       title: 'Runbook',
       data: { format: 'markdown', content: '# Runbook' },
-      createdBy: 'owner',
+      author: { kind: 'owner' },
     });
 
     expect(resource.revision).toBe(1);
@@ -31,7 +31,7 @@ describe('the shared resource API', () => {
       type: 'document',
       title: 'Runbook',
       data: { format: 'markdown', content: '# Runbook' },
-      createdBy: 'owner',
+      author: { kind: 'owner' },
     });
 
     const updated = stack.resources.update(created.id, {
@@ -50,7 +50,7 @@ describe('the shared resource API', () => {
       type: 'document',
       title: 'Runbook',
       data: { format: 'markdown', content: '# Runbook' },
-      createdBy: 'owner',
+      author: { kind: 'owner' },
     });
 
     // Two agents read revision 1; the first one wins.
@@ -75,7 +75,7 @@ describe('the shared resource API', () => {
         type: 'dashboard',
         title: 'Broken',
         data: { widgets: 'not an array' },
-        createdBy: 'owner',
+        author: { kind: 'owner' },
       }),
     ).toThrow();
   });
@@ -87,7 +87,7 @@ describe('the shared resource API', () => {
       type: 'document',
       title: 'Runbook',
       data: { format: 'markdown', content: '# Runbook' },
-      createdBy: 'owner',
+      author: { kind: 'owner' },
     });
 
     const inspection = stack.resources.inspect(created.id);
@@ -103,7 +103,7 @@ describe('the shared resource API', () => {
       type: 'dashboard',
       title: 'Homelab',
       data: { widgets: [], refreshSeconds: 30 },
-      createdBy: 'owner',
+      author: { kind: 'owner' },
     });
 
     const published = stack.resources.publish(created.id);
@@ -118,7 +118,7 @@ describe('the shared resource API', () => {
         type: 'automation',
         title: 'Broken automation',
         data: { trigger: { type: 'schedule' }, action: { type: 'agent.prompt' } },
-        createdBy: 'owner',
+        author: { kind: 'owner' },
       }),
     ).toThrow();
   });
@@ -130,14 +130,14 @@ describe('the shared resource API', () => {
       type: 'document',
       title: 'One',
       data: { format: 'markdown', content: '' },
-      createdBy: 'owner',
+      author: { kind: 'owner' },
     });
     stack.resources.create({
       workspaceId: 'wsp_1',
       type: 'memory',
       title: 'Two',
       data: { scope: 'workspace', key: 'k', value: 1 },
-      createdBy: 'owner',
+      author: { kind: 'owner' },
     });
 
     const documents = stack.resources.list('wsp_1', 'document');
