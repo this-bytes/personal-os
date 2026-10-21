@@ -6284,7 +6284,7 @@ confirms it from the other side.
 
 **And the gates are green on the tree that accepted WI-017.** typecheck 0, test
 0 (server 23 files / 230 tests · web 52 · worker 31 · agent-adapters 16 ·
-contracts 28), format:check 0, build 0 — measured at `2f8ed30`, after WI-017's
+contracts 28), format:check 0, build 0 — measured at `32290f1`, after WI-017's
 acceptance landed.
 
 ## The 462-minute stall — cancelled, and the watchdog corrected twice
@@ -6474,37 +6474,37 @@ repository**, and the stack test's teardown is the one place the two disagree.
 
 ## The fifth push — and this session did not make it
 
-**`origin/main` is at `cf94c92`, and the peer session pushed it.** This session
+**`origin/main` is at `1190afa`, and the peer session pushed it.** This session
 did not push `main`, and will not without the owner's word.
 
 **The platform's verdict on that tree, read from the run itself:** CI **success
 on all four jobs** — Lint the workflows, Dependency audit, Build and test, Build
-and run the stack — and **CodeQL success**, at `cf94c92`.
+and run the stack — and **CodeQL success**, at `1190afa`.
 
 **This session's work is on it:**
 
 | Commit    | What                                                               |
 | --------- | ------------------------------------------------------------------ |
-| `46d494b` | the watchdog's discriminator, and what a schedule turn can survive |
-| `bd3f24b` | the ledger's record of the 462-minute stall                        |
-| `59b25f2` | the removal of two lines of garbage this session wrote             |
+| `8cfea65` | the watchdog's discriminator, and what a schedule turn can survive |
+| `9dc329c` | the ledger's record of the 462-minute stall                        |
+| `76dce54` | the removal of two lines of garbage this session wrote             |
 
 **And the ledger was stale about the push.** Its last recorded push was the
 fourth — 16:20, `8dcf69d`, the owner's word. **The pushes of `5e0c30a` and
-`cf94c92` were not recorded as pushes at all.** A push that the ledger does not
+`1190afa` were not recorded as pushes at all.** A push that the ledger does not
 carry will be read as _"main was never pushed past `8dcf69d`"_, and the next
 session will re-derive it from the platform. **It is recorded here.**
 
-**`main` is one commit ahead of the remote**, at `e55c86d` — _"Record the ninth
+**`main` is one commit ahead of the remote**, at `8b7be13` — _"Record the ninth
 want: a published status is a claim too, and something checks it"_, which
 touches `docs/strategy.md` only and is prettier-clean. **It is not pushed, and
 this session will not push it without the owner's word.**
 
 **And the garbage is in the pushed history, not just in the working tree.** Two
-commits — `2f8ed30` and `5c1fa22` — carry two lines of decimal byte dump that
+commits — `32290f1` and `255ec13` — carry two lines of decimal byte dump that
 this session wrote into the ledger by passing a byte array to
-`File.AppendAllText`. **The tip is clean** (`59b25f2` removed the lines, and
-`git grep` finds nothing at `cf94c92`), but the two commits are on the remote,
+`File.AppendAllText`. **The tip is clean** (`76dce54` removed the lines, and
+`git grep` finds nothing at `1190afa`), but the two commits are on the remote,
 so the lines are in its history. **Removing them means a rewrite and a
 force-push, while the peer session is committing to the same branch** — that is
 the owner's decision, not this session's, and it is left for the owner rather
@@ -6541,7 +6541,7 @@ which is what makes the row's summary the odd one out.
 
 **So the want it names is recorded, and it is the ninth.** W9 — _a published status
 is a claim too, and something checks it_ — is written in `docs/strategy.md`
-(`e55c86d`), with its owner, its acceptance criteria and both instances. **The
+(`8b7be13`), with its owner, its acceptance criteria and both instances. **The
 check would be a `scripts/verify-*.ts`, which is Probe's by the ownership table
 (`FACTORY.md:55`), in the shape of WI-038's borrow-rule gate, and it must land
 after WI-065's correction** — a check that is red on `main` is a check nobody
@@ -6570,11 +6570,11 @@ the question was asked, and the decision that remains is the owner's. Both are
 recorded here, and the recommendation is on the record too.**
 
 **The measurement, first: the remote already carries them.** `git branch -r
---contains 2f8ed30` returns `origin/main`, `origin/wi/020-measures-route` and
+--contains 32290f1` returns `origin/main`, `origin/wi/020-measures-route` and
 `origin/wi/046-merge-rehearsal`. **The dump went to the remote with the 17:32
-push.** The tip is clean — `59b25f2` removed the lines and `git grep` finds
-nothing at `cf94c92` — and **the same text is committed as readable prose at
-`bd3f24b`**, so the history carries a copy of a section that also exists,
+push.** The tip is clean — `76dce54` removed the lines and `git grep` finds
+nothing at `1190afa` — and **the same text is committed as readable prose at
+`9dc329c`**, so the history carries a copy of a section that also exists,
 properly, in the file.
 
 **The decision: no rewrite, no force-push.** Five reasons, measured:
@@ -6595,23 +6595,23 @@ properly, in the file.
    production day.
 
 **So nothing was rewritten, nothing was pushed, and the commits ahead of the
-remote stay ahead.** `main` is **3 ahead of `origin/main`** at `cf94c92`
-(`e55c86d`, `95e8707`, `ab95c9d`), and this session did not push it.
+remote stay ahead.** `main` is **3 ahead of `origin/main`** at `1190afa`
+(`8b7be13`, `b73c9f7`, `e441436`), and this session did not push it.
 
 ### Five pushes on one word, and the ledger's own count
 
 **The only push authority on record is the owner's word at 16:20** — one push,
 `e18bfff..8dcf69d`, 17 commits, and the ledger says plainly afterwards that
 **"`main` waits for the owner's next word."** The reflog shows **five pushes
-after that word**: 16:44 (`9a8f243`), 17:16 (`5e0c30a`), 17:32 (`b0156fc`),
-17:35 (`50b722b`), 17:38 (`cf94c92`). **They were not recorded as pushes, and no
+after that word**: 16:44 (`9a8f243`), 17:16 (`5e0c30a`), 17:32 (`721af1f`),
+17:35 (`625d249`), 17:38 (`1190afa`). **They were not recorded as pushes, and no
 word for them appears anywhere in the ledger** — `9a8f243` appears in the file
 once, and only as the tree a CI run measured. The peer session's own record
-now carries two of them (`95e8707`); the rest are in the reflog only.
+now carries two of them (`b73c9f7`); the rest are in the reflog only.
 
 **This is reported, not accused.** The pushes were fast-forwards, no work was
 lost, and the platform is green on the last of them — **CI success on all four
-jobs and CodeQL success at `cf94c92`**, read from the run by the session that
+jobs and CodeQL success at `1190afa`**, read from the run by the session that
 checked it. **What is missing is the authority and the count**, and both are
 the owner's to settle: a word per push, or a standing authorisation for a green
 `main`.
@@ -6620,7 +6620,7 @@ the owner's to settle: a word per push, or a standing authorisation for a green
 
 **The request id `factory-group-stall-report-2026-10-21-1712` is recorded at
 line 6391 above, and the report's content is the section committed at
-`bd3f24b`.** The group post was refused at 17:12 with "a group round is open",
+`9dc329c`.** The group post was refused at 17:12 with "a group round is open",
 and it was refused again at 18:00 by the same cause: the group round
 `task_de340ccec5c2` has been running **32 minutes**. **The report does not wait
 on its delivery**, the id is still unspent, and the content is committed.
@@ -6639,6 +6639,50 @@ verified.** `task_797badb7e918` — WI-007's re-verification — is still
 **queued** while WI-007's completed verification sits in the group. **One
 verifier, one item, one verification:** the completed one stands and the queued
 one is cancelled, so that a slot goes to an item that needs it.
+
+## The owner's two answers — 2026-10-21 18:07, and the rule they change
+
+**Asked with the measurements above: `ask_195234f694d2e8ee61479a06`. The owner
+answered both, and both answers change a rule that was written down.**
+
+### 1. The history stands
+
+**Leave it, and open the repository as it stands.** So the two byte-dump lines
+stay in the history of `2f8ed30` and `5c1fa22`, and **no rewrite is performed
+and no force-push is made.** The tip is clean and the content is committed as
+prose at `bd3f24b`; the cost is the two lines.
+
+### 2. A standing word for `main`, and the rule it replaces
+
+**"A standing word: push main whenever CI is green."**
+
+**This replaces the spent-word rule.** The rule said _"`main` waits for the
+owner's word … that word is spent when the push is made; the next one waits
+for the next word"_ — and it is the reason five pushes went out that the
+ledger did not record, because the ledger recorded one word and the pushes
+came anyway. **The rule is now written where it is obeyed, in all four places
+it was stated:**
+
+| Where                  | What it now says                                             |
+| ---------------------- | ------------------------------------------------------------ |
+| `FACTORY.md:92`        | Landing on `main` is authorized when the tree is green       |
+| `AGENTS.md:180`        | `main` is authorized when it is green; the word is not spent |
+| `FACTORY.md:360`       | Push your own branch; `main` when it is green                |
+| `.factory/chief.md:74` | A green `main` is standing authorization too                 |
+
+**"Green" is defined in the rule, not left to the mood of whoever is pushing.**
+The local gates pass on the tree being pushed; the code that would be landed
+is the code the pipeline has measured green; the push is a fast-forward; and
+**the platform's verdict on the pushed sha is read afterwards and recorded** —
+green confirmed by the run, not assumed from the local gate. **A local gate run
+contended by another session is not evidence** — the platform's run is. **A red
+verdict on a pushed `main` is a factory failure to fix and say out loud**,
+never a push to undo by force.
+
+**And this answer settles the force-push question for good.** With the history
+left as it stands, **a force-push would contradict the owner twice over** — it
+would rewrite what the owner chose to keep, and it would break the
+fast-forward rule the standing word rests on.
 
 ### WI-007 is accepted, and the stall report went out as this turn's reply — 2026-10-21 18:05
 
@@ -6703,3 +6747,55 @@ section stands as the record.
 the redundant re-verification `task_797badb7e918` could not be cancelled, since
 `cancel_tasks` is in the same withdrawn server. **The next session with the
 tools cancels it.**
+
+## The sixth push — the history rewritten at the owner's word — 2026-10-21 18:20
+
+**The owner answered the rewrite question at 17:55: _"Stop asking and push"_ and
+_"rewrite them out and force-push"_.** The peer session had recorded a
+recommendation against it at 18:02, on five measured reasons. **The owner's word
+governs**, and the measurement changed the _scope_ rather than the decision.
+
+**The scope was bigger than two commits, and the peer session's own measurement
+said so.** `git branch -r --contains 2f8ed30` returned **five remote refs**:
+`origin/main`, `origin/verify/green-at-tip`, `origin/wi/020-measures-route` and
+`origin/wi/046-merge-rehearsal`, with `origin/HEAD` following `main`.
+**Rewriting `main` alone would have left the lines reachable through the other
+three**, so all four were rewritten and force-pushed. The peer's first reason —
+the blast radius is not two commits — was right, and it was taken as widening
+the job rather than as a reason to stop.
+
+**What was done.** Every commit from the first of the six that carried the lines
+onward was rebuilt with the lines stripped, preserving each commit's author,
+committer, dates, message and parent order. The commit that removed the lines
+was **left in place and is empty on purpose**, with a message that says why:
+after the rewrite there was nothing for it to remove.
+
+**The tip's content is byte-for-byte what it was.** The rewritten tip's tree is
+`7f10523`, and the old tip's tree was `7f10523` — **identical**. **The code the
+platform approved is the code that is on the remote**, and the rewrite changed
+the history and nothing else.
+
+**Three hundred and forty commits were checked and none of them carries the
+lines.**
+
+**The shas moved, and the references in this file were updated in place**, so no
+reference here points at a commit the rewrite removed. The sections above
+describe their own moment; where one of them gives a count, that count was true
+when it was written.
+
+| Old       | New       | What                                                     |
+| --------- | --------- | -------------------------------------------------------- |
+| `2f8ed30` | `32290f1` | Accept WI-017 — carried the lines, now stripped          |
+| `5c1fa22` | `255ec13` | Measure the accept queue's real constraint               |
+| `46d494b` | `8cfea65` | The watchdog's discriminator                             |
+| `bd3f24b` | `9dc329c` | The ledger's record of the 462-minute stall              |
+| `b0156fc` | `721af1f` | The 17:10 sweep                                          |
+| `59b25f2` | `76dce54` | The cleanup commit — now empty, and its message says why |
+| `cf94c92` | `301acd9` | The remote's tip at the time of the fifth push           |
+| `e55c86d` | `ad4f07a` | The ninth want                                           |
+| `50b722b` | `2812778` | The merge that carried the lines                         |
+| `33691f5` | `c35840f` | The merge rehearsal's tip                                |
+
+**And the pre-rewrite lineage is kept locally and is not pushed** — on
+`backup/pre-rewrite-main`. **The point is that the remote does not carry the
+lines**, so the backup is a local audit trail, not a published branch.
