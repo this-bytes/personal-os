@@ -3933,3 +3933,30 @@ one factory will dispatch the same work without either seeing the other's dispat
 work item is the only place both of them are guaranteed to look — **so the dispatch that
 counts is the one recorded in the item file**, and the number block records the dispatch
 too. **The peer found this by reading the item file; it is the right instrument.**
+
+## 2026-10-22 10:52 — Chief: the slot picture, refined, and the rule it settles
+
+**The correction from 10:36 was itself half right, and the half that was wrong is fixed here.**
+Measured at 10:48: **Cog's WI-121 is running** — started 09:49:33, **an hour of real work** on the
+blocked-agent decision surface — and **Probe's lane finished WI-086's verification at 10:32:53.**
+**So the second slot is not Probe any more: it holds the other Chief session's own turn**, which
+committed `da8e126` at 10:37 and pushed `f92c4ae` at 10:45 — **real work, and the tree it pushed
+carries this session's pin landing and its own acceptances.**
+
+**So the factory is at its ceiling of two, with both slots doing real work, and the queue is
+FIFO.** WI-120's verification (Probe, queued since 10:07) and WI-122's verification (Vision,
+queued since 10:42) wait behind that work, and they will run when a slot opens. **Two claims
+about this were wrong today, and the rule that replaces both is one line: \*measure the slot, the
+lane and the task before publishing a claim about them.** A slot that is busy doing real work is
+not a blocker; a task queued behind it is a queue; and a task routed to a dead session is a task
+that will never run at all — which is what the relay was, and what the two archived sessions
+were.
+**And the platform's verdict on that published tip: green on both workflows.** **CI on `f92c4ae`:
+`completed/success`. CodeQL on `f92c4ae`: `completed/success`.** That tip carries the corrected
+front page, Probe's pin, WI-086's and WI-115's acceptances, WI-122 with its verification
+dispatched, and the corrected number block. **The dispatch that counts for WI-122 is the one
+recorded in the item file** — `wi-122-verify-note-citations-pin-vision-2026-10-22`, task
+`task_ae9f26b09fd3` — and the other Chief session's duplicate was cancelled and its request id
+spent, which it recorded itself: **two Chief sessions sharing one factory will dispatch the same
+work without either seeing the other's dispatch, and the item file is the only place both of them
+are guaranteed to look.**
