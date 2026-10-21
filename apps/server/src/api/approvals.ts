@@ -50,6 +50,7 @@ export function registerApprovalRoutes(app: FastifyInstance): void {
       db: app.services.runtime.db,
       queue: app.services.queue,
       audit: app.services.audit,
+      events: app.services.events,
       approvals: app.services.approvals,
       approvalId: id,
       approved: body.approved,

@@ -708,6 +708,13 @@ class Projection {
       case 'automation.run':
         this.events.push({ type: 'CUSTOM', name: 'automation.run', value: { run: event.run } });
         return;
+      case 'approval.decided':
+        this.events.push({
+          type: 'CUSTOM',
+          name: 'approval.decided',
+          value: { approval: event.approval },
+        });
+        return;
       case 'heartbeat':
         // A heartbeat is the transport's keep-alive, and the AG-UI binding
         // carries that as an SSE comment rather than as an event.

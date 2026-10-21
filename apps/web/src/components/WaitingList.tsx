@@ -19,10 +19,11 @@ import { PersonaBadge } from './PersonaBadge';
 /**
  * How often the list is refreshed even when nothing announced itself.
  *
- * The event stream carries everything the panel changes itself, but an
- * approval can also be decided outside the panel, and that decision
- * publishes no event. The slow refresh is what keeps the list honest in
- * that case.
+ * The event stream carries everything the panel changes itself — including a
+ * decision on an approval, which publishes `approval.decided`. The slow
+ * refresh is the backstop for the changes the stream does not carry: a
+ * decision taken before this client connected, and a change made by another
+ * surface while the stream was down.
  */
 const SAFETY_NET_REFETCH_MS = 15_000;
 
@@ -75,10 +76,15 @@ export function WaitingList({ agents, conversations }: WaitingListProps): React.
   });
 
   // The list follows the events the panel already has: a task that changed
-  // state, and an agent that asked for an approval.
+  // state, an agent that asked for an approval, and an approval that was
+  // decided — by this panel or by any other surface.
   useEffect(() => {
     return subscribe((event) => {
       if (event.type === 'task.updated') {
+        void queryClient.invalidateQueries({ queryKey: [QUERY_KEY] });
+        return;
+      }
+      if (event.type === 'approval.decided') {
         void queryClient.invalidateQueries({ queryKey: [QUERY_KEY] });
         return;
       }
