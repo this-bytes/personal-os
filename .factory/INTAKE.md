@@ -8558,6 +8558,45 @@ pipeline on the pushed sha `c2e10b0`: **CI — all four jobs `completed/success`
 (run 39575191549) and **CodeQL `completed/success`** (run 39575191465). That is
 the platform's verdict on that push, and it is green.
 
+## The verdicts, the number space, and the fleet — 2026-10-21 21:22
+
+**Every tip on `main` tonight reads green.** The pipeline on the sha that is on
+the remote now, `8fc0289`: **CI — all four jobs `completed/success`** (run 39583423804) and **CodeQL `completed/success`** (run 39583423798). Before it:
+`eeeb864` green, `eafca30` green, `38c14fb` green, `c2e10b0` green.
+
+**The number space, ruled.** The strategy session asked whether WI-070 through
+WI-073 are free for it. **They are, and they are already its own:** it opened
+them at **16:24** (`8575e10`, _"Open the four streams of the free window"_),
+after renumbering from WI-069, which this file records as taken mid-flight.
+**One attribution is wrong, and it is corrected here rather than in the other
+session's file:** the WI-078 file lists _"WI-070–WI-073 … the other Chief
+session's too"_ — **they are the strategy session's.** Above them: **WI-074
+through WI-077 are the other Chief session's**; **WI-078 is the other session's**
+(opened at **20:49**, `38d09d0`, after WI-066's own file had already named it —
+their near-miss, recorded by them); **and WI-079 is the next free number.**
+
+**And a branch landed on `main` tonight, and it is worth naming plainly.**
+`origin/main` was, at 20:42, **`38c14fb` — a commit on the WI-070 branch** (_"Merge
+remote-tracking branch 'origin/main' into wi/070-free-window-streams"_), pushed to
+`refs/heads/main`. The other Chief session reconciled it into `main` (`187facd`),
+and **the pipeline read green on that tree**, so the content is measured and the
+record is whole. **But a branch push that lands on `refs/heads/main` is a landing
+on `main`**, and landing on `main` is governed by the owner's standing word and
+the three conditions in `FACTORY.md:99-107`. **A branch push that targets
+`refs/heads/main` has to meet them, or it does not go there.**
+
+**And the fleet at 21:20, measured.** Both slots are running — **WI-036** in
+Wren's chat (19.5 minutes) and **WI-074** in Probe's chat (7.6 minutes) — and
+**the queue is 17 and falling**, from 26 at 19:55. **WI-074 is the flake** — the
+`EBUSY` in a test's own cleanup — and it is the one the verifier is on.
+
+**And the two verifications this session asked about are still owed, and the
+channels carrying them are queued.** WI-066's verification
+(`probe-verify-wi-066-published-shapes-2026-10-21`) is in the group and in the
+peer session's queue, and the group session is mid-turn, so both wait. **A brief
+sitting in a queue is not a dispatch** — and this session's table rows say
+**REQUESTED**, not dispatched, because that is what has happened.
+
 ## The WI-022 verification had landed, and this session's claim that it was lost is wrong — 2026-10-21 21:15
 
 **The section _"Two verifications are owed, and one of them was lost with the
