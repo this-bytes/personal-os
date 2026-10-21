@@ -8167,3 +8167,75 @@ turn since 18:53.** **So the scheduled check's last completed run is still
 been taken repeatedly inside that turn instead. **That is the same finding as
 the 19:28 run, and it is now the rule's practical shape: the check and the
 chat share one thread, and a chat that is busy cannot also be watched.**
+
+## A second verification of an accepted item, cancelled — 2026-10-21 20:15
+
+**WI-041 is accepted.** The other Chief session's verification of it — request
+`probe-verify-wi-041-readme-licence-2026-10-21-1340`, task `task_5b4e02d59413`,
+measured at `e676ba9` — was given against the item's **corrected** criteria,
+and the acceptance records that the implementation was taken under the tiebreak
+in `FACTORY.md:38` and that **the verification is Probe's, so the lead accepts
+it and no writer accepts its own work.**
+
+**This session had dispatched a verification of WI-041 as well** —
+`task_6fc1d2870136`, queued to Probe at 19:41 — **and it is cancelled**, at
+**20:15:01**. **A second verification of one item is never created**, the item
+is accepted, and **a slot is the scarcest thing the factory has**: a queue of
+26 items that have never been verified is waiting behind that slot. **The
+duplicate goes back to the queue and the item keeps the verdict it has.**
+
+**And the one criterion the acceptance did not measure has now been measured —
+by a diff, and without taking a slot.** WI-041's fifth criterion says
+_"nothing else in the README changes"_, and the acceptance's verdict was that
+the criteria are met _"on their face"_. The measurement:
+
+- `git diff 141f0be^..141f0be -- README.md` touches **exactly the licence
+  section** — the old paragraph removed and the new one added, three lines;
+- `git diff 141f0be..HEAD -- README.md` is **empty**, so the README has not
+  changed since.
+
+**The criterion holds.** **This is a measurement, not an acceptance** — the
+acceptance is the other session's and it stands on its own. But the gap between
+_"met on their face"_ and _"measured"_ is now closed for this one item, and it
+was closed with a command rather than with a queue slot.
+
+**Which is the pattern worth keeping.** When a duplicate verification is
+cancelled because the item is already accepted, **the thing the cancelled
+verification would have measured is still owed — and it may be measurable
+without a verifier at all.** A diff is free. A slot is not.
+
+## A second verification of an accepted item, cancelled — 2026-10-21 20:15
+
+**WI-041 is accepted.** The other Chief session's verification of it — request
+`probe-verify-wi-041-readme-licence-2026-10-21-1340`, task `task_5b4e02d59413`,
+measured at `e676ba9` — was given against the item's **corrected** criteria,
+and the acceptance records that the implementation was taken under the tiebreak
+in `FACTORY.md:38` and that **the verification is Probe's, so the lead accepts
+it and no writer accepts its own work.**
+
+**This session had dispatched a verification of WI-041 as well** —
+`task_6fc1d2870136`, queued to Probe at 19:41 — **and it is cancelled**, at
+**20:15:01**. **A second verification of one item is never created**, the item
+is accepted, and **a slot is the scarcest thing the factory has**: a queue of
+26 items that have never been verified is waiting behind that slot. **The
+duplicate goes back to the queue and the item keeps the verdict it has.**
+
+**And the one criterion the acceptance did not measure has now been measured —
+by a diff, and without taking a slot.** WI-041's fifth criterion says
+_"nothing else in the README changes"_, and the acceptance's verdict was that
+the criteria are met _"on their face"_. The measurement:
+
+- `git diff 141f0be^..141f0be -- README.md` touches **exactly the licence
+  section** — the old paragraph removed and the new one added, three lines;
+- `git diff 141f0be..HEAD -- README.md` is **empty**, so the README has not
+  changed since.
+
+**The criterion holds.** **This is a measurement, not an acceptance** — the
+acceptance is the other session's and it stands on its own. But the gap between
+_"met on their face"_ and _"measured"_ is now closed for this one item, and it
+was closed with a command rather than with a queue slot.
+
+**Which is the pattern worth keeping.** When a duplicate verification is
+cancelled because the item is already accepted, **the thing the cancelled
+verification would have measured is still owed — and it may be measurable
+without a verifier at all.** A diff is free. A slot is not.
