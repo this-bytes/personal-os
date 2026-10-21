@@ -301,6 +301,69 @@ test.describe('what is waiting on the owner', () => {
     ).toBeVisible();
   });
 
+  test('the note about a decision names the item, and outlives the item it is about', async ({
+    page,
+  }) => {
+    await signIn(page);
+    const workspaceId = await firstWorkspaceId(page);
+
+    // The list answers with the item while it waits, and with nothing once
+    // the decision has been sent: a decided item leaves the list the moment
+    // it is decided. The note the client leaves behind therefore has to be
+    // somewhere the item is not, or the owner is left holding a decision
+    // that looks the same either way.
+    let decided = false;
+    await page.route(
+      (url) => url.pathname === '/api/waiting',
+      (route) =>
+        route.fulfill({
+          status: 200,
+          contentType: 'application/json',
+          body: JSON.stringify({ items: decided ? [] : [approvalItem(workspaceId)] }),
+        }),
+    );
+
+    await page.route(
+      (url) => url.pathname.startsWith('/api/approvals/'),
+      (route) => {
+        decided = true;
+        route.fulfill({
+          status: 200,
+          contentType: 'application/json',
+          body: JSON.stringify({
+            approval: { id: 'apr_waiting', status: 'approved' },
+            outcome: 'closed',
+            detail:
+              'The turn was closed rather than continued: the agent cannot re-enter a session, so the operation was not performed.',
+          }),
+        });
+      },
+    );
+
+    await page.goto('/conversations');
+
+    const row = page.getByRole('listitem').filter({ hasText: 'Delete the production database' });
+    await expect(row).toBeVisible();
+    await row.getByRole('button').first().click();
+
+    // The item has left the list, and the note is still there.
+    await expect(page.getByText('Nothing is waiting on you')).toBeVisible();
+
+    const note = page.getByText(/The turn was closed rather than continued/);
+    await expect(
+      note,
+      'the note about the decision went with the item, so the owner is left with a decision ' +
+        'that looks the same whether the turn continued or closed',
+    ).toBeVisible();
+
+    // The note says which item it is about.
+    await expect(note).toContainText('Delete the production database');
+
+    // And it is not inside the row it is about: a note in the row would be
+    // gone by the time the owner looked for it.
+    expect(await note.evaluate((element) => element.closest('li') !== null)).toBe(false);
+  });
+
   test('an entry says which agent is waiting', async ({ page }) => {
     await signIn(page);
     const workspaceId = await firstWorkspaceId(page);
