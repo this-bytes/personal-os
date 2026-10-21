@@ -63,6 +63,22 @@ the persona work (WI-006). The hues are:
 replaced by the spatial version, because the map *is* the agent list and a roster
 beside it would build the same information twice.
 
+**And the connect decision comes with it.** The owner's answer on Q2 makes
+connecting an agent a trust decision, and the orientation room is a room where, as
+a rule, nothing is decided — so if the map could list an agent and not connect
+one, the panel would have the same defect shape WI-004 was returned for: a list
+that could not be acted on where it is read.
+
+**So the constellation carries the connect decision in place**, the way the
+Needs-you rail carries the approvals' decision in place, and for the same reason:
+a decision is taken where the list is. Connecting an agent from the picture of the
+agents needs no round trip to another room.
+
+The alternative — keeping a decision surface for agents in the execution room —
+was rejected, and the reason is on the record: the agent list *is* the map, so a
+roster with a connect button somewhere else would build the same information twice
+and put the connect button in a room the owner is not looking at.
+
 ## What it preserves
 
 - **Every agent's data.** The map draws the connections, their conversations and
@@ -88,12 +104,21 @@ beside it would build the same information twice.
       one while the ring has room.
 - [ ] The conversation behind a thread opens where it always opened.
 - [ ] The Agents page shows the map, and the flat roster is not built twice.
+- [ ] **The connect decision has a home**: an agent can be connected from the
+      picture of the agents, without a round trip to another room, and the map
+      cannot list an agent the panel will not let the owner connect.
 - [ ] No new dependency, no server change, no contract change.
 
 ## Gates
 
 `npm run typecheck`, `npm run test`, `npm run format:check`, `npm run build`,
 `npm run test:e2e`.
+
+**The new component has the test that would have caught it missing.** The
+constellation is new code with a layout algorithm in it, and a component that
+renders nothing at all is exactly the failure a test catches. The test is Probe's
+to write — `**/*.test.ts` is Probe's file — so the build reports the pin as
+outstanding rather than writing it.
 
 ## Not in scope
 

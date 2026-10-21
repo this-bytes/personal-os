@@ -144,7 +144,6 @@ export function WaitingList({ agents, conversations }: WaitingListProps): React.
       title: string;
     }) =>
       api.post<ExecutionResolution>(`/executions/${input.executionId}/resolve`, {
-        workspaceId: activeWorkspaceId ?? undefined,
         outcome: input.outcome,
       }),
     onSuccess: async (result, input) => {

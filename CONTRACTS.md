@@ -1215,8 +1215,8 @@ first measure is therefore a lower bound**: those resources sit in the
 denominator and can never sit in the count, so the ratio is a share over four of
 the six kinds, reported over all six.
 
-**Twelve of the thirty-four mutating routes write no audit entry at all.** Of the
-34 mutating routes in `apps/server/src/api/`, 20 write an audit entry at the
+**Twelve of the thirty-five mutating routes write no audit entry at all.** Of the
+35 mutating routes in `apps/server/src/api/`, 21 write an audit entry at the
 route level, two more write one from the service layer — `POST
 /api/approvals/:id/decide` at `apps/server/src/modules/approvals/resume.ts:53`,
 and `PATCH /api/tasks/:id` at `apps/server/src/modules/factory/service.ts:275`,

@@ -33,6 +33,13 @@ declared crossing: it carries decisions in the orientation room, because a decis
 is taken where the list is. The rail is not a summary that links away; it is the
 decision surface, and Work is where you go when the rail's summary is not enough.
 
+**And the landing page is not the list any more.** The item's rule is that the
+landing page moves out of the root into the execution room, because the landing
+page is the decision list and a decision list is not what a landing screen
+should be. That is about the *page*, not about the list: the list becomes the
+rail, the rail decides in place, and the owner never leaves the landing screen to
+approve or reject. The owner's loop stays "scan and act" — in one room, in place.
+
 ## What it changes
 
 **Where the waiting list lives.** It moves off the Conversations page and into the

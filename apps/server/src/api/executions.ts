@@ -3,7 +3,6 @@ import { z } from 'zod';
 import { audit, parseBody, requireAuth } from './helpers.js';
 
 const resolveSchema = z.object({
-  workspaceId: z.string(),
   /** The owner's own conclusion: it did run, or it did not. */
   outcome: z.enum(['completed', 'failed']),
   /** The owner's own words, when they have any. */
@@ -25,7 +24,6 @@ export function registerExecutionRoutes(app: FastifyInstance): void {
 
     const resolution = app.services.executions.resolve({
       executionId: id,
-      workspaceId: body.workspaceId,
       outcome: body.outcome,
       note: body.note,
     });
@@ -37,7 +35,7 @@ export function registerExecutionRoutes(app: FastifyInstance): void {
     audit(
       request,
       'execution.outcome.resolved',
-      { type: 'execution', id, workspaceId: body.workspaceId },
+      { type: 'execution', id, workspaceId: resolution.workspaceId },
       { from: 'unknown', to: body.outcome, ...(body.note?.trim() ? { note: body.note } : {}) },
     );
 

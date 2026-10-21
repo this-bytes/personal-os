@@ -15,6 +15,8 @@ export type ExecutionOutcome = 'completed' | 'failed';
 
 export interface ExecutionResolution {
   execution: { id: string; status: string; error: string | null };
+  /** The workspace the execution belongs to. The owner is its only reader. */
+  workspaceId: string;
   /** The conclusion the owner reached. */
   outcome: ExecutionOutcome;
   /** The sentence the server produced about that conclusion. */
@@ -32,7 +34,6 @@ export interface ExecutionsService {
    */
   resolve(input: {
     executionId: string;
-    workspaceId: string;
     outcome: ExecutionOutcome;
     /** The owner's own words, when they have any. */
     note?: string;
@@ -47,13 +48,10 @@ export interface ExecutionsService {
  * something the server knows better. The owner's own note goes with it,
  * because the note is theirs.
  */
-export function resolutionSentence(outcome: ExecutionOutcome, note?: string): string {
-  const sentence =
-    outcome === 'completed'
-      ? 'You checked this turn: it did run, so the reply is recorded as complete.'
-      : 'You checked this turn: it did not run, so the reply is recorded as failed.';
-  const trimmed = note?.trim();
-  return trimmed ? `${sentence} Your note: ${trimmed}` : sentence;
+export function resolutionSentence(outcome: ExecutionOutcome): string {
+  return outcome === 'completed'
+    ? 'You checked this turn: it did run, so the reply is recorded as complete.'
+    : 'You checked this turn: it did not run, so the reply is recorded as failed.';
 }
 
 /**
@@ -69,9 +67,9 @@ export function createExecutionsService(options: { db: Database }): ExecutionsSe
   const { db } = options;
 
   const service: ExecutionsService = {
-    resolve({ executionId, workspaceId, outcome, note }): ExecutionResolution {
+    resolve({ executionId, outcome, note }): ExecutionResolution {
       const execution = db.select().from(executions).where(eq(executions.id, executionId)).get();
-      if (!execution || execution.workspaceId !== workspaceId) {
+      if (!execution) {
         throw errors.notFound('Execution');
       }
 
@@ -85,16 +83,20 @@ export function createExecutionsService(options: { db: Database }): ExecutionsSe
         });
       }
 
-      const detail = resolutionSentence(outcome, note);
+      const detail = resolutionSentence(outcome);
       const now = new Date().toISOString();
+      // The note is the owner's own words, and it is the reason. It goes in
+      // the error column where there is an error, and in the audit entry
+      // either way.
+      const reason = note?.trim() ? note.trim() : null;
 
       db.update(executions)
         .set({
           status: outcome,
-          // The error column carries a reason only when there is one. A turn
-          // that did run has no error, and the note is in the audit trail and
-          // on the reply either way.
-          error: outcome === 'failed' ? detail : null,
+          // The error column carries a reason only where there is an error.
+          // A turn that did run has none, and a turn that did not run has the
+          // owner's own reason if they gave one.
+          error: outcome === 'failed' ? reason : null,
           finishedAt: now,
         })
         .where(eq(executions.id, executionId))
@@ -112,8 +114,9 @@ export function createExecutionsService(options: { db: Database }): ExecutionsSe
         execution: {
           id: execution.id,
           status: outcome,
-          error: outcome === 'failed' ? detail : null,
+          error: outcome === 'failed' ? reason : null,
         },
+        workspaceId: execution.workspaceId,
         outcome,
         detail,
       };

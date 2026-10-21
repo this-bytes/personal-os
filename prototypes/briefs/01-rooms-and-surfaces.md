@@ -30,11 +30,25 @@ brief 05's.
 | The conversation | Execution | the Work room's transcript, with brief 03's trace beside it |
 | The built resources | Orientation | the Map room's tiles |
 
-**The landing screen.** The root route lands on the **Map room**. The
-Conversations page stops being the landing page: its thread list becomes the Work
-room's left column and its waiting list becomes the Map's rail (brief 05). The old
-routes keep working — a deep link to a conversation, a card on the board, a
-resource — because a URL is not a room.
+**The landing screen.** The root route lands on the **Map room**, and the
+Conversations page moves out of the root into the **execution room**: its thread
+list becomes the Work room's left column and its waiting list becomes the Map's
+rail (brief 05). The old routes keep working — a deep link to a conversation, a
+card on the board, a resource — because a URL is not a room.
+
+**Why the landing page leaves the root.** It is the decision list today, and a
+decision list is not what a landing screen should be: the owner opens the panel to
+orient and to work, and a room that greets them with a queue of decisions before
+they can see the system is the wrong first impression. The decision list itself
+does not go away and the owner does not leave the landing screen to decide — the
+rail is in the Map room and it decides in place, which is the boundary rule's one
+declared exception and the direction's second mitigation. **What changes is that
+the decision list is no longer the page, and what is on the page is the system.**
+
+**The one place this room and the execution room overlap.** The conversation's
+thread list is in the Work room and the rail is in the Map room, and both hold
+rows that link to each other. That is the boundary working, not breaking: a
+picture links to the work, and the work links back to the picture.
 
 **Two densities.** Orientation is airy and the execution room is dense; the
 prototype's `body.dense` switch (`theme.css:67-78`) is the mechanism, and it is

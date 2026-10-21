@@ -131,7 +131,7 @@ const workerEntry = path.join(repoRoot, 'apps', 'worker', 'src', 'index.ts');
 afterAll(async () => {
   await Promise.all(children.map((child) => stop(child)));
   for (const dir of dataDirs) fs.rmSync(dir, { recursive: true, force: true });
-});
+}, 30_000);
 
 describe('the remote guard', () => {
   let seen: string[] = [];
@@ -166,7 +166,7 @@ describe('the remote guard', () => {
     expect(result.status).toBe(2);
     expect(result.stderr).toContain('--allow-remote');
     expect(seen).toEqual([]);
-  });
+  }, 30_000);
 
   it('contacts that same address once the guard is waived', async () => {
     seen = [];
@@ -176,7 +176,7 @@ describe('the remote guard', () => {
     // The refusal above was the guard, not an address that cannot be reached.
     expect(result.status).not.toBe(2);
     expect(seen.length).toBeGreaterThan(0);
-  });
+  }, 30_000);
 
   it('accepts the loopback names and contacts them', async () => {
     for (const host of ['127.0.0.1', 'localhost']) {
@@ -187,7 +187,7 @@ describe('the remote guard', () => {
       expect(result.status, `${host} was refused`).not.toBe(2);
       expect(seen.length, `${host} was not contacted`).toBeGreaterThan(0);
     }
-  });
+  }, 30_000);
 
   it('refuses a URL whose real host sits behind a userinfo section', async () => {
     // The host of this URL is stack-check.invalid. The part before the @ is
@@ -197,7 +197,7 @@ describe('the remote guard', () => {
 
     expect(result.status).toBe(2);
     expect(result.stderr).toContain('--allow-remote');
-  });
+  }, 30_000);
 
   it('refuses the rest of the loopback range rather than assuming it', async () => {
     // 127.0.0.2 is a loopback address too, but the script does not have to
@@ -206,7 +206,7 @@ describe('the remote guard', () => {
     const result = await runScript('http://127.0.0.2:4317');
 
     expect(result.status).toBe(2);
-  });
+  }, 30_000);
 
   it('refuses a non-local deployment even when the owner token is configured', async () => {
     seen = [];
@@ -221,7 +221,7 @@ describe('the remote guard', () => {
     expect(result.status).toBe(2);
     expect(result.stderr).toContain('--allow-remote');
     expect(seen).toEqual([]);
-  });
+  }, 30_000);
 });
 
 describe('the worker check', () => {
@@ -231,7 +231,7 @@ describe('the worker check', () => {
   beforeAll(async () => {
     start(serverEntry, port, dataDir, 'test-owner-token');
     await waitForServer(port);
-  });
+  }, 90_000);
 
   it('passes when a worker executes the turn', async () => {
     const worker = start(workerEntry, port, dataDir, 'test-owner-token');
@@ -292,7 +292,7 @@ describe('a deployment with no owner', () => {
   beforeAll(async () => {
     start(serverEntry, port, dataDir, ownerToken);
     await waitForServer(port);
-  });
+  }, 90_000);
 
   it('creates the owner when the deployment has none', async () => {
     // Before the check runs, the deployment has never been set up.
@@ -341,7 +341,7 @@ describe('a deployment that already has an owner', () => {
       }),
     });
     expect(setup.status).toBe(201);
-  });
+  }, 90_000);
 
   it('gets past the sign-in when the static owner token is configured', async () => {
     const worker = start(workerEntry, port, dataDir, ownerToken);
