@@ -38,6 +38,30 @@
  * scan cannot say *which* sites the rule claims, cannot say that the
  * accent has to be *somewhere*, and cannot say what a caution became.
  * Those are the things this file holds.
+ *
+ * Two pins in here have been re-stated, and they are worth saying why.
+ *
+ * **The amber pin.** Brief 02's amber table published ten lines across six
+ * files and said "Measured at `d343300`". That is a true record and the brief
+ * is not edited. But the pin over it asserted that the **live tree** still
+ * held amber at each cited line, and the rule brief 02 itself prescribed —
+ * its own "Under Forge" column — has since been carried out: WI-071's
+ * accent work took the amber off eight of the ten sites and split the
+ * ninth. `docs/panel-accent.md` is the inventory that replaced the table.
+ *
+ * So the pin now holds the rule that is in force. The ten sites brief 02
+ * names are the sites the accent rule claims, none of them holds amber
+ * again, the split the brief prescribed is still a split, and the two
+ * notices the brief called failures wear the error colour.
+ *
+ * **The boundary-rule pin.** The rule's exception clause used to be written
+ * out here, as the phrase "one declared exception, the Needs-you rail". The
+ * phrase was a proxy for the clause itself, and the proxy is what went
+ * stale when the lead amended the rule and gave it a second crossing. The
+ * clause is read out of `prototypes/DIRECTION.md` now — read once, and
+ * never written down here — and the document, briefs 01 and 05, and the
+ * index are all held to it. A copy of a rule with no keeper goes stale the
+ * way every other copy has, so every copy is held to the document's.
  */
 import { execFileSync } from 'node:child_process';
 import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
@@ -87,6 +111,18 @@ const readBrief = (file: BriefFile): string => read(path.join(briefsDir, file));
 
 /** A sentence that spans lines is one sentence: whitespace is not a difference. */
 const flat = (text: string): string => text.replace(/\s+/g, ' ').trim();
+
+/**
+ * A containment check that fails readably.
+ *
+ * Vitest prints the whole received value when a `toContain` fails, and the
+ * direction document is fifteen thousand characters long. A failure nobody
+ * can read is a failure nobody acts on, so the check asks a question whose
+ * answer is one word, and the message says which copy and which words.
+ */
+function carries(where: string, body: string, needle: string): void {
+  expect(body.includes(needle), `${where} does not carry ${JSON.stringify(needle)}`).toBe(true);
+}
 
 /**
  * A git command that reports instead of throwing. `git grep` exits non-zero
@@ -333,14 +369,15 @@ describe('the six Forge briefs', () => {
     for (const file of BRIEF_FILES) {
       const body = briefs.get(file) ?? '';
       expect(body.length, `${file} is empty`).toBeGreaterThan(0);
-      expect(body, `${file} does not say what it changes`).toContain('## What it changes');
-      expect(body, `${file} does not say what it preserves`).toContain('## What it preserves');
-      expect(body, `${file} has no owner`).toMatch(/\*\*Owner:\*\*\s*\S/);
-      expect(body, `${file} does not say when it lands`).toMatch(
-        /\*\*Lands (first|second|third|fourth|fifth|last)\.?\*\*/,
-      );
-      expect(body, `${file} has no acceptance criteria`).toContain('## Acceptance criteria');
-      expect(body, `${file} has no gates`).toContain('## Gates');
+      carries(file, body, '## What it changes');
+      carries(file, body, '## What it preserves');
+      expect(/\*\*Owner:\*\*\s*\S/.test(body), `${file} has no owner`).toBe(true);
+      expect(
+        /\*\*Lands (first|second|third|fourth|fifth|last)\.?\*\*/.test(body),
+        `${file} does not say when it lands`,
+      ).toBe(true);
+      carries(file, body, '## Acceptance criteria');
+      carries(file, body, '## Gates');
     }
   });
 
@@ -378,34 +415,154 @@ describe('the six Forge briefs', () => {
   });
 });
 
+/**
+ * The boundary rule, as the direction document publishes it.
+ *
+ * The document publishes the rule as one sentence: two halves and a clause
+ * that names the crossings. The pin used to hold a phrase — "one declared
+ * exception, the Needs-you rail" — as a proxy for "the clause that names
+ * the crossings", and the proxy is what went stale when the rule gained a
+ * second crossing.
+ *
+ * So the clause is read out of the document and the briefs are held to
+ * that: what the rule says now, not what it once said. What is written
+ * down here is the rule's *shape* — it declares exceptions, and the reason
+ * is a relative clause on them — and not its wording, which is the
+ * document's to change.
+ */
+interface PublishedRule {
+  /** The whole rule, as the document publishes it. */
+  text: string;
+  /** The clause naming the crossings, or null when the document has none. */
+  clause: string | null;
+  /** The reason the crossings exist, or null when the document has none. */
+  reason: string | null;
+}
+
+/**
+ * The shape of the rule's clause: the count, the crossings it names, and
+ * the reason that follows them.
+ *
+ * The count is a word, not a number, because the document writes it as one.
+ * The lookbehind keeps a possessive out of it — "the direction's declared
+ * exception" is prose about the rule, not a copy of it.
+ */
+const CLAUSE_SHAPE = /(?<![\w'])(\w+\s+declared\s+exceptions?,.+?),\s+(which\b.*?)[.!?]/g;
+
+/**
+ * Every exception clause a copy of the rule carries, in its own words.
+ *
+ * A brief can carry the clause more than once — the rule quoted in prose,
+ * and the criterion that names it — and each of those is a copy that can go
+ * stale on its own. So the copies are not counted and hoped for; they are
+ * read, one by one.
+ */
+function exceptionClauses(text: string): string[] {
+  return [...text.matchAll(CLAUSE_SHAPE)].map((match) => match[1] ?? '');
+}
+
+/** The reason that follows each clause a copy of the rule carries. */
+function reasonsAfterClauses(text: string): (string | null)[] {
+  return [...text.matchAll(CLAUSE_SHAPE)].map((match) => match[2] ?? null);
+}
+
+function publishedRule(): PublishedRule {
+  const emphasised = /\*\*The rule\.\*\*\s*_([\s\S]*?)_/.exec(direction);
+  const text = flat(emphasised?.[1] ?? '');
+  return {
+    text,
+    clause: exceptionClauses(text)[0] ?? null,
+    reason: reasonsAfterClauses(text)[0] ?? null,
+  };
+}
+
+/**
+ * The rule, read out of the document once.
+ *
+ * Every copy of the rule is held to this one. A second copy of the clause
+ * written into the pin would be the defect the pin exists to catch.
+ */
+const rule = publishedRule();
+
+/**
+ * The copies of the rule that live outside the direction document.
+ *
+ * Brief 01 and brief 05 quote the rule, and the index quotes it too. Each
+ * one is a copy that can go stale on its own, and each one is held to the
+ * clause the document publishes.
+ */
+const RULE_COPIES: ReadonlyArray<readonly [string, string]> = [
+  ['01-rooms-and-surfaces.md', flat(briefs.get('01-rooms-and-surfaces.md') ?? '')],
+  ['05-needs-you-rail.md', flat(briefs.get('05-needs-you-rail.md') ?? '')],
+  ['README.md', flat(index)],
+];
+
 describe('the boundary rule', () => {
-  it('is the rule in DIRECTION.md, exception included, and the briefs quote it with the exception', () => {
-    // The load-bearing phrase. The flat rule — the one without this clause —
+  it('is the rule in DIRECTION.md, exceptions included, and every copy of it quotes them', () => {
+    // The load-bearing clause. The flat rule — the one without this clause —
     // is what two of the briefs quoted before the lead settled the landing
     // page's premise, and it is the one thing a document quoting itself
     // cannot catch.
-    const exception = 'one declared exception, the Needs-you rail';
-    expect(flat(direction)).toContain(exception);
+    //
+    // The clause used to be written out here, as the phrase "one declared
+    // exception, the Needs-you rail". The phrase was a proxy for the clause
+    // itself, and the proxy is what broke when the rule gained a second
+    // crossing. The clause is read out of the document now, and every copy
+    // of the rule is held to that.
+    expect(rule.text.length, 'the direction document no longer publishes the rule').toBeGreaterThan(
+      0,
+    );
+    expect(
+      rule.clause,
+      "the direction document publishes no clause naming the rule's crossings",
+    ).not.toBeNull();
+    // The rule has two crossings, and a rule that quietly loses one is the
+    // same defect this pin exists to catch.
+    expect(
+      rule.clause,
+      'the rule names no Needs-you rail, and the rail is one of the two crossings',
+    ).toContain('the Needs-you rail');
+    expect(
+      rule.clause,
+      'the rule names no constellation, and the constellation is the other crossing',
+    ).toContain('the constellation');
 
-    for (const file of ['01-rooms-and-surfaces.md', '05-needs-you-rail.md'] as const) {
-      const body = flat(briefs.get(file) ?? '');
-      expect(body, `${file} does not carry the rule's declared exception`).toContain(exception);
-      expect(body, `${file} does not carry the rule's first half`).toContain(
-        'picture of the system',
-      );
-      expect(body, `${file} does not carry the rule's second half`).toContain(
-        'inspected or decided',
-      );
+    for (const [name, body] of RULE_COPIES) {
+      // Every clause the copy carries, and every one of them has to be the
+      // document's clause — a brief that quotes the rule twice and repairs
+      // one of the quotes is still a brief with a stale copy in it.
+      const clauses = exceptionClauses(body);
+      expect(
+        clauses.length,
+        `${name} carries no clause naming the rule's crossings`,
+      ).toBeGreaterThan(0);
+      for (const clause of clauses) {
+        expect(clause, `${name} carries a clause of its own, and it is not the rule's clause`).toBe(
+          rule.clause,
+        );
+      }
+      carries(name, body, 'picture of the system');
+      carries(name, body, 'inspected or decided');
     }
   });
 
-  it('carries the reason the exception exists, in the brief that states the rule in full', () => {
-    expect(flat(direction)).toContain(
-      'which carries decisions in the orientation room because a decision is taken where the list is',
-    );
-    expect(flat(briefs.get('05-needs-you-rail.md') ?? '')).toContain(
-      'which carries decisions in the orientation room because a decision is taken where the list is',
-    );
+  it('carries the reason the exceptions exist, in the copies that state the rule in full', () => {
+    // The reason, as the document publishes it. It used to be a sentence
+    // that one crossing happened to use, and the rule now carries it for
+    // both of them — so the pin reads it rather than writing it out.
+    expect(
+      rule.reason,
+      'the direction document publishes no reason for the crossings',
+    ).not.toBeNull();
+    for (const [name, body] of RULE_COPIES) {
+      const reasons = reasonsAfterClauses(body);
+      expect(reasons.length, `${name} carries no reason for the crossings`).toBeGreaterThan(0);
+      for (const reason of reasons) {
+        expect(reason, `${name} carries a reason of its own, and it is not the rule's reason`).toBe(
+          rule.reason,
+        );
+      }
+    }
   });
 
   it('puts every surface in the room the direction document puts it in', () => {
@@ -420,28 +577,52 @@ describe('the boundary rule', () => {
     ];
     const briefBody = briefs.get('01-rooms-and-surfaces.md') ?? '';
     for (const [surface, room] of rooms) {
-      expect(flat(direction)).toContain(`${surface} | ${room}`);
+      // The cells, not the row's text. A table is padded so its columns line
+      // up, and the padding is not what the rule is about — the room the
+      // surface is in is the cell beside the surface. And the cell, not the
+      // document: a surface and a room named together somewhere else in the
+      // document is not the document's table placing them.
+      const docRow = direction.split('\n').find((line) => line.startsWith(`| ${surface}`));
+      expect(docRow, `the direction document does not place "${surface}"`).toBeDefined();
+      const docCells = (docRow ?? '').split('|').map((cell) => cell.trim());
+      const docAt = docCells.indexOf(surface);
+      expect(
+        docAt,
+        `the direction document does not place "${surface}" in a row of its own`,
+      ).toBeGreaterThan(-1);
+      expect(
+        docCells[docAt + 1],
+        `the direction document puts "${surface}" in the wrong room`,
+      ).toBe(room);
+
       const row = briefBody.split('\n').find((line) => line.startsWith(`| ${surface}`));
       expect(row, `brief 01 does not place "${surface}"`).toBeDefined();
-      expect(row, `brief 01 puts "${surface}" in the wrong room`).toContain(`| ${room} |`);
+      const cells = (row ?? '').split('|').map((cell) => cell.trim());
+      const at = cells.indexOf(surface);
+      expect(at, `brief 01 does not place "${surface}" in a row of its own`).toBeGreaterThan(-1);
+      expect(cells[at + 1], `brief 01 puts "${surface}" in the wrong room`).toBe(room);
     }
   });
 });
 
 describe('the two rules that travel with the direction', () => {
   it('travels: one accent with one meaning', () => {
-    expect(flat(direction)).toContain('amber always means live or waiting on you');
-    expect(flat(briefs.get('02-material.md') ?? '')).toContain(
+    carries('the direction document', flat(direction), 'amber always means live or waiting on you');
+    carries(
+      '02-material.md',
+      flat(briefs.get('02-material.md') ?? ''),
       'amber always means live or waiting on you',
     );
   });
 
   it('travels: no ratio whose denominator is zero', () => {
-    expect(flat(direction)).toContain('No ratio whose denominator is zero');
+    carries('the direction document', flat(direction), 'No ratio whose denominator is zero');
     const brief01 = flat(briefs.get('01-rooms-and-surfaces.md') ?? '');
-    expect(brief01).toContain('no ratio whose denominator is zero');
-    expect(brief01).toContain('N features, M operations');
-    expect(flat(briefs.get('02-material.md') ?? '')).toContain(
+    carries('01-rooms-and-surfaces.md', brief01, 'no ratio whose denominator is zero');
+    carries('01-rooms-and-surfaces.md', brief01, 'N features, M operations');
+    carries(
+      '02-material.md',
+      flat(briefs.get('02-material.md') ?? ''),
       'a ratio only where there is a denominator to divide by',
     );
   });
@@ -450,9 +631,13 @@ describe('the two rules that travel with the direction', () => {
 describe('the connect decision', () => {
   it('has a home: the brief says which way it goes, and why', () => {
     const brief06 = flat(briefs.get('06-constellation-and-hues.md') ?? '');
-    expect(brief06).toContain('the constellation carries the connect decision in place');
-    expect(brief06, 'the rejected alternative is not on the record').toContain('was rejected');
-    expect(brief06).toContain('a decision is taken where the list is');
+    carries(
+      '06-constellation-and-hues.md',
+      brief06,
+      'the constellation carries the connect decision in place',
+    );
+    carries('06-constellation-and-hues.md', brief06, 'was rejected');
+    carries('06-constellation-and-hues.md', brief06, 'a decision is taken where the list is');
   });
 });
 
@@ -534,10 +719,13 @@ describe('the amber collision, and the rule that resolved it', () => {
             'and the rule is that amber means live or waiting on you and nothing else.',
         ).not.toContain('amber-');
       }
+      // Where, not the whole file: a failure that dumps five thousand
+      // characters of component is a failure nobody reads.
+      const amberAt = sourceLines.findIndex((line) => line.includes('amber-')) + 1;
       expect(
-        source,
-        `${path.basename(site.file)} holds amber again, and it is the file that carries ${site.cited}.`,
-      ).not.toMatch(/amber-/);
+        amberAt,
+        `${path.basename(site.file)} holds amber again at line ${amberAt}, and it is the file that carries ${site.cited}.`,
+      ).toBe(0);
     }
   });
 
