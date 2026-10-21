@@ -1,7 +1,7 @@
 import { eq } from 'drizzle-orm';
 import {
+  readAutonomyPolicy,
   resolveAutonomyPolicy,
-  type AutonomyPolicy,
   type ConversationSafeguards,
   type EffectiveAutonomyPolicy,
 } from '@personal-os/contracts';
@@ -63,10 +63,14 @@ export function loadEffectiveAutonomyPolicy(
     // A goal or a conversation that belongs to another workspace has no say
     // in this one: a caller cannot reach across workspaces to loosen a
     // policy, and the policy it reads is the one of its own workspace.
-    workspace: (workspace?.autonomyPolicy as AutonomyPolicy | undefined) ?? null,
+    //
+    // The column is read, not cast. A row that cannot be a policy is no
+    // policy, and a row whose fields are broken is read one field at a time
+    // by the resolver, so a broken row is ignored rather than obeyed.
+    workspace: readAutonomyPolicy(workspace?.autonomyPolicy),
     goal:
       goal && goal.workspaceId === scope.workspaceId
-        ? ((goal.autonomyPolicy as AutonomyPolicy | undefined) ?? null)
+        ? readAutonomyPolicy(goal.autonomyPolicy)
         : null,
     conversation:
       conversation && conversation.workspaceId === scope.workspaceId
