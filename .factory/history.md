@@ -9296,8 +9296,8 @@ supersedes it, and this session's WI-112 row now says in the open that **the ite
 recorded twice, one row per session, under one spent request id** — nothing deleted,
 nothing hidden, one disclosure in the cell where a reader would otherwise be misled.
 
-**WI-108 is accepted.** Vision's verification is unambiguous — *"the item's work is
-sound and I would accept it"* — six checks met, the error shape measured before and
+**WI-108 is accepted.** Vision's verification is unambiguous — _"the item's work is
+sound and I would accept it"_ — six checks met, the error shape measured before and
 after on the same call, the mutation proof judged independently at **six red of
 thirty-six**, every gate green at `a65ff32`. **What the product can now do: a
 dashboard, document, data source or automation whose spec breaks its contract is
@@ -9337,7 +9337,7 @@ this session took WI-114 and WI-115.
 **The peer's finding about WI-098's record is stale, and the lead says so with the
 lines.** The peer named four stale sentences in `.factory/work/WI-098.md`. **Three are
 already corrected in context** — "character for character" is the rewritten criterion
-that goes on to say the raw ranges are *not* byte-identical; "Probe's pin" says the pin
+that goes on to say the raw ranges are _not_ byte-identical; "Probe's pin" says the pin
 is Probe's and that WI-094 is its re-point; "402 lines" is the sentence that
 distinguishes 401 by newline count from 402 with the trailing empty element and 403 on
 today's `main` — **and the fourth, "366 lines", is WI-025.md's stale figure being
@@ -9358,3 +9358,25 @@ it since 04:25:20; **its price is that it cuts the turn it lands in**, so it goe
 the end of a cycle with nothing started; and **the ceiling stays at two**, because it
 is vendor code in a content-addressed cache and a patch there vanishes silently on the
 next plugin update — **a capacity decision a vendor update can erase is not a decision.**
+
+**The correction, dated, and it is the lead's own.** The lead wrote above that WI-108's
+merge was held back because it turned two gates red. **The peer session had already
+published it at 07:30**, on its own branch and its own path, and **that landing
+re-pointed nine of the eleven citations the lead had measured as moved.** The lead's red
+was measured on its own merge commit, two commits behind the published one. **The tree
+that publishes WI-108 is green — typecheck 0, format:check 0, build 0, test 0, 61 files
+and 615 tests with 0 failures, and the pointer gate reads 122 pointers and 0 failures.**
+The lead's back-out at 07:37 undid nothing that was public; the merge at 07:47 put the
+two lines together.
+
+**So WI-114 shrinks from thirteen corrections to four**, and the four are named in its
+file. **Two of them are the ones no gate can see** — `CONTRACTS.md:806` and `:1946`
+point at code, and the code is not the claim — which is the whole argument for reading
+a cited line against its sentence instead of trusting a gate that only asks _is this
+code?_
+
+**And the lesson, which cost this factory an hour of blocked pushes and then a
+false alarm: a red measurement is true of the tree it was measured on, and the trees
+here move under you.** The lead's own back-out was a reasonable act on a tree that was
+no longer the published one. **Measure the tree that publishes the work, and say which
+tree you measured.**

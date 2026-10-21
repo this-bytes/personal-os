@@ -2476,14 +2476,14 @@ the correction can land with it.**
   citing `service.ts:203,293,448` — which read `},`, `action: AutomationAction;` and a
   comment about the registry. **The author is now read from the record**
   (`createdBy: row.createdBy,` at `:234`; `factory.taskAuthor(id) ??
-  RESOURCE_AUTHOR_SYSTEM` at `:345`). Held behind WI-114.
+RESOURCE_AUTHOR_SYSTEM` at `:345`). Held behind WI-114.
 
 **The number space, read immediately before it was taken.** `main` runs to **WI-112**;
 the peer session took **WI-113** at 07:27 for "the contract publishes the refusal, and
 the tests read the message out of the contract instead of repeating it", and that claim
 is **earlier** and **not bound to a live dispatch**, so by the tiebreak both sessions
-published — *a claim bound to a live dispatch keeps its number; where no dispatch binds
-it, the earlier published claim keeps it* — **WI-113 is the peer's**, and this session
+published — _a claim bound to a live dispatch keeps its number; where no dispatch binds
+it, the earlier published claim keeps it_ — **WI-113 is the peer's**, and this session
 took WI-114 and WI-115.
 
 ### The peer's finding about WI-098's record is stale, and this session says so with the lines
@@ -2495,7 +2495,7 @@ are already corrected in context, and the fourth is a sentence the item file its
 certifies as true. The file is Chief's, not Wren's.**
 
 - **"character for character"** — at `:61` it is the **rewritten criterion**, which now
-  says the quote carries the rule's *prose*, character for character, "once the
+  says the quote carries the rule's _prose_, character for character, "once the
   blockquote markers, the `**The rule.**` label and the italic underscores are
   stripped", and then says "**the raw ranges are not byte-identical** (322 against 328)
   **and this criterion does not claim they are**". The second occurrence, at `:112`, is
@@ -2509,7 +2509,7 @@ certifies as true. The file is Chief's, not Wren's.**
   and 403 lines on today's `main`", with the convention written down. That is the
   correction.
 - **"366 lines"** — at `:89`, `:193` and `:234` it is **WI-025.md's** stale figure being
-  *reported, not edited*, and the sentence beside it says the staleness is **35, not
+  _reported, not edited_, and the sentence beside it says the staleness is **35, not
   36**.
 
 **The acceptance of WI-098 stands, and it was published at `9a88ebe`.**
@@ -2529,3 +2529,31 @@ only untested lever for Probe's chat — nobody has dispatched into it since 04:
 **Its price is that it cuts the turn it lands in**, so it goes at the end of a cycle
 with nothing started. **And the ceiling stays at two**: it is vendor code in a
 content-addressed cache, and a patch there vanishes silently on the next plugin update.
+
+### A CORRECTION TO THE SECTION ABOVE, dated, by the lead
+
+**The section above says WI-108's merge is on `wi/108-landing` and not on `main`, and
+that `main` stays green until the correction can land with it. That was true when the
+lead measured it and it is now false, and the correction stands beside it.**
+
+**The peer session published WI-108's landing at 07:30** (`4e64f3d`), on its own branch
+and its own path, **and that landing re-pointed nine of the eleven citations WI-108
+moved.** The lead's red measurement was taken on its own merge commit `fc2e39b`, which
+did not carry the peer's re-pointing; **the tree that publishes the item is green.**
+The lead's merge at 07:47 (`dc5cefd`) brought the published line and the lead's records
+together, and **the gates on that tree are: typecheck 0 · format:check 0 · build 0 ·
+test 0 — 61 files, 615 tests, 0 failures**, with the pointer gate at **122 pointers, 0
+failures**. The lead's own back-out at 07:37 was against a tree the peer had already
+published ten minutes earlier, **so it undid nothing that was public**, and it is
+recorded here rather than quietly dropped.
+
+**WI-114 therefore shrinks from thirteen corrections to four**, and the four are named
+in that item's file: **`CONTRACTS.md:806`** (`service.ts:374-375` → `:376-377`) and
+**`:1946`** (`service.ts:338` → `:340`), plus **`docs/resource-templates.md:32`**
+(`service.ts:581-591` → `:583-593`) and **`:355`** (`templates.ts:522-543` →
+`:534-555`). **Two of the four are the ones no gate can see** — they point at code,
+and the code is not the claim. **Both items stay held: `CONTRACTS.md` is WI-086's live
+file until Cog's dispatch lands.**
+
+**And the lesson, dated: a red measurement is true of the tree it was measured on, and
+this factory's trees move under you.** Measure the tree that publishes the work.
