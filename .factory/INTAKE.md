@@ -5025,3 +5025,76 @@ itself: the note is at the top of it, and the item's first deliverable is the
 six briefs. A brief is written from the item, so the correction lands before
 the briefs are written — which is the whole reason the correction was made
 into the item rather than into a note.
+
+## The accept queue was not slow — a livelock was holding half the factory — 2026-10-21 15:35
+
+**The group has asked the owner three times for a second verifier, on the theory
+that one verifier was the constraint. It was not, and this is the measurement
+that says so.**
+
+**The factory runs two tasks at once.** `MAX_RUNNING = 2` is hard-coded in the
+runtime's dispatcher (`.../minimax-bot/node/task-dispatcher.mjs`) and **no
+setting in this repository changes it**, so **half the factory is one slot.**
+The dispatcher scans batches in creation order, takes the first queued task
+whose bot's chat is free, and runs **one task per bot**.
+
+**From 13:13:40 one of the two slots was held by a turn that was not working.**
+`task_83be52cd5d71` — a discussion task in the Personal OS Strategy group —
+showed `status: running` for **119 minutes** with `result`, `messageId` and
+`endedAt` all empty, and the group's last message from that bot was **empty
+text**. **While it held the slot: Probe's chat was idle** — 0 running, 0 queued
+— and **27 tasks sat queued**, the three oldest being WI-027's, WI-021's and
+WI-045's. **The queue did not move because there was nowhere for it to move
+to.** A second verifier would have sat idle in the queue exactly like Probe
+did.
+
+**What it actually was — and the correction to this session's first reading.**
+The first reading was that the worker was dead, and that the giveaway was its
+session's status being terminal. **That was circular**: the session was read as
+`aborted` **after** the task was cancelled, and the abort is what made it
+`aborted`. **The status was measured after the intervention, so it proved
+nothing about before it.**
+
+**What the turn was doing came out when the abort released it: a livelock.** Its
+output was a stream of unfinished reasoning — _"Two hours have passed and the
+world moved. Let me take the state back in before I speak. … Let me check the
+exact claims Probe named … Now let me check the other session's in-flight edits
+… Facts are in. Now let me verify the last details before I rule and write."_ —
+**restarting the same investigation without ever concluding.** It was alive by
+every measure available, and it still consumed the slot.
+
+**What was done.** The task was cancelled. **Nothing was lost**: its work was
+already committed and in `main` (`e1f50ae`, "Answer Probe's review: six
+defects, six observations, all of them mine"), its follow-up repair was a
+separate live task, and **the released turn still produced its 2896-character
+post, which the group received**. **Measured eight seconds after the slot
+freed, Probe's WI-027 verification started**, and Cog's WI-045 implementation
+took the other slot: **the queue began moving on its own for the first time
+since 09:48.** The group was told — `task_c7064293a08e`, the first post of
+this session's the channel accepted rather than refused.
+
+**What is now in the repository, so the next stall is not found by accident.**
+`.factory/watchdog.md` — Chief's file, and the knowledge lives in the
+repository because the doctrine lives in the repository. **It reports; it does
+not cancel**, and the reason is measured rather than cautious: **elapsed time
+cannot tell a stall from a long task.** Over the 82 tasks that completed on
+2026-10-21, **five ran for over two hours and every one of them finished**, the
+longest taking 477 minutes. **A check that cancels on elapsed time alone would
+have killed five real pieces of work.** The threshold is **45 minutes**, and it
+is a _trigger to look_, never a reason to cancel. **Cancelling stays Chief's
+judgement** — the evidence that made it safe today was that the work was
+already committed, that the follow-up was a separate task, and that the turn
+had posted nothing for two hours. `FACTORY.md` points at it from the loop.
+
+**And a schedule to run it**, so the finding does not depend on a human
+noticing: `sch_6db03ac6ba13`, every 30 minutes, as Chief. The first version of
+that schedule told the bot to cancel on a terminal session status — **the
+circular rule above** — and it was deleted and replaced the moment the
+circularity was found. **A cancelled batch keeps its request id; a schedule can
+be deleted outright.**
+
+**The second-verifier question stands, and it is a smaller one than the group
+has been asking.** With two slots, a second verifier buys parallelism **only
+when a slot is free**, and today the slot was the problem. It is still worth
+the owner's answer, on the measurement that today the queue did not move
+because a turn was stuck, not because there was one of anything.
