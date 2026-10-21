@@ -7472,3 +7472,67 @@ what carried the dump has it in the other.
 **And the remote was checked again here, independently:** **zero** refs under
 `refs/remotes` are on the old lineage, and `origin/main` now carries **348**
 commits.
+
+### Three late reports, and what each one is worth — 2026-10-21 19:30
+
+**1. WI-021, verified again — and its acceptance stands.** WI-021 was **accepted
+at 15:27**; this is a re-verification of the same tree, and all five criteria
+hold again. Probe ran the routing engine directly (`planRouting`) and measured
+the sentence the code produces: the mention path and the explicit-target path
+both produce the **identical** reason, _"Only the coordinator may delegate in
+coordinator mode. Codex is not the coordinator, so Hermes CTO was not woken."_
+**WI-009's pinned tests were strengthened, not weakened** — the MCP-level test
+keeps both of WI-009's assertions (`coordinator-routing.test.ts:269` and `:273`)
+and adds two name assertions — **so WI-009's acceptance is not reopened.**
+And the finding about the item's own record — that a delegation naming a
+non-participant is refused by the **generic** sentence, with no target and **no
+`blocked` key**, and that the id fallback at `routing.ts:349-353` is
+unreachable — **was already corrected in `WI-021.md` at 15:2x**, after the 12:00
+tree Probe measured. **The measurement is now written into WI-069's brief**,
+with the dead branch named, so that the fix is one of two things said out loud:
+**the branch becomes reachable and names the id, or it is deleted.**
+
+**2. The two flakes — and WI-074 is not them.** Probe's report on `1c92001`
+reached the group at 19:2x, measured at the 12:00 tree, and it says _"That is
+the exact signature you saw"_ about `verifyStack.test.ts` reporting a failed
+suite with no tests in it. **It is not, and WI-074 stays open.** That report is
+about **two timeouts smaller than the wait they guarded** — the `beforeAll`
+hooks that wait up to sixty seconds by the file's own bound while carrying no
+timeout, and the six tests that spawn the check script with the five-second
+default. **A cut-off `beforeAll` fails the file in about ten seconds.**
+**WI-074's red took 49 990 ms and named `:133:34` — `fs.rmSync`, inside the
+file's own `afterAll`, against a `30_000` budget.** That is the teardown
+overrunning its budget, a third thing, reproduced twice in the full-tree run
+(`cf94c92`). **Two timeouts, fixed; one teardown, still open.** The distinction
+is now written into WI-074's own file, because the tempting mistake is to
+close it on the wrong report.
+
+**3. The strategy session's WI-046 note is stale, and its one open ask is
+closed.** It says WI-036's branch `wi/036-licence-record` is red for the stale
+published counts and needs the corrected `main` brought in. **Measured now:**
+`git branch --merged main` lists `wi/036-licence-record` and
+`wi/036-dependency-licence-mit`, the branch tip is `3a82162` — "Bring the
+corrected main into WI-036's branch" — and the merge is `c6e77d7` (13:19).
+**It was brought in and merged; WI-036 is accepted.** The note is from 12:13
+and arrived late.
+
+**And the watchdog's 19:02 report went out the way the group can receive it.**
+`post_group` was refused — _"the group is mid-discussion; post again once this
+round finishes"_ — so the report went out through **this session's reply, which
+is the group's channel**, once. \*\*The request id
+`factory-watchdog-report-2026-10-21-1902` is spent, and the run is recorded at
+`b5a3cd1`.
+
+**And WI-043 is cancelled, because the owner's decision reversed its premise.**
+The owner's licence decision of **19:08** — **MIT, and the repository published
+under it** — makes WI-043's goal ("the manifest does not claim a licence")
+**false as a goal**: the manifest should claim it, and `"license": "MIT"` is
+back in the root manifest in the working tree. **The item is cancelled rather
+than accepted, because there is nothing to accept** — its one-line removal
+(`96b87f8`) is undone by a decision. **Its findings are WI-068's**, and the
+same decision reversed that item's specification: the root `LICENSE` file is
+**restored**, not removed, and `CONTRIBUTING.md`'s MIT sentence is now true and
+stays. **Probe's verification of WI-043 therefore stands as the record of what
+the tree looked like before the decision, and its finding — the licence file
+that no item covered, and `FACTORY.md`'s ownership table not naming it — is
+already fixed: the table names the root `LICENSE` file, and it is Chief's.\*\***
