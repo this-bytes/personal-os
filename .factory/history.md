@@ -9568,3 +9568,61 @@ record commits are local and ride out with the next push**, by the peer's own re
 **The restart is still the owner's word**, and on today's evidence its benefit is **the
 wasted slot and Wren's refusal** — Probe's lane came back on its own — while its price
 is **the turn it lands in**, which right now is Cog's live WI-086.
+
+## 2026-10-22 09:15 — Chief: the licence record is accepted and landed, and the number space moves to WI-122
+
+**WI-106 is ACCEPTED on Probe's VERIFIED verdict, and the work is landed.** The
+verdict is against **`60d5bb8`, the branch's actual head — not the `c2375e4` the
+round-two brief named**: the brief's tree note was stale, the branch was **not**
+rebased back onto `1712fd2`, and it carries main's merge at `e885012` plus two
+ledger commits, **27 commits past `1712fd2`**. **A brief's tree note is not a
+measurement; the commit the verifier names is.** Both findings are fixed — the
+record's evidence sentence opens **"Each third-party entry records the file its
+licence was read from…"** and no longer says "every entry"; `PRODUCT.md:290-293`
+says **"one entry for every package in the lockfile"** and no longer says "the lines
+of that file that identify the licence" — and **nothing else moved**: the 494-entry
+array, `approvedSet`, `agpl.*`, `summary` and the other five `reads` strings are
+byte-identical, and `PRODUCT.md` has **one hunk** with the **366 lines outside it
+byte-identical**. The counts re-derive exactly: **375 / 16 / 97 / 6 = 494**,
+third-party **488**, **11** distinct `spdxId`s, `familiesRead` **11 rows summing to
+488**. The nine gates on the branch's own worktree: **exit 0**, including
+`npm run gates` — **"Every gate passed. The tree is green."** **Merged into `main` as
+`8817b92`**, `merge-tree` → **0 conflict lines**.
+
+**The acceptance's tiebreak, said out loud.** The peer session dispatched the
+round-two verification under its own request id and its record carries the same
+verdict; **this session lands the verified work and closes the item on Probe's
+report, so a verified item is not left verified-but-open.**
+
+**The pin is still owed and is still not written** — `git grep -ln
+'dependency-licences' 60d5bb8` over the test trees returns **empty**, so **no test
+file in the repository mentions licences at all**. The record can drift back into the
+two sentences this item corrected until a check holds them.
+
+**And a number in the item's own record was wrong, corrected by appending.** It read
+**"615 tests in 64 files"**: the test count is right and the file count is not — **it
+is 61** (39 + 9 + 6 + 3 + 4). The line stands; the correction stands beside it.
+
+**The number space moves to WI-122.** The peer filed **WI-120 — the published front
+page states the identity the owner replaced** (owner Wren) and **WI-121 — the
+decision surface carries what an agent is blocked on** (owner Cog), both reading
+the published block and taking the next two numbers. **The block now carries both
+rows and says WI-122.** And **WI-119's file must be renamed before it merges**:
+`main` carries a **different** WI-118 — the mode item — and merging
+`wi/118-strategy-record-prose` is an **add/add conflict on `.factory/work/WI-118.md`**.
+**The prose item is WI-119 and its file must be `WI-119.md`**; the branch keeps its
+name.
+
+**And the owner's word is on the record, read from WI-120's own file:** _"Does the
+owner stand behind a public MIT repository — with the front page corrected to the
+new identity before anyone finds it?"_ — **"Yes to both, in that order."** The
+repository is public and MIT and stays that way, and the front page is corrected
+**in the world, not on a branch**. The lead's standing word — _push `main` whenever
+CI is green_ — already covers the push, and **nothing else is pushed on the strength
+of that answer**.
+
+**The floor at 09:15.** Cog is running **WI-086** on `CONTRACTS.md`, which is what
+holds WI-114 and WI-115. **Probe's lane is alive and productive** — a NOT VERIFIED
+verdict at 07:25 and a VERIFIED one at 09:05, both measured adversarially rather
+than read out of the record. **Wren's lane still refuses.** The relay that held a
+slot has released it. **The ceiling stays at two.**

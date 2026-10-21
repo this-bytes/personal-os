@@ -90,8 +90,10 @@ free number above the highest taken.**
 | WI-117 | The stranded branches, measured again — the peer's branch-hygiene record                                                                   | peer   |
 | WI-118 | The mode the owner sets is the mode that is in force                                                                                       | worker |
 | WI-119 | The strategy document's copy of the record's loose sentence, in three places                                                               | peer   |
+| WI-120 | The published front page states the identity the owner replaced                                                                            | peer   |
+| WI-121 | The decision surface carries what an agent is blocked on                                                                                   | peer   |
 
-**The next free number is WI-120.**
+**The next free number is WI-122.**
 
 **The block was corrected on 2026-10-22 at 08:20, and it is maintained in place because
 that is what it is for.** It said "**the next free number is WI-113**" while WI-113 was
@@ -3168,6 +3170,67 @@ delivered the WI-106 verdict at 07:25 — and **Vision's lane was never dead**, 
 is left of the restart's benefit is **the wasted slot and Wren's refusal**, against a
 price of **the turn it lands in**, which right now is **Cog's live WI-086**. **It is
 still the owner's word**, and **the floor is not that moment now.**
+
+## 2026-10-22 09:15 — Chief: WI-106 is accepted and landed, the number space moves to WI-122, and the owner's word on the public repository is on the record
+
+**One — WI-106 is ACCEPTED, on Probe's VERIFIED verdict, and the work is landed.**
+The verdict is **VERIFIED**: _"Both wording findings are fixed, nothing else moved, all
+nine gates green on the branch's own tree."_ **It is against `60d5bb8`, the branch's
+actual head — not the `c2375e4` the round-two brief named.** The brief's tree note
+was stale and the verifier said so: the branch was **not** rebased back onto
+`1712fd2`; it carries main's merge at `e885012` plus two ledger commits, **27
+commits past `1712fd2`**. **A brief's tree note is not a measurement; the commit the
+verifier names is.** Both findings are fixed — `reads.evidence` opens **"Each
+third-party entry records the file its licence was read from…"** and no longer says
+"every entry"; `PRODUCT.md:290-293` says **"one entry for every package in the
+lockfile"** and no longer says "the lines of that file that identify the licence" —
+and **nothing else moved**: the whole 494-entry array, `approvedSet`, `agpl.*`,
+`summary` and the other five `reads` strings are byte-identical, and `PRODUCT.md` has
+**one hunk** with the **366 lines outside it byte-identical**. The counts re-derive
+exactly: **375 / 16 / 97 / 6 = 494**, third-party **488**, **11** distinct `spdxId`s,
+`familiesRead` **11 rows summing to 488**. The nine gates on the branch's own
+worktree: **exit 0**, including `npm run gates` — **"Every gate passed. The tree is
+green."** **Merged into `main` as `8817b92`** (`merge-tree` → **0 conflict lines**;
+the branch's diff against main is exactly three files).
+
+**The tiebreak, said out loud.** The peer session dispatched the round-two
+verification under its own request id `wi-106-round-two-chief-2026-10-22`, and its
+record carries the same verdict. **This session lands the verified work and closes
+the item on Probe's report, so that a verified item is not left verified-but-open.
+No second acceptance is needed or wanted.**
+
+**Two — the pin is still owed and is still not written.** `git grep -ln
+'dependency-licences' 60d5bb8` over the test trees returns **empty**: **no test file
+in the repository mentions licences at all.** The record can drift back into the two
+sentences this item corrected until a check holds them, and **that check is Probe's
+file to write.**
+
+**Three — the number space moves to WI-122, and WI-120 and WI-121 are the peer's.**
+The peer filed **WI-120 — "The published front page states the identity the owner
+replaced"** (owner Wren) and **WI-121 — "The decision surface carries what an agent
+is blocked on"** (owner Cog), both reading this block and taking the next two
+numbers, and both saying **"the next free number after this is WI-122"**. **The
+block now carries both rows and says WI-122.** **And WI-119's file must be renamed
+before it merges**: `main` carries a **different** WI-118 — the mode item — and
+`git merge-tree --write-tree main wi/118-strategy-record-prose` returns **CONFLICT
+(add/add) in `.factory/work/WI-118.md`**. **The prose item is WI-119 and its file
+must be `WI-119.md`**; the branch `wi/118-strategy-record-prose` **keeps its name**.
+
+**Four — the owner's word on the public repository, read from WI-120's own file.**
+_"Does the owner stand behind a public MIT repository — with the front page
+corrected to the new identity before anyone finds it?"_ — **"Yes to both, in that
+order."** **The repository is public and MIT and stays that way, and the front page
+is corrected in the world, not on a branch**: WI-120's own file says **"the merge to
+`main` and the push of `main` are inside this item"**. **The lead's standing word
+already covers it** — _push `main` whenever CI is green_ — and **nothing else is
+pushed on the strength of that answer.**
+
+**Five — the floor at 09:15.** **Cog is running WI-086** on `CONTRACTS.md` — **that
+is what holds WI-114 and WI-115**. **Probe's lane is alive and productive**: it
+delivered a NOT VERIFIED verdict at 07:25 and a **VERIFIED** verdict at 09:05, and
+both were measured adversarially rather than read out of the record. **Wren's lane
+still refuses.** **The relay that held a slot has released it** — Vision's WI-108
+report is `waiting_for_tasks`. **The ceiling stays at two.**
 
 ## What the published repository says — 2026-10-22, Vision
 
