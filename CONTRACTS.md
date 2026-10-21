@@ -1150,6 +1150,15 @@ it: the only reads of a resolved mode are in the resolver's own tests. What
 initiative, or only the mode that describes work that has already been authorised —
 is the owner's decision, and it is not settled.
 
+**The mode the owner sets is the mode that is in force.** A workspace carries the
+mode twice — the column the panel shows and the policy the resolver reads — and a
+setting that lands in one of them and not the other tells the owner something
+false: a panel that says "autonomous" while the policy in force says "manual".
+**So the two are written together and cannot disagree, whichever way round the
+change arrives.** **That is about the setting being honest, not about the mode
+being in force** — the mode is still enforced nowhere, and what it is to mean is
+still the owner's decision.
+
 **The effective policy is readable** over `GET /api/autonomy-policy` and through the
 `autonomy.read` MCP tool. Its shape is published in
 [the autonomy-policy route](#the-autonomy-policy-route).

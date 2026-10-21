@@ -385,6 +385,110 @@ async function listResources(workspace: string): Promise<unknown[]> {
   return response.json().resources as unknown[];
 }
 
+describe('the mode the owner sets', () => {
+  it('is the mode that is in force, so the panel cannot show a mode that is not', async () => {
+    const id = await createWorkspace('A workspace whose mode the owner sets');
+
+    // The panel shows `workspace.autonomyMode`, and `PATCH
+    // /api/workspaces/:id` is the only way an owner can set a mode. The
+    // policy in force is resolved from `autonomyPolicy.mode`, so a patch that
+    // set only the column would leave the panel showing a mode that is not in
+    // force.
+    const patched = await app.inject({
+      method: 'PATCH',
+      url: `/api/workspaces/${id}`,
+      headers: { cookie: sessionCookie },
+      payload: { autonomyMode: 'autonomous' },
+    });
+    expect(patched.statusCode, 'the owner could not set the workspace mode').toBe(200);
+
+    const shown = await app.inject({
+      method: 'GET',
+      url: `/api/workspaces/${id}`,
+      headers: { cookie: sessionCookie },
+    });
+    const displayed = (shown.json() as { workspace?: { autonomyMode?: string } }).workspace
+      ?.autonomyMode;
+    expect(displayed).toBe('autonomous');
+
+    const response = await app.inject({
+      method: 'GET',
+      url: `/api/autonomy-policy?workspaceId=${encodeURIComponent(id)}`,
+      headers: { cookie: sessionCookie },
+    });
+    const policy = (response.json() as { policy?: { mode?: string } }).policy;
+
+    expect(
+      policy?.mode,
+      `the panel shows "${displayed}" and the policy in force says "${policy?.mode}": the mode ` +
+        'the owner can see and set has to be the mode that is in force',
+    ).toBe(displayed);
+  });
+
+  it('follows the mode back down when the owner sets it again', async () => {
+    const id = await createWorkspace('A workspace whose mode the owner changes');
+
+    for (const mode of ['autonomous', 'assisted', 'manual'] as const) {
+      const patched = await app.inject({
+        method: 'PATCH',
+        url: `/api/workspaces/${id}`,
+        headers: { cookie: sessionCookie },
+        payload: { autonomyMode: mode },
+      });
+      expect(patched.statusCode).toBe(200);
+
+      const response = await app.inject({
+        method: 'GET',
+        url: `/api/autonomy-policy?workspaceId=${encodeURIComponent(id)}`,
+        headers: { cookie: sessionCookie },
+      });
+      const policy = (response.json() as { policy?: { mode?: string } }).policy;
+      expect(policy?.mode, `the policy in force did not follow the owner to "${mode}"`).toBe(mode);
+    }
+  });
+
+  it('moves the panel when the policy is the thing that changes', async () => {
+    const id = await createWorkspace('A workspace whose policy changes');
+
+    // The other direction: a policy written through the service carries a
+    // mode, and the panel has to show that mode rather than the one the
+    // workspace was created with. The two are written together whichever way
+    // round the change arrives.
+    app.services.workspaces.update(id, {
+      autonomyPolicy: { ...RESTRICTED_POLICY, mode: 'assisted' },
+    });
+
+    const shown = await app.inject({
+      method: 'GET',
+      url: `/api/workspaces/${id}`,
+      headers: { cookie: sessionCookie },
+    });
+    const displayed = (shown.json() as { workspace?: { autonomyMode?: string } }).workspace
+      ?.autonomyMode;
+    expect(displayed).toBe('assisted');
+  });
+
+  it('leaves the mode alone when the patch does not name one', async () => {
+    const id = await createWorkspace('A workspace whose name changes');
+
+    const patched = await app.inject({
+      method: 'PATCH',
+      url: `/api/workspaces/${id}`,
+      headers: { cookie: sessionCookie },
+      payload: { name: 'Renamed' },
+    });
+    expect(patched.statusCode).toBe(200);
+
+    const response = await app.inject({
+      method: 'GET',
+      url: `/api/autonomy-policy?workspaceId=${encodeURIComponent(id)}`,
+      headers: { cookie: sessionCookie },
+    });
+    const policy = (response.json() as { policy?: { mode?: string } }).policy;
+    expect(policy?.mode).toBe('manual');
+  });
+});
+
 describe('the MCP surface under a policy that refuses an action', () => {
   it('allows an action the policy allows, so the refusal below means something', async () => {
     const { token } = await createAgent('agent-under-the-default-policy');
