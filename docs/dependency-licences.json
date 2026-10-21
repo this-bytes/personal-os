@@ -1731,7 +1731,7 @@
       "readOn": "2026-10-21",
       "firstParty": {
         "workspace": "packages/agent-adapters",
-        "note": "This repository’s own package, not a third-party dependency. It has no licence of its own: the owner answered on 2026-10-21 that this repository is private for now, with no LICENSE yet, and that answer is about this repository and defers neither this record nor WI-038.",
+        "note": "This repository’s own package, not a third-party dependency. It has no licence of its own: it is covered by this repository’s own MIT licence, chosen by the owner on 2026-10-21, whose text is in the LICENSE file at the repository root. That is about this repository and defers neither this record nor WI-038.",
         "source": {
           "kind": "first-party-workspace",
           "file": "packages/agent-adapters/package.json",
@@ -1748,7 +1748,7 @@
       "readOn": "2026-10-21",
       "firstParty": {
         "workspace": "packages/contracts",
-        "note": "This repository’s own package, not a third-party dependency. It has no licence of its own: the owner answered on 2026-10-21 that this repository is private for now, with no LICENSE yet, and that answer is about this repository and defers neither this record nor WI-038.",
+        "note": "This repository’s own package, not a third-party dependency. It has no licence of its own: it is covered by this repository’s own MIT licence, chosen by the owner on 2026-10-21, whose text is in the LICENSE file at the repository root. That is about this repository and defers neither this record nor WI-038.",
         "source": {
           "kind": "first-party-workspace",
           "file": "packages/contracts/package.json",
@@ -1765,7 +1765,7 @@
       "readOn": "2026-10-21",
       "firstParty": {
         "workspace": "apps/server",
-        "note": "This repository’s own package, not a third-party dependency. It has no licence of its own: the owner answered on 2026-10-21 that this repository is private for now, with no LICENSE yet, and that answer is about this repository and defers neither this record nor WI-038.",
+        "note": "This repository’s own package, not a third-party dependency. It has no licence of its own: it is covered by this repository’s own MIT licence, chosen by the owner on 2026-10-21, whose text is in the LICENSE file at the repository root. That is about this repository and defers neither this record nor WI-038.",
         "source": {
           "kind": "first-party-workspace",
           "file": "apps/server/package.json",
@@ -1782,7 +1782,7 @@
       "readOn": "2026-10-21",
       "firstParty": {
         "workspace": "packages/ui",
-        "note": "This repository’s own package, not a third-party dependency. It has no licence of its own: the owner answered on 2026-10-21 that this repository is private for now, with no LICENSE yet, and that answer is about this repository and defers neither this record nor WI-038.",
+        "note": "This repository’s own package, not a third-party dependency. It has no licence of its own: it is covered by this repository’s own MIT licence, chosen by the owner on 2026-10-21, whose text is in the LICENSE file at the repository root. That is about this repository and defers neither this record nor WI-038.",
         "source": {
           "kind": "first-party-workspace",
           "file": "packages/ui/package.json",
@@ -1799,7 +1799,7 @@
       "readOn": "2026-10-21",
       "firstParty": {
         "workspace": "apps/web",
-        "note": "This repository’s own package, not a third-party dependency. It has no licence of its own: the owner answered on 2026-10-21 that this repository is private for now, with no LICENSE yet, and that answer is about this repository and defers neither this record nor WI-038.",
+        "note": "This repository’s own package, not a third-party dependency. It has no licence of its own: it is covered by this repository’s own MIT licence, chosen by the owner on 2026-10-21, whose text is in the LICENSE file at the repository root. That is about this repository and defers neither this record nor WI-038.",
         "source": {
           "kind": "first-party-workspace",
           "file": "apps/web/package.json",
@@ -1816,7 +1816,7 @@
       "readOn": "2026-10-21",
       "firstParty": {
         "workspace": "apps/worker",
-        "note": "This repository’s own package, not a third-party dependency. It has no licence of its own: the owner answered on 2026-10-21 that this repository is private for now, with no LICENSE yet, and that answer is about this repository and defers neither this record nor WI-038.",
+        "note": "This repository’s own package, not a third-party dependency. It has no licence of its own: it is covered by this repository’s own MIT licence, chosen by the owner on 2026-10-21, whose text is in the LICENSE file at the repository root. That is about this repository and defers neither this record nor WI-038.",
         "source": {
           "kind": "first-party-workspace",
           "file": "apps/worker/package.json",
