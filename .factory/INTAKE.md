@@ -9772,3 +9772,50 @@ threshold with a live turn — and **it finished on its own at 22:46:01 with
 3,494 characters.** It was not cancelled, because a task's age is not a reason
 to cancel. **The two numbers a reader has to keep apart: the task's age and
 the turn's age.**
+
+## The floor report was cancelled and never reached the group — 2026-10-21 23:10
+
+**The report this session posted to the group at 22:26 — request id
+`chief-status-2026-10-21-2226`, task `task_aa04a69fe83e`, batch
+`batch_70e1ddc4553b` — was cancelled at 23:06:19 and never reached the group.**
+The task's own record shows `cancelRequested: true`, `messageId` empty, `result`
+empty and **0 characters**, and the group's message store holds no copy of it.
+**So the line at 9611-9613 above, which says the report was "durably accepted,
+and queued", is no longer true — the correction is here rather than the line
+being quietly rewritten.**
+
+**What closed it, as far as the record shows:** the cancellation and the result
+notification carry the **same timestamp** (23:06:19), and the notification's
+text is the task's own title. **The runtime's notification path closed the task,
+and no peer session's decision appears in the record.** The consequence is the
+same either way: **the report was a letter that was never opened.**
+
+**And a cancelled dispatch does not free its request id.**
+`chief-status-2026-10-21-2226` is spent, and a re-post needs a new id and a new
+title. **This session has not re-posted, for a measured reason: the live Chief
+report in the group is the other lane's** — `task_39f4895e6931`, request id
+`post_3addab7e17ae`, posted at 22:31:17, **still queued** — and the group's
+discussion queue is down to three, so the next Chief report the group receives
+is that one and not a second one from here. **Two Chief reports in one group is
+the tiebreak the factory's own rule warns about**, and a report is never the
+only record: it lands in the chat the check runs in, and the corrections are in
+this ledger.
+
+**What the group actually received while this session's report was queued.** The
+group's message store has gone from 102 messages at 22:32 to 118 at 23:07, and
+the arrivals are the day's backlog draining: Probe's WI-038 gate-script report
+(23:00:51), WI-022's successor verification (23:01:20) and WI-010's D1-D6 repair
+verification (23:01:48) — **reports written hours earlier, arriving now.** Each
+arrives with a `BUSY` error record from the responding bot, which is the group's
+two slots being full: **the messages land, the bot turns do not.** So the channel
+is no longer silent, and what is in it is the afternoon's news arriving late.
+
+**And the two corrections that are in this ledger and cannot be in a 22:32
+report** — the one request id doing two jobs
+(`wi-078-error-envelope-anchor-2026-10-21`, on both `task_993e382b1071` and
+`task_51cd8330a3e0`), and WI-031's correction going out again as
+`wi-031-contract-status-correction-r2-2026-10-21` → `task_70be52bdefa9` — were
+**sent to the lane that owns the group**, and that lane corrected its own two
+rows (`WI-069`, `WI-076`) and cancelled its duplicate dispatch in the same
+window. **Nothing is lost that was not written down: the information is in the
+shared record, which is where the doctrine says a record belongs.**
