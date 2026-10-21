@@ -2771,6 +2771,22 @@ block says WI-117 is _free_ rather than claiming it — so the two do not collid
 opened, it takes **WI-118**: WI-117 is taken by this item, and the peer's own
 table row reserves only WI-116.
 
+### And that is what happened — the collision on 116/117/118 settled, measured
+
+**The peer published a branch at 08:20:01 that claimed WI-117 for the strategy
+record's prose** (`wi/117-strategy-record-prose`, first renumbered from WI-116
+at 08:25:27), **and withdrew that claim at 08:29:03** — `8afe5e6`, "Withdraw
+this branch's WI-117 claim: the peer took that number at 08:20" — **taking
+WI-118 instead** (`wi/118-strategy-record-prose`, `e72304c`, "Take WI-118, the
+number that is free, and yield WI-116 and WI-117"). It withdrew its WI-116
+claim the same way, at 08:29:00.
+
+**So the number space settled as: WI-117 is this item's, WI-118 is the
+strategy-record-prose item's, and WI-116 stays the peer's reservation.** The
+three-way collision on 116/117/118 that the peer recorded as "a wasted slot"
+resolved by the same rule both sessions publish, and **it cost no work** — the
+three branches carry only ledger files.
+
 ### One correction to the section above, dated, and it is about the preserved branch
 
 **`wi/072-queue-index` is red on CI, and it is red for exactly the reason its
