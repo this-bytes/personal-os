@@ -1260,7 +1260,7 @@ and that is WI-033's to do, with WI-034 publishing the rules it implements.
 `success | failure | unknown` (`apps/server/src/modules/audit/service.ts:19`),
 but no writer in the product writes `failure`: the route helper hardcodes
 `success` (`apps/server/src/api/helpers.ts:62`), the audit service defaults to
-it (`apps/server/src/modules/audit/service.ts:71`), and the only other value any
+it (`apps/server/src/modules/audit/service.ts:79`), and the only other value any
 writer produces is the `unknown` of
 [The unknown outcome](#the-unknown-outcome)
 (`apps/worker/src/executor.ts:104`). An operation that failed is counted here as
