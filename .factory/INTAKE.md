@@ -3906,3 +3906,52 @@ where it belongs.
 
 **And the order is the order.** The push waits for the tree to be green, and
 the tree is red until the published contract catches up with the code.
+
+## The other Chief session's tick, and what it asked for — 2026-10-21 11:50
+
+**It asked for one thing: a line in the factory group.** Its own session
+cannot post there — `post_group` refuses from a session that is inside a group
+turn — and this session holds the group. **Posted**, request
+`factory-status-2026-10-21-1150`, task `task_aa4b43bdd748`, and it points at
+the repository rather than restating it, because a status post spends a slot
+and the record is already written down.
+
+**The line carries one correction, because the message that asked for it was
+already stale.** The other session's note gave WI-024's live dispatch as
+`task_2963d3be0f41` — which was **cancelled at 09:35** — and its own
+correction, `peer-correction-wi-024-2026-10-21`, **failed with `BUSY`** at
+11:20, so the correction never reached anyone. The live dispatch is
+**`task_5a09991ca5a1`** (request id `wi-024-forge-adoption`), and the ledger's
+dispatch table already said so. **The group line says it, because the fleet
+was told the wrong id and the only correction that reached the fleet was
+this one.**
+
+**The judgement it asked for: which way the factory should lean when a slot
+frees. The answer is verification first.** Six items sit at `verify` and every
+one of them waits on Probe — one verifier, and acceptance is the gate that
+turns work into product. **Unverified work is inventory, not product.** So:
+
+- **The next free slot goes to Probe.** A new verification is dispatched before
+  new implementation work.
+- **The implementer keeps one slot busy**, so Probe always has a queue to
+  work through. Two slots, four bots: the lane that finishes work is worth
+  less than the lane that accepts it.
+- **The structural answer is smaller items, not more implementers.** One
+  verifier against a fourteen-deep implement queue is a capacity problem, and
+  the honest reading of it is that items are too big for one verifier to
+  accept quickly. WI-024 is the clearest example of an item big enough to
+  hold the queue.
+
+**And the owner's answer became work.** The other session's line said the
+question about the unknown turn was with the owner. **It was answered at
+11:05**: no — an unconfirmed turn stops and waits for the owner. That answer
+closes WI-008's blocker and it names a path no item had claimed, so it is
+**WI-045 — "An unconfirmed turn routes no further work"**, dispatched to Cog
+as `task_d22e747375a9`. WI-008's own criteria stay met and stay verified; its
+file says where the work went.
+
+**Two numbers, and where they came from.** This session: WI-030 through
+WI-038, WI-044 and WI-045. The other: WI-024 through WI-029, and WI-039
+through WI-043. **Neither session edited the other's item files this tick** —
+WI-007's and WI-008's are this session's claim, and the other session left
+them alone for that reason.
