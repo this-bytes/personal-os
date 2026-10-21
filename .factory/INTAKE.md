@@ -83,8 +83,22 @@ free number above the highest taken.**
 | WI-110 | The effective policy is composed by the one module that may read across — **was WI-105, then WI-107, then WI-108, renumbered three times** | worker |
 | WI-111 | Publish what WI-097 and WI-090 actually built — **was WI-103, then WI-106**                                                                | worker |
 | WI-112 | The rule's fifth copy, in the strategy record — **was WI-111**                                                                             | peer   |
+| WI-113 | The contract publishes the refusal, and the tests read the message out of the contract instead of repeating it                             | peer   |
+| WI-114 | The four pointers WI-108's landing moved, and the two in the template guide                                                                | lead   |
+| WI-115 | The template guide describes an authorship defect WI-020 closed, and cites three lines that never carried it                               | lead   |
+| WI-116 | **reserved** — the peer's contract-publication item, if it is ever opened                                                                  | peer   |
 
-**The next free number is WI-113.**
+**The next free number is WI-117.**
+
+**The block was corrected on 2026-10-22 at 08:20, and it is maintained in place because
+that is what it is for.** It said "**the next free number is WI-113**" while WI-113 was
+the peer session's own claim of 07:27, WI-114 and WI-115 were this session's, and
+WI-116 was the peer's reservation — **so the block named a number that three sessions
+of claims had already spoken for, and the one rule it carries is "take a number from
+this block".** **WI-113 is the peer's, WI-114 and WI-115 are the lead's, and WI-116 is
+the peer's reservation** — the peer stated it at 07:55: _"if this session's
+contract-publication item is ever opened, it takes WI-116"_. **The next number either
+session may take is WI-117.**
 
 **WI-089 is not in this block and does not belong to it.** The peer session
 holds WI-089 for the hot-reload item, and held WI-088 before it. Both numbers
@@ -2827,3 +2841,64 @@ not a measurement.** **Check the commit timestamps on both sides before believin
 red, and measure again on a tree that has stopped moving.** And the lead's own habit of
 truncating a gate's output with `-Last` is what made this cost an hour of
 re-measurement: **capture the whole log, then read it.**
+
+## 2026-10-22 08:18 — Chief: the second correction of this session's own, the lane that came back, and the slot that is wasted
+
+**Correction to the 08:08 section above: Probe's lane is ALIVE, and this session
+published a stale claim about it.** That section says "Probe's lane still refuses —
+30 delegations refused since 2026-10-20 21:46:39, the last at 04:25:20". **The
+refusal count is right and the lane state is wrong.** Measured at @@TIME@@ from
+Probe's own chat log: **30 refused delegations** (`bot`/`error`/`delegation`),
+first at 2026-10-20 21:46:39 local and last at **2026-10-22 04:25:20** — and
+**41 completed delegations, the last at 2026-10-22 07:25:16, which is a verdict:
+"WI-106 — NOT VERIFIED (narrowly), measured at `1712fd2`, base `main` at
+`9a88ebe`."** The peer has WI-106 round two queued for Probe. **Probe is working
+again; the refusal streak ended at 04:25:20.**
+
+**The cause of the mistake is the thing to record: it was a re-used measurement.**
+The claim was measured at 07:16 and written at 08:08 without re-measuring the lane,
+and Probe had worked at 07:25 in between. **This is the same failure class as the
+07:39 section's "WI-108 is NOT on `main`"**, which was measured against a stale
+local tracking ref. **Two mistakes, one shape: a claim written from an older
+measurement of a moving thing.** The two rules, both now on the record:
+**re-measure the lane before you publish a claim about the lane, and read the
+remote tip with `git ls-remote` before you publish a claim about what is
+published.** A measurement is not a fact until it is re-taken at the moment the
+claim is made.
+
+**Wren's lane is still refusing, and it is the one the restart would buy.** Wren's
+own log: **8 refused delegations**, the last at **2026-10-22 06:32:01**, and 27
+completed, the last at 04:06:42. **Two WI-106 tasks are queued at Wren**
+(`task_44c894c402ef`, 50 minutes; and the round-two work). So the restart's
+remaining benefit is **Wren's lane — and one wasted slot.**
+
+**And one of the two running slots IS being wasted, measured.** The dispatcher
+runs at most two tasks at once, and one of the two running tasks is
+`task_2a34be8fd7d9` — the WI-108 report relay to Chief — **83 minutes old and
+still `running`**, whose content was read at 07:05. The other is Cog's WI-086
+(28 minutes into real work). **So a real turn is queued behind a relay that
+finished its work an hour ago.** The watchdog's conditions for cancelling it are
+**not** met — the last message from the bot that owns it is `done`, not
+`streaming` — so it is **reported, not cancelled**, and **a restart is what clears
+it.** That is the restart's price and its benefit, both in one sentence: **it
+costs the turn in flight (Cog's WI-086, if it is ordered now) and it buys back
+Wren's lane and this slot.**
+
+**The floor post is replaced, not appended, and the reason is the same mistake.**
+The 08:00 post (`chief-floor-0800-2026-10-22`, task `task_b1a2adb1db7e`) was
+**cancelled while it was still queued** — it carried the stale "two refusing
+lanes" claim, and a post that has not landed has no published text to correct, so
+it is **replaced**: **`chief-floor-0822-2026-10-22`**, batch `batch_323e73000687`,
+task **`task_ec6625381f3e`**, posted to "Personal OS Factory"
+(`grp_cc2adeea48f4`), **durably accepted and queued**. **A request id is spent
+when used, so the replacement carries a NEW id and a NEW title** — and the
+replacement carries the corrected lane state, the narrowed restart recommendation
+with its price named, and both of this session's corrections.
+
+**The verdict on the final push, and the state of the board at @@TIME@@.**
+`origin/main` is **`d1e1a34`** — this session's acceptance commit `683ad44` inside
+it, and the peer's `ded50ab` and `d1e1a34` beside it. The gates measured on the
+tree that was pushed: **typecheck 0 · format:check 0 · build 0 · test 0 — 61
+files, 615 tests, 0 failures.** This section and the two above are **local and
+unpushed by design**, so the recorded GREEN belongs to the tree that is actually
+published; the next push carries them and its own verdict is read the same way.
