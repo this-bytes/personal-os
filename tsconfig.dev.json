@@ -1,0 +1,24 @@
+{
+  // The resolution map the iteration stack runs on.
+  //
+  // A workspace package publishes its compiled output, so `tsx` resolves
+  // `@personal-os/contracts` to `packages/contracts/dist`. A change to a
+  // shared schema or an adapter then reaches nothing that is running until
+  // that package is rebuilt.
+  //
+  // This map points the workspace packages at their TypeScript instead, so
+  // the running processes see the change as it is written. It is a
+  // development-only file: the production build compiles from the
+  // workspace tsconfigs and never reads it.
+  "extends": "./tsconfig.base.json",
+  "compilerOptions": {
+    "baseUrl": ".",
+    "paths": {
+      "@personal-os/contracts": ["packages/contracts/src/index.ts"],
+      "@personal-os/agent-adapters": ["packages/agent-adapters/src/index.ts"],
+      "@personal-os/server": ["apps/server/src/index.ts"],
+      "@personal-os/server/*": ["apps/server/src/*"]
+    }
+  },
+  "include": []
+}

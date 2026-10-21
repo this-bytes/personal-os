@@ -56,22 +56,22 @@ no message bus and no second datastore.
 
 ## 2. Technology baseline
 
-| Component            | Decision                                     |
-| -------------------- | -------------------------------------------- |
-| Runtime              | Node.js LTS                                  |
-| Language             | TypeScript                                   |
-| Backend              | Fastify                                      |
-| Frontend             | React + Vite                                 |
-| UI                   | Tailwind + shadcn-style components           |
-| Database             | SQLite, WAL enabled                          |
-| Database access      | Drizzle ORM                                  |
-| Real-time            | SSE for server-to-client updates             |
-| Local storage        | Filesystem with database metadata            |
-| Background execution | SQLite-backed queue and worker               |
-| Authentication       | Single-owner local authentication            |
-| Agent runtime        | Adapter registry and supervised subprocesses |
-| Deployment           | Docker Compose                               |
-| Testing              | Vitest + Playwright                          |
+| Component            | Decision                                          |
+| -------------------- | ------------------------------------------------- |
+| Runtime              | Node.js LTS                                       |
+| Language             | TypeScript                                        |
+| Backend              | Fastify                                           |
+| Frontend             | React + Vite                                      |
+| UI                   | Tailwind + shadcn-style components                |
+| Database             | SQLite, WAL enabled                               |
+| Database access      | Drizzle ORM                                       |
+| Real-time            | SSE for server-to-client updates                  |
+| Local storage        | Filesystem with database metadata                 |
+| Background execution | SQLite-backed queue and worker                    |
+| Authentication       | Single-owner local authentication                 |
+| Agent runtime        | Adapter registry and supervised subprocesses      |
+| Deployment           | Docker Compose, with a source-run iteration stack |
+| Testing              | Vitest + Playwright                               |
 
 These are implementation defaults. They can change if a proof of concept identifies a
 concrete limitation.
@@ -128,6 +128,31 @@ Two guards stop an automation chain from running forever:
 A React single-page application. It talks to the API over HTTP and subscribes to
 `/api/events` for live updates. It never holds a credential for an external agent and
 never talks to a database directly.
+
+### The iteration stack
+
+The processes above are the ones that ship: the Compose stack in `deploy/` runs the
+compiled code. There is a second way to run them, for the times when the code is still
+moving — an agent is writing a new adapter, or a contract is being changed, and the
+change has to be exercised rather than described.
+
+`npm run dev:stack` runs the same three processes from source. The shared packages
+resolve to their TypeScript instead of to their compiled output
+(`tsconfig.dev.json`), so a change to a contract or to an adapter reaches the running
+instance rather than waiting for a rebuild. A change restarts only what it affects: the
+web client reloads in place, and the server and the worker restart.
+
+**A restart never runs an agent turn twice.** The queue releases a job whose lease has
+expired, so a worker killed in the middle of a turn leaves work that is run again. The
+worker is therefore asked to stop and finishes the turn it is running, and on a system
+where a child cannot be asked politely it is stopped only while it is idle.
+
+The instance follows the checkout it runs from, and an agent's work is written in a
+worktree beside the repository. An unfinished branch therefore cannot reach the running
+instance — the change has to land first.
+
+This is a development tool. The deployment is the Compose stack, and the gate that
+proves it is the Compose job in CI.
 
 ## 4. Data flow of a chat turn
 

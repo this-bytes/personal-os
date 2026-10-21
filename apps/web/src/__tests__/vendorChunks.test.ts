@@ -28,7 +28,11 @@ import viteConfig from '../../vite.config';
 type ManualChunks = (id: string) => string | undefined;
 
 function resolveManualChunks(): ManualChunks {
-  const output = viteConfig.build?.rollupOptions?.output;
+  // The config is a function: the contracts package resolves from source in
+  // the development server and from the compiled package in a build. The
+  // build command is the one a bundle is produced with.
+  const config = viteConfig({ command: 'build', mode: 'production' });
+  const output = config.build?.rollupOptions?.output;
   const candidate = output && !Array.isArray(output) ? output.manualChunks : undefined;
 
   if (typeof candidate !== 'function') {
