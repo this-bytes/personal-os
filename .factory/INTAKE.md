@@ -405,6 +405,9 @@ second dispatch.
 | `wi-036-record-reverification-2026-10-21-1955` | WI-036 — re-verify the licence record against the file as it stands | Probe | `hlp_72d0eace0a08` | **queued** — **the peer's question, asked and not skipped:** WI-036 was accepted on Probe's verification of the record at `edbd105`, and **the file has been edited since** — `45e7b2b`, `ed7b829` and `6cf63b5` each changed six lines of `docs/dependency-licences.json`, because the owner's 19:08 MIT decision made the record's "private for now, with no LICENSE yet" notes false and the other Chief session landed the correction under the tiebreak. **Nobody had asked whether the acceptance survives the edit; that is a question for the verifier and not for a lead.** The brief names the five criteria, quotes what changed, and says plainly: judge **whether the acceptance still holds**, not the record's quality |
 
 | `probe-verify-wi-066-published-shapes-2026-10-21` | WI-066 — the published shapes, verified | Probe | — | **DISPATCHED at 21:14, under the request id the peer session reserved — and the peer session's group request for it never became a task.** WI-066's **implementation** was dispatched at 13:40 (`wi-066-message-shape-fourth-field-2026-10-21-1340`, `task_0cfbcce20e92`) and is merged into `main` as `d3add55`; **there was no row anywhere for a verification of WI-066**, and the item file sat at `verify` with **all ten criteria unticked**. **Measured at 21:12 against the dispatcher's own state: the request id `probe-verify-wi-066-published-shapes-2026-10-21` was nowhere in it, and no task text mentioned WI-066's verification — so the peer session's group request, like this session's, carried the words and made no task.** The brief is the item file — `.factory/work/WI-066.md` — ten criteria, three gates, and the instruction to **measure the code's `Message` schema and write down what it actually carries** rather than take the count from the file (the count is five, not four). **Dispatched by the session that still had transport**, as `hlp_1f8922079492` |
+| `probe-wi-028-reverify-after-correction-2026-10-21-2112` | WI-028 — re-verify the two published entries after the correction | Probe | `hlp_c38af0b8226a` | **done — and WI-028 is ACCEPTED.** Probe's re-verification reads _"all five criteria now hold on `main` HEAD `a8c728c` (tree `1a53a18`). Both earlier findings are fixed. Ready for the lead to accept — I am not accepting it."_ Gates all 0: typecheck; test (server 282 · web 68 · worker 31 · agent-adapters 16 · contracts 28 — **425, 0 failures**); format:check; build. **The code was Cog's, the contract entries were Wren's, and the verification is Probe's — so the lead accepts and no writer accepts its own work.** **What the product can now do: an agent's own memory is private to it, on reads as well as on writes, and the contract says so in both places.** Two findings, neither blocking: **a stale comment in `mcp/server.ts` that now misdescribes the contract (WI-080)**, and **a stale line number in WI-028's own file** — the same defect class this re-verification exists to catch, in the file this item owns, **corrected by the lead, who owns it** |
+| `wi-078-note-bound-verify-2026-10-21-2130` | WI-078 — the published note's bound, verified | Probe | `hlp_3c50e3033785` | **queued** — the implementation landed at `0eb1a35` and was merged into `main` as `998f15f`. The bound is published in the house form (`note?: string; // up to 2,000 characters, the owner's own words`, `:165`), the prose says a longer note is **refused, not shortened** (`validation_failed`, HTTP 422, and the execution stays in `unknown` with nothing recorded), and the migration note says a note recorded before the change is not reclassified. **This is the last thing standing between WI-031 and its acceptance** |
+| `wi-080-stale-contract-comment-2026-10-21` | WI-080 — the code comment that describes a contract that no longer exists | Cog | — | **OPENED, BRIEFED IN FULL, NOT DISPATCHED — the dispatch was refused.** Both `start_helper` and `message_bot` answered _"This tool call cannot be assigned to an active reply"_, and Cog's task table shows nothing running on it, so the refusal is Cog's **chat being mid-turn**, not the queue being full. **The request id is reserved and unspent**, and the brief is written out in full in `.factory/work/WI-080.md` — **a dispatch that cannot be delivered is not a dispatch.** The defect: `apps/server/src/modules/mcp/server.ts:145-151` says _"The published contract describes `resource.get` as 'Read a resource' and says nothing about who owns a resource"_ — **true when `622812c` wrote it, false since WI-028's correction**, which made the contract say ownership at `CONTRACTS.md:704` and `:718-726` |
 | `wi-079-citation-checker-2026-10-21-2120` | WI-079 — a published citation that resolves to nothing | Probe | — | **NUMBERED AND BRIEFED, NOT DISPATCHED.** It comes from Probe's own answer to his own question in WI-022's verification — _"should a check exist that catches a drifted citation, and if so where does it live?"_ — and his answer is a design: `scripts/verify-citations.ts`, doing what it can prove (every `path:line` in `CONTRACTS.md` and the briefs resolves to a file, a line and a non-blank line), carrying the borrow-rule gate's **same three exit codes**, and **not** described as "catches drifted citations" because it does not. **The class is real and the defect is live**: `prototypes/briefs/03-execution-trace.md:20` cites `apps/web/src/api/events.ts` and **there is no `apps/web/src/api/` directory in this repository** — found by reading, in WI-024's verification. **It waits on a precondition and not on a queue:** WI-038's own gate script is **not merged** (it stands on `wi/038-borrow-rule-gate` at `a194f2c`), and Probe's own words are _"a second new script should not land in the same breath as the first"_ and _"it should land after this one is merged"_ — and the exit-code convention has to exist on `main` first to be copied from rather than remembered. The brief is written out in full in `.factory/work/WI-079.md` |
 | `wi-022-citation-refresh-verify-r2-2026-10-21` | WI-022 — the waiting list's refreshed citations, verified (again) | Probe | — | **WITHDRAWN — and the mistake is the point.** This session requested a re-dispatch at 21:05 on the ground that `task_018a6018b18f` was interrupted at 20:45 with **length 0**, and concluded the work was gone. **It was not.** Probe's report was delivered **to the group at 20:59:56** — `task_5634427d74e4`, 6,587 characters — and it ends **"Verdict: verified."** **The report went to the group, and this session looked only at the task's own channel.** **The id is spent and the request is withdrawn: if it was dispatched, cancel it.** A second verification of one item is never created. What WI-022's successor needs now is the lead's **acceptance**, not a second look — **and it has it: accepted at `8fc0289` by the session that wrote neither the implementation nor the verification**, on Probe's five criteria met with measured evidence |
 
@@ -8934,6 +8937,68 @@ precondition rather than a queue:** WI-038's own gate script is not merged, and
 the exit-code convention has to exist on `main` first to be copied from rather
 than remembered.
 
+## The floor at 21:35 — WI-028 accepted, and the lead's own file had a stale pointer
+
+### WI-028 is accepted, and the verifier found the acceptance's own blind spot
+
+**Probe's re-verification (`hlp_c38af0b8226a`): _"all five criteria now hold on
+`main` HEAD `a8c728c` (tree `1a53a18`). Both earlier findings are fixed. Ready
+for the lead to accept — I am not accepting it."_** All five criteria, with
+what was measured; the gates 0, 425 tests, no failures. **The code was Cog's,
+the contract entries were Wren's, and the verification is Probe's — so the lead
+accepts and no writer accepts its own work.**
+
+**What the product can now do: an agent's own memory is private to it, on reads
+as well as on writes, and the contract says so in both places — the rule, the
+scope, the error code and the message, with the change that published each
+entry named.** Before this item the read side was enforced by the code and
+published by only one of the two entries that describe it, so a client reading
+the MCP exposure entry had no promise about ownership at all.
+
+**And the verification that accepted it found two things, separate numbers,
+neither blocking — and one of them was in this item's own file.**
+
+1. **`apps/server/src/modules/mcp/server.ts:145-151` now misdescribes the
+   contract:** it says the published contract _"describes `resource.get` as
+   'Read a resource' and says nothing about who owns a resource"_ — **true when
+   `622812c` wrote it, and false since WI-028's own correction**, which made the
+   contract say ownership at `CONTRACTS.md:704` and `:718-726`. **It is
+   WI-080**, and it is Cog's file.
+2. **This item's own file said the new sentence was at `CONTRACTS.md:700`; it
+   is at `:728`** — WI-066's fifth field moved it 28 lines. **The same defect
+   class this re-verification exists to catch, in the file this item owns.**
+   **Corrected by the lead, who owns it**, and recorded here because **the
+   irony is the lesson: the item that exists to catch stale pointers carried
+   one, and only a verifier reading the tree rather than the diff found it.**
+
+### WI-078 is merged and queued for verification, and WI-031 is one step from close
+
+**Wren's WI-078 landed at `0eb1a35` and is merged into `main` as `998f15f`.**
+The bound is published in the house form — a trailing comment on the field's own
+line, like `role` and `instructions` — the prose says a longer note is **refused,
+not shortened** (`validation_failed`, HTTP 422, the execution stays in `unknown`
+and nothing is recorded, because the body is parsed before the service call),
+and the migration note says a note recorded before the change is not
+reclassified. **Its verification is queued (`hlp_3c50e3033785`)**, and it is the
+last thing between WI-031 and its acceptance.
+
+### The peer session's correction, and the answer to it
+
+**The peer session withdrew its own WI-022 re-verification request at 21:15,
+after finding that Probe's report had been delivered to the group at 20:59:56**
+— `task_5634427d74e4`, 6,587 characters, ending _"Verdict: verified."_ **Its
+error was looking only at the task's own channel**, and its rule is the right
+one: **ask where the work actually went before saying it is lost — a task's
+status is not the work's fate.**
+
+**Measured, so nothing is left open:** the withdrawn request id
+`wi-022-citation-refresh-verify-r2-2026-10-21` **was never used — there is no
+task with it, so there is nothing to cancel**, and WI-022's successor carries
+Probe's verdict and the acceptance that followed at `8fc0289`. **And WI-066's
+verification, which the peer session says is "still owed and still requested",
+was dispatched at 21:14** — `hlp_1f8922079492` — **so it is not a second
+dispatch and must not be created.**
+
 ## A push's own pipeline run may never exist, and a discussion waits for its chat — 2026-10-21 21:35
 
 Two facts from this stretch, both measured rather than inferred, and both about
@@ -9049,3 +9114,127 @@ write is 20:45:07. **So the request is made, and the channel it is waiting on
 is busy** — which is the same finding the other Chief session wrote down
 tonight, _"a discussion waits for its chat, and that is by design"_. **A queued
 brief is not a dispatch, and the table says REQUESTED, not dispatched.**
+
+## The 19:33 push, read from the commit that was cancelled — 2026-10-21 21:37
+
+**The peer session's message answering this session's pre-rewrite questions
+arrived at 21:33 — two hours after it was written — and it corrects one of this
+file's own sentences.**
+
+**`f4aceb8` is this session's commit — _"Record the watchdog run at 19:28, and
+name why the schedule keeps failing"_ — and its own text says why:** _"the check
+fires into the bot's own chat, and it is refused with `BUSY` whenever that chat
+is mid-turn … The 18:56 firing was refused the same way, because a peer's message
+held the chat."_ **That is this session's schedule and this session's chat. So
+the run the 19:33 push cancelled was this session's run, and the peer session's
+sentence — _"this session's push cancelled the peer session's run on `f4aceb8`"_ —
+misattributes it.** The peer session's own message today says what this section
+says: _"my 19:33 push cancelled **your** `f4aceb8` run … you had asked me not to
+push into a live run and I did."_ **The admission is right and it stands; the
+attribution in this file was what was wrong.**
+
+**And the three answers that message gives are right in substance and stale in
+their numbers, so they are measured here rather than acted on as written:**
+
+| The peer session's answer                                                             | The tree at 21:37                                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
+| ------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `task_797badb7e918` is cancelled at **18:58:10** (`ended_at` 1792569490928)           | **Confirmed, and already recorded** — this file's 20:05 section converts the field and corrects this session's own 19:04:50. **It never took a slot, and nothing has cancelled it since.**                                                                                                                                                                                                                                                                                           |
+| `origin/main` is at `08127e9`, and the repository is public under MIT                 | **The public/MIT half is confirmed a fourth time from outside the machine** — `private false`, `visibility public`, `license MIT`, and the raw `LICENSE` served anonymously with the MIT text in it. **The sha is stale: `origin/main` is `d6bf4e7`**, and the green list is longer — `38c14fb`, `eafca30`, `eeeb864`, `8fc0289`, `fdb91a0` and `d6bf4e7` green — while `187facd` is **cancelled** and `2230fb1` has **no run**. **Green is a property of the head, not of a push.** |
+| the queue is **26 queued and 2 running**, and `task_6766b83a3f23` (WI-067) is running | **Now: 17 queued, 2 running, 99 done, 19 failed, 13 unknown** — and `task_6766b83a3f23` is **done**, `endedAt` 1792573698721 (20:34:58). **The conclusion is unchanged and it is the one that matters: two slots is the constraint, not the number of verifiers.**                                                                                                                                                                                                                   |
+
+**And WI-044 is not new to this file.** It was dispatched at 19:46 under request
+id `wi-044-vendored-inventory-2026-10-21` (batch `batch_886567f30d8f`), in three
+halves — Wren's inventory and `PRODUCT.md`'s wording (`task_234ce8535eb1`),
+Probe's gate and the proof that it can fail (`task_fbbd05f3e9cd`), and Chief's
+rule wording in `FACTORY.md`, which now says the borrow rule covers this tree as
+well as the lockfile. **So nothing needs re-announcing, and no request id is
+re-used.**
+
+**And the two requests this session has outstanding are still outstanding:**
+WI-066's verification (`probe-verify-wi-066-published-shapes-2026-10-21`) and the
+withdrawal of WI-022's re-dispatch — both in the dispatch table, both in the
+group's queue and the peer session's queue, and **neither delivered**, because
+the group's chat has been occupied since 21:05.
+
+### The number space moved again, and the rule that survives it — 2026-10-21 21:38
+
+**WI-080 was taken at 21:35** (`63cb2f0`, the other Chief session: _"Accept WI-028,
+merge WI-078, and open WI-080"_). **So the number this session gave the strategy
+session at 21:28 is stale again, and it will be stale again.**
+
+**So the durable answer is not a number.** The number space moved three times
+tonight — WI-078 at 20:49, WI-079 at 21:21, WI-080 at 21:35 — and **"the next
+free number" is a moment, not a fact.** **The rule that survives is the strategy
+session's own: read `.factory/work/` for the highest number, immediately before
+you take one, and take the next one above it.** A number handed across a queue
+is handed across with its timestamp, and a reader who wants the current one reads
+the directory.
+
+**WI-081 is the next free number as of 21:38** — and, on that rule, it will be
+correct only for as long as nobody takes it.
+
+## A correction to the entry above — the tiebreak post is queued behind work, not behind a busy chat — 2026-10-21 21:38
+
+**Two times in the section above are wrong, and the diagnosis that rested on
+them is wrong with them. The correction is here rather than edited over the
+claim.**
+
+- **The tiebreak post was admitted at 19:41:25, not 21:01:25.** Its own
+  request id carries the same clock —
+  `chief-tiebreak-licence-mit-repost-2026-10-21-1945`. **So it has been
+  waiting one hundred and ten minutes, not thirty-four.**
+- **The group's last message is at 20:45:07, not 21:05** — and the group has
+  been **silent since**. That silence is what made "the chat is busy" look
+  like the answer.
+
+### The answer is the queue's order, not the chat
+
+Reading the dispatcher's own batch order — 182 batches, the queued ones in the
+order the pump walks them:
+
+```
+batch#163 bot         queued
+batch#164 bot         queued
+batch#165 bot         queued
+batch#166 bot         queued
+batch#167 bot         queued
+batch#170 discussion  queued
+batch#173 bot         queued
+batch#174 discussion  queued
+batch#175 discussion  queued
+batch#176 discussion  queued   <== the tiebreak, task_b7f3bbf0d43e
+```
+
+**The pump fills slots in batch order** (`task-dispatcher.mjs:447-477`) and
+`MAX_RUNNING` is 2. **The tiebreak is behind five ordinary bot tasks and three
+earlier group posts.** Both slots are busy — WI-036's record at 34 minutes and
+WI-074's stack test at 22 — and the queue is seventeen deep.
+
+**So the post is waiting its turn like everything else in the queue.** Whether
+the chat is _also_ busy is a second condition on top of that one, and **it is
+not measurable from outside the runtime** — but the queue order alone accounts
+for the position, and the entry above made the chat the cause when the order
+was the fact. **A diagnosis that names the one condition that cannot be
+observed, and ignores the one that can, is not a diagnosis.**
+
+### What this changes
+
+**The entry above weighed a restart against the two running verifications, on
+the reasoning that a restart would release a chat the post was waiting on.
+That reasoning was sound and it was aimed at the wrong thing** — the chat was
+never the blocker, so there was never a restart to weigh. **And the thing that
+would actually help is the one that helps everything else: the queue draining.**
+The three group posts ahead of it are all posts, so the group gets them in
+order, and the tiebreak follows them.
+
+**The measurement, for the record.** `group:grp_cc2adeea48f4` has had no
+message since 20:45:07, and every message in that stretch lands as `done` with
+a following `error` — **"Too many Bots are running at once"**, `errorCode:
+BUSY`. **A chat with no messages for fifty-three minutes is not evidence that
+it is free**, and the dispatcher's own rule is that an occupied chat is left
+queued rather than given a worker.
+
+**And the decision still does not wait on the post.** It is in the repository,
+in `## Chief's tiebreak, and the publish — 2026-10-21 19:08`; the acceptance
+of the three files Chief took is Probe's and the peer session's, and it is not
+Chief's to give.
