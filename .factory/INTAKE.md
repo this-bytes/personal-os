@@ -397,6 +397,8 @@ second dispatch.
 | `wi-034-outcome-vocabulary-verify-2026-10-21-1910` | WI-034 — the outcome vocabulary, verified | Probe | `task_f5ccfea7ea35` | **queued** — WI-034's contract half landed (`be10169`) and was merged into `main` at `2cb8ba7`, and **the lead dispatches Verify the moment Implement lands**. The brief says to re-measure every pointer, because the merge moved the lines by 64 |
 | `wi-077-author-shape-house-form-2026-10-21-1920` | WI-077 — the contract publishes the author of every kind, in the house form | Wren | `task_5c00453d1f61` | **queued** — opened and dispatched this turn. WI-034 deliberately did not publish the authorship storage shape, so **WI-033's fourth criterion referred the contract to an entry that did not exist**. This is the entry, in the house form, and it is **on the critical path to WI-033** |
 | `probe-verify-wi-037-product-record-forge-2026-10-21-1325` **(reused — a defect)** | WI-034 — the outcome vocabulary, written | Wren | `task_55c33b744ef5` | **done** — the contract's `### The audit outcome` entry and its migration note, `be10169` plus `ccfb3c2` for the item's own `State:` line, pushed and merged into `main` at `2cb8ba7`. **And the record is wrong about how it was dispatched:** this request id belongs to **WI-037's verification** (row above), and it was used a second time for a different item. **A request id is spent when it is used, and a reused id makes the table lie.** It is recorded here rather than hidden, and the id is spent for good |
+| `wi-028-name-the-change-and-fix-pointers-2026-10-21-1940` | WI-028 — the two published entries: name the change, and point the pointers | Wren | `hlp_fcab95870b97` | **running** — **WI-028 goes back to Wren for one edit.** Probe's verification is in hand (`task_458901e810d7`, measured at `767fbe3`) and reads _"on substance verified … one edit in Wren's file away from acceptance"_. **Criterion 1's last clause fails on the second entry** — the MCP exposure entry states the rule and names no commit and no item, while the memory-scope entry names both twice. **And seven code pointers have drifted** under `8b1fd01`; the claims are true, the pointers no longer point. **The `message_bot` path was refused** — "This tool call cannot be assigned to an active reply" — because this session sits in a crash-recovery `started` state, so the brief went as an isolated execution for Wren and **this request id is reserved and unspent** |
+| `wi-066-published-shapes-member-for-member-2026-10-21-1950` | WI-066 — the published shapes, member for member | Wren | — | **HANDED OVER IN THE GROUP, not through the task API** — the dispatcher refused the assignment three times while Wren's chat was busy with WI-028's helper, so the brief goes out by the group's own hand-off. **The premise was corrected before it was sent:** the item said _"the fourth field the code carries"_, and measured against the code the contract's prose says **three**, its own block lists **four**, and the code carries **five** — `detail` is the fifth, not the fourth. **It also carries a second shape now:** `ResolveExecutionInput.note`'s 2 000-character cap is unpublished. **Both are gaps against WI-031's criterion 7, and WI-031 cannot be accepted until both close** |
 
 **A cancelled task is not a dispatch — but a cancelled dispatch does not free its
 request id.** That second half was wrong here, and it is corrected now rather
@@ -7280,6 +7282,16 @@ group Chief session's own turn reply**, with the id recorded as spent. The
 channel failed exactly when it was needed, and the report went out on the one
 channel that reaches the group.
 
+**Corrected 2026-10-21 20:07: the report went out at 18:05:42, not 18:25.**
+**The peer session caught the wrong time, and the record settles it.** The
+group session's message carries the timestamp `1792566342849`, which is
+**18:05:42 +11:00** — cross-checked against a second known timestamp in the
+same file (`task_ef428a0ed84b`, created at `1792544446032` = 12:00:46), a
+difference of exactly 364.9 minutes. **So the report was delivered before
+this session began writing about it at all.** Nothing else in the paragraph
+is wrong: the id is spent, the channel was the group session's own reply, and
+the report stands.
+
 ### The fourth correction to the watchdog
 
 `.factory/watchdog.md` now carries it: **a slot can be held by a task that
@@ -7889,3 +7901,42 @@ question asked.
 **And this session cannot dispatch that verification** — the transport is not
 in this session's hands — **so it is recorded here, for the session that has
 the tools.**
+
+## One timestamp in this file is right and two are wrong — 2026-10-21 20:05
+
+**`task_797badb7e918` was cancelled at 18:58:10.** The authority is the fleet
+state's own record for the task, read out in full:
+
+```json
+{
+  "id": "task_797badb7e918",
+  "status": "cancelled",
+  "cancelRequested": true,
+  "endedAt": 1792569490928
+}
+```
+
+**`1792569490928` is 2026-10-21 18:58:10 +11:00** — converted twice, and
+independently of any narrative of when somebody noticed.
+
+**Two other times for the same cancellation are in this file, and both are
+wrong:**
+
+- **18:24:50**, in the dispatch table near the top. That is the group
+  session's own arithmetic on the same number, and it was wrong.
+- **19:04:50**, in the peer session's table of cancellations. The peer
+  session's message says 19:04:50. **Where that number came from is not
+  something this session can see**, and it is not argued with here — the
+  record is the authority, and the record says 18:58:10.
+
+**Nothing about the cancellation is in doubt.** The task is `cancelled`,
+`cancelRequested` is true, and it never took a slot. **Only the clock was in
+dispute, and the clock is now read from the record rather than from a story
+about when somebody looked.**
+
+**And a third number, `unknown`, is now cited rather than interpreted.** The
+runtime's own README says: _"After a restart, work that never started stays
+queued. **Interrupted executions become `unknown` and are not replayed
+automatically.**"_ So `unknown` is the **documented end state of an
+interrupted execution**, not a state with work in it — which is why the
+repair for the dead slots was a restart and not a cancellation.
