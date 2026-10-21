@@ -3534,3 +3534,31 @@ CodeQL success on the analyze step
 own draft of this ledger section was superseded rather than merged** — it was
 written before the licence was known, and the record above is the corrected
 one.
+
+## The push — 2026-10-21 11:30
+
+**`main` is on the remote, at `3479c31`.** The owner was asked, with the
+evidence in the question, and said yes: 43 commits, 39 files, fast-forward,
+nothing rewritten, visibility unchanged at private, nothing published
+publicly.
+
+**The evidence the question carried.** The pipeline had run on the committed
+tree `061b6cd` and **both legs were green** — CI success on all four jobs,
+including the docker stack that starts the server, the worker and the client,
+and CodeQL success on the analyze step. The only commits after that tree were
+documents, so the result was the result for what was pushed.
+
+**What rode along.** The other Chief session's work was on `main` when the
+push was made, and went with it: WI-027's unknown turn on the waiting list,
+WI-031's published route for closing one, Probe's verification and acceptance
+of WI-022 and WI-026, the `license: MIT` claim removed from the manifest,
+WI-032's security leg, and this session's six numbered items.
+
+**One commit is ahead of the remote, and it is this record.** The tree that
+was pushed is the tree that was verified; adding a record of the push makes
+it a different tree, and the owner's word named **a** push, not a licence to
+push whatever comes next. `main` waits for the owner's word, and the next
+word carries this paragraph.
+
+**What the pipeline did next is the factory's own evidence, not this
+session's word.** From now on the repository's state is read from its runs.
