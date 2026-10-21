@@ -1133,12 +1133,15 @@ difference between a daily cap and `maxSpendUnits`.
 **A cap is only as good as the number it is measured against.** The daily cap is
 measured against the spend units recorded on the executions, and a turn's cost is
 one spend unit — the measure the product already has
-(`apps/server/src/modules/conversations/routing.ts:306`). **The product does
-not yet record it against an execution**: every execution is written with no spend
-units (`apps/server/src/modules/conversations/dispatch.ts:171`,
-`apps/server/src/modules/factory/service.ts:368`), and the column defaults to zero
+(`apps/server/src/modules/conversations/routing.ts:306`). **The cost is recorded
+against the execution when the turn ends**: the worker writes one unit for an
+agent turn and none for a turn that never reached the agent
+(`apps/worker/src/executor.ts:892-899`, `apps/worker/src/executor.ts:1186-1191`).
+**The row is created with no spend units**, because the cost is not known until
+the turn has run (`apps/server/src/modules/conversations/dispatch.ts:171`,
+`apps/server/src/modules/factory/service.ts:372`), and the column defaults to zero
 (`apps/server/src/db/schema.ts:231`). **So the workspace's spend for the day is
-zero today, and the cap cannot bite until the cost is recorded.**
+the sum of what its turns actually cost, and the cap bites.**
 
 **The mode is resolved, readable, and enforced nowhere.** It is carried through the
 resolver and it is readable wherever the policy is, but no enforcement point reads
