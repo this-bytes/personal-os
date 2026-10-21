@@ -1020,7 +1020,7 @@ supports, and the capability to do it is already modelled and negotiated.
 This entry is the contract for **WI-007**, and the code implements it — as of
 `5f019b9`. `resumeSession` is implemented at
 `packages/agent-adapters/src/acp.ts:213` and called at
-`apps/worker/src/executor.ts:424`, and the gate is the capability and the session
+`apps/worker/src/executor.ts:429`, and the gate is the capability and the session
 id together: `canResume = capabilities?.persistentSessions === true &&
 Boolean(execution.externalRef)`.
 
@@ -1075,7 +1075,7 @@ at the layer that knows the outcome** — they are the twelve in
 [the measures route](#the-measures-route). **A route whose action fails writes an
 entry that says `failed`**: today it writes none, because every route-level entry is
 written after the work and a handler that throws never reaches it, and the error
-handler writes nothing (`apps/server/src/app.ts:190`).
+handler writes nothing (`apps/server/src/app.ts:193`).
 
 **The code does not implement this yet.** The vocabulary, the rule and the twelve are
 published ahead of their implementation, because the contract leads and the code
@@ -1807,7 +1807,7 @@ audit entry — there is no audit call anywhere in
 tools call, which reach the resources service directly rather than through the
 auditing route. The only writer of the trail that is not an owner HTTP route is
 the worker — its `unknown` record (`apps/worker/src/executor.ts:105`) and the
-policy refusals it writes (`apps/worker/src/executor.ts:1392`). So every audited
+policy refusals it writes (`apps/worker/src/executor.ts:1430`). So every audited
 operation is an owner operation, except the worker's own entries, which carry
 `actorType: 'agent'`. **The second measure does not count the work an agent does
 through MCP**: an agent can create, update and publish resources all day and the
@@ -1824,7 +1824,7 @@ produce come from the worker: the `unknown` of
 [The unknown outcome](#the-unknown-outcome)
 (`apps/worker/src/executor.ts:112`), and the `failure` it writes when the
 autonomy policy refuses a turn or an action
-(`apps/worker/src/executor.ts:1399`). **An operation that failed at the route is
+(`apps/worker/src/executor.ts:1437`). **An operation that failed at the route is
 counted here as an operation that completed.**
 
 **The route exists.** It answers with the shape above, member for member: the
