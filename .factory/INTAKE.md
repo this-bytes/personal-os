@@ -363,7 +363,8 @@ second dispatch.
 | `wi-027-verify-fixed-tree-successor-2026-10-21` | WI-027 — the unknown turn on the waiting list, verified again      | Probe  | `task_874e6fb66b9b` | **queued** — **the live dispatch on WI-027**, a successor: the original failed with `BUSY` at 10:19:58 and produced no verification. The brief asks Probe to stop and say so if the item is already being verified in another session                                                                                                                                                                                                                                                                                                                                                                                        |
 | `wi-021-verify-fixed-tree-successor-2026-10-21` | WI-021 — the refusal, verified again                               | Probe  | `task_d817d075a0ce` | **queued** — **the live dispatch on WI-021**, a successor: the original failed with `BUSY` at 10:20:27 and produced no verification. The brief asks Probe to stop and say so if the item is already being verified in another session                                                                                                                                                                                                                                                                                                                                                                                        |     |
 | `wi-031-refresh-published-counts-2026-10-21`    | WI-031 — refresh the published counts                              | Wren   | `task_03f8f1042155` | **cancelled** — **the lead made the correction itself** (`50b908d`), because the collision that was the reason for routing it to Wren no longer held: nothing was writing `CONTRACTS.md` at the time. One item, one worker                                                                                                                                                                                                                                                                                                                                                                                                   |
-| `probe-verify-published-counts-2026-10-21-1215` | WI-046 — verify the published counts, and fix the stale number     | Probe  | `task_27a529dbec89` | **queued** — **the live dispatch on the correction**, and on the stale "thirty-four" in Probe's own test file. The lead implemented the correction, so the lead does not accept it                                                                                                                                                                                                                                                                                                                                                                                                                                           |     |
+| `probe-verify-published-counts-2026-10-21-1215` | WI-046 — verify the published counts, and fix the stale number     | Probe  | `task_27a529dbec89` | **cancelled** — the item number was wrong: WI-046 belongs to the strategy session's batch. The work was re-issued as WI-062                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  |     |
+| `probe-verify-published-counts-2026-10-21-1240` | WI-062 — verify the published counts, and fix the stale number     | Probe  | `task_2c7c9f4fd696` | **queued** — **the live dispatch on the correction**, and on the stale "thirty-four" in Probe's own test file. The lead implemented the correction, so the lead does not accept it                                                                                                                                                                                                                                                                                                                                                                                                                                           |     |
 
 **A cancelled task is not a dispatch — but a cancelled dispatch does not free its
 request id.** That second half was wrong here, and it is corrected now rather
@@ -3981,7 +3982,7 @@ touches one file, `PRODUCT.md`; and the only queued task that writes
 is writing the file.** So the correction is made now, the queued task is
 cancelled — one item, one worker — and **ownership is honoured by
 verification rather than by delay: the lead does not accept this work, Probe
-does.** It is **WI-046**, dispatched to Probe as `task_27a529dbec89`, and it
+does.** It is **WI-062**, dispatched to Probe as `task_2c7c9f4fd696`, and it
 carries the stale comment in the test file with it.
 
 **A second red that was not a red: the typecheck failures were another
@@ -4020,7 +4021,7 @@ fast-forward**, visibility unchanged at private, nothing rewritten.
 on `50b908d` — the commit that carries the correction — and **both legs were
 green**: CI success on all four jobs (Build and test, Dependency audit, Lint
 the workflows, Build and run the stack), and CodeQL success. The only commit
-after that tree was WI-046's item file and two ledger rows, both documents.
+after that tree was WI-062's item file and two ledger rows, both documents.
 **And this session measured the tree first-hand**: typecheck exit 0,
 `format:check` exit 0, **343 tests passing across 39 files**, build exit 0.
 
@@ -4036,8 +4037,8 @@ was read from. **It is evidence, and it can be deleted** — nothing depends on
 it, and `main` now carries the same tree.
 
 **One item in the pushed tree is not accepted yet, and that is honest.**
-**WI-046 is Probe's acceptance of the counts correction**, dispatched as
-`task_27a529dbec89` and queued: the lead implemented that correction, and the
+**WI-062 is Probe's acceptance of the counts correction**, dispatched as
+`task_2c7c9f4fd696` and queued: the lead implemented that correction, and the
 lead does not accept its own work. **A push is not an acceptance.** The tree
 is green and the pipeline is the evidence; the factory's own verifier has
 still to say yes, and it will land as a later commit.
@@ -4047,3 +4048,57 @@ pushed is the tree that was verified; adding a record of the push makes it a
 different tree, and the owner's word named **a** push, not a licence to push
 whatever comes next. `main` waits for the owner's word, and the next word
 carries this paragraph.
+
+## The pipeline is green on `main`, and this session's number collided — 2026-10-21 12:40
+
+**The platform agrees with the local measurement.** The pipeline ran on
+`f8d808e` — the tree that was pushed — and **both legs were green: CI success
+on all four jobs (Build and test, Dependency audit, Lint the workflows, Build
+and run the stack), and CodeQL success.** The repository's state is read from
+its runs, and the run says what the local gates said.
+
+**And this session took a number that was already taken.** The correction's
+verification was opened as **WI-046** and committed (`f8d808e`), on the record
+that the number space was settled: this session's numbers were WI-030 through
+WI-038, WI-044 and WI-045, and the other Chief session's were WI-024 through
+WI-029 and WI-039 through WI-043. **That record was stale.** The strategy
+session has since opened **WI-046 through WI-061** — sixteen items, in one
+batch, on the branch `wi/046-domains-interaction-model` — and its WI-046 is
+_"The decisions are recorded, and the scope says so"_. **Two different items
+held the number WI-046, and this session's one had already been pushed.**
+
+**It is renumbered, and the correction is stated rather than overwritten.**
+The item is now **WI-062**, the first number free above the strategy
+session's batch: `.factory/work/WI-046.md` is `.factory/work/WI-062.md`, and
+the file's own header says it was opened as WI-046 and renumbered. **The
+earlier statement of the number space is left as it was written** — it was
+true when it was written.
+
+**The dispatch went with the number.** Probe's task `task_27a529dbec89`
+carried WI-046 in its title and its brief pointed at a file that was about to
+stop existing. **It was cancelled before it ran, and the work was re-issued
+under a new request id** — `probe-verify-published-counts-2026-10-21-1240`,
+task `task_2c7c9f4fd696` — with WI-062 in the title and the right path in the
+brief. **A cancelled dispatch does not free its request id**, so the new id
+was required, and the old id is spent.
+
+**The number space as it now stands.** This session: WI-030 through WI-038,
+WI-044, WI-045, WI-062. The other Chief session: WI-024 through WI-029 and
+WI-039 through WI-043. The strategy session: WI-046 through WI-061. **The
+next number above all of them is WI-063**, and it belongs to whoever takes it
+next.
+
+**Why this matters more than a number.** A duplicate item number is two
+different pieces of work answering to one name, and the file is the name:
+`.factory/work/WI-046.md` is a path, and **the strategy session's WI-046 and
+this session's WI-046 would have collided on it** when either branch was
+merged. **Cancelling the task was not enough** — the file on `main` had to
+change, because `main` is what a merge lands on.
+
+**And WI-036 is waiting for a lane it never got.** The licence record landed
+on its own branch, `wi/036-licence-record`, pushed — and **its pipeline is
+red**, for exactly the reason `main` was: the branch predates the correction,
+so its `published-shapes` run says `expected 35 to be 34`. **The correction
+is what unblocks it.** The branch needs the corrected `main` brought into it
+before it can be proved green and merged, and **no verification of WI-036 was
+ever dispatched**, so the item could never have been accepted.
