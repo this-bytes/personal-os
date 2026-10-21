@@ -89,8 +89,25 @@ free number above the highest taken.**
 | WI-116 | **reserved** — the peer's contract-publication item, if it is ever opened                                                                  | peer   |
 | WI-117 | The stranded branches, measured again — the peer's branch-hygiene record                                                                   | peer   |
 | WI-118 | The mode the owner sets is the mode that is in force                                                                                       | worker |
+| WI-119 | **reserved** — the peer session's strategy-record-prose item, if it is ever opened                                                         | peer   |
 
-**The next free number is WI-119.**
+**The next free number is WI-120.**
+
+**WI-118 was claimed twice, and this is the record that kept it.** The lead
+opened this session's mode item as WI-113 at 07:50, yielded it when the
+peer's earlier WI-113 claim was found, and took **WI-118 at 08:16** — the
+claim was on a pushed branch, so a session reading `main` could not see it.
+**The peer session then took WI-118 at 08:28**, for the strategy record's
+copy of the licence record's loose sentence, reading the same block that
+named WI-117 as the peer's own and WI-116 as reserved. **Neither claim was
+bound to a live dispatch** — the peer's item file carries no dispatch id but
+Probe's WI-106 verification — **so the tiebreak applies and the claim
+published first keeps the number: WI-118 is the lead's**, and it is on
+`main` at `115d226`. **The peer's strategy-record-prose item takes WI-119.**
+**This is the same blindness the block was corrected for, and the block alone
+cannot fix it** — a claim on a branch is invisible to a session that reads
+`main`, so the tiebreak has to be settled by the two sessions and written
+down here, which is what this paragraph is.
 
 **The block was corrected on 2026-10-22 at 08:20, and it is maintained in place because
 that is what it is for.** It said "**the next free number is WI-113**" while WI-113 was
