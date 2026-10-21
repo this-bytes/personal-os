@@ -3,10 +3,14 @@ import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/
 import type { FastifyReply, FastifyRequest } from 'fastify';
 import { z } from 'zod';
 import {
+  actionNeedsApproval,
+  autonomyActionRefusal,
+  isActionAllowed,
   ownerToolGrants,
   memorySpecSchema,
   resourceTemplateRefSchema,
   resourceTypeSchema,
+  type AutonomyAction,
   type McpToolName,
 } from '@personal-os/contracts';
 import type { CapabilitiesService, Actor } from '../capabilities/service.js';
@@ -76,10 +80,68 @@ export async function createMcpServer(options: McpServerOptions): Promise<McpSer
       : await options.agentToolGrants(actor.agentConnectionId as string),
   );
 
-  /** Defence in depth: an ungranted tool is never registered. */
-  const guard = (tool: ToolName): void => {
+  /**
+   * The action a tool stands for.
+   *
+   * Posting into a conversation is the agent speaking; everything else is
+   * the agent reaching into the system.
+   */
+  const actionForTool = (tool: ToolName): AutonomyAction =>
+    tool === 'conversation.post' ? 'message.send' : 'tool.call';
+
+  /**
+   * Defence in depth: an ungranted tool is never registered, and an action
+   * the policy does not allow never runs.
+   *
+   * The policy in force for the agent's workspace decides. An action outside
+   * the allowed set is refused, and an action the policy wants the owner to
+   * approve is refused until the owner has decided. The owner is not gated at
+   * all: the policy governs agents, and the owner is the one who writes it.
+   */
+  const guard = async (tool: ToolName): Promise<void> => {
     if (!granted.has(tool)) {
       throw new AppError('forbidden', `The "${tool}" tool is not available to this caller.`, 403);
+    }
+    if (actor.kind !== 'agent') return;
+
+    // Reading the policy is not one of the actions the policy governs: a
+    // policy nobody can read is a policy nobody can trust, and an agent that
+    // cannot see why it was refused cannot do anything sensible about it.
+    if (tool === 'autonomy.read') return;
+
+    const action = actionForTool(tool);
+    const workspaceId = await defaultWorkspace();
+    const policy = options.capabilities.effectiveAutonomyPolicy({ workspaceId });
+
+    if (!isActionAllowed(policy, action)) {
+      throw new AppError('forbidden', autonomyActionRefusal(policy, action), 403, {
+        action,
+        allowedActions: policy.allowedActions,
+        source: policy.sources.allowedActions,
+      });
+    }
+
+    if (actionNeedsApproval(policy, action)) {
+      const decision = options.capabilities.requestActionApproval({
+        workspaceId,
+        agentConnectionId: actor.agentConnectionId as string,
+        action,
+        summary: `The agent wants to "${action}", and the autonomy policy requires the owner's decision.`,
+        details: {
+          action,
+          allowedActions: policy.allowedActions,
+          approvalRequired: policy.approvalRequired,
+        },
+      });
+      if (decision.state !== 'granted') {
+        throw new AppError(
+          'forbidden',
+          `The action "${action}" was refused: the autonomy policy requires the owner's decision ` +
+            `for it, and that decision has not been made.`,
+          403,
+          { action, approvalId: decision.approvalId, state: decision.state },
+        );
+      }
     }
   };
 
@@ -176,7 +238,7 @@ export async function createMcpServer(options: McpServerOptions): Promise<McpSer
       },
       async () => {
         try {
-          guard('workspace.list');
+          await guard('workspace.list');
           return jsonResult(options.capabilities.workspaceList());
         } catch (error) {
           return errorResult(error);
@@ -194,7 +256,7 @@ export async function createMcpServer(options: McpServerOptions): Promise<McpSer
       },
       async ({ conversationId }) => {
         try {
-          guard('conversation.read');
+          await guard('conversation.read');
           return jsonResult(options.capabilities.conversationRead(conversationId));
         } catch (error) {
           return errorResult(error);
@@ -218,7 +280,7 @@ export async function createMcpServer(options: McpServerOptions): Promise<McpSer
       },
       async ({ conversationId, text, replyToId, targetParticipantIds }) => {
         try {
-          guard('conversation.post');
+          await guard('conversation.post');
           const result = await options.capabilities.conversationPost(
             conversationId,
             {
@@ -249,7 +311,7 @@ export async function createMcpServer(options: McpServerOptions): Promise<McpSer
       },
       async ({ workspaceId }) => {
         try {
-          guard('agent.list');
+          await guard('agent.list');
           const id = workspaceId ?? (await defaultWorkspace());
           await assertWorkspace(id);
           return jsonResult(options.capabilities.agentList(id));
@@ -276,18 +338,21 @@ export async function createMcpServer(options: McpServerOptions): Promise<McpSer
       },
       async (args) => {
         try {
-          guard('task.create');
+          await guard('task.create');
           const workspaceId = args.workspaceId ?? (await defaultWorkspace());
           await assertWorkspace(workspaceId);
           return jsonResult(
-            options.capabilities.taskCreate({
-              workspaceId,
-              goalId: args.goalId,
-              title: args.title,
-              description: args.description,
-              assigneeId: args.assigneeId,
-              acceptanceCriteria: args.acceptanceCriteria,
-            }),
+            options.capabilities.taskCreate(
+              {
+                workspaceId,
+                goalId: args.goalId,
+                title: args.title,
+                description: args.description,
+                assigneeId: args.assigneeId,
+                acceptanceCriteria: args.acceptanceCriteria,
+              },
+              actor,
+            ),
           );
         } catch (error) {
           return errorResult(error);
@@ -314,7 +379,7 @@ export async function createMcpServer(options: McpServerOptions): Promise<McpSer
       },
       async (args) => {
         try {
-          guard('task.update');
+          await guard('task.update');
           return jsonResult(
             options.capabilities.taskUpdate(args.taskId, {
               title: args.title,
@@ -340,7 +405,7 @@ export async function createMcpServer(options: McpServerOptions): Promise<McpSer
       },
       async ({ taskId }) => {
         try {
-          guard('task.get');
+          await guard('task.get');
           return jsonResult(options.capabilities.taskGet(taskId));
         } catch (error) {
           return errorResult(error);
@@ -365,7 +430,7 @@ export async function createMcpServer(options: McpServerOptions): Promise<McpSer
       },
       async (args) => {
         try {
-          guard('resource.create');
+          await guard('resource.create');
           const workspaceId = args.workspaceId ?? (await defaultWorkspace());
           await assertWorkspace(workspaceId);
 
@@ -387,13 +452,15 @@ export async function createMcpServer(options: McpServerOptions): Promise<McpSer
 
           assertOwnMemory(undefined, { type: args.type, data });
           return jsonResult(
-            options.capabilities.resourceCreate({
-              workspaceId,
-              type: args.type,
-              title: args.title,
-              data,
-              createdBy: actor.kind === 'agent' ? actor.agentConnectionId : 'owner',
-            }),
+            options.capabilities.resourceCreate(
+              {
+                workspaceId,
+                type: args.type,
+                title: args.title,
+                data,
+              },
+              actor,
+            ),
           );
         } catch (error) {
           return errorResult(error);
@@ -411,7 +478,7 @@ export async function createMcpServer(options: McpServerOptions): Promise<McpSer
       },
       async ({ resourceId }) => {
         try {
-          guard('resource.get');
+          await guard('resource.get');
           // The same ownership rule as the writes: a memory that belongs to
           // another agent is not this agent's to read. The resource is fetched
           // anyway, so the owner is known before anything is handed back.
@@ -440,7 +507,7 @@ export async function createMcpServer(options: McpServerOptions): Promise<McpSer
       },
       async (args) => {
         try {
-          guard('resource.update');
+          await guard('resource.update');
           // A write to a memory is judged by who owns the memory now as well
           // as by who the write says should own it. The resource is read
           // first, because the owner of a memory is not in the write — the
@@ -473,7 +540,7 @@ export async function createMcpServer(options: McpServerOptions): Promise<McpSer
       },
       async ({ type }) => {
         try {
-          guard('resource.template.list');
+          await guard('resource.template.list');
           return jsonResult(options.capabilities.resourceTemplateList(type));
         } catch (error) {
           return errorResult(error);
@@ -508,16 +575,19 @@ export async function createMcpServer(options: McpServerOptions): Promise<McpSer
       },
       async (args) => {
         try {
-          guard('automation.create');
+          await guard('automation.create');
           const workspaceId = args.workspaceId ?? (await defaultWorkspace());
           await assertWorkspace(workspaceId);
           return jsonResult(
-            options.capabilities.automationCreate({
-              workspaceId,
-              title: args.title,
-              trigger: args.trigger,
-              action: { ...args.action, method: args.action.method ?? 'GET' },
-            }),
+            options.capabilities.automationCreate(
+              {
+                workspaceId,
+                title: args.title,
+                trigger: args.trigger,
+                action: { ...args.action, method: args.action.method ?? 'GET' },
+              },
+              actor,
+            ),
           );
         } catch (error) {
           return errorResult(error);
@@ -535,8 +605,40 @@ export async function createMcpServer(options: McpServerOptions): Promise<McpSer
       },
       async ({ automationId }) => {
         try {
-          guard('automation.inspect');
+          await guard('automation.inspect');
           return jsonResult(options.capabilities.automationInspect(automationId));
+        } catch (error) {
+          return errorResult(error);
+        }
+      },
+    );
+  }
+
+  if (granted.has('autonomy.read')) {
+    server.registerTool(
+      'autonomy.read',
+      {
+        description:
+          'Read the autonomy policy in force: the strictest of the workspace policy, the goal ' +
+          'policy and the conversation safeguards, and what an agent is permitted to do here.',
+        inputSchema: {
+          workspaceId: z.string().optional(),
+          goalId: z.string().optional(),
+          conversationId: z.string().optional(),
+        },
+      },
+      async ({ workspaceId, goalId, conversationId }) => {
+        try {
+          await guard('autonomy.read');
+          const scope = workspaceId ?? (await defaultWorkspace());
+          await assertWorkspace(scope);
+          return jsonResult(
+            options.capabilities.effectiveAutonomyPolicy({
+              workspaceId: scope,
+              ...(goalId ? { goalId } : {}),
+              ...(conversationId ? { conversationId } : {}),
+            }),
+          );
         } catch (error) {
           return errorResult(error);
         }

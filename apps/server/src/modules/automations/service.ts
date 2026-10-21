@@ -7,6 +7,7 @@ import {
 } from '@personal-os/contracts';
 import type { Database } from '../../db/client.js';
 import { automationRuns, automations } from '../../db/schema.js';
+import { authorOf, type Author } from '../../lib/author.js';
 import { errors } from '../../lib/errors.js';
 import { newId } from '../../lib/ids.js';
 import { computeNextRun } from './cron.js';
@@ -20,6 +21,8 @@ export interface AutomationsService {
     title: string;
     trigger: AutomationTrigger;
     action: AutomationAction;
+    /** Who created the automation. Recorded on the row, not taken from a body. */
+    author: Author;
   }): Automation;
   update(
     id: string,
@@ -97,6 +100,7 @@ export function createAutomationsService(options: AutomationsServiceOptions): Au
           enabled: false,
           lastRunAt: null,
           nextRunAt: null,
+          createdBy: authorOf(input.author),
           createdAt: now,
           updatedAt: now,
         })

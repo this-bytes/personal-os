@@ -1,7 +1,7 @@
 import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
 import { resourceTypeSchema } from '@personal-os/contracts';
-import { audit, parseBody, parseQuery, requireAuth } from './helpers.js';
+import { audit, parseBody, parseQuery, requestAuthor, requireAuth } from './helpers.js';
 
 const listQuerySchema = z.object({
   workspaceId: z.string(),
@@ -34,7 +34,7 @@ export function registerResourceRoutes(app: FastifyInstance): void {
       type: body.type,
       title: body.title,
       data: body.data ?? {},
-      createdBy: request.user?.id ?? 'owner',
+      author: requestAuthor(request),
     });
     audit(
       request,

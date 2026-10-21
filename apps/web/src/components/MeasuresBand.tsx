@@ -6,11 +6,12 @@ import { useWorkspace } from '../state/workspace';
 import { ErrorState, LoadingState } from './ErrorState';
 
 /**
- * The author an automation or a task carries.
+ * The author a resource carries when it has none to name.
  *
- * Their tables have no column to keep an author in, so their projections say
- * 'system'. It is no author at all, and it is why the count of the resources
- * an agent made is a floor rather than a share.
+ * 'system' is what a row written before the author was recorded says, and
+ * what a write with no authenticated actor behind it says. Those rows are in
+ * the denominator and can never be in the count, which is what makes the
+ * count of the resources an agent made a floor rather than a share.
  */
 const NO_AUTHOR = 'system';
 
@@ -113,8 +114,8 @@ export function MeasuresBand(): React.JSX.Element {
               <p className="text-xs font-medium text-slate-200">Operations performed by an agent</p>
               <p className="mt-0.5 text-[11px] leading-snug text-slate-500">
                 Not a number yet. The audit trail records that something happened, not what
-                happened: twelve of the thirty-five mutating routes write no entry, the MCP surface
-                writes none, and every entry records success regardless.
+                happened: every mutating route writes an entry, but the MCP surface writes none, and
+                every entry records success regardless.
               </p>
             </div>
           </CardContent>
