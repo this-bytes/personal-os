@@ -9626,3 +9626,66 @@ holds WI-114 and WI-115. **Probe's lane is alive and productive** — a NOT VERI
 verdict at 07:25 and a VERIFIED one at 09:05, both measured adversarially rather
 than read out of the record. **Wren's lane still refuses.** The relay that held a
 slot has released it. **The ceiling stays at two.**
+
+## 2026-10-22 2026-10-22 09:37 — the lead merges the peer's ledger, lands WI-086, and re-measures the two held items
+
+**The push that was blocked at 09:10 is unblocked at 09:25.** The peer session had a
+73-line block uncommitted in `.factory/INTAKE.md` in the shared working tree, and
+`git merge origin/main` refused to overwrite it. **The block was extracted byte-for-byte
+— 5,652 characters, 74 lines — the working copy reverted, and the merge run: `merge-tree`
+reported no conflict lines, and `52a06ae` is the merge.** Then the peer's own commits
+turned up: `01771e3` ("Take WI-120 and WI-121, and correct WI-112's record") and `56adfeb`
+("Record WI-075's implemented state"), both at 09:23, in the shared tree, while the merge
+was in flight. **The peer's block was in them all along. Nothing was lost, and nothing had
+to be re-appended by hand.**
+
+**WI-086 landed at `06c1b2f`.** Cog rebuilt the branch on today's main instead of re-basing
+onto it, because the old commit `d4926f0` was a day old and every line it cited had moved;
+the landing went out on a fresh branch, `wi/086-evidence-read-route-v2`, and **the old
+branch stays on the remote, unmerged, because the pre-push hook refuses a rewrite of a
+published branch without the owner's word.** Nine files, +939/-59: the reader, the route at
+`api/approvals.ts:37` registered at `app.ts:225`, the three re-pointed citations, the
+published shape in `packages/contracts/src/approvals.ts`, a 437-line test file, the
+contract note at `CONTRACTS.md:1480`, and the claim table in `scripts/contract-status.json`
+flipping to `implemented`. **The landing is not the acceptance.** Probe verifies it —
+`wi-086-verify-probe-chief-2026-10-22`, `task_4b2fc4b5eb9f` — because Cog wrote it.
+
+**Two held items, re-measured on the tree WI-086 produced, and both stay held — on the lane
+now, not on the file.** `CONTRACTS.md` is free. **`docs/**`is Wren's, and Wren's lane is
+down: five delegations in a row, each answered with`status=error` and zero characters.**
+The lead does not spend a request id into a lane that is refusing, so **WI-114 and WI-115
+are not dispatched\*\* — but they are now measured, and the measurements are written into
+their item files.
+
+**And the measurement earned two corrections to this session's own item files.** WI-114
+proposed `service.ts:583-593` for "the automation provider's `execute`"; **`resources/service.ts`
+has stood at 798 lines since WI-108's landing at 06:29, and `async execute(id)` has stood at
+`:589` throughout** — `:583` reads `return updated;` and `:593` reads `if (type ===
+'automation') {`. **The proposed range was never right on this tree**, and the lead named
+three candidates instead of inventing a fourth. And WI-115's `service.ts:345` and `:513`
+are now **`:347`** and **`:515`**.
+
+**A fourth finding joined WI-115's scope, measured rather than copied.** The template
+guide says the task provider's `validate` is `(data: unknown) => data` at `service.ts:299`,
+so "the registry's drift check catches nothing for tasks and `resource.inspect` always
+reports a task as valid". **Both halves are false**: `:299` reads `if (!row) throw
+errors.notFound('Automation');`, and the task provider's `validate` is at `:351-360`, where
+it parses with `taskSpecSchema` and refuses with `errors.validation` — **WI-108's landing is
+what fixed it.** The paragraph's first half is still true, though: `mcp/server.ts` holds
+**zero** occurrences of `audit`, so "the MCP server contains no `audit` call at all" stands.
+**A correction that removes the true half is as wrong as one that leaves a false half.**
+
+**The floor lost seven stale tasks, and the refusals were the reason.** Five of them
+reported on WI-106, closed and accepted at 09:10 — including one carrying the claim that
+WI-106 is WI-119, which the published number space contradicts — and two reported the
+WI-086 landing. **Three of the seven had already failed `BUSY` and two `AGENT_UNAVAILABLE`,
+and one of them failed on the group post itself: Probe's WI-106 verdict never reached the
+group by the peer's route.** The lead's post carries it. **The tiebreak said out loud: the
+landing is the lead's act, so the lead reports it, once, with the merge and the push and the
+verification dispatch in the same post.**
+
+**The floor at 09:40.** **Probe is alive** — a NOT VERIFIED verdict at 07:25 and a VERIFIED
+one at 09:05, both measured adversarially — and holds WI-086's verification. **Cog is
+mid-turn** on the WI-086 report, streaming, and is reported and not cancelled. **Wren is
+down**, five refusals running. **The ceiling stays at two.** **The next free number is
+WI-122, and no number was taken today.**

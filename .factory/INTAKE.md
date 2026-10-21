@@ -3423,3 +3423,99 @@ repository says what the product is, in the product's own words**. When WI-121 l
 agent blocked on a capability the owner never granted appears in the owner's waiting list,
 with the agent's name and what it needed, and the owner can widen the grant from that list
 — and the row leaves once they have.**
+
+## 2026-10-22 2026-10-22 09:37 — Chief: WI-086 is landed, the peer's ledger is merged, and the two held items are re-measured
+
+**One — the merge, and why it was stuck.** `origin/main` was at `20ce58e` and the lead's tree
+was at `4458ad1`, and `git merge origin/main` was refused: **"Your local changes to
+`.factory/INTAKE.md` would be overwritten."** The peer had a 73-line block uncommitted in
+the shared tree. **The block was extracted byte-for-byte — 5,652 characters, 74 lines, a
+pure append — the working copy reverted, and `origin/main` merged in as `52a06ae` with
+`merge-tree` reporting no conflict lines.** The peer's block was then found **already
+committed by the peer at 09:23** (`01771e3`, `56adfeb`) in the shared tree, while the merge
+was in flight. **Nothing was lost.** The lesson is the one this tree keeps teaching:
+**two Chief sessions share one working tree, so the tree moves under the lead mid-measure,
+and a merge that was refused at 09:10 was merged at 09:25.**
+
+**Two — WI-086 is LANDED, and it is not accepted.** Merge **`06c1b2f`** ("Land WI-086: the
+evidence a decision is taken against, in code"), from branch **`wi/086-evidence-read-route-v2`**
+(tip `d53882d`, plus `6c3f572`, the item record's own update). `merge-tree` clean. **9 files,
++939/-59**: the reader `apps/server/src/modules/approvals/evidence.ts` (new, 193 lines), the
+route at `apps/server/src/api/approvals.ts:37` registered at `app.ts:225`, the three
+re-pointed citations in `approvals/service.ts`, the published shape in
+`packages/contracts/src/approvals.ts`, the test file `approval-evidence.test.ts` (new, 437
+lines), the contract note at `CONTRACTS.md:1480`, and `scripts/contract-status.json`
+flipping the claim to `implemented`.
+
+**The old branch `wi/086-evidence-read-route` @ `d4926f0` was NOT merged** — it carries a
+day-old tree whose every cited line had moved — and it was **not force-pushed**, because the
+pre-push hook refuses a rewrite of a published branch without the owner's word, and no owner
+has said so.
+
+**This is the landing, not the acceptance.** The verification is dispatched to **Probe** —
+request id `wi-086-verify-probe-chief-2026-10-22`, task **`task_4b2fc4b5eb9f`** — who wrote
+none of the work. **Probe's lane is alive** (its last two messages are `done`, and it
+delivered WI-106's VERIFIED verdict at 09:05), so this is a dispatch into a working lane and
+not a request id spent into a refusing one.
+
+**Three — the number space is unchanged, and the next free number is WI-122.** WI-106 is the
+lead's and was closed at 09:10; WI-114 and WI-115 are the lead's; WI-116 is the pin WI-112
+owes; WI-117 is the peer's branch-hygiene measurement; WI-118 is the peer's mode item;
+WI-119 is the peer's prose item; WI-120 and WI-121 are the peer's. **No number was taken
+this turn, and the block was not edited.**
+
+**Four — WI-114 and WI-115 are re-measured on the tree WI-086's landing produced, and both
+stay HELD.** The hold was on the file — `CONTRACTS.md` was Cog's until WI-086 landed — and
+**the file is free. The hold is now on the lane.** `docs/**` and `*.md` are **Wren's**, and
+**Wren's lane is down: her chat's last five messages are `role=bot, status=error, 0
+characters`, each directly after a relay — WI-103, WI-106, WI-098, WI-111 and the WI-106
+round-two verdict. Five delegations, five refusals, not one word back.** The lead does not
+spend a request id into a lane that is refusing, so **neither item is dispatched.**
+
+**What the re-measurement found, and it is in the item files:**
+
+- **WI-114** — two of its four corrections are confirmed (`CONTRACTS.md:806` → `service.ts:376-377`;
+  `docs/resource-templates.md:355` → `templates.ts:534-555`), one has **moved**
+  (`CONTRACTS.md:1946` → **`:1955`**, because the contract grew by nine lines elsewhere), and
+  **one of its own proposed numbers was never right**: `resources/service.ts` has stood at
+  **798 lines since `a65ff32` at 06:29**, and `async execute(id)` has stood at **`:589`**
+  throughout, so the proposed `:583-593` does not hold "the automation provider's
+  `execute`" — `:583` reads `return updated;` and `:593` reads `if (type === 'automation')
+{`. **Three ranges are candidates and the item does not choose between them: `:589-622`,
+  `:593-602`, and `:624-634` (`inspect`, which is the code that refuses a drifted template at
+  the point it is read). Which one the row cites is the document owner's call, not a number
+  the lead should invent.**
+- **WI-115** — two of its numbers moved by two lines (`service.ts:345` → **`:347`**,
+  `:513` → **`:515`**), and **a fourth finding joined its scope**: the guide's claim at
+  `:71-73` that "the task provider's `validate` is `(data: unknown) => data` (`service.ts:299`)
+  — it returns whatever it is given, so the registry's drift check catches nothing for tasks"
+  is **false twice** — `:299` reads `if (!row) throw errors.notFound('Automation');`, and the
+  task provider's `validate` is at **`:351-360`**, where it parses with `taskSpecSchema` and
+  refuses with `errors.validation` — **WI-108's landing (`a65ff32`) is what fixed it.** The
+  paragraph's **first** half is still true: `apps/server/src/modules/mcp/server.ts` holds
+  **zero** occurrences of `audit`, so "the MCP server contains no `audit` call at all" holds.
+  **The correction must not remove the true half.** The two broken paths stand too: `:845`
+  names `docs/decisions/0008-_.md`, which does not exist (the ADR is
+  `docs/decisions/0008-five-domains.md`), and `:861` names the glob
+  `docs/decisions/0008-*.md`.
+
+**Five — the floor, cleaned of seven stale tasks.** The dispatcher takes the first queued
+task whose chat is free, so a stale task at the head **spends the next free slot on work
+that is already done.** Seven were cancelled: five reporting on **WI-106**, which was closed
+and accepted at 09:10 (and one of them carrying the claim that WI-106 is WI-119, which the
+published number space contradicts), and two reporting the WI-086 landing — one to a bot and
+one to the group. **That last one is a deliberate choice, and it is the tiebreak said out
+loud: WI-086's landing is the lead's act, so the lead reports it, once, with the merge and
+the push and the verification dispatch in the same post.** Of the seven, five had already
+failed on their own — **three `BUSY`, two `AGENT_UNAVAILABLE`** — which is the same
+refusal seen in Wren's lane, and one of them failed **on the group post itself**, so
+**Probe's WI-106 verdict never reached the group by the peer's route.** This post carries it.
+
+**Six — what the product can now do, pending the verifier's verdict.** **A decision's
+evidence can be read in code.** The approval's execution — the thing the decision was taken
+against — is served by a route at `apps/server/src/api/approvals.ts:37`, registered at
+`app.ts:225`, in a shape the contract publishes at `packages/contracts/src/approvals.ts`
+and exports as `approvalEvidenceSchema`. **And the claim table now holds it:** the note in
+`CONTRACTS.md:1480` and the claim in `scripts/contract-status.json` cannot claim
+"implemented" while the route or the exported schema is gone, and the pointer gate checks
+the note's three line numbers. **WI-086 is landed, not accepted: Probe's verdict is owed.**
