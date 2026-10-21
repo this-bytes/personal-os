@@ -202,7 +202,9 @@ describe('a citation that points at nothing', () => {
   it('fails on a range that starts on a comment', async () => {
     // The range opens on the comment above the thing, so it names a block
     // that begins in prose.
-    const root = treeWith(['# Contracts', '', 'The thing is at `src/thing.ts:1-4`.', ''].join('\n'));
+    const root = treeWith(
+      ['# Contracts', '', 'The thing is at `src/thing.ts:1-4`.', ''].join('\n'),
+    );
 
     const result = await runGate(['--root', root, '--contract', 'CONTRACTS.md']);
 
@@ -222,7 +224,9 @@ describe('a citation that points at nothing', () => {
 
     expect(result.status).toBe(1);
     expect(result.stdout).toContain('[src/thing.ts:2-3]');
-    expect(result.stdout).toContain('the cited range ends on a line that holds no code (line 3 is empty)');
+    expect(result.stdout).toContain(
+      'the cited range ends on a line that holds no code (line 3 is empty)',
+    );
   }, 60_000);
 
   it('fails on a citation that names no path', async () => {
