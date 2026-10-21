@@ -232,14 +232,21 @@ takes the same authentication and workspace rules as every other owner-facing
 route — a session cookie or the owner token, and never an agent token, which is
 MCP-only — and it is published in the route table with the rest.
 
-**This entry is the contract for **WI-031**, and the code does not implement it
-yet.** The route is published ahead of its implementation, because the contract
-leads and the code follows, and the shape above is what the implementation has
-to reach. Nothing in the tree answers it today: there is no `/api/executions`
-route, and the only writer of an execution's outcome is `resolveExecution`
-(`apps/server/src/modules/approvals/service.ts:160-168`), which the approval
-decision path calls and this route does not. A client written against this entry
-must treat the route as absent until the implementation lands.
+This entry is the contract for **WI-031**, and the code implements it — as of
+`414996c`, which landed twenty-seven minutes after the contract itself
+(`363428e`), and `3dd490b` brought the route to the published shape after it.
+The route is `POST /api/executions/:id/resolve`, at
+`apps/server/src/api/executions.ts:21`, and it is registered at
+`apps/server/src/app.ts:223`. **Only the owner may call it**, under the same
+authentication as every other owner-facing route
+(`apps/server/src/api/helpers.ts:13-17`). **The route's own writer is the
+executions service**, which writes the execution's status and the reply's
+status together (`apps/server/src/modules/executions/service.ts:93-111`); the
+route calls it at `apps/server/src/api/executions.ts:25`. **There are two
+writers of an execution's outcome, not one**: the other is `resolveExecution`
+(`apps/server/src/modules/approvals/service.ts:160-172`), which the approval
+decision path calls (`apps/server/src/modules/approvals/resume.ts:151`) and
+this route does not.
 
 **Migration.** Nothing is reclassified, and no execution is closed by this
 change. A client written before this route existed has nothing to migrate: the
