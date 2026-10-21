@@ -72,6 +72,7 @@ export async function buildApp(options: BuildAppOptions = {}): Promise<FastifyIn
     db: runtime.db,
     events,
     queue,
+    audit: runtime.audit,
     agentDisplayName: (connectionId) => agents.get(connectionId).name,
   });
   const factory = createFactoryService({
