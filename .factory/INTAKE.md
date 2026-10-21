@@ -6937,3 +6937,42 @@ is the discipline the standing word needs, and it is written down here.
 **The local gate on the rewritten tree was green** — **typecheck 0, `test` 0
 (52 · 31 · 16 · 28 across the four suites), `format:check` 0, `build` 0** —
 measured on `d6fbe6b` and `3f40b2f`.
+
+## The standing word's first push — 2026-10-21 18:35
+
+**The rule above is not a rule on paper: it has been used once, and this is
+what it took.**
+
+**The push.** `origin/main` went from `74caa34` to `d4f27da` — a fast-forward
+carrying the peer's `5663545` and this session's `d4f27da`. **The peer session
+performed the push**; this session's own `git push origin main` found the
+remote already at `d4f27da` and reported _"Everything up-to-date."_ One
+branch, one remote, two sessions: **the push lands whatever is at the tip,
+whichever of us pushes first.**
+
+**What was checked before the push, in the rule's own terms.** The local gates
+were green on this tree — **typecheck 0, `test` 0 (52 · 31 · 16 · 28 across the
+four suites), `format:check` 0, `build` 0**. The code that would be landed is
+**byte-identical to the code the platform approved**: `git diff --name-only
+cf94c92..d4f27da` touches `.factory/INTAKE.md`, `.factory/chief.md`,
+`.factory/work/WI-007.md`, `.factory/work/WI-076.md`, `AGENTS.md`,
+`FACTORY.md` and `docs/strategy.md`, and **no code path at all**. The push was
+a fast-forward, and `origin/main` was still where the work started.
+
+**The verdict, read after the push.** **`d4f27da` is GREEN** — _"Build and
+test"_, _"Lint the workflows"_, _"Dependency audit"_ and _"Build and run the
+stack"_ all `completed/success`, and CodeQL's _"Analyze
+(javascript-typescript)"_ `completed/success`. **The tree under it, `74caa34`,
+is green on the same code.**
+
+**And one thing the standing word does not cover, which the first push made
+visible: a push that carries a doc-only commit still cancels a running
+pipeline.** The workflow's `cancel-in-progress: true` is keyed on the **ref**,
+not on the content — so the cost of a push is not only the push, it is the run
+it interrupts. **One push at a time, and let the run finish.** That clause is
+now in the rule.
+
+**The ledger closes the loop here.** Every commit after this one is doc-only,
+so the code's verdict carries forward; each pushed sha's run is read and
+reported, and **the verdict recorded here is the one on the code** — so the
+record terminates instead of chasing its own tail.
