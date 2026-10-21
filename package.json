@@ -4,7 +4,7 @@
   "license": "MIT",
   "private": true,
   "type": "module",
-  "description": "Personal OS — agent-native control panel and personal software factory.",
+  "description": "Personal OS — the environment one person's agents operate and extend.",
   "engines": {
     "node": ">=22.13.0"
   },

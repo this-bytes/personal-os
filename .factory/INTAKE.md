@@ -90,8 +90,10 @@ free number above the highest taken.**
 | WI-117 | The stranded branches, measured again — the peer's branch-hygiene record                                                                   | peer   |
 | WI-118 | The mode the owner sets is the mode that is in force                                                                                       | worker |
 | WI-119 | The strategy document's copy of the record's loose sentence, in three places                                                               | peer   |
+| WI-120 | The published front page states the identity the owner replaced                                                                            | peer   |
+| WI-121 | The decision surface carries what an agent is blocked on                                                                                   | peer   |
 
-**The next free number is WI-120.**
+**The next free number is WI-122.**
 
 **WI-118 was claimed twice, and this is the record that kept it.** The lead
 opened this session's mode item as WI-113 at 07:50, yielded it when the
@@ -3339,6 +3341,67 @@ is left of the restart's benefit is **the wasted slot and Wren's refusal**, agai
 price of **the turn it lands in**, which right now is **Cog's live WI-086**. **It is
 still the owner's word**, and **the floor is not that moment now.**
 
+## 2026-10-22 09:15 — Chief: WI-106 is accepted and landed, the number space moves to WI-122, and the owner's word on the public repository is on the record
+
+**One — WI-106 is ACCEPTED, on Probe's VERIFIED verdict, and the work is landed.**
+The verdict is **VERIFIED**: _"Both wording findings are fixed, nothing else moved, all
+nine gates green on the branch's own tree."_ **It is against `60d5bb8`, the branch's
+actual head — not the `c2375e4` the round-two brief named.** The brief's tree note
+was stale and the verifier said so: the branch was **not** rebased back onto
+`1712fd2`; it carries main's merge at `e885012` plus two ledger commits, **27
+commits past `1712fd2`**. **A brief's tree note is not a measurement; the commit the
+verifier names is.** Both findings are fixed — `reads.evidence` opens **"Each
+third-party entry records the file its licence was read from…"** and no longer says
+"every entry"; `PRODUCT.md:290-293` says **"one entry for every package in the
+lockfile"** and no longer says "the lines of that file that identify the licence" —
+and **nothing else moved**: the whole 494-entry array, `approvedSet`, `agpl.*`,
+`summary` and the other five `reads` strings are byte-identical, and `PRODUCT.md` has
+**one hunk** with the **366 lines outside it byte-identical**. The counts re-derive
+exactly: **375 / 16 / 97 / 6 = 494**, third-party **488**, **11** distinct `spdxId`s,
+`familiesRead` **11 rows summing to 488**. The nine gates on the branch's own
+worktree: **exit 0**, including `npm run gates` — **"Every gate passed. The tree is
+green."** **Merged into `main` as `8817b92`** (`merge-tree` → **0 conflict lines**;
+the branch's diff against main is exactly three files).
+
+**The tiebreak, said out loud.** The peer session dispatched the round-two
+verification under its own request id `wi-106-round-two-chief-2026-10-22`, and its
+record carries the same verdict. **This session lands the verified work and closes
+the item on Probe's report, so that a verified item is not left verified-but-open.
+No second acceptance is needed or wanted.**
+
+**Two — the pin is still owed and is still not written.** `git grep -ln
+'dependency-licences' 60d5bb8` over the test trees returns **empty**: **no test file
+in the repository mentions licences at all.** The record can drift back into the two
+sentences this item corrected until a check holds them, and **that check is Probe's
+file to write.**
+
+**Three — the number space moves to WI-122, and WI-120 and WI-121 are the peer's.**
+The peer filed **WI-120 — "The published front page states the identity the owner
+replaced"** (owner Wren) and **WI-121 — "The decision surface carries what an agent
+is blocked on"** (owner Cog), both reading this block and taking the next two
+numbers, and both saying **"the next free number after this is WI-122"**. **The
+block now carries both rows and says WI-122.** **And WI-119's file must be renamed
+before it merges**: `main` carries a **different** WI-118 — the mode item — and
+`git merge-tree --write-tree main wi/118-strategy-record-prose` returns **CONFLICT
+(add/add) in `.factory/work/WI-118.md`**. **The prose item is WI-119 and its file
+must be `WI-119.md`**; the branch `wi/118-strategy-record-prose` **keeps its name**.
+
+**Four — the owner's word on the public repository, read from WI-120's own file.**
+_"Does the owner stand behind a public MIT repository — with the front page
+corrected to the new identity before anyone finds it?"_ — **"Yes to both, in that
+order."** **The repository is public and MIT and stays that way, and the front page
+is corrected in the world, not on a branch**: WI-120's own file says **"the merge to
+`main` and the push of `main` are inside this item"**. **The lead's standing word
+already covers it** — _push `main` whenever CI is green_ — and **nothing else is
+pushed on the strength of that answer.**
+
+**Five — the floor at 09:15.** **Cog is running WI-086** on `CONTRACTS.md` — **that
+is what holds WI-114 and WI-115**. **Probe's lane is alive and productive**: it
+delivered a NOT VERIFIED verdict at 07:25 and a **VERIFIED** verdict at 09:05, and
+both were measured adversarially rather than read out of the record. **Wren's lane
+still refuses.** **The relay that held a slot has released it** — Vision's WI-108
+report is `waiting_for_tasks`. **The ceiling stays at two.**
+
 ## What the published repository says — 2026-10-22, Vision
 
 Three things the strategy room should have, all verified rather than inferred.
@@ -3442,27 +3505,26 @@ owner can widen the grant from the list; the row leaves when the grant is
 widened; a test proves the refusal reaches the list and that the row leaves
 after the grant.
 
-## 2026-10-22 09:00 — the branch pile-up, re-measured at `20ce58e`: every branch merges clean now, and three of them still must not be merged
+## 2026-10-22 09:00 — the branch pile-up, re-measured at `2806f72`: every branch merges clean now, and four of them must not be merged
 
 **The 08:05 entry above is kept as written, because it was true when it was written.** This
 section is the re-measurement, and it changes the verdict in three ways worth naming.
 
-**`origin/main` moved again, and the numbers moved with it.** The tree was observed at eleven
-tips while the measurement ran, ending at **`20ce58e`** — and it was **rewritten once**:
-the tip that was `main` at `115d226` was `wi/112-second-landing`'s own tip, and by
-`d4c12c1` that branch was no longer an ancestor of `main`, because the landing was
-rebased. **82 remote branches: 59 merged, 23 unlanded.** The unlanded count did not fall,
-because the peer opened branches of its own while this was being measured — including a
-**v2** of the evidence route, `wi/086-evidence-read-route-v2`, which is the same work
-re-based onto `main` and is the better branch of the two.
+**`origin/main` moved again, and the numbers moved with it.** The tree was observed at twelve
+tips while the measurement ran, ending at **`2806f72`** — and it was **rewritten once**: the tip
+that was `main` at `115d226` was `wi/112-second-landing`'s own tip, and by `d4c12c1` that branch
+was no longer an ancestor of `main`, because the landing was rebased. **83 remote branches: 61
+merged, 22 unlanded.** The unlanded count did not fall, because the peer opened branches of its
+own while this was being measured — including a **v2** of the evidence route,
+`wi/086-evidence-read-route-v2`, which is the same work re-based onto `main` and is the better
+branch of the two. **The v2 has since landed**, and the evidence route's code is in the tree.
 
-**And the finding that matters: the counts move, the verdicts do not.** The whole table
-was re-measured at **three** different tips of `main` — `115d226`, `d4c12c1` and
-`20ce58e` — and **every verdict came out the same at all three**. The same branches merge
-clean, the same branches conflict, the same three must not be merged. Only the counts
-moved, because the peer was landing work while the measurement ran. **That is what
-separates a pile-up from a mess**, and it is why the answer to the owner's question does
-not depend on catching `main` at a lucky moment.
+**And the finding that matters: the counts move, the verdicts do not.** The whole table was
+re-measured at **four** different tips of `main` — `115d226`, `d4c12c1`, `20ce58e` and `2806f72` —
+and **every verdict came out the same at all four**. The same branches merge clean, the same
+branches conflict, the same ones must not be merged. Only the counts moved, because the peer was
+landing work while the measurement ran. **That is what separates a pile-up from a mess**, and it is
+why the answer to the owner's question does not depend on catching `main` at a lucky moment.
 
 **The measurement method had to change, and the first version of it was wrong.** The 08:05
 entry judged each branch by "a diff from its merge-base", which is `git diff
@@ -3476,17 +3538,26 @@ actually does. On that measure `wi/071-accent-one-meaning` is **+0/−0**, not "
 **And the exit code of `merge-tree` is not enough on its own.** A merge that conflicts still
 returns a tree, and that tree carries the conflicted content written into it with
 `<<<<<<<` / `=======` / `>>>>>>>` markers. The `CONFLICT` lines in the output have to be
-read. Three branches are worse than they look because of this.
+read. Four branches are worse than they look because of this.
 
 **The re-measured verdict, in one line each:**
 
-- **4 landable now** — `wi/086-evidence-read-route-v2` (+939/−59, green), `wi/092-bundle-budget-timeout` (+84/−44, green), `wi/106-record-four-loose-sentences` (+243/−11, green), `wi/117-branch-pileup-verdict` (+394, green).
+- **3 landable now** — `wi/092-bundle-budget-timeout` (+84/−44, green), `wi/119-strategy-record-prose` (+126 over the prose item's own file), `wi/117-branch-pileup-verdict` (+609, green). `wi/086-evidence-read-route-v2`, which was first on the list, has landed.
 - **2 clean but red** — `wi/095-resolver-robustness` (carries `wi/085`'s commit, so landing it closes `085`) and `wi/085-autonomy-policy-attack`.
-- **5 dead weight** — `wi/071-accent-one-meaning`, `wi/086-evidence-read-route` (superseded by its own `-v2`), and the peer's withdrawn `wi/116-strategy-record-prose`, `wi/117-strategy-record-prose` and `wi/118-strategy-record-prose`, which touch no file at all.
-- **3 that must not be merged** — `wi/062-measures-citation-refresh` (its pointers are older than `main`'s, so resolving the conflict in its favour re-points the contract at old code), `wi/042-product-record-closed-questions` (says the measures are "funded and in flight"; `main` has since shipped them and says "the two are counted"), `wi/046-merge-rehearsal` (its `INTAKE.md` is the file from **before** `INTAKE.md` and `history.md` were split — merging it tries to re-import 9,966 lines of process history into the state file, 4,165 of whose long lines `main` already keeps in `history.md`).
-- **6 real work needing a re-base** — `wi/075-published-status-claims`, `wi/077-agent-adapter-domain`, `wi/077-author-shape-house-form`, `wi/067-mcp-workspace-scope`, `wi/044-vendored-sources`, `wi/103-contract-pointers-after-wi-080`. **Five of the six conflict in one or two files only**, and `103` conflicts in `WI-103.md` alone.
-- **2 in flight with the peer** — `wi/088-ledger-state-and-history`, `wi/119-strategy-record-prose`.
+- **5 dead weight** — `wi/071-accent-one-meaning`, `wi/086-evidence-read-route` (its work landed as `-v2`), and the peer's withdrawn `wi/116-strategy-record-prose`, `wi/117-strategy-record-prose` and `wi/118-strategy-record-prose`, which touch no file at all.
+- **4 that must not be merged** — `wi/062-measures-citation-refresh` (its pointers are older than `main`'s, so resolving the conflict in its favour re-points the contract at old code), `wi/042-product-record-closed-questions` (says the measures are "funded and in flight"; `main` has since shipped them and says "the two are counted"), `wi/046-merge-rehearsal` (its `INTAKE.md` is the file from **before** `INTAKE.md` and `history.md` were split — merging it tries to re-import 9,966 lines of process history into the state file, 4,165 of whose long lines `main` already keeps in `history.md`), and **`wi/103-contract-pointers-after-wi-080`** — its work is done and the gate is green, but the branch's copy of `.factory/work/WI-103.md` is **101 lines shorter** than `main`'s, so merging it would **delete 101 lines of the record**.
+- **6 real work needing a re-base** — `wi/075-published-status-claims`, `wi/077-agent-adapter-domain`, `wi/077-author-shape-house-form`, `wi/067-mcp-workspace-scope`, `wi/044-vendored-sources`, `wi/106-record-four-loose-sentences` (whose product work has landed; only its item file differs).
+- **1 in flight with the peer** — `wi/088-ledger-state-and-history`.
 - **1 preserved, not landed** — `wi/072-queue-index`.
+
+**And the finding the publication left for WI-103 is closed by measurement.** The pointer it
+named, `mcp/server.ts:532-576`, was read on `main`: line 532 is
+`if (granted.has('resource.template.list')) {` and line 576 is `}`, and **a closing brace is
+code** under the corrected rule, so the range holds code and the citation is sound. **The gate
+confirms it — `npx tsx scripts/verify-contract-pointers.ts` on `main` reads 126 pointers, 0
+failures, exit 0** — and the peer's own `npm run gates` on the pushed tree passed all nine
+gates, `contract-pointers` among them. **The pointer is right and the item has landed; what is
+left of the branch is an item file that `main`'s copy has grown past.**
 
 **The full table, with the conflicted file for every branch, is in
 [WI-117](work/WI-117.md).** WI-086 is now the busiest number in the space: three branches
@@ -3500,4 +3571,270 @@ says the earlier published claim keeps the number where no dispatch binds it, so
 is that item and this block's 08:19 sentence was the stale claim."_ **So WI-117 is settled
 by the session that had the other claim, in writing, on `main`.** The number space reads
 **WI-117 = this item, WI-118 = the mode item, WI-119 = the prose item**, and the next
-free number is **WI-120**.
+free number is **WI-122** — WI-120 and WI-121 were taken after this section was written, and
+the block moved with them.
+
+## 2026-10-22 09:20 — Chief: the front page is corrected, two numbers are taken, and WI-112's record is true
+
+**One — the owner's answer, and the standing word that covers the push.** In the strategy
+group the owner answered _"Does the owner stand behind a public MIT repository — with the
+front page corrected to the new identity before anyone finds it?"_ with **"Yes to both, in
+that order."** The repository is public and MIT and stays that way, and the front page is
+corrected **in the world, not on a branch** — a correction that lives only on a branch
+leaves the published page carrying the old sentence for every reader who arrives first.
+
+**The push of `main` needs no new word.** `.factory/chief.md:90-94` and `FACTORY.md:92-97`
+carry the owner's standing word of **2026-10-21 18:07** — _"push `main` whenever CI is
+green"_ — and `FACTORY.md:94-95` says it plainly: **"That word is not spent — it stands
+until the owner changes it."** The conditions before the push are `FACTORY.md:99-107`: the
+local gates pass **on the tree being pushed**, the landed code is code the pipeline has
+measured green, and the push is a fast-forward from where the work started.
+**The platform's verdict is read afterwards and recorded** (`FACTORY.md:109-113`), and **a
+red verdict on a pushed `main` is a factory failure to fix and say out loud**, never a push
+to undo by force. **One push at a time**, because a push cancels the run that judges it.
+
+**Two — WI-120 and WI-121 are this session's items, and both are dispatched.**
+
+| item       | what it is                                                      | owner | request                                            | task                |
+| ---------- | --------------------------------------------------------------- | ----- | -------------------------------------------------- | ------------------- |
+| **WI-120** | The published front page states the identity the owner replaced | Wren  | `wi-120-front-page-identity-2026-10-22`            | `task_2b5160e24223` |
+| **WI-121** | The decision surface carries what an agent is blocked on        | Cog   | `wi-121-blocked-agent-decision-surface-2026-10-22` | `task_bbf11f83be2b` |
+
+**WI-121 is Vision's third want, and it was left unnumbered for three hours.** It is
+numbered now, and it is dispatched. **A want that is written down but not numbered is how
+the MCP scoping defect sat for three hours**, and the rule that stops it is the one the
+block already carries: _a number is added to the table the moment it is taken_.
+
+**Three — the block carries each number once, and the rows that are there are right.** The
+other Chief session read these two item files out of the shared tree and published the two
+claims into the block at **09:10:59** (`4458ad1`), with **"the next free number is
+WI-122"**. **Those rows are the block's, and they stand.** This session had inserted its own
+two rows at 09:0x — the same two numbers, the same titles — and **they are removed**, so
+each number appears once. The owner column reads `peer` for both rows because the block is
+written from that session's side of the tree. **The tiebreak was never needed: there was one
+claim, taken once, and published by the session that read it.**
+
+**Four — WI-112's four record corrections are applied, not just listed.** In
+`.factory/work/WI-112.md`: the duplicated `## The problem` is gone; the State line reads
+**`accepted`**; the pin's three copies are named (`RULE_COPIES` is **measured** — three
+entries — and the item's own "Not in scope" section said three); and the house-form
+sentence names **brief 01:18 and brief 05:29 only**, because the phrase _"quoted exactly as
+the direction document states it"_ is in those two files and **grep over
+`prototypes/briefs` returns those two lines and no third** — the briefs README carries the
+rule as a bare blockquote. **The section that named the four stays**, so the difference
+between what the item said and what is true is still visible. **The pin is still owed**: no
+test reads `docs/strategy.md`, it is **WI-116**, and it is **HELD** behind Probe's lane —
+a verifier who writes the pin is no longer independent of it.
+
+**Five — a want, and it is not numbered.** The README's **body** carries the product's older
+framing — _"one place to talk to agents, run group conversations…"_ is a chat home, and the
+product record lists what this product is not (`docs/strategy.md:37`). **The owner's
+decision was about one line, and this is a rewrite of the document, not a one-line
+correction**, so it is recorded here as a want and not as an item. It has no owner until it
+is triaged, and a want without an owner is a wish — which is the point of writing it down.
+
+**Six — the dispatch tool's own rule, measured twice.** Dispatching from this session failed
+with _"This Bot is replying in multiple chats, so this tool call cannot be assigned
+safely"_, because this bot answers in two chats at once — the strategy group and the
+owner's chat. **The dispatch succeeds when the caller id is left empty**, which is what the
+tool's own description says to do from the user's own chat. **A dispatch that cannot be
+delivered is not a dispatch**: both request ids are recorded in their item files, and the
+items can be delivered from there.
+
+**Seven — what the product can now do.** When WI-120 lands, **the front page of a public
+repository says what the product is, in the product's own words**. When WI-121 lands, **an
+agent blocked on a capability the owner never granted appears in the owner's waiting list,
+with the agent's name and what it needed, and the owner can widen the grant from that list
+— and the row leaves once they have.**
+
+## 2026-10-22 2026-10-22 09:37 — Chief: WI-086 is landed, the peer's ledger is merged, and the two held items are re-measured
+
+**One — the merge, and why it was stuck.** `origin/main` was at `20ce58e` and the lead's tree
+was at `4458ad1`, and `git merge origin/main` was refused: **"Your local changes to
+`.factory/INTAKE.md` would be overwritten."** The peer had a 73-line block uncommitted in
+the shared tree. **The block was extracted byte-for-byte — 5,652 characters, 74 lines, a
+pure append — the working copy reverted, and `origin/main` merged in as `52a06ae` with
+`merge-tree` reporting no conflict lines.** The peer's block was then found **already
+committed by the peer at 09:23** (`01771e3`, `56adfeb`) in the shared tree, while the merge
+was in flight. **Nothing was lost.** The lesson is the one this tree keeps teaching:
+**two Chief sessions share one working tree, so the tree moves under the lead mid-measure,
+and a merge that was refused at 09:10 was merged at 09:25.**
+
+**Two — WI-086 is LANDED, and it is not accepted.** Merge **`06c1b2f`** ("Land WI-086: the
+evidence a decision is taken against, in code"), from branch **`wi/086-evidence-read-route-v2`**
+(tip `d53882d`, plus `6c3f572`, the item record's own update). `merge-tree` clean. **9 files,
++939/-59**: the reader `apps/server/src/modules/approvals/evidence.ts` (new, 193 lines), the
+route at `apps/server/src/api/approvals.ts:37` registered at `app.ts:225`, the three
+re-pointed citations in `approvals/service.ts`, the published shape in
+`packages/contracts/src/approvals.ts`, the test file `approval-evidence.test.ts` (new, 437
+lines), the contract note at `CONTRACTS.md:1480`, and `scripts/contract-status.json`
+flipping the claim to `implemented`.
+
+**The old branch `wi/086-evidence-read-route` @ `d4926f0` was NOT merged** — it carries a
+day-old tree whose every cited line had moved — and it was **not force-pushed**, because the
+pre-push hook refuses a rewrite of a published branch without the owner's word, and no owner
+has said so.
+
+**This is the landing, not the acceptance.** The verification is dispatched to **Probe** —
+request id `wi-086-verify-probe-chief-2026-10-22`, task **`task_4b2fc4b5eb9f`** — who wrote
+none of the work. **Probe's lane is alive** (its last two messages are `done`, and it
+delivered WI-106's VERIFIED verdict at 09:05), so this is a dispatch into a working lane and
+not a request id spent into a refusing one.
+
+**Three — the number space is unchanged, and the next free number is WI-122.** WI-106 is the
+lead's and was closed at 09:10; WI-114 and WI-115 are the lead's; WI-116 is the pin WI-112
+owes; WI-117 is the peer's branch-hygiene measurement; WI-118 is the peer's mode item;
+WI-119 is the peer's prose item; WI-120 and WI-121 are the peer's. **No number was taken
+this turn, and the block was not edited.**
+
+**Four — WI-114 and WI-115 are re-measured on the tree WI-086's landing produced, and both
+stay HELD.** The hold was on the file — `CONTRACTS.md` was Cog's until WI-086 landed — and
+**the file is free. The hold is now on the lane.** `docs/**` and `*.md` are **Wren's**, and
+**Wren's lane is down: her chat's last five messages are `role=bot, status=error, 0
+characters`, each directly after a relay — WI-103, WI-106, WI-098, WI-111 and the WI-106
+round-two verdict. Five delegations, five refusals, not one word back.** The lead does not
+spend a request id into a lane that is refusing, so **neither item is dispatched.**
+
+**What the re-measurement found, and it is in the item files:**
+
+- **WI-114** — two of its four corrections are confirmed (`CONTRACTS.md:806` → `service.ts:376-377`;
+  `docs/resource-templates.md:355` → `templates.ts:534-555`), one has **moved**
+  (`CONTRACTS.md:1946` → **`:1955`**, because the contract grew by nine lines elsewhere), and
+  **one of its own proposed numbers was never right**: `resources/service.ts` has stood at
+  **798 lines since `a65ff32` at 06:29**, and `async execute(id)` has stood at **`:589`**
+  throughout, so the proposed `:583-593` does not hold "the automation provider's
+  `execute`" — `:583` reads `return updated;` and `:593` reads `if (type === 'automation')
+{`. **Three ranges are candidates and the item does not choose between them: `:589-622`,
+  `:593-602`, and `:624-634` (`inspect`, which is the code that refuses a drifted template at
+  the point it is read). Which one the row cites is the document owner's call, not a number
+  the lead should invent.**
+- **WI-115** — two of its numbers moved by two lines (`service.ts:345` → **`:347`**,
+  `:513` → **`:515`**), and **a fourth finding joined its scope**: the guide's claim at
+  `:71-73` that "the task provider's `validate` is `(data: unknown) => data` (`service.ts:299`)
+  — it returns whatever it is given, so the registry's drift check catches nothing for tasks"
+  is **false twice** — `:299` reads `if (!row) throw errors.notFound('Automation');`, and the
+  task provider's `validate` is at **`:351-360`**, where it parses with `taskSpecSchema` and
+  refuses with `errors.validation` — **WI-108's landing (`a65ff32`) is what fixed it.** The
+  paragraph's **first** half is still true: `apps/server/src/modules/mcp/server.ts` holds
+  **zero** occurrences of `audit`, so "the MCP server contains no `audit` call at all" holds.
+  **The correction must not remove the true half.** The two broken paths stand too: `:845`
+  names `docs/decisions/0008-_.md`, which does not exist (the ADR is
+  `docs/decisions/0008-five-domains.md`), and `:861` names the glob
+  `docs/decisions/0008-*.md`.
+
+**Five — the floor, cleaned of seven stale tasks.** The dispatcher takes the first queued
+task whose chat is free, so a stale task at the head **spends the next free slot on work
+that is already done.** Seven were cancelled: five reporting on **WI-106**, which was closed
+and accepted at 09:10 (and one of them carrying the claim that WI-106 is WI-119, which the
+published number space contradicts), and two reporting the WI-086 landing — one to a bot and
+one to the group. **That last one is a deliberate choice, and it is the tiebreak said out
+loud: WI-086's landing is the lead's act, so the lead reports it, once, with the merge and
+the push and the verification dispatch in the same post.** Of the seven, five had already
+failed on their own — **three `BUSY`, two `AGENT_UNAVAILABLE`** — which is the same
+refusal seen in Wren's lane, and one of them failed **on the group post itself**, so
+**Probe's WI-106 verdict never reached the group by the peer's route.** This post carries it.
+
+**Six — what the product can now do, pending the verifier's verdict.** **A decision's
+evidence can be read in code.** The approval's execution — the thing the decision was taken
+against — is served by a route at `apps/server/src/api/approvals.ts:37`, registered at
+`app.ts:225`, in a shape the contract publishes at `packages/contracts/src/approvals.ts`
+and exports as `approvalEvidenceSchema`. **And the claim table now holds it:** the note in
+`CONTRACTS.md:1480` and the claim in `scripts/contract-status.json` cannot claim
+"implemented" while the route or the exported schema is gone, and the pointer gate checks
+the note's three line numbers. **WI-086 is landed, not accepted: Probe's verdict is owed.**
+
+## 2026-10-22 09:45 — Chief: the front page is published, and the platform's verdict on the pushed sha
+
+**One — the front page is published.** `20ce58e..ce51521  main -> main`, fast-forward, exit 0,
+and the repository's own pre-push hook ran the format gate over the files in the push and
+passed. **The published tip, read from the remote and not from a tracking ref:**
+`git ls-remote origin refs/heads/main` → **`ce51521`**.
+
+**Two — the gates on the tree that was pushed.** `npm run gates`, **exit 0**: typecheck 25272ms,
+test 75978ms, build 15625ms, format 11658ms, contract-status 703ms, contract-pointers 1348ms,
+smoke 10270ms, compiled-build 2499ms, bundle-size 685ms — **"Every gate passed. The tree is
+green."** The three conditions of `FACTORY.md:99-107` were met: the local gates green on the
+tree being pushed, the landed code byte-identical to a tree the pipeline has measured
+(`git diff --name-only origin/wi/086-evidence-read-route-v2..ce51521` touches only `.factory/**`,
+`PRODUCT.md`, `README.md`, `docs/dependency-licences.json` and `package.json` — **no code
+path**), and a fast-forward from where the work started.
+
+**Three — the platform's verdict, read afterwards and recorded** (`FACTORY.md:109-113`). **CI
+run `39687241876` on `ce51521`: `completed/success`. CodeQL run `39687241897` on `ce51521`:
+`completed/success`.** The previous run on `20ce58e` was green in 5m39s, so the pipeline was
+measuring green when this push superseded it, and **the run that judged the last push of the
+batch is the one that matters** — it judged a tree that carries everything `20ce58e` carried,
+plus the front page.
+
+**Four — the published front page, measured the way a stranger measures it.** An anonymous
+fetch of what GitHub serves: `raw.githubusercontent.com/this-bytes/personal-os/main/README.md`
+line 3 reads the product's own sentence — **The environment one person's agents operate and
+extend.** — which is `docs/strategy.md:20` with the product's name left off, and
+`raw.githubusercontent.com/this-bytes/personal-os/main/package.json` reads
+**"description": "Personal OS — the environment one person's agents operate and extend.",**.
+The old line — _"An agent-native control panel and personal software factory"_ — was the
+page title, the meta description and the social preview, and **it stated three of the
+product's own exclusions** (`docs/strategy.md:37`: not a chat home, not a workflow editor, not
+an inference engine, not a plugin marketplace). It is gone from the front page.
+
+**Five — the lead wrote this one, and the borrow is on the record.** The dispatch to Wren
+(`wi-120-front-page-identity-2026-10-22`, task `task_2b5160e24223`) **queued for fifteen
+minutes and never started** — the dispatch ceiling was full of two tasks that had already
+produced their results and were parked in `waiting_for_tasks`. The owner's answer was
+_"before anyone finds it"_, and the front page is the one artefact already in the world. **So
+the queued dispatch was cancelled** — so that no two workers would meet in one worktree — and
+the lead executed the two-line change itself, **borrowing `README.md` from Wren**, with the
+manifest's description inside WI-120's item. **Probe still verifies it, and the lead cannot
+accept its own work:** the verification is dispatched as
+`wi-120-verify-published-front-page-2026-10-22`, task `task_f8085b21663f`, against the
+**published** artefact — **that dispatch was cancelled and replaced, and the section below
+says why.** **WI-120 is in `review` and not accepted until a verdict comes back.**
+
+**Six — WI-121 is dispatched and waiting for a slot.** Vision's blocked-agent want — _"the
+decision surface carries what an agent is blocked on"_ — is numbered, filed and dispatched to
+Cog (`wi-121-blocked-agent-decision-surface-2026-10-22`, task `task_bbf11f83be2b`, **queued**).
+**The ceiling is the reason it has not started**, and the ceiling is the reason the front page
+was executed by the lead rather than by its owner.
+
+**Seven — one push at a time.** This record travels in the next push, and that push's run is
+the one that judges the tree. **The code is byte-identical to `ce51521`**, so the verdict
+cannot differ for a reason that touches code.
+
+## 2026-10-22 09:55 — Chief: the verifier, and the ceiling that made the substitution
+
+**One — WI-120's verification stands with Vision, not Probe.** Probe's dispatch was made
+first (`wi-120-verify-published-front-page-2026-10-22`, task `task_f8085b21663f`) and was
+**cancelled** when it was measured to be **queued behind a full dispatch ceiling rather than
+refusing** — and a second verifier on one item is exactly the duplicate work a ceiling of
+**two** cannot afford. **Vision is the substituted verifier**
+(`wi-120-verify-published-front-page-vision-2026-10-22`, task `task_faa2e8e0f9f1`), and the
+condition for a substitute is met: **Vision wrote none of this work.** WI-120 is in `review`
+and **not accepted** until that verdict comes back. **The lead wrote the change and cannot
+accept its own work**, and that is the whole point of the separation.
+
+**Two — the ceiling, measured, and what it is actually made of.** Three dispatches were
+queued in ten minutes — Wren's WI-120, Cog's WI-121, and the verifications — and **none of
+them started**. The two slots are held by `task_2a34be8fd7d9` (the 08:55 relay, **90
+minutes** old) and `task_9f6a55468fe9` (Cog's WI-086, **whose result was delivered and whose
+landing is on `main` at `06c1b2f`**). **Both are `waiting_for_tasks`, not working**: each
+waits on dependency batches whose floor posts are still `reviewed: false`, and **the floor
+has been locked since 07:04:29**. The floor's own messages say why — each relayed result is
+followed by a bot message with **`status: error` and empty text**, which is a Chief turn on
+the floor that died rather than answered. **So the factory's capacity is two finished tasks
+and a locked floor, and the backlog behind them is real work: WI-120's verification and
+WI-121's implementation.**
+
+**Three — what was NOT done, deliberately.** The two parked tasks were **not cancelled**. They
+have produced their results, their deliveries are recorded, and cancelling them would mark
+delivered work as cancelled **without touching the cause** — the unreviewed floor posts and
+the lock behind them. **Cancelling is not the repair; the lock is.** The peer's own record
+of the same diagnosis is that a restart buys the floor, the wasted slot and the lanes, at the
+price of the turn in flight — and **Cog's WI-086 turn has now landed**, which was the
+condition the owner attached to that restart.
+
+**Four — the front page does not wait for any of this.** It is published, measured and green:
+`ce51521` merged, `npm run gates` exit 0 with all nine gates, **CI run `39687241876`
+`completed/success` and CodeQL run `39687241897` `completed/success` on that sha**, and the
+served `README.md` line 3 and manifest description read the product's own sentence. **The
+owner said "before anyone finds it", and the repository still has zero readers.** That is why
+the lead executed the change itself rather than waiting for a queue.

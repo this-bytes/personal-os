@@ -9568,3 +9568,124 @@ record commits are local and ride out with the next push**, by the peer's own re
 **The restart is still the owner's word**, and on today's evidence its benefit is **the
 wasted slot and Wren's refusal** — Probe's lane came back on its own — while its price
 is **the turn it lands in**, which right now is Cog's live WI-086.
+
+## 2026-10-22 09:15 — Chief: the licence record is accepted and landed, and the number space moves to WI-122
+
+**WI-106 is ACCEPTED on Probe's VERIFIED verdict, and the work is landed.** The
+verdict is against **`60d5bb8`, the branch's actual head — not the `c2375e4` the
+round-two brief named**: the brief's tree note was stale, the branch was **not**
+rebased back onto `1712fd2`, and it carries main's merge at `e885012` plus two
+ledger commits, **27 commits past `1712fd2`**. **A brief's tree note is not a
+measurement; the commit the verifier names is.** Both findings are fixed — the
+record's evidence sentence opens **"Each third-party entry records the file its
+licence was read from…"** and no longer says "every entry"; `PRODUCT.md:290-293`
+says **"one entry for every package in the lockfile"** and no longer says "the lines
+of that file that identify the licence" — and **nothing else moved**: the 494-entry
+array, `approvedSet`, `agpl.*`, `summary` and the other five `reads` strings are
+byte-identical, and `PRODUCT.md` has **one hunk** with the **366 lines outside it
+byte-identical**. The counts re-derive exactly: **375 / 16 / 97 / 6 = 494**,
+third-party **488**, **11** distinct `spdxId`s, `familiesRead` **11 rows summing to
+488**. The nine gates on the branch's own worktree: **exit 0**, including
+`npm run gates` — **"Every gate passed. The tree is green."** **Merged into `main` as
+`8817b92`**, `merge-tree` → **0 conflict lines**.
+
+**The acceptance's tiebreak, said out loud.** The peer session dispatched the
+round-two verification under its own request id and its record carries the same
+verdict; **this session lands the verified work and closes the item on Probe's
+report, so a verified item is not left verified-but-open.**
+
+**The pin is still owed and is still not written** — `git grep -ln
+'dependency-licences' 60d5bb8` over the test trees returns **empty**, so **no test
+file in the repository mentions licences at all**. The record can drift back into the
+two sentences this item corrected until a check holds them.
+
+**And a number in the item's own record was wrong, corrected by appending.** It read
+**"615 tests in 64 files"**: the test count is right and the file count is not — **it
+is 61** (39 + 9 + 6 + 3 + 4). The line stands; the correction stands beside it.
+
+**The number space moves to WI-122.** The peer filed **WI-120 — the published front
+page states the identity the owner replaced** (owner Wren) and **WI-121 — the
+decision surface carries what an agent is blocked on** (owner Cog), both reading
+the published block and taking the next two numbers. **The block now carries both
+rows and says WI-122.** And **WI-119's file must be renamed before it merges**:
+`main` carries a **different** WI-118 — the mode item — and merging
+`wi/118-strategy-record-prose` is an **add/add conflict on `.factory/work/WI-118.md`**.
+**The prose item is WI-119 and its file must be `WI-119.md`**; the branch keeps its
+name.
+
+**And the owner's word is on the record, read from WI-120's own file:** _"Does the
+owner stand behind a public MIT repository — with the front page corrected to the
+new identity before anyone finds it?"_ — **"Yes to both, in that order."** The
+repository is public and MIT and stays that way, and the front page is corrected
+**in the world, not on a branch**. The lead's standing word — _push `main` whenever
+CI is green_ — already covers the push, and **nothing else is pushed on the strength
+of that answer**.
+
+**The floor at 09:15.** Cog is running **WI-086** on `CONTRACTS.md`, which is what
+holds WI-114 and WI-115. **Probe's lane is alive and productive** — a NOT VERIFIED
+verdict at 07:25 and a VERIFIED one at 09:05, both measured adversarially rather
+than read out of the record. **Wren's lane still refuses.** The relay that held a
+slot has released it. **The ceiling stays at two.**
+
+## 2026-10-22 2026-10-22 09:37 — the lead merges the peer's ledger, lands WI-086, and re-measures the two held items
+
+**The push that was blocked at 09:10 is unblocked at 09:25.** The peer session had a
+73-line block uncommitted in `.factory/INTAKE.md` in the shared working tree, and
+`git merge origin/main` refused to overwrite it. **The block was extracted byte-for-byte
+— 5,652 characters, 74 lines — the working copy reverted, and the merge run: `merge-tree`
+reported no conflict lines, and `52a06ae` is the merge.** Then the peer's own commits
+turned up: `01771e3` ("Take WI-120 and WI-121, and correct WI-112's record") and `56adfeb`
+("Record WI-075's implemented state"), both at 09:23, in the shared tree, while the merge
+was in flight. **The peer's block was in them all along. Nothing was lost, and nothing had
+to be re-appended by hand.**
+
+**WI-086 landed at `06c1b2f`.** Cog rebuilt the branch on today's main instead of re-basing
+onto it, because the old commit `d4926f0` was a day old and every line it cited had moved;
+the landing went out on a fresh branch, `wi/086-evidence-read-route-v2`, and **the old
+branch stays on the remote, unmerged, because the pre-push hook refuses a rewrite of a
+published branch without the owner's word.** Nine files, +939/-59: the reader, the route at
+`api/approvals.ts:37` registered at `app.ts:225`, the three re-pointed citations, the
+published shape in `packages/contracts/src/approvals.ts`, a 437-line test file, the
+contract note at `CONTRACTS.md:1480`, and the claim table in `scripts/contract-status.json`
+flipping to `implemented`. **The landing is not the acceptance.** Probe verifies it —
+`wi-086-verify-probe-chief-2026-10-22`, `task_4b2fc4b5eb9f` — because Cog wrote it.
+
+**Two held items, re-measured on the tree WI-086 produced, and both stay held — on the lane
+now, not on the file.** `CONTRACTS.md` is free. **`docs/**`is Wren's, and Wren's lane is
+down: five delegations in a row, each answered with`status=error` and zero characters.**
+The lead does not spend a request id into a lane that is refusing, so **WI-114 and WI-115
+are not dispatched\*\* — but they are now measured, and the measurements are written into
+their item files.
+
+**And the measurement earned two corrections to this session's own item files.** WI-114
+proposed `service.ts:583-593` for "the automation provider's `execute`"; **`resources/service.ts`
+has stood at 798 lines since WI-108's landing at 06:29, and `async execute(id)` has stood at
+`:589` throughout** — `:583` reads `return updated;` and `:593` reads `if (type ===
+'automation') {`. **The proposed range was never right on this tree**, and the lead named
+three candidates instead of inventing a fourth. And WI-115's `service.ts:345` and `:513`
+are now **`:347`** and **`:515`**.
+
+**A fourth finding joined WI-115's scope, measured rather than copied.** The template
+guide says the task provider's `validate` is `(data: unknown) => data` at `service.ts:299`,
+so "the registry's drift check catches nothing for tasks and `resource.inspect` always
+reports a task as valid". **Both halves are false**: `:299` reads `if (!row) throw
+errors.notFound('Automation');`, and the task provider's `validate` is at `:351-360`, where
+it parses with `taskSpecSchema` and refuses with `errors.validation` — **WI-108's landing is
+what fixed it.** The paragraph's first half is still true, though: `mcp/server.ts` holds
+**zero** occurrences of `audit`, so "the MCP server contains no `audit` call at all" stands.
+**A correction that removes the true half is as wrong as one that leaves a false half.**
+
+**The floor lost seven stale tasks, and the refusals were the reason.** Five of them
+reported on WI-106, closed and accepted at 09:10 — including one carrying the claim that
+WI-106 is WI-119, which the published number space contradicts — and two reported the
+WI-086 landing. **Three of the seven had already failed `BUSY` and two `AGENT_UNAVAILABLE`,
+and one of them failed on the group post itself: Probe's WI-106 verdict never reached the
+group by the peer's route.** The lead's post carries it. **The tiebreak said out loud: the
+landing is the lead's act, so the lead reports it, once, with the merge and the push and the
+verification dispatch in the same post.**
+
+**The floor at 09:40.** **Probe is alive** — a NOT VERIFIED verdict at 07:25 and a VERIFIED
+one at 09:05, both measured adversarially — and holds WI-086's verification. **Cog is
+mid-turn** on the WI-086 report, streaming, and is reported and not cancelled. **Wren is
+down**, five refusals running. **The ceiling stays at two.** **The next free number is
+WI-122, and no number was taken today.**
