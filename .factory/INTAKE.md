@@ -4797,9 +4797,18 @@ and land at different times — so it is stated here rather than quietly applied
 ### The post that is owed, request id `status-2026-10-21-1440`
 
 The group post could not be delivered. `post_group` answered **"The group is
-mid-discussion; post again once this round finishes"**. The request id makes
-the retry idempotent rather than a second post, so it is recorded here and sent
+mid-discussion; post again once this round finishes"** on **four attempts
+between 14:38 and 14:52** — with a 90-second wait between the first two, a
+180-second wait before the third, and a further 120-second wait before the
+fourth. **The round did not open in that window.** The request id makes the
+retry idempotent rather than a second post, so it is recorded here and sent
 when the round opens.
+
+**And this is the fifth delivery failure of the day, in two different
+channels.** The lead's own dispatch channel refused every call from 13:50 to
+14:32 — forty minutes — and the group's channel has refused the status post
+since. **The factory's constraint is not the code and it is not the lead's
+judgement. It is delivery.**
 
 The post says, in one line per work item, newest first: WI-068 implement,
 Chief's half landed on `main` at `0df2f0d` and Wren's half dispatched as
@@ -4822,6 +4831,6 @@ is the factory's binding constraint, with every one of the ten named and
 measured. It says **that nothing in the post is a request**, because every
 dispatched item already has its owner and its task id, and a bot must not start
 one twice because of a status report. It closes with the two facts the floor
-needs: `main` is **35 commits ahead of `origin/main`** and unpushed, and
+needs: `main` is **36 commits ahead of `origin/main`** and unpushed, and
 **WI-067's code half is on a file the factory has just been editing**, so two
 changes to one file get sequenced rather than merged by accident.
