@@ -1769,3 +1769,114 @@ infrastructure", and nothing in this session added one.
 **This session: WI-046 through WI-061.** Taken by the session that owns the
 number space, and the other Chief session's numbers — WI-024 through WI-029
 and WI-039 through WI-043 — were left alone.
+---
+
+## 2026-10-22 04:20 — A shift, measured: one dead dispatch, one defect closed, and the verifier lane still the owner's
+
+**The state this shift found, measured rather than read off the item files.**
+263 tasks in the fleet state: **2 running, 4 queued**, and **neither running
+task is a stall.** WI-102's implementation had held its slot 33 minutes and
+WI-080's verification 17 — both under the 45-minute trigger — and both chats
+show a `streaming` delegation with a `started` session. **`miniapp list` says
+the Mini App runtime is `running`**, so the `running` rows are work in flight
+and not leftovers of a stopped dispatcher. **Nothing was cancelled, and nothing
+should have been**: elapsed time is a trigger to look, never a reason.
+
+**The verifier lane is still dead, and the decision is still the owner's.**
+Probe's session `mvs_f1f513955649480dbfb09fae820cf59f` reports `status: started`
+with `errorSource: turn-system` and _"Cron definition was deleted before
+execution"_, **unchanged since 03:53**. **`miniapp restart minimax-bot`
+is still the only thing that clears it**, and it has been the owner's since
+02:41. This shift did not take it — a live turn is not a shift's to cancel.
+
+**And one dispatch was dead where the ledger said it was pending.** WI-034's
+correction dispatch to Wren — `wi-034-citation-drift-correction-2026-10-22`,
+task `task_fa2d04db7c5d`, batch `batch_5f660955d239` — **is `failed` in the
+fleet state**, while the item's own file said it was dispatched. The correction
+it was sent to produce exists anyway (`9ff3616`, on `wi/034-citation-drift`),
+so no work was lost — but **the record that said "dispatched" was a record that
+lies**, and it is corrected in WI-034's file. **A dispatch that cannot be
+delivered is not a dispatch, and a dispatch that dies is not a pending one.**
+
+**What this shift did.** WI-034's blocking defect — three code citations in
+`CONTRACTS.md`'s `### The audit outcome` that had drifted under the section, one
+of them contradicting the neighbouring entry's citation of the same line — is
+closed, and Probe's pin holds it, because the pin and the contract cite the
+same string and one without the other is red.
+**The correction landed on `main` first, and this shift did not land it: the
+other Chief session merged it as `26fb68e` while this shift's gates were
+running**, with merge-tree naming no conflicted file and the three citations
+re-measured against the tree before the merge was taken. **What was left for
+this shift was the other half — the pin itself** —
+`apps/server/src/__tests__/audit-outcome-vocabulary.test.ts` (252 lines), on
+branch `wi/034-outcome-vocabulary-check`.
+**The pin was red on `main` and is green on the tree it lands in.** Measured
+here, all three states, not copied from a report: the stale contract and the
+stale pin give **`1 failed | 5 passed (6)`**; the corrected contract and the
+stale pin give **`1 failed | 5 passed (6)`**; the corrected contract and the
+moved pin give **`6 passed (6)`**. The pin's own header said its red case was
+red because the contract had drifted, **which the
+correction made false**, so the header was corrected in the same landing — a
+file that says the contract is broken when the contract is whole is the same
+defect as a contract that lies about the code. **No assertion was loosened and
+no criterion was dropped.**
+
+**And one number had two claimants, and one dispatch still has no file at all.**
+**WI-103 was numbered and dispatched to Wren** —
+`wi-103-contract-pointers-after-wi-080-2026-10-22`, `task_b0c1dbb8ab05`, batch
+`batch_6158711cfd29`, queued — **and `.factory/work/WI-103.md` does not exist.**
+Measured: `git log --all --diff-filter=A -- .factory/work/WI-103.md` returns
+nothing, so **the file has never existed on any branch in this repository.**
+The number space's rule is that an item's file is the specification and the
+dispatch carries it; **a dispatch whose specification exists only in a chat is
+a dispatch the repository cannot hold.** **And the number 103 did have a second claimant:** the branch
+`wi/103-publish-template-contract` existed at `48295c2` — the same commit as
+`wi/101-integration-landing` — and it carried **no WI-103.md file either**, so
+it was a pointer to an item that was never written down.
+**That claim is now withdrawn by the session that owns the numbers.** The
+branch is gone, the item is re-filed as **WI-106**, and
+`.factory/work/WI-106.md` is written and pushed on
+`wi/106-publish-template-contract` — and that file **says out loud that it was
+first filed as WI-103**, and why WI-106 is the next free number. **So the
+collision this shift measured is resolved, by the right session, in the right
+way: a number is a claim about an item, and the loser of the claim re-files
+rather than renames the winner.**
+**What is left is the item with no file at all.** WI-103 — the peer's, "the
+eight pointers into the code file that WI-080's merge moved", dispatched to
+Wren as `task_b0c1dbb8ab05` and queued — **still has no file, and
+`git log --all --diff-filter=A -- .factory/work/WI-103.md` returns nothing.**
+**This shift does not create the file: the number space belongs to the session
+that owns it.** **The want, for whoever owns the numbers:** _"the contract's
+pointers into `apps/server/src/modules/mcp/server.ts`, which WI-080's merge
+moved by +2 — nine citations, measured line by line by the lead, one of them
+already stale before WI-080"_ — owner Wren, scope `CONTRACTS.md` only, and the
+brief that goes with it is already in the dispatch.
+
+**And it is not the only one.** Measured the same way, over every branch:
+**`.factory/work/WI-105.md` and `.factory/work/WI-107.md` have never existed
+either**, and **WI-105 is running** (`task_cc1bd927efc4`, on Cog). **Three
+live items are specified only in chat.** The item's file is what makes the
+work survive the session that wrote it; **a spec that lives in a chat dies
+with the chat**, and the number block in `.factory/INTAKE.md:47-56` counts a
+branch and a dispatch as a claim, which is not the same thing as a written
+specification.
+
+**The item is NOT accepted, and this shift did not accept it.** Chief wrote the
+item, the correction and the merge, so it does not accept it — **the
+re-verification by another hand is owed**, on the landed tree, and it goes to a
+lane that can take it with the limit of the substitution stated in the dispatch:
+**a substituted verifier is a holding action, not a repair of the lane.**
+
+**What is still owed to the owner.** **`miniapp restart minimax-bot`** — the
+verifier lane, and with it WI-098's, WI-099's and this item's verifications.
+**And whether a substituted verifier stands at all**, which is the second half
+of the floor report already queued at 03:45 (`task_08f4f84fa3c5`).
+
+**And one number the owner should have from this shift: the factory's own
+ledger is 1,423 lines and 340 KB, and 42 of the 80 item files on `main` still
+say `implement` while their dispatch is dead or finished.** WI-020's measures
+dispatch (`task_86010eeeb561`) is `done` and the route, the contract entry and
+`apps/server/src/__tests__/measures.test.ts` are all on `main`, while WI-020's
+file still reads `implement —`. **That is a ledger that lies in the other
+direction, and it is a cheap repair** — but it is not this shift's, and the
+number space belongs to the session that owns it.
