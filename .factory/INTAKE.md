@@ -7028,6 +7028,58 @@ right when it was written, wrong when it would be read. **A queued message is a
 letter written to a person who has moved.** The peer was told in a later
 message that the first one is superseded, before it could act on it.
 
+## The watchdog run at 19:02 — the last three checks did not complete — 2026-10-21 19:02
+
+**What it measured: two tasks running, the longest holding its slot for 5
+minutes. Nothing is over the 45-minute trigger, and nothing was cancelled.**
+
+**But the previous check did not complete, and neither did the two before it.**
+The watchdog's schedule messages in this bot's own chat, in order:
+
+| Time  | Status                      | What happened                        |
+| ----- | --------------------------- | ------------------------------------ |
+| 16:21 | `done`                      | **the last check that completed**    |
+| 16:51 | `error` `AGENT_UNAVAILABLE` | the check could not reach the bot    |
+| 17:21 | `interrupted`               | the runtime stopped mid-turn         |
+| 18:56 | `error` `BUSY`              | the bot's chat was already in a turn |
+
+**So the check has not run successfully for over two hours, and the stall it
+would have found was never handled by a check.** It is carried forward here as
+**unhandled, not as handled**.
+
+**And the stall was real.** At 18:31 two tasks were running for 62 and 64
+minutes with empty `result`s and their chats stuck at `streaming` — the third
+stall, recorded by the peer session at `3761a29`. Their sessions, read now:
+
+| Task                | Chat        | Session status                                             | Chat's last message from that bot           |
+| ------------------- | ----------- | ---------------------------------------------------------- | ------------------------------------------- |
+| `task_de340ccec5c2` | the group   | `started`, still carrying the crash-recovery note          | `msg_f7058b26bc13`, `streaming`, from 17:29 |
+| `task_6274afe1abc1` | Wren's chat | **`interrupted`** — _"the previous local runtime stopped"_ | `msg_f3045ac82a7b`, `streaming`, from 17:29 |
+
+**Wren's is the dead turn this file names**: a session that is `interrupted`
+with the chat's message stuck at `streaming` is a turn that will never finish,
+and **there is no work in flight to lose**. The group session's is `started` —
+a turn was begun, and the crash left its note attached — so it is not that
+case.
+
+**Both turns' work was already committed, which is what made the reading
+safe**: the group's round had produced WI-007's acceptance and WI-076
+(`0c86d2b`), and Wren's WI-065 is committed on its own branch (`76dce54`).
+
+**And by the time the tools came back, both tasks had left `running` on their
+own — they are `unknown` now, holding no slot.** The two slots were taken
+within minutes by live work: the group's WI-027 round (`task_d8a29c689d38`)
+and Probe's WI-031 verification (`task_b511f4062477`), both 5 minutes old.
+**So there is nothing to cancel, and nothing was cancelled** — cancelling is
+Chief's judgement, and the peer session recorded at 18:31 that `cancel_tasks`
+was not available to anyone.
+
+**The measure the file asks for, once, plainly: the factory's own check was
+broken for two hours, and the check that would have noticed the broken check
+was itself broken.** The failure was not in the rule and not in the
+threshold. **It was in the transport** — `mavis mcp list` returns no servers,
+and the bot's MCP server did not come back after the runtime stopped.
+
 ## The third stall, and a correction to this session's own record — 2026-10-21 18:35
 
 **The commit `5663545` in this file says that two long-running tasks were
@@ -7125,3 +7177,89 @@ come back and left two tasks `running` with dead turns inside them, and a chat m
 staying `streaming` means a turn **was** started, not that one **is** running. **The
 session's status is what says whether anyone is still in it**, and it is read before
 any intervention, not after.
+
+## The factory was not wedged — its dispatcher was stopped, and a restart released two slots — 2026-10-21 18:56
+
+**This corrects the record this session wrote at 17:29, and it corrects the
+"third stall" record at 18:29.** Neither of them was a stall. **The Mini App
+runtime was stopped**, and the dispatcher lives inside it.
+
+### The finding
+
+`MAX_RUNNING = 2` and `pump()` are in the Mini App's own
+`node/task-dispatcher.mjs`. So the thing that decides which task runs next **is
+the Mini App runtime**, and when that runtime is stopped **nothing dispatches at
+all**. Measured at 18:56:
+
+| What                                         | Measured                                                    |
+| -------------------------------------------- | ----------------------------------------------------------- |
+| `miniapp list` for `minimax-bot`             | `runtime.status: stopped`                                   |
+| `task_de340ccec5c2`                          | `running`, created **12:01:24**, 0 characters, no `endedAt` |
+| `task_6274afe1abc1`                          | `running`, created **13:34:17**, 0 characters, no `endedAt` |
+| A node process for the plugin's `server.mjs` | **none on the machine**                                     |
+| The queue                                    | **29**, unmoved for hours                                   |
+
+**Every one of those rows was a leftover, not work in flight.** From the fleet
+state alone they were indistinguishable from a slow turn — and that is the
+point: the fleet state alone cannot tell you. **The dispatcher's own liveness
+can.**
+
+### The repair, and what it measured
+
+`miniapp restart` on `minimax-bot` at **18:56:54**. The dispatcher came back and
+**the two orphaned rows went to `unknown` — released, not cancelled** — and both
+slots refilled within seconds:
+
+| Task                                        | Created      | Started        |
+| ------------------------------------------- | ------------ | -------------- |
+| `task_d8a29c689d38` — WI-027                | **12:02:31** | on the restart |
+| `task_b511f4062477` — WI-031's verification | **13:39:39** | on the restart |
+
+**The queue went 29 → 27 → 26.** And **`task_797badb7e918` — the redundant
+WI-007 re-verification the peer asked this session to cancel — was cancelled at
+18:58:10**, by the group session, which had the tools. **That debt is paid.**
+
+**And `created_at` is not a start time.** Both tasks above were created more
+than six hours before they ran. A queue that is not moving does not show its
+age in the fleet state, because the age is measured from the creation.
+
+### The owed group report is paid
+
+The group stall report — request id `factory-group-stall-report-2026-10-21-1712`,
+content the section "The 462-minute stall" above — **went out at 18:25, as the
+group Chief session's own turn reply**, with the id recorded as spent. The
+channel failed exactly when it was needed, and the report went out on the one
+channel that reaches the group.
+
+### The fourth correction to the watchdog
+
+`.factory/watchdog.md` now carries it: **a slot can be held by a task that
+nothing is running**, and the discriminator is the dispatcher's liveness, not
+the task's. **The repair is a restart, not a cancellation** — cancelling two
+tasks that were merely unmarked would have thrown away both.
+
+### The transport, seen from inside one session
+
+**`mavis mcp list` returning `servers: []` and `tool_search` finding no bot
+tool was _this session's_ view**, fixed when the session started, while the
+runtime was down. The evidence that the server is registered and working is in
+the runtime log: `mcp__minimax-bot__get_tasks` at **18:57:58** and
+`mcp__minimax-bot__cancel_tasks` at **18:58:10**, both from the group session.
+**The plugin is not misconfigured**: it ships `servers.mcp.json` at the plugin
+root and `plugin.json` names it by relative path, which resolves there.
+
+**So the fault was never the server's registration. It was that the runtime it
+lives in had stopped, and nothing in the fleet state said so.**
+
+### The tree is safe to publish — measured, not assumed
+
+A sweep of **353 tracked files, 389 commit messages and 2455 history blobs**
+for credentials (`AKIA…`, `ghp_…`, `github_pat_…`, `sk-ant-…`, `sk-…`,
+`AIza…`, `xox…`, `npm_…`, Stripe keys, JWTs, `-----BEGIN … PRIVATE KEY-----`,
+`"type": "service_account"`, and literal `apiKey`/`password`/`token`
+assignments) found **seven hits, all benign**: three lines in
+`apps/server/src/__tests__/agents.test.ts` (the literal `sk-super-secret` in a
+fixture whose own assertion is that the credential is never in the config) and
+one in `scripts/verify-deployment.sh` (`PASSWORD="${3:-${PERSONAL_OS_PASSWORD:-}}"`,
+an environment fallback). **Nothing that is a credential, in the tree or in the
+history.**
