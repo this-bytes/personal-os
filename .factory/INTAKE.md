@@ -1522,15 +1522,45 @@ delivered is not a dispatch, and a dispatch that dies is not a pending one.**
 **What this shift did.** WI-034's blocking defect — three code citations in
 `CONTRACTS.md`'s `### The audit outcome` that had drifted under the section, one
 of them contradicting the neighbouring entry's citation of the same line — is
-closed, and Probe's pin travels with the correction, because the pin and the
-contract cite the same string and one without the other is red. Branch
-`wi/034-outcome-vocabulary-check` carries both: the correction (three lines) and
-`apps/server/src/__tests__/audit-outcome-vocabulary.test.ts` (249 lines).
-**`1 failed | 5 passed (6)` before; `6 passed (6)` after.** The pin's own header
+closed, and Probe's pin holds it, because the pin and the contract cite the
+same string and one without the other is red.
+**The correction landed on `main` first, and this shift did not land it: the
+other Chief session merged it as `26fb68e` while this shift's gates were
+running**, with merge-tree naming no conflicted file and the three citations
+re-measured against the tree before the merge was taken. **What was left for
+this shift was the other half — the pin itself** —
+`apps/server/src/__tests__/audit-outcome-vocabulary.test.ts` (252 lines), on
+branch `wi/034-outcome-vocabulary-check`.
+**The pin was red on `main` and is green on the tree it lands in.** Measured
+here, all three states, not copied from a report: **stale contract + stale pin
+`1 failed | 5 passed (6)`; corrected contract + stale pin `1 failed | 5 passed
+(6)`; corrected contract + moved pin `6 passed (6)`.** The pin's own header
 said its red case was red because the contract had drifted, **which the
 correction made false**, so the header was corrected in the same landing — a
 file that says the contract is broken when the contract is whole is the same
-defect as a contract that lies about the code.
+defect as a contract that lies about the code. **No assertion was loosened and
+no criterion was dropped.**
+
+**And one number has two claimants, and one dispatch has no file at all.**
+**WI-103 was numbered and dispatched to Wren** —
+`wi-103-contract-pointers-after-wi-080-2026-10-22`, `task_b0c1dbb8ab05`, batch
+`batch_6158711cfd29`, queued — **and `.factory/work/WI-103.md` does not exist.**
+Measured: `git log --all --diff-filter=A -- .factory/work/WI-103.md` returns
+nothing, so **the file has never existed on any branch in this repository.**
+The number space's rule is that an item's file is the specification and the
+dispatch carries it; **a dispatch whose specification exists only in a chat is
+a dispatch the repository cannot hold.** **And the number 103 has a second
+claimant:** the branch `wi/103-publish-template-contract` exists at `48295c2`
+— the same commit as `wi/101-integration-landing` — and it carries **no
+WI-103.md file either**, so it is a pointer to an item that was never written
+down.
+**This shift does not renumber and does not create the file: the number space
+belongs to the session that owns it, and a second claim is recorded rather than
+resolved here.** **The want, for whoever owns the numbers:** _"the contract's
+pointers into `apps/server/src/modules/mcp/server.ts`, which WI-080's merge
+moved by +2 — nine citations, measured line by line by the lead, one of them
+already stale before WI-080"_ — owner Wren, scope `CONTRACTS.md` only, and the
+brief that goes with it is already in the dispatch.
 
 **The item is NOT accepted, and this shift did not accept it.** Chief wrote the
 item, the correction and the merge, so it does not accept it — **the
