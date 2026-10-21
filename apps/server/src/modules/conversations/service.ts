@@ -14,6 +14,7 @@ import { errors } from '../../lib/errors.js';
 import { newId } from '../../lib/ids.js';
 import type { EventsService } from '../events/service.js';
 import type { Queue } from '../../queue/client.js';
+import type { AuditService } from '../audit/service.js';
 import { planAndDispatch } from './dispatch.js';
 import {
   deriveChainState,
@@ -125,6 +126,8 @@ export interface ConversationsServiceOptions {
   db: Database;
   events: EventsService;
   queue: Queue;
+  /** The audit trail, where a stopped routing is recorded. */
+  audit: AuditService;
   /**
    * Resolve the display name of an agent connection. Participants are named
    * after their agent so that "@Echo" mentions work in the composer.
@@ -479,6 +482,7 @@ export function createConversationsService(
         db,
         events,
         queue,
+        audit: options.audit,
         conversationId,
         message,
         participants: people,
