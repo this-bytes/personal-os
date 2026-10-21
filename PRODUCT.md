@@ -256,6 +256,17 @@ vendor a codebase in and does not take a runtime dependency to get a feature. Th
 doctrine keeps the rule itself in [FACTORY.md](FACTORY.md); this is the product-side
 consequence of it.
 
+**The rule covers this repository's own tree, not only the lockfile.** A file
+copied in, a snippet inlined, a font, a fixture of real code — each is borrowed
+work with its own licence, and none of it is in the lockfile. What covers the
+tree is an inventory and a check that fails the build on a vendored source
+whose licence is not approved. The inventory is
+[`docs/vendored-sources.json`](docs/vendored-sources.json), and **the check is
+in flight**: it is being written in parallel and is not on `main` yet. The tree
+carries one vendored source today, and it is the case the rule exists for:
+`CODE_OF_CONDUCT.md` is adapted from the Contributor Covenant, version 2.1, and
+states no licence of its own.
+
 **An interface is conformed to, never reimplemented.** Personal OS is a client of
 ACP, A2A, MCP and the OpenAI-compatible API shape. "Our spec" means our domain
 model, not our dialect of someone else's protocol.
