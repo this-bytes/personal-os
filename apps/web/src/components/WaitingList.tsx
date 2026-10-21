@@ -301,7 +301,19 @@ function WaitingRow({
         ) : null}
       </div>
       <div className="flex shrink-0 items-center gap-1.5">
-        <Badge variant={variantFor(item)}>{labelFor(item)}</Badge>
+        {/*
+         * Every row of this rail is waiting on the owner, so every row wears
+         * the accent — PRODUCT.md 11 says the accent means live or waiting on
+         * you, and a row in another colour would say the rail is not waiting
+         * on you. The four reasons a row can be here are carried by its
+         * label, not by four different colours: a colour that has to mean
+         * four things is a colour that stops meaning any of them.
+         *
+         * "Blocked" is one of them. A blocked item in this rail is an item
+         * waiting on the owner, not a failure that happened; failures live in
+         * the conversation and in the editor.
+         */}
+        <Badge variant="accent">{labelFor(item)}</Badge>
         {approvalId ? (
           <>
             <Button
@@ -377,18 +389,4 @@ function labelFor(item: WaitingItem): string {
   if (item.reason === 'review') return 'In review';
   if (item.reason === 'unknown') return 'Check this';
   return 'Blocked';
-}
-
-/**
- * What colour the item is.
- *
- * An approval and a task in review are both waiting on the owner, and the
- * accent is what says the owner is needed. An item whose outcome is unknown
- * is a caution — something to check, not a decision — so it stays neutral.
- */
-function variantFor(item: WaitingItem): 'accent' | 'warning' | 'danger' {
-  if (item.kind === 'approval') return 'accent';
-  if (item.reason === 'review') return 'accent';
-  if (item.reason === 'unknown') return 'warning';
-  return 'danger';
 }

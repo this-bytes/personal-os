@@ -80,7 +80,7 @@ them named a colour.
 | `apps/web/src/components/ParticipantManager.tsx:69` | "disabled"            | a state        | neutral             |
 | `apps/web/src/pages/Agents.tsx:197`                 | "disabled"            | a state        | neutral             |
 | `apps/web/src/components/WaitingList.tsx:383`       | "Approval"            | waiting on you | **the accent**      |
-| `apps/web/src/components/WaitingList.tsx:385`       | "Check this"          | caution        | neutral             |
+| `apps/web/src/components/WaitingList.tsx:385`       | "Check this"          | caution        | **the accent**      |
 
 ### The three that meant live or waiting on you and were wearing indigo
 
@@ -93,11 +93,28 @@ what it meant.
 | `apps/web/src/components/ChatMessageList.tsx:152` | "streaming" | indigo       | live right now | **the accent**      |
 | `apps/web/src/components/WaitingList.tsx:384`     | "In review" | indigo       | waiting on you | **the accent**      |
 
-### One that is left alone
+### The rail is one colour
 
-| File                                          | Element   | Colour today | Meaning today          | Left as it is, and why                                                               |
-| --------------------------------------------- | --------- | ------------ | ---------------------- | ------------------------------------------------------------------------------------ |
-| `apps/web/src/components/WaitingList.tsx:386` | "Blocked" | red          | a task that is blocked | red — two readings are defensible and the call is the owner's, not the implementer's |
+The waiting rail is the panel's clearest "waiting on you" surface, and the owner
+ruled on 2026-10-21 that every row of it wears the accent. Two readings were
+defensible before that — that "Blocked" is a failure and belongs in the error
+colour, and that a row whose outcome is unknown is a caution — and the ruling
+settles both in the accent's favour, because every row in that rail is waiting
+on the owner.
+
+| File                                          | Element   | Colour today | Meaning today          | Meaning under Forge                         |
+| --------------------------------------------- | --------- | ------------ | ---------------------- | ------------------------------------------- |
+| `apps/web/src/components/WaitingList.tsx:386` | "Blocked" | red          | a task that is blocked | **the accent** — it is waiting on the owner |
+
+A blocked item in this rail is not a failure that happened; it is an item
+waiting on a decision. Failures live in the conversation and in the editor,
+where they are in `--err`.
+
+The four reasons a row can be in the rail — "Approval", "In review", "Check
+this" and "Blocked" — are carried by the labels, and the labels are what
+tells them apart. That matters: the accent against the caution colour is the
+weakest pair there is under deuteranopia, so the rail cannot lean on colour
+to say which row is which.
 
 ## The connection states
 
@@ -120,17 +137,18 @@ because colour is never the only thing carrying the meaning — WCAG 2.2 SC
 
 ## The guard
 
-`apps/web/src/__tests__/accentGuard.test.ts` fails if amber appears anywhere
+`apps/web/src/__tests__/accentGuard.test.tsx` fails if amber appears anywhere
 outside the token layer, and if the token layer grows a second token for the
 accent. The keep-list is one file: `apps/web/src/index.css`.
+
+It also renders the waiting rail and checks that every row is both the accent
+and a label, so a row whose label was dropped — which would leave colour
+carrying the meaning on its own — fails the guard.
 
 A rule that nothing checks is a rule that erodes. This is the check.
 
 ## What is not settled here
 
-- Whether "Blocked" stays red or becomes the accent.
-- Whether the whole waiting rail becomes the accent, which §11 argues for, and
-  which today is three colours.
 - The five agent hues, which must exclude amber, emerald, rose and violet,
   because an agent must not wear a colour that says something about the work.
 - The bulk `indigo-` to `violet-` rename and the slate re-hue, which are the
