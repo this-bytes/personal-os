@@ -133,7 +133,8 @@ something has checked it_ (PRODUCT.md §8). The ledger is where the product alre
 does this — goal → task → execution → evidence → acceptance.
 
 **What we have.** WI-017 (the template record, the MCP surface, the validation) and
-WI-030 (the published shape). Both dispatched 2026-10-21.
+WI-030 (the published shape) — WI-030 **done** (`e682224`), WI-017 **verified** and
+waiting on acceptance.
 
 **What we did not have, and now do.** A template set. WI-017's last acceptance
 criterion says the report states which template set ships; WI-030 says which kind
@@ -144,12 +145,17 @@ recommendation was the owner's to reject; see decision 1.
 **The set that ships, and the state it is in.** WI-017 has built one template per
 kind, all six: `dashboard.metrics`, `document.brief`, `data-source.json`,
 `automation.manual-prompt`, `task.deliverable`, `memory.decision-note` — against
-WI-030's landed contract entry. **The item is built and not yet accepted**: Probe's
-verification of it was dispatched late, and WI-063 was opened because WI-017's
-implementation landed before the contract's statement about it did — the same drift
-the pipeline caught in the published counts. This pillar's gap is closing, not
-closed, and this document should not be read as saying the template half is
-finished.
+WI-030's landed contract entry. **The item is built, verified, and not yet
+accepted**: Probe's verification ran on 2026-10-21 and **all seven criteria hold**,
+and the criterion no test met is now met by a test Probe wrote (`052f050`, eleven
+cases), with two of the pins proved to bite and then restored. **What the
+verification found is the contract's status paragraph, which is false in every
+clause** — and that is a separate item, opened because WI-017's implementation
+landed before the contract's statement about it did: the same drift the pipeline
+caught in the published counts. **That item was opened as WI-063 and renumbered to
+WI-065**, because the number was claimed twice at once. This pillar's gap is
+closing, not closed, and this document should not be read as saying the template
+half is finished.
 
 ### Pillar 2 — One truth, one history, and a way back
 
@@ -348,7 +354,7 @@ came out of this document's own review and was numbered later, as WI-044.
 | W3   | **deferred**         | [WI-035](../.factory/work/WI-035.md) | Cog   | The largest of the seven. Starts after Forge. **The deferral is capacity, not judgement** — Cog's lane is full — and it is numbered so it is not lost.                                                                        |
 | W4   | **folded**           | [WI-007](../.factory/work/WI-007.md) | Cog   | The same subject under a different name. **The fold is recorded in `.factory/INTAKE.md`, not in WI-007's own file** — that item does not yet name the fold, which is a gap in the item, not in this record.                   |
 | W5   | **accepted**         | [WI-036](../.factory/work/WI-036.md) | Wren  | The record the gate compares against. **Accepted** — Probe re-derived the numbers its own way rather than trusting the record: 494 packages, one copy, in `docs/dependency-licences.json`. Lands **before** W7.               |
-| W6   | accepted, landed     | [WI-037](../.factory/work/WI-037.md) | Wren  | The cheapest item in the set and the most overdue. **Landed — at verify**: the product record now says Forge.                                                                                                                 |
+| W6   | **accepted**         | [WI-037](../.factory/work/WI-037.md) | Wren  | The cheapest item in the set and the most overdue. **Accepted** — all four criteria hold and nothing else in the product record changed: the product record now says Forge.                                                   |
 | W7   | accepted, in flight  | [WI-038](../.factory/work/WI-038.md) | Chief | The gate. Lands **after** W5 — a gate that compares against nothing catches nothing — and W5 has landed, so it can. The CI step and manifest entry are written; the gate script is **queued, not written**.                   |
 | W8   | **funded, deferred** | [WI-044](../.factory/work/WI-044.md) | Chief | The check over this repository's own sources. Numbered so it is not lost, and **not dispatched** — the inventory is worth writing against a settled repository, and the repository's visibility is the owner's open decision. |
 
@@ -489,10 +495,11 @@ owner said their word on 2026-10-21: **D — Forge**. A product record that stat
 the opposite of the decision is the one thing it cannot carry.
 
 **And it has been corrected** — WI-037 landed (`0024f88`, _"Make the product record
-say Forge, with the date and the recommendation"_) and is at verify. §11 now names
-Forge, with the date and the fact that the factory recommended B.
+say Forge, with the date and the recommendation"_) and was **accepted** on
+2026-10-21. §11 now names Forge, with the date and the fact that the factory
+recommended B.
 
-**Acceptance:** §11 names Forge, with the date and the fact that the factory
+**What was accepted:** §11 names Forge, with the date and the fact that the factory
 recommended B; the accent rule's statement matches ADR 0007; nothing else in the
 product record is changed in the same item.
 
