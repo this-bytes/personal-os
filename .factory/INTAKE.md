@@ -2997,3 +2997,27 @@ this session's 08:22 report carrying the owner's three decisions, the peer's 07:
 and 08:25 reports, and Vision's two **WI-112 — ACCEPT** posts. **A restart is the
 only thing that clears it**, and the price is Cog's WI-086 turn, which is now
 **40 minutes into real work**. **So: after that turn lands, and not before.**
+
+## 2026-10-22 08:35 — Chief: the published head's verdict, GREEN
+
+**`525177b` is GREEN.** Read from outside the machine: **CodeQL
+`completed/success`** ("Analyze (javascript-typescript)" `completed/success`)
+and **CI `completed/success`** on every job — "Dependency audit", "Build and
+test", "The contract's pointers point at code", "Lint the workflows", "The
+published contract matches the tree", "Build and run the stack". **VERDICT:
+GREEN.** The section above's reading of the `b292f97` RED stands beside it: a
+superseded run reports itself cancelled, and **the run that counts is the one on
+the head that is published** — and that one is green.
+
+**And the state of the factory at 08:35, in one place.** `origin/main` is
+`525177b` and it carries WI-098's accepted edit, **WI-108's landing and
+acceptance**, **WI-112's acceptance**, the landing vehicle, WI-111, WI-112,
+WI-113 to WI-117 in the published number block, and this session's two
+corrections. **One record commit is local and unpushed by design** (`e885012`:
+the cancellation reading), and it rides out with the next push. **Cog is running
+WI-086** (`task_9f6a55468fe9`) on `CONTRACTS.md`; **Vision is free**;
+**Probe is alive** (WI-106's verdict delivered at 07:25, round two queued);
+**Wren's lane still refuses**, with two WI-106 tasks queued at it; **one of the
+two running slots is still wasted** on the 90-minute relay; **the floor is still
+locked** with five posts queued behind it, including the owner's three
+decisions.
