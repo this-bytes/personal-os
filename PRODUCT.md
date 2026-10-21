@@ -144,22 +144,37 @@ carries at least:
 - the actions that are allowed,
 - the operations that require approval.
 
-**The policy is stored; it is not yet enforced.** A workspace's or a goal's autonomy
-mode and policy are written and read back, but nothing reads them to make a
-decision — the only mention outside the storage layer is a badge in the panel's
-settings. The limits that are actually enforced are the conversation's own (see
-[CONTRACTS.md](CONTRACTS.md), _Routing behaviour_), on a different object from the
-one the policy is attached to. And there is no pause in a policy: the only pause in
-the product is the conversation's own `paused` flag.
+**The policy is enforced.** The strictest of a workspace's policy, a goal's policy
+and a conversation's own safeguards is resolved in one place, and every enforcement
+point consumes that one result. A turn that has used up the turn budget or the
+spend budget does not start; a turn that outruns the duration limit is stopped, and
+the outcome is recorded rather than silently truncated; an action outside the
+allowed list is refused by name, and the refusal names the policy it blames; and
+an action the policy wants the owner to approve waits for the owner rather than
+proceeding. An action the system does not know is refused, not allowed through.
+
+**The mode is resolved, readable, and enforced nowhere.** Nothing in the product
+reads the resolved mode to make a decision, so nothing behaves differently in
+`manual` than in `autonomous`. What `autonomous` is to mean — the mode that permits
+an agent to begin work on its own initiative, or only the mode that describes work
+the owner has already authorised — is the owner's decision, and it is not settled.
+Until it is, the mode is a description and not a control.
+
+The effective policy is readable — over the API and through the MCP surface — and
+it says where each of its values came from. A policy nobody can read is a policy
+nobody can trust.
+
+And there is no pause in a policy: the only pause in the product is the
+conversation's own `paused` flag.
 
 Manual is the default everywhere. An agent never gains authority by being added to a
 group: adding an agent to a conversation changes who can be reached, not what that
 agent is permitted to do.
 
-In autonomous mode, an agent may only begin work through an approved trigger and
-within its granted scope. The system must never create an unlimited agent-to-agent
-response loop; the routing safeguards in [CONTRACTS.md](CONTRACTS.md) exist for
-exactly that reason.
+An agent may only begin work through an approved trigger and within its granted
+scope. That rule is not enforced by the mode: the mode reads the same in every
+mode. The system must never create an unlimited agent-to-agent response loop; the
+routing safeguards in [CONTRACTS.md](CONTRACTS.md) exist for exactly that reason.
 
 ## 6. What the product is for every day
 

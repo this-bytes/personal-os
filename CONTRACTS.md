@@ -722,6 +722,7 @@ external agents can discover and operate them.
 | `resource.template.list` | List the templates published for one resource kind.     |
 | `automation.create`      | Create an automation.                                   |
 | `automation.inspect`     | Inspect an automation and its runs.                     |
+| `autonomy.read`          | Read the autonomy policy in force for a scope.          |
 
 These are Personal OS tool names, not predefined MCP methods. Agents discover each
 tool's input and output schema through MCP.
@@ -730,6 +731,26 @@ Tool visibility and authorisation reflect the requesting agent's grants. An owne
 token sees every tool; an agent token sees only the tools that connection was
 granted. **An ungranted tool is not registered at all**, so it does not appear in the
 `tools/list` response and the MCP server cannot route a call to it.
+
+**`autonomy.read` is in the default grant list, so every agent connection gets it.**
+A connection with no explicit grants runs on the default set
+(`packages/contracts/src/mcp.ts:36-50`), and that set carries `autonomy.read`: an
+agent can read the policy that governs it without the owner granting anything else.
+A connection whose grants were narrowed explicitly keeps the list it was given — the
+tool is not added to a stored list. The owner has it too, because the owner's grant
+list is every tool.
+
+It takes an optional `workspaceId`, `goalId` and `conversationId`, and answers with
+the effective policy — the strictest of the workspace's policy, the goal's policy and
+the conversation's own safeguards, and where each value came from. The shape is the
+one published in [the autonomy-policy route](#the-autonomy-policy-route); the tool
+answers with the policy itself, where the route answers with it under a `policy`
+key.
+
+**Reading the policy is not one of the actions the policy governs.** The tool
+answers even when the policy refuses that agent's other actions, because an agent
+that cannot see why it was refused cannot do anything sensible about it
+(`apps/server/src/modules/mcp/server.ts:109-110`).
 
 **Who owns a resource is settled before it is handed over.** `resource.get`
 carries the same rule the writes already carried: an agent-scoped memory is
@@ -816,12 +837,37 @@ comprehensive issue tracker today.
 
 ### Autonomy policy
 
-Manual, assisted and autonomous modes remain workspace-level defaults, with narrower
-restrictions per goal or operation. Autonomous agents can only initiate work through
-an approved trigger and granted capabilities.
+An autonomy policy carries at least execution limits, allowed actions and approval
+requirements. It has **no pause of its own**: the only pause in the product is the
+conversation's own `paused` flag.
 
-An autonomy policy carries at least execution limits, allowed actions, approval
-requirements and a way to pause the work.
+**The effective policy is the strictest of three.** A workspace's policy, a goal's
+policy and a conversation's own safeguards are resolved in one place —
+`resolveAutonomyPolicy` in `packages/contracts/src/autonomy.ts` — and every
+enforcement point consumes that one result. The strictest limit wins,
+`allowedActions` is the intersection of the policies that name any,
+`approvalRequired` is their union, and the mode is the least autonomous of them. A
+goal may tighten its workspace and may never loosen it. The action vocabulary is
+closed — `message.send`, `tool.call` and `artifact.create` — and an action outside
+it is refused rather than passed.
+
+**The limits, the allowed actions and the approvals are enforced.** The worker holds
+a turn to the effective policy: the chain's turn count and its spend before the turn
+starts, the duration as the deadline while it runs, and every action the agent
+announces. The MCP surface refuses an action the policy does not allow, and one the
+policy wants the owner to approve until the owner has decided. A turn that exceeds a
+limit stops, and the outcome is recorded rather than silently truncated.
+
+**The mode is resolved, readable, and enforced nowhere.** It is carried through the
+resolver and it is readable wherever the policy is, but no enforcement point reads
+it: the only reads of a resolved mode are in the resolver's own tests. What
+`autonomous` is to mean — the mode that permits work to begin on an agent's own
+initiative, or only the mode that describes work that has already been authorised —
+is the owner's decision, and it is not settled.
+
+**The effective policy is readable** over `GET /api/autonomy-policy` and through the
+`autonomy.read` MCP tool. Its shape is published in
+[the autonomy-policy route](#the-autonomy-policy-route).
 
 **An agent claiming a task is complete is not the same as the task satisfying its
 acceptance criteria.** An agent's completion moves the task to `review`. Only an
@@ -1261,10 +1307,88 @@ is not left deleting the database.
 | `GET`              | `/api/waiting`                                       | Everything waiting on the owner, in one list. See below.                                |
 | `GET`              | `/api/audit`                                         | Read the audit trail. See [the entry](#the-audit-outcome).                              |
 | `GET`              | `/api/measures`                                      | The product's two measures of itself. See below.                                        |
+| `GET`              | `/api/autonomy-policy`                               | The autonomy policy in force for a scope. See below.                                    |
 | `GET`              | `/api/events`                                        | Server-sent event stream.                                                               |
 | `GET`              | `/api/agui/events`                                   | The same stream in AG-UI. See [the AG-UI stream](#the-ag-ui-stream).                    |
 | `POST`             | `/api/agui/runs/:runId/resume`                       | Answer the interrupts of an AG-UI run. See [the AG-UI stream](#the-ag-ui-stream).       |
 | `ANY`              | `/mcp`                                               | MCP streamable HTTP endpoint.                                                           |
+
+### The autonomy-policy route
+
+`GET /api/autonomy-policy` answers with the autonomy policy in force for a scope. It
+is **read-only**, it answers for **one workspace**, and it follows the same rules as
+every other route: a session cookie or the owner token, and never an agent token,
+which is MCP-only (`apps/server/src/api/helpers.ts:14-18`) — a request carrying an
+agent token comes back `401 unauthorized`.
+
+`workspaceId` is required; `goalId` and `conversationId` are optional. A request
+without a `workspaceId` comes back `422 validation_failed` in the shared error
+envelope, with `workspaceId` named as the field at fault.
+
+```ts
+type AutonomyMode = 'manual' | 'assisted' | 'autonomous';
+type AutonomyAction = 'message.send' | 'tool.call' | 'artifact.create';
+type AutonomyPolicyLevel = 'workspace' | 'goal' | 'conversation' | 'default';
+
+interface EffectiveAutonomyPolicy {
+  mode: AutonomyMode;
+  allowedActions: AutonomyAction[];
+  approvalRequired: AutonomyAction[];
+  maxTurns: number;
+  maxDurationSeconds: number;
+  maxSpendUnits: number;
+  dailySpendUnits: number;
+  /** Which policy decided each value. */
+  sources: {
+    mode: AutonomyPolicyLevel;
+    allowedActions: AutonomyPolicyLevel;
+    approvalRequired: AutonomyPolicyLevel;
+    maxTurns: AutonomyPolicyLevel;
+    maxDurationSeconds: AutonomyPolicyLevel;
+    maxSpendUnits: AutonomyPolicyLevel;
+    dailySpendUnits: AutonomyPolicyLevel;
+  };
+}
+```
+
+The route answers with that policy under a `policy` key. A workspace whose stored
+policy is the default, asked about on its own, answers:
+
+```json
+{
+  "policy": {
+    "mode": "manual",
+    "allowedActions": ["message.send", "tool.call", "artifact.create"],
+    "approvalRequired": [],
+    "maxTurns": 8,
+    "maxDurationSeconds": 900,
+    "maxSpendUnits": 0,
+    "dailySpendUnits": 0,
+    "sources": {
+      "mode": "workspace",
+      "allowedActions": "default",
+      "approvalRequired": "default",
+      "maxTurns": "workspace",
+      "maxDurationSeconds": "workspace",
+      "maxSpendUnits": "default",
+      "dailySpendUnits": "default"
+    }
+  }
+}
+```
+
+**`sources` says where each value came from, and it is part of the answer.** It
+names the policy that decided each value, so a client that shows an agent what it is
+permitted to do can say which bound it is reading. A source of `default` means no
+policy bounded that value and the shipped default was used.
+
+**A goal or a conversation belonging to another workspace has no say.** The loader
+checks the workspace each belongs to, so a caller cannot reach across workspaces to
+loosen a policy or to tighten one either
+(`apps/server/src/modules/autonomy/service.ts:62-79`).
+
+**The rules the policy is resolved by are published** in
+[the autonomy policy](#autonomy-policy).
 
 ### The measures route
 
@@ -1301,81 +1425,102 @@ product's first report on itself must not be a lie by omission.
 
 **What "authored by an agent" counts as.** A resource is **agent-authored** when
 its `createdBy` carries the `agt_` form — the id form of an agent connection
-(`apps/server/src/lib/ids.ts:9-17`). **The test is the id form, not a lookup**: a
+(`apps/server/src/lib/ids.ts:30`). **The test is the id form, not a lookup**: a
 connection that has since been removed does not make the resources it authored
 owner-authored. It is **owner-authored** otherwise: the owner's user id, or the
-literal `owner` that is written when there is no user id
-(`apps/server/src/api/resources.ts:37`,
-`apps/server/src/modules/mcp/server.ts:368`). `createdBy` is one column holding
-two id spaces, so neither `'owner'` nor `'system'` is an agent. A resource's kind,
-its title, and who worked on it afterwards are not part of the reading. On the
-audit side an operation is **agent-performed** when the entry's `actorType` is
-`agent`, and the actor id is then the agent connection id; the published
-`ActorType` carries `human | agent | system | automation`
+literal `owner` that is written when there is no user id.
+
+**The author is a closed set**, published as `resourceAuthorSchema`
+(`packages/contracts/src/resource.ts:26`): an agent connection's id, the owner's
+user id, the literal `owner` for a write by the owner when no user id is known, and
+the literal `system` for a write with no authenticated actor behind it. **One
+derivation, one place**: the recorded id is derived from the authenticated identity
+in `apps/server/src/lib/author.ts:28`, and the service interfaces take that
+identity rather than a `createdBy` string, so a caller cannot name an author the
+request did not authenticate. The JSON shape is unchanged — `createdBy` is still a
+string. `createdBy` is one column holding two id spaces, so neither `'owner'` nor
+`'system'` is an agent. A resource's kind, its title, and who worked on it
+afterwards are not part of the reading. On the audit side an operation is
+**agent-performed** when the entry's `actorType` is `agent`, and the actor id is
+then the agent connection id; the published `ActorType` carries
+`human | agent | system | automation`
 (`packages/contracts/src/common.ts:33`), and the code writes `human` and `agent`
 only.
 
-**What the reading cannot cover.** Four things, said plainly.
+**Every kind carries an author now.** The `automation` and `task` kinds keep their
+author on the row — `created_by` on both tables
+(`apps/server/src/db/schema.ts:330`, `:410`) — and the projections read it
+(`apps/server/src/modules/resources/service.ts:210`, `:301`). An agent-created
+automation or task is recorded as authored by the agent that made it.
 
-**Two of the six kinds can never be agent-authored.** The `automation` and `task`
-projections hardcode `createdBy: 'system'`
-(`apps/server/src/modules/resources/service.ts:170`, `:260`), and their tables
-have no `created_by` column at all (`apps/server/src/db/schema.ts:385-401`,
-`:305-330`) — the value is invented at projection time and nothing is stored. An
-agent-created automation or task is recorded as authored by `'system'`. **The
-first measure is therefore a lower bound**: those resources sit in the
-denominator and can never sit in the count, so the ratio is a share over four of
-the six kinds, reported over all six.
-
-**Twelve of the thirty-six mutating routes write no audit entry at all.** Of the
-36 mutating routes in `apps/server/src/api/`, 21 write an audit entry at the
-route level, three more write one from the service layer — `POST
-/api/approvals/:id/decide` and `POST /api/agui/runs/:runId/resume`, both at
+**Every mutating route writes an audit entry.** Of the 36 mutating routes in
+`apps/server/src/api/`, 33 write an audit entry at the route level, and three more
+write one from the service layer — `POST /api/approvals/:id/decide` and `POST
+/api/agui/runs/:runId/resume`, both at
 `apps/server/src/modules/approvals/resume.ts:53`, and `PATCH /api/tasks/:id` at
-`apps/server/src/modules/factory/service.ts:275`, and that one only when the task
-leaves `unknown`. The other twelve write none:
+`apps/server/src/modules/factory/service.ts:308`, and that one only when the task
+leaves `unknown`. **No mutating route writes none.**
 
-| Method   | Path                                                 |
-| -------- | ---------------------------------------------------- |
-| `POST`   | `/api/agents/:id/probe`                              |
-| `DELETE` | `/api/agents/:id/tokens/:tokenId`                    |
-| `POST`   | `/api/auth/logout`                                   |
-| `POST`   | `/api/auth/owner-token`                              |
-| `PATCH`  | `/api/automations/:id`                               |
-| `DELETE` | `/api/automations/:id`                               |
-| `DELETE` | `/api/conversations/:id`                             |
-| `POST`   | `/api/conversations/:id/participants`                |
-| `DELETE` | `/api/conversations/:id/participants/:participantId` |
-| `POST`   | `/api/goals`                                         |
-| `POST`   | `/api/workspaces`                                    |
-| `PATCH`  | `/api/workspaces/:id`                                |
+The twelve that used to write none write one each, at the route:
+
+| Route                                                       | Action                             |
+| ----------------------------------------------------------- | ---------------------------------- |
+| `POST /api/agents/:id/probe`                                | `agent.probed`                     |
+| `DELETE /api/agents/:id/tokens/:tokenId`                    | `agent.token.revoked`              |
+| `POST /api/auth/logout`                                     | `auth.logged_out`                  |
+| `POST /api/auth/owner-token`                                | `auth.owner_token.issued`          |
+| `PATCH /api/automations/:id`                                | `automation.updated`               |
+| `DELETE /api/automations/:id`                               | `automation.removed`               |
+| `DELETE /api/conversations/:id`                             | `conversation.removed`             |
+| `POST /api/conversations/:id/participants`                  | `conversation.participant.added`   |
+| `DELETE /api/conversations/:id/participants/:participantId` | `conversation.participant.removed` |
+| `POST /api/goals`                                           | `goal.created`                     |
+| `POST /api/workspaces`                                      | `workspace.created`                |
+| `PATCH /api/workspaces/:id`                                 | `workspace.updated`                |
+
+`workspace.created` is deliberately **not scoped to a workspace**: the workspace
+does not exist until the call returns, so the entry is an instance-level one, like
+`auth.setup` and `auth.login`. That keeps a fresh workspace's second measure at
+0/0/null rather than 0-of-1.
 
 So **the second measure is a ratio of audited operations only**. It cannot be
-read as the share of everything the owner did: a third of the mutating surface
-is invisible to it.
+read as the share of everything the owner did: the MCP surface is invisible to it.
+
+**What the reading cannot cover.** Three things, said plainly.
+
+**The rows written before the author was recorded hold the measure back.** The
+migration adds `created_by` with `DEFAULT 'system'`
+(`apps/server/drizzle/0008_resource_author.sql`), so every pre-existing row keeps
+the `'system'` it effectively had. **History is not backfilled.** Those rows sit in
+the denominator and can never sit in the count, so **the first measure is a lower
+bound**: the ratio can only understate what the agents authored, and it does so by
+exactly the rows that predate the author being recorded.
 
 **The agent's own operations are not audited at all.** The MCP surface writes no
 audit entry — there is no audit call anywhere in
 `apps/server/src/modules/mcp/server.ts`, and none in the capabilities service its
 tools call, which reach the resources service directly rather than through the
 auditing route. The only writer of the trail that is not an owner HTTP route is
-the worker's `unknown` record (`apps/worker/src/executor.ts:97`). So every
-audited operation is an owner operation, except the worker's own `unknown`
-entries, which carry `actorType: 'agent'`. **The second measure does not count
-the work an agent does through MCP**: an agent can create, update and publish
-resources all day and the trail will show none of it. An implementation that
-wants the measure to mean what it says has to widen the audit coverage first,
-and that is WI-033's to do, with WI-034 publishing the rules it implements.
+the worker — its `unknown` record (`apps/worker/src/executor.ts:105`) and the
+policy refusals it writes (`apps/worker/src/executor.ts:1392`). So every audited
+operation is an owner operation, except the worker's own entries, which carry
+`actorType: 'agent'`. **The second measure does not count the work an agent does
+through MCP**: an agent can create, update and publish resources all day and the
+trail will show none of it. An implementation that wants the measure to mean what
+it says has to widen the audit coverage first, and that is WI-033's to do, with
+WI-034 publishing the rules it implements.
 
-**Nothing records a failure.** The audit trail's `result` carries
+**Almost nothing records a failure.** The audit trail's `result` carries
 `success | failure | unknown` (`apps/server/src/modules/audit/service.ts:19`),
-but no writer in the product writes `failure`: the route helper hardcodes
-`success` (`apps/server/src/api/helpers.ts:62`), the audit service defaults to
-it (`apps/server/src/modules/audit/service.ts:79`), and the only other value any
-writer produces is the `unknown` of
+but the route helper hardcodes `success`
+(`apps/server/src/api/helpers.ts:76`) and the audit service defaults to it
+(`apps/server/src/modules/audit/service.ts:79`). The two values a writer does
+produce come from the worker: the `unknown` of
 [The unknown outcome](#the-unknown-outcome)
-(`apps/worker/src/executor.ts:104`). An operation that failed is counted here as
-an operation that completed.
+(`apps/worker/src/executor.ts:112`), and the `failure` it writes when the
+autonomy policy refuses a turn or an action
+(`apps/worker/src/executor.ts:1399`). **An operation that failed at the route is
+counted here as an operation that completed.**
 
 **The route exists.** It answers with the shape above, member for member: the
 workspace, and the two measures. The counts are queries over the data the
@@ -1384,32 +1529,35 @@ audit trail — and not counters that are incremented on some code path. `ratio`
 is `null` when the denominator is zero, and the count is still returned.
 
 **What the two numbers can defend.** The first measure is a **floor**: a
-resource that records no agent author — the `'system'` of the automation and
-task projections, and everything the owner created — is in the denominator and
+resource that records no agent author — the `'system'` of a row written before the
+author was recorded, and everything the owner created — is in the denominator and
 can never be in the count, so the ratio can only understate what the agents
 authored. The second measure is **not a share of completed work**, and it is
 published with two different facts behind it. The first is a count of routes:
-the twelve listed above write no audit entry at all, and the MCP surface
-writes none either. The second is a rule about outcomes: every audited route
-records `result: 'success'` whatever happened, no writer in the product
-records `failure`, and the count has no filter on the result — so the
-denominator counts attempts, not confirmed completions. And because the
-owner's own routes record `human` and the MCP surface writes no entry at all,
-the only `actorType: 'agent'` entries a workspace's measure can see today are
-the worker's own `unknown` records: the ratio is the share of the trail the
-worker wrote, not the share of the work an agent did.
+every mutating route writes an entry, and the MCP surface writes none at all. The
+second is a rule about outcomes: every audited route records `result: 'success'`
+whatever happened, the only writer that records anything else is the worker, and
+the count has no filter on the result — so the denominator counts attempts, not
+confirmed completions. And because the owner's own routes record `human` and the
+MCP surface writes no entry at all, the only `actorType: 'agent'` entries a
+workspace's measure can see today are the worker's own — its `unknown` records and
+the policy refusals it writes: the ratio is the share of the trail the worker
+wrote, not the share of the work an agent did.
 
 **Migration.** Nothing is reclassified and no record is rewritten. The route is
 new and read-only, so a client that does not call it is unaffected, and a client
 that does has no earlier version of it to migrate from. **No resource's
-`createdBy` is changed** — the two kinds that record `'system'` keep recording
-it, and the measure publishes that as a lower bound rather than correcting the
-data behind the owner's back. **No audit entry is rewritten**, so the second
-measure's denominator is what the trail actually holds, which is fewer
-operations than the owner performed; a client that keeps a measure over time is
-keeping a number whose denominator moves as more routes are audited. A client
-that reads `ratio` has to handle `null`, which is a value the ratio can now take
-and which is not the same as 0.
+`createdBy` is changed** — the rows written before the author was recorded keep
+the `'system'` they were written with, and the measure publishes that as a lower
+bound rather than correcting the data behind the owner's back. **History is not
+backfilled**: the migration adds the column with a default of `'system'`
+(`apps/server/drizzle/0008_resource_author.sql`), so the count is a floor until
+new writes accumulate. **No audit entry is rewritten**, so the second measure's
+denominator is what the trail actually holds, which is fewer operations than the
+owner performed; a client that keeps a measure over time is keeping a number
+whose denominator moves as more routes are audited. A client that reads `ratio`
+has to handle `null`, which is a value the ratio can now take and which is not
+the same as 0.
 
 ### Error envelope
 
