@@ -1,8 +1,8 @@
 # Strategy — what Personal OS is, and where it goes
 
-**Status:** a direction for the factory to iterate on. **Two of the owner's decisions
-are settled and recorded below**; the rest of it is not a decision, it changes no
-published contract, and it opens no work item.
+**Status:** a direction for the factory to iterate on. **The two decisions this
+document raised are settled and recorded below**; the rest of it is not a decision,
+it changes no published contract, and it opens no work item.
 **Written by:** the root session, at the owner's request — _"take inspiration from
 other opensource projects and bring it all together in a single pane of glass."_
 **Written against:** the tree at `cc973f3` — the commit immediately before this
@@ -102,9 +102,9 @@ cannot speak to any of it.
 into this repository's own tree changes this project's licence. **A gate over the
 dependency set cannot catch that** — vendored source is not a dependency and is not
 in the lockfile. It needs a separate check over this repository's own sources, which
-[no item funds yet](#w8--the-check-that-covers-this-repositorys-own-sources). The
-gate is worth having on its own terms, but naming it as the answer to the vendoring
-question would be a claim the check cannot back.
+is [WI-044](#w8--the-check-that-covers-this-repositorys-own-sources) — funded and
+numbered, and not dispatched. The gate is worth having on its own terms, but naming
+it as the answer to the vendoring question would be a claim the check cannot back.
 
 ---
 
@@ -282,9 +282,10 @@ are different files and different owners — W5 records it, W7 checks it.
 the **dependency set**. The owner's hard case — vendoring AGPL-3.0 code into this
 repository's own tree — is not a dependency, is not in the lockfile, and is outside
 what this gate can see; catching it needs a separate check over this repository's
-own sources, which is [W8](#w8--the-check-that-covers-this-repositorys-own-sources)
-and is not funded. A gate is not a proof of the whole borrow rule, and calling it
-one would be exactly the kind of claim this document exists to stop.
+own sources, which is [WI-044](#w8--the-check-that-covers-this-repositorys-own-sources)
+— funded, numbered, and not dispatched. A gate is not a proof of the whole borrow
+rule, and calling it one would be exactly the kind of claim this document exists to
+stop.
 
 ---
 
@@ -309,17 +310,18 @@ hard case.
 **Seven wants, triaged on 2026-10-21 09:25, and numbered.** The lead's verdict, its
 titles, its owners and its criteria are recorded in `.factory/INTAKE.md` under _"The
 seven wants, triaged"_, and each item below now carries the want it came from. W8
-came later and is not in this table.
+came out of this document's own review and was numbered later, as WI-044.
 
-| Want | Verdict           | Item                                 | Owner | Note                                                                                                                                                                                                        |
-| ---- | ----------------- | ------------------------------------ | ----- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| W1   | accepted, resized | [WI-033](../.factory/work/WI-033.md) | Cog   | The change behind the product's own report. Lands **after** W2 — the contract leads.                                                                                                                        |
-| W2   | accepted          | [WI-034](../.factory/work/WI-034.md) | Wren  | The published shape for W1. Lands **before** W1.                                                                                                                                                            |
-| W3   | **deferred**      | [WI-035](../.factory/work/WI-035.md) | Cog   | The largest of the seven. Starts after Forge. **The deferral is capacity, not judgement** — Cog's lane is four deep — and it is numbered so it is not lost.                                                 |
-| W4   | **folded**        | [WI-007](../.factory/work/WI-007.md) | Cog   | The same subject under a different name. **The fold is recorded in `.factory/INTAKE.md`, not in WI-007's own file** — that item does not yet name the fold, which is a gap in the item, not in this record. |
-| W5   | accepted          | [WI-036](../.factory/work/WI-036.md) | Wren  | The record the gate compares against. Lands **before** W7.                                                                                                                                                  |
-| W6   | accepted          | [WI-037](../.factory/work/WI-037.md) | Wren  | The cheapest item in the set and the most overdue.                                                                                                                                                          |
-| W7   | accepted          | [WI-038](../.factory/work/WI-038.md) | Chief | The gate. Lands **after** W5 — a gate that compares against nothing catches nothing.                                                                                                                        |
+| Want | Verdict              | Item                                 | Owner | Note                                                                                                                                                                                                                          |
+| ---- | -------------------- | ------------------------------------ | ----- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| W1   | accepted, resized    | [WI-033](../.factory/work/WI-033.md) | Cog   | The change behind the product's own report. Lands **after** W2 — the contract leads.                                                                                                                                          |
+| W2   | accepted, rescoped   | [WI-034](../.factory/work/WI-034.md) | Wren  | The published shape for W1. Lands **before** W1. **Rescoped at 11:10** — it publishes the outcome vocabulary and the migration note, not the authorship definition, which WI-030 already published.                           |
+| W3   | **deferred**         | [WI-035](../.factory/work/WI-035.md) | Cog   | The largest of the seven. Starts after Forge. **The deferral is capacity, not judgement** — Cog's lane is four deep — and it is numbered so it is not lost.                                                                   |
+| W4   | **folded**           | [WI-007](../.factory/work/WI-007.md) | Cog   | The same subject under a different name. **The fold is recorded in `.factory/INTAKE.md`, not in WI-007's own file** — that item does not yet name the fold, which is a gap in the item, not in this record.                   |
+| W5   | accepted             | [WI-036](../.factory/work/WI-036.md) | Wren  | The record the gate compares against. Lands **before** W7.                                                                                                                                                                    |
+| W6   | accepted             | [WI-037](../.factory/work/WI-037.md) | Wren  | The cheapest item in the set and the most overdue.                                                                                                                                                                            |
+| W7   | accepted             | [WI-038](../.factory/work/WI-038.md) | Chief | The gate. Lands **after** W5 — a gate that compares against nothing catches nothing.                                                                                                                                          |
+| W8   | **funded, deferred** | [WI-044](../.factory/work/WI-044.md) | Chief | The check over this repository's own sources. Numbered so it is not lost, and **not dispatched** — the inventory is worth writing against a settled repository, and the repository's visibility is the owner's open decision. |
 
 **Two of the lead's decisions are worth carrying here, because they are judgements
 about this direction rather than about the code.** W4 was folded rather than
@@ -457,9 +459,9 @@ unapproved licence appears.
 **What this gate covers, exactly.** The dependency set. **It does not cover source
 vendored into this repository's own tree** — that is not a dependency and is not in
 the lockfile — so the owner's hard case of vendoring AGPL-3.0 code sits outside it,
-and [W8](#w8--the-check-that-covers-this-repositorys-own-sources) is the want that
-would cover it. This gate is worth building on its own terms; it is not the whole
-answer to the borrow rule, and it is not named here as one.
+and [WI-044](#w8--the-check-that-covers-this-repositorys-own-sources) is the item
+that would cover it. This gate is worth building on its own terms; it is not the
+whole answer to the borrow rule, and it is not named here as one.
 
 **Acceptance:** a licence change in the lockfile fails the build with the
 dependency named and the licence it changed from and to; a licence outside the
@@ -476,10 +478,9 @@ separate owners.
 
 **Owner:** Chief. **Files:** `.github/workflows/`, and the repository's own sources.
 
-**Raised by this document's review, and not funded.** The owner's hard case is
-vendoring AGPL-3.0 code into this repository's tree, which changes this project's
-licence. W7 reads the dependency set and cannot see that. This want is the one
-that can.
+**Raised by this document's review.** The owner's hard case is vendoring AGPL-3.0
+code into this repository's tree, which changes this project's licence. W7 reads
+the dependency set and cannot see that. This want is the one that can.
 
 **Acceptance:** the check reads the licence header of the source this repository
 carries and fails the build when a file carries a licence outside the approved set
@@ -492,8 +493,10 @@ shown in the run.
 and W5 is Wren's; this item is the gate, and the gate is Chief's — the same split
 as W5 and W7.
 
-**This want is a want.** It has not been triaged, it takes no number, and whether
-it is funded is the lead's call.
+**It is funded, and numbered — as WI-044, and not dispatched.** The lead's reason
+is recorded in `.factory/INTAKE.md`: _the inventory it needs is worth writing
+against a settled repository, and the repository's visibility is the owner's open
+decision._ So the want is neither lost nor pretended done.
 
 ---
 
