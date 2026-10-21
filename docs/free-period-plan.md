@@ -330,10 +330,13 @@ If you are an agent reading this file cold, with no conversation history:
 
 1. Read `AGENTS.md`, then `FACTORY.md`. They are the contract, and they are
    short.
-2. Read `.factory/queue.json`. It is the state of every item, and it is
-   machine-readable on purpose.
+2. Read the queue. Once `D1-1` lands it is `.factory/queue.json`; until then
+   it is the `**State:**` line in each `.factory/work/*.md` file. Either way it
+   is the state of every item, and it is meant to be read by a program.
 3. Read `docs/roadmap.md` for where the project is going, and
    `docs/free-period-plan.md` (this file) for what the current window is for.
+   `docs/domains.md` and `docs/self-improvement.md` land with the `wi/046`
+   merge.
 4. Take a work item from the queue that is in `triage`, in your lane, with no
    `blockedBy`. If you want a number, ask Chief — do not take one.
 5. `npx tsx scripts/work-item.ts new WI-nnn <slug>` makes your worktree.

@@ -58,7 +58,8 @@ holds, not when a feature list is checked off.
 The owner opens one surface and sees what is happening and what needs them.
 Three rooms — **Rooms, Work, and the Needs-you rail** — plus the material
 that makes them coherent. This is the Forge direction, and the six briefs in
-`prototypes/briefs/` are its pieces.
+`prototypes/briefs/` are its pieces. The briefs are written; the panel itself
+is `WI-024`, in flight.
 
 Landing order, from the briefs themselves: material first (everything else
 draws on its tokens), rooms second (the rail, the trace, the dashboards and
@@ -75,6 +76,9 @@ The instance reaches any agent over MCP. The `mcp` adapter
 connection, so connecting a new agent is a trust decision rather than an
 integration project. `ADR 0009` makes MiniMax Code a _specification_: the
 patterns are borrowed, the dependency is not.
+
+**All of this is on the `wi/046-domains-interaction-model` branch, not yet on
+`main`.** It is verified and landable; see `docs/free-period-plan.md`, D2-1.
 
 On top of the connection, the **interaction model** — one published contract
 (`CONTRACTS.md`, Contract 7) that says what an agent can observe, when it is
@@ -203,10 +207,14 @@ and it cost something.
 1. `AGENTS.md` — the contract. Short, and it is binding.
 2. `FACTORY.md` — how the factory works, and who owns what.
 3. `.factory/queue.json` — the machine-readable state of every work item.
+   **Not built yet.** It is Day 1 of `docs/free-period-plan.md`; until it
+   lands, read `.factory/work/*.md` directly, which is the record the index is
+   generated from.
 4. `docs/domains.md` — the five domains, and the rule that a module nobody
-   classified fails the build.
+   classified fails the build. **Lands with the `wi/046` merge**; until then it
+   is on that branch.
 5. `docs/self-improvement.md` — the runbook, with what is proved and what is
-   still open.
+   still open. **Lands with the `wi/046` merge.**
 6. `docs/free-period-plan.md` — what the current window is for.
 7. `.factory/work/WI-*.md` — the item you are about to do.
 
