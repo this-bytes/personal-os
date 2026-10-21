@@ -162,7 +162,7 @@ closed through `PATCH /api/tasks/:id`, and this route is what a turn has.
 ```ts
 interface ResolveExecutionInput {
   outcome: 'completed' | 'failed';
-  note?: string;
+  note?: string; // up to 2,000 characters, the owner's own words
 }
 ```
 
@@ -170,6 +170,16 @@ interface ResolveExecutionInput {
 is one of two values: `completed` — it did run — or `failed` — it did not run.
 The product does not know what happened; the owner does, and the route records
 what they said. `note` is optional, and it is the owner's own words.
+
+**The note is capped at 2,000 characters**, and the cap is the code's
+(`apps/server/src/api/executions.ts:9`). **A longer note is refused, not
+shortened**: the request fails validation with `validation_failed` and HTTP 422,
+carrying the same error envelope as any other validation failure
+([The error envelope](#the-error-envelope)). The execution stays in `unknown` —
+a note that is too long closes nothing and records nothing, because the body is
+refused before the transition is written. A client written against the shape
+above has to cap the note itself, and it must not read the refusal as a
+truncated note.
 
 **The route answers for an execution whose outcome could not be confirmed** —
 one in `unknown`. An execution in any other state has already been settled, and
@@ -238,7 +248,13 @@ route it knew keeps the shape and the semantics it had. **A turn recorded
 before the change keeps the outcome it was recorded with** — an execution left
 in `unknown` stays in `unknown` and stays on the waiting list until the owner
 closes it, because the route closes nothing by arriving. An unknown outcome is
-still never retried automatically.
+still never retried automatically. **The note's bound changes no record.** A
+client written against the published shape before the bound was published may
+send a note the code has always refused, and it is refused now with
+`validation_failed`; a client whose notes stay within 2,000 characters is
+unaffected. **A note recorded before the change is not reclassified** — the cap
+is on what a client may send, not on what a record may hold, and a record is
+not rewritten because a contract gained a bound.
 
 ### Routing behaviour
 
