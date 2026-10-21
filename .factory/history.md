@@ -8997,3 +8997,41 @@ not check that a row is a row**, and the pre-push hook inherits that blindness.
 **Fixed**, and the fix is measured: the malformed-join count in
 `.factory/INTAKE.md` is **0**, and the WI-034 row is a row of its own again, on
 its own line.
+
+## The pipeline's verdicts on this session's five heads, and what cancels them — 2026-10-22 00:47
+
+**The record, read from the runs themselves and not inferred from the local
+gate:**
+
+| sha       | what it was                                           | CodeQL      | CI                                                                                          |
+| --------- | ----------------------------------------------------- | ----------- | ------------------------------------------------------------------------------------------- |
+| `d971e68` | WI-028's eight pointers corrected                     | **success** | **success**                                                                                 |
+| `f45ed94` | the peer's item files formatted so the tree was green | **success** | **success**                                                                                 |
+| `c17c46a` | the three dead dispatches re-dispatched               | **success** | **cancelled**                                                                               |
+| `3cc9d95` | the peer's ledger split                               | **success** | **success** — Build and test, Dependency audit, Lint the workflows, Build and run the stack |
+| `b462560` | the malformed row fixed, the tiebreak recorded        | **success** | **cancelled**                                                                               |
+
+**Every cancellation is a push, and every push is the other session's.** `c17c46a`'s
+CI was cancelled by `305447f` at 00:24; `b462560`'s was cancelled by `321a3cd` at
+00:40. **A push cancels the run that judges it**, and with two sessions pushing
+to one branch every five to fifteen minutes, **most runs never finish** — the
+head `321a3cd` was measured with its CI still **queued** at 00:47, and the
+pipeline was re-queueing the work it had already been given.
+
+**So the honest statement is narrow, and it is this: `3cc9d95` and `f45ed94` are
+green on both legs, and every other head this session pushed had its CI run
+cancelled by the next push before it could finish.** The rule the factory wrote
+for itself — **one push at a time, and let the run finish** — is being broken by
+both sessions at once, and **the cost is not a red build; it is that the
+pipeline's word is never available to be read.**
+
+**And the local gates are measured on the tree being pushed, every time**, which
+is the part that is under this session's control: `typecheck` **0**, `test` **0**
+(**437** — server 294, web 68, worker 31, agent-adapters 16, contracts 28),
+`build` **0**, and the format gate **measured on the committed tree itself**
+rather than on the working tree, because the working tree carries another
+session's in-flight files that are not in the push. **That last part is worth
+spelling out: the working tree's `format:check` is red on `.factory/work/WI-089.md`
+(modified, and not in this session's commit) and `.factory/work/WI-090.md`
+(untracked), while the tree being pushed is clean** — and the measurement that
+counts is the one on the tree that is actually pushed.
