@@ -201,7 +201,7 @@ function TaskCard({
               {task.acceptanceCriteria.length}
             </Badge>
           ) : null}
-          {task.status === 'review' ? <Badge variant="warning">awaiting acceptance</Badge> : null}
+          {task.status === 'review' ? <Badge variant="accent">awaiting acceptance</Badge> : null}
           {task.status === 'unknown' ? (
             <Badge variant="warning">
               <HelpCircle className="h-2.5 w-2.5" />

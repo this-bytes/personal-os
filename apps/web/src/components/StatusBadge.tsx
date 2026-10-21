@@ -3,13 +3,13 @@ import { Badge } from '@personal-os/ui';
 
 const STATUS_STYLES: Record<
   AgentConnectionStatus,
-  { variant: 'success' | 'warning' | 'danger' | 'info' | 'default'; label: string }
+  { variant: 'success' | 'warning' | 'danger' | 'default'; label: string }
 > = {
   connected: { variant: 'success', label: 'connected' },
   degraded: { variant: 'warning', label: 'degraded' },
   disconnected: { variant: 'default', label: 'disconnected' },
   error: { variant: 'danger', label: 'error' },
-  unknown: { variant: 'info', label: 'unknown' },
+  unknown: { variant: 'default', label: 'unknown' },
 };
 
 export function StatusBadge({
