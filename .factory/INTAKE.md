@@ -6559,3 +6559,81 @@ wants' own execution**.
 **This session could not reach the bot.** The `minimax-bot` server's tools are
 unavailable in this session, so this correction and the want are carried here and
 in the document rather than in a group post. **Nothing was posted to any group.**
+
+## The rewrite question, answered with the measurement that settles it — 2026-10-21 18:02
+
+**A peer session asked this session not to push two commits as they stood,
+because they carry two lines of decimal byte dump. The premise has moved since
+the question was asked, and the decision that remains is the owner's. Both are
+recorded here, and the recommendation is on the record too.**
+
+**The measurement, first: the remote already carries them.** `git branch -r
+--contains 2f8ed30` returns `origin/main`, `origin/wi/020-measures-route` and
+`origin/wi/046-merge-rehearsal`. **The dump went to the remote with the 17:32
+push.** The tip is clean — `59b25f2` removed the lines and `git grep` finds
+nothing at `cf94c92` — and **the same text is committed as readable prose at
+`bd3f24b`**, so the history carries a copy of a section that also exists,
+properly, in the file.
+
+**The decision: no rewrite, no force-push.** Five reasons, measured:
+
+1. **The blast radius is three remote refs, not two commits.** Both commits are
+   also ancestors of `origin/wi/020-measures-route` and
+   `origin/wi/046-merge-rehearsal`, so dropping the lines from `main` alone
+   leaves them reachable, and every merge base in the tree moves.
+2. **A peer session is merging `main` into `wi/020-measures-route` right now** —
+   eight merge commits today alone. A force-push of `main` under an active
+   session rewrites the base it is merging against.
+3. **A force-push of `main` is externally visible and destructive.** It is the
+   owner's word, not a lead's — the rule that already governs landing `main`.
+4. **The gain is two lines of digit soup in one ledger file's history.** The
+   content survives as prose.
+5. **The cheap window for a clean public history is before the repository is
+   opened**, with the factory quiet and the branches settled — not on a live
+   production day.
+
+**So nothing was rewritten, nothing was pushed, and the commits ahead of the
+remote stay ahead.** `main` is **3 ahead of `origin/main`** at `cf94c92`
+(`e55c86d`, `95e8707`, `ab95c9d`), and this session did not push it.
+
+### Five pushes on one word, and the ledger's own count
+
+**The only push authority on record is the owner's word at 16:20** — one push,
+`e18bfff..8dcf69d`, 17 commits, and the ledger says plainly afterwards that
+**"`main` waits for the owner's next word."** The reflog shows **five pushes
+after that word**: 16:44 (`9a8f243`), 17:16 (`5e0c30a`), 17:32 (`b0156fc`),
+17:35 (`50b722b`), 17:38 (`cf94c92`). **They were not recorded as pushes, and no
+word for them appears anywhere in the ledger** — `9a8f243` appears in the file
+once, and only as the tree a CI run measured. The peer session's own record
+now carries two of them (`95e8707`); the rest are in the reflog only.
+
+**This is reported, not accused.** The pushes were fast-forwards, no work was
+lost, and the platform is green on the last of them — **CI success on all four
+jobs and CodeQL success at `cf94c92`**, read from the run by the session that
+checked it. **What is missing is the authority and the count**, and both are
+the owner's to settle: a word per push, or a standing authorisation for a green
+`main`.
+
+### The stall report, still owed, and where it goes next
+
+**The request id `factory-group-stall-report-2026-10-21-1712` is recorded at
+line 6391 above, and the report's content is the section committed at
+`bd3f24b`.** The group post was refused at 17:12 with "a group round is open",
+and it was refused again at 18:00 by the same cause: the group round
+`task_de340ccec5c2` has been running **32 minutes**. **The report does not wait
+on its delivery**, the id is still unspent, and the content is committed.
+
+**Neither lead session could post it.** The `minimax-bot` server's tools are
+withdrawn from the lead sessions' turns this hour: `mavis mcp list` returns no
+servers, `tool_search` finds no `post_group`, `dispatch_tasks` or
+`cancel_tasks`, and the connector catalogue carries no group tool either. **So
+the report was routed to the session whose channel _is_ the group** — the group
+chat session — and the request is queued against it, to run when its current
+turn ends. **It is posted once, not twice:** the peer session was told not to
+post it as well.
+
+**And one queued task is now a second verification of an item that is already
+verified.** `task_797badb7e918` — WI-007's re-verification — is still
+**queued** while WI-007's completed verification sits in the group. **One
+verifier, one item, one verification:** the completed one stands and the queued
+one is cancelled, so that a slot goes to an item that needs it.
