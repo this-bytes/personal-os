@@ -399,13 +399,13 @@ second dispatch.
 | `probe-verify-wi-037-product-record-forge-2026-10-21-1325` **(reused — a defect)** | WI-034 — the outcome vocabulary, written | Wren | `task_55c33b744ef5` | **done** — the contract's `### The audit outcome` entry and its migration note, `be10169` plus `ccfb3c2` for the item's own `State:` line, pushed and merged into `main` at `2cb8ba7`. **And the record is wrong about how it was dispatched:** this request id belongs to **WI-037's verification** (row above), and it was used a second time for a different item. **A request id is spent when it is used, and a reused id makes the table lie.** It is recorded here rather than hidden, and the id is spent for good |
 | `wi-028-name-the-change-and-fix-pointers-2026-10-21-1940` | WI-028 — the two published entries: name the change, and point the pointers | Wren | `hlp_fcab95870b97` | **running** — **WI-028 goes back to Wren for one edit.** Probe's verification is in hand (`task_458901e810d7`, measured at `767fbe3`) and reads _"on substance verified … one edit in Wren's file away from acceptance"_. **Criterion 1's last clause fails on the second entry** — the MCP exposure entry states the rule and names no commit and no item, while the memory-scope entry names both twice. **And seven code pointers have drifted** under `8b1fd01`; the claims are true, the pointers no longer point. **The `message_bot` path was refused** — "This tool call cannot be assigned to an active reply" — because this session sits in a crash-recovery `started` state, so the brief went as an isolated execution for Wren and **this request id is reserved and unspent** |
 | `wi-066-published-shapes-member-for-member-2026-10-21-1950` | WI-066 — the published shapes, member for member | Wren | — | **WITHDRAWN — and the mistake is the point.** This session was about to hand WI-066 to Wren in the group at 20:45, **and WI-066 had already been dispatched at 13:40 by the peer session** (`wi-066-message-shape-fourth-field-2026-10-21-1340`, `task_0cfbcce20e92`) **and Wren had already implemented it** (`f63c978`, "Publish the message shape's fifth field"). **The item's own file carried no task id, and this session read that as "not dispatched" — the dispatch table is the record of what is dispatched, and it was not consulted.** A second worker on one item is the thing these rules exist to prevent, and it was stopped before it went out. **Wren's implementation independently corrected the count the same way this session did — "the item's own count was four and the tree's is five … the tree wins" — and the lead's corrected title and criteria are now merged with her record.** Merged into `main` as `d3add55`; **WI-066 is in `verify` and Probe's verification is still to be dispatched** |
-| `wi-078-note-bound-2026-10-21` | WI-078 — the published note has no bound the code has | Wren | — | **DISPATCHED THROUGH THE GROUP at 21:00, under the id the peer session reserved.** The peer session opened WI-078 from Probe's WI-031 verification and wrote the better brief — it measured the contract's own line numbers and **found the house form for publishing a bound** (a trailing comment on the field's own line, as `CONTRACTS.md:376` and `:377` do). **That brief was in the working tree and uncommitted when the tree was reconciled at 20:57, so it was restored by hand and is committed with this row.** **The Mini App runtime stopped mid-turn and took the task API's tools with it; `miniapp restart` brought the factory back but not this session's registry, so the dispatch goes by the group** — which is the channel that reaches the group. Branch `wi/078-published-note-bound`, worktree `G:\code\personal-os-worktrees\078-published-note-bound`. **It is the last thing standing between WI-031 and its acceptance** |
-| `wi-028-verify-after-correction-2026-10-21-2048` | WI-028 — re-verify the two published entries after the correction | Probe | — | **HANDED OVER IN THE GROUP, not through the task API** — the Mini App runtime stopped mid-turn and took the task tools with it; the repair is a restart, and the restart does not restore this session's tool registry. **The brief is in the item file and in this turn's group post.** The change is `22ef5ba`, merged into `main` as `d530f73`: the MCP exposure entry now names its change, and all seven drifted pointers point where they say |
+| `wi-078-note-bound-2026-10-21` | WI-078 — the published note has no bound the code has | Wren | `hlp_b55e5e1b22e4` | **DISPATCHED at 21:12, under the id the peer session reserved.** The peer session opened WI-078 from Probe's WI-031 verification and wrote the better brief — it measured the contract's own line numbers and **found the house form for publishing a bound** (a trailing comment on the field's own line, as `CONTRACTS.md:376` and `:377` do). **That brief was in the working tree and uncommitted when the tree was reconciled at 20:57, so it was restored by hand and is committed.** **It is the last thing standing between WI-031 and its acceptance.** Branch `wi/078-published-note-bound`, worktree `G:\code\personal-os-worktrees\078-published-note-bound` |
+| `probe-wi-028-reverify-after-correction-2026-10-21-2112` | WI-028 — re-verify the two published entries after the correction | Probe | `hlp_c38af0b8226a` | **DISPATCHED at 21:12.** The change is `22ef5ba`, merged into `main` as `d530f73`: the MCP exposure entry now names its change, and all seven drifted pointers point where they say. **The peer session independently re-measured all seven pointers and confirmed the added sentence sits in the MCP exposure entry** — a cross-check, not the verification. **Probe's formal re-verification is this one, and it is the one that carries the acceptance** |
 | `probe-verify-wi-041-readme-licence-2026-10-21-1340` | WI-041 — verify the README tells the truth about the licence | Probe | `task_5b4e02d59413` | **done — and WI-041 is accepted.** Probe measured the tree as it stands at `e676ba9`: **all six criteria, as the item's file stands (corrected 19:08), are met on their face.** `README.md:251-254` reads "MIT. The owner chose it on 2026-10-21, and the full text is in the [LICENSE](LICENSE) file at the root of the repository." The gates: `prettier --check README.md` 0, `npm run format:check` 0; supporting, `typecheck` 0 and `test` 0 — server 25 files/248, web 7/54, worker 5/31, agent-adapters 2/16, contracts 4/28. **Criterion 3's second clause — "the repository is public under it" — was a fact the verifier could not confirm from its own machine, and the lead confirmed it from outside this one:** an unauthenticated read of the repository's endpoint returns `visibility = public`, `license = MIT / MIT License`, `private = False`. **The implementation was taken by the other Chief session under the tiebreak (`f129594`, merged `141f0be`) and the verification is Probe's, so the lead accepts it and no writer accepts its own work** |
 | `wi-036-record-reverification-2026-10-21-1955` | WI-036 — re-verify the licence record against the file as it stands | Probe | `hlp_72d0eace0a08` | **queued** — **the peer's question, asked and not skipped:** WI-036 was accepted on Probe's verification of the record at `edbd105`, and **the file has been edited since** — `45e7b2b`, `ed7b829` and `6cf63b5` each changed six lines of `docs/dependency-licences.json`, because the owner's 19:08 MIT decision made the record's "private for now, with no LICENSE yet" notes false and the other Chief session landed the correction under the tiebreak. **Nobody had asked whether the acceptance survives the edit; that is a question for the verifier and not for a lead.** The brief names the five criteria, quotes what changed, and says plainly: judge **whether the acceptance still holds**, not the record's quality |
 
 | `probe-verify-wi-066-published-shapes-2026-10-21` | WI-066 — the published shapes, verified | Probe | — | **REQUESTED THROUGH THE GROUP at 21:05 — and never dispatched before.** WI-066's **implementation** was dispatched at 13:40 (`wi-066-message-shape-fourth-field-2026-10-21-1340`, `task_0cfbcce20e92`) and is merged into `main` as `d3add55`; **there is no row anywhere for a verification of WI-066**, and the item file sits at `verify` with **all ten criteria unticked**. The brief is the item file — `.factory/work/WI-066.md` — ten criteria, three gates, and the instruction to **measure the code's `Message` schema and write down what it actually carries** rather than take the count from the file (the count is five, not four). Requested through the group because this session has no transport: `mavis mcp list` returns no servers here at 20:43, at 20:52, and again after the 20:45 restart |
-| `wi-022-citation-refresh-verify-r2-2026-10-21` | WI-022 — the waiting list's refreshed citations, verified (again) | Probe | — | **REQUESTED THROUGH THE GROUP at 21:05 — the first one was interrupted, and its work is gone.** `task_018a6018b18f` ran from 20:09:44 and was interrupted by the 20:45 runtime restart; the chat's own record for it is `status: interrupted` with **length 0** — **no report was delivered**, unlike WI-024's and WI-066's tasks, whose messages are `done` with their reports in them. **A re-dispatch needs a new request id and a new title**, so this is deliberately not `wi-022-citation-refresh-verify-2026-10-21` again. The brief is the one already written: five questions about the three citations — do the four pointers point at the lines that carry the claims, are the claims behind them still true, does WI-026's criterion 6 now hold in the tree, did nothing else in the entry change, and do the gates pass — plus Probe's own question, whether a check should exist that catches a drifted citation and where it lives |
+| `wi-022-citation-refresh-verify-r2-2026-10-21` | WI-022 — the waiting list's refreshed citations, verified (again) | Probe | — | **WITHDRAWN — and the mistake is the point.** This session requested a re-dispatch at 21:05 on the ground that `task_018a6018b18f` was interrupted at 20:45 with **length 0**, and concluded the work was gone. **It was not.** Probe's report was delivered **to the group at 20:59:56** — `task_5634427d74e4`, 6,587 characters — and it ends **"Verdict: verified."** **The report went to the group, and this session looked only at the task's own channel.** **The id is spent and the request is withdrawn: if it was dispatched, cancel it.** A second verification of one item is never created. What WI-022's successor needs now is the lead's **acceptance**, not a second look |
 
 **A cancelled task is not a dispatch — but a cancelled dispatch does not free its
 request id.** That second half was wrong here, and it is corrected now rather
@@ -8044,11 +8044,83 @@ refuses with that message, the target bot's chat is busy, and the brief waits
 in the item file until it is not.** WI-066's brief was written in full in
 `.factory/work/WI-066.md` and handed over in the group instead.
 
-**And one thing the refusal taught that is worth keeping:** the group is a real
-delivery channel, not a noticeboard. Probe's WI-031 report says _"The group
-took the report this time (`task_a93656399224`)"_ — a post to the group creates
-a task. **So the floor has two doors, and the task API is the one that can be
-refused.**
+**And one thing the refusal taught that is worth keeping — and it was corrected
+an hour later.** It looked as though the group were a real delivery channel,
+not a noticeboard: Probe's WI-031 report says _"The group took the report this
+time (`task_a93656399224`)"_ — a post to the group creates a task. **That is
+not a rule, it is one observation, and this session took it as a rule and acted
+on it.** At 21:01 it handed WI-028's re-verification to Probe and WI-078 to
+Wren **through the group, and neither became a task.** Measured at 21:10 against
+the dispatcher's own state: **no task carries either item.** The task ids that
+mention WI-028 are the peer session's 17:32 group post of Probe's **first**
+report, the original verification, and the helper — **and nothing is WI-078's.**
+
+**So the correction is plain: a post to the group is a post, and a task is
+created only when the dispatcher creates one.** The group carries the words; the
+task API carries the work. **A brief handed over in the group and counted as
+dispatched is a brief nobody has.** Both were re-dispatched through the task
+API at 21:12 the moment the tools came back.
+
+## The floor at 21:12 — a count corrected, a dead helper, and a watchdog that watches the chat it is in
+
+### WI-036 goes back to `verify`, and the count is twenty, not twenty-one
+
+**At 21:01 this session told the group that twenty-one items were accepted.**
+**The number was wrong, and the reason is in WI-036's own file.** Its `**State:**`
+line read **accepted** — written by this session at 20:51, after the peer
+session had already ruled at **20:12** that _"the artefact changed under the
+acceptance, and this item goes back to verify"_ — and **a line that says
+`accepted` next to a correction that says it goes back to `verify` is a
+contradiction, and the item's own rule is that an item is open when its State
+line does not begin with `accepted`.**
+
+**The peer's ruling is the right one and it stands: `docs/dependency-licences.json`
+and `docs/strategy.md` were both corrected after the acceptance, so the
+acceptance was given to a version of the files that is no longer the files.**
+The State line now says `verify`, and **the count is twenty.**
+
+**And the peer session's correction also caught what this session's brief
+missed**: the artefact that changed is **two** files — the licences record and
+`docs/strategy.md` — and this session's brief named only the first.
+
+### One re-verification of WI-036 is dead, and one is live
+
+**This session dispatched WI-036's re-verification at 19:55**
+(`hlp_72d0eace0a08`). **The runtime stop at 20:47 interrupted it, and it
+produced no verification** — its status reads `interrupted`, 2 241 seconds, no
+report. **The peer session had dispatched one at 20:10**
+(`probe-verify-wi-036-licence-record-mit-2026-10-21`, `task_e4b8ac641700`,
+queued to Probe) whose brief is the more complete one. **So the live
+re-verification is the peer session's, and the dead one is not re-dispatched:
+one verifier, one item, one verification.** A dead helper that produced nothing
+is not a verification, and it is not a half of one either.
+
+### The watchdog's 20:16 report, and the shape it names
+
+**`task_0cfbcce20e92` — WI-066 in Wren's chat — held one of the two slots for
+47.7 minutes, and the report did not cancel it.** It read the chat's last
+message from that bot — `msg_dea2462e3324`, **`streaming`, 2.2 minutes old**,
+`kind: task_review`, under the same task id — and **the turn was live.** The
+task's age and the turn's age are two different numbers, because a
+`task_review` continuation runs under the same `taskId` and posts new messages
+without touching `result`. **A check that read the age alone would have called
+it a stall.**
+
+**And the check could not run when it was supposed to.** The 20:07 firing was
+refused with `BUSY`, and so were 18:56 and 19:27 — **because the chat it fires
+into has been in one long turn since 18:53.** **The scheduled check's last
+completed run is still 16:21.** **So the check's transport is the same chat it
+watches, and a busy chat cannot also be watched.** That is the 19:28 run's
+finding again, and it is now the rule's practical shape: **the watchdog and the
+work share one thread, and the watchdog is the part that loses.**
+
+### WI-028 and WI-078 are dispatched, and this time as tasks
+
+**WI-028's re-verification to Probe** (`hlp_c38af0b8226a`) and **WI-078 to
+Wren** (`hlp_b55e5e1b22e4`), both at 21:12, both with the full brief in the
+item file. **The peer session's independent re-measurement of WI-028's seven
+pointers is a cross-check, not the verification** — it confirms the fix, and
+Probe's re-verification is what carries the acceptance.
 
 ## The floor at 20:45 — two merges, one near-miss, and a runtime that stopped
 
