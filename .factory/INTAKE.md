@@ -3633,3 +3633,40 @@ build and not a failed gate — it is a push that was overtaken, and the run tha
 next one.** That next run is the one on `2806f72`, and it is green. **One push at a time, and
 the verdict read after each** — which is what the three pushes this turn were: `ce51521` (the
 front page), `4047fef` (records), `2806f72` (records).
+
+## 2026-10-22 10:00 — Chief: the published tip is green, and two stale tasks were cleared
+
+**One — the published tip is `7ffa4e4`, and it is green on both workflows.** **CI run `39689875528`
+on `7ffa4e4`: `completed/success`. CodeQL run `39689875473` on `7ffa4e4`: `completed/success`.** The
+tree behind it is byte-identical to `ce51521` — the tree that carries the corrected front page — and
+`git diff --name-only ce51521..7ffa4e4` touches **only `.factory/**`\*\*.
+
+**Two — two stale tasks were cleared, and the rule that allowed it.** `task_2a34be8fd7d9` (the 08:55
+relay, **95 minutes**, its result delivered) and `task_cb4460d7e002` (Vision's WI-108 verification,
+**its verdict delivered at 07:00 and WI-108 accepted on it**, **2h58m**) were both sitting in the
+queue while the ceiling of two stayed full. **Neither was working**: both had produced their
+results, and both were waiting on floor posts whose Chief turns had died. **`FACTORY.md:203-207`
+says cancelling is Chief's judgement, because elapsed time alone cannot tell a stall from a long
+task — and these were not long tasks, they were finished ones.** The owner's standing answer named
+the same lever: _"one wasted slot (a 90-minute relay still running)"_. **Nothing was lost**: the
+relay's result carried the owner's three decisions to this session, and WI-108's verdict is in the
+record and in its own item file.
+
+**Three — the owner's decisions, and where they went.** `chief-floor-0822-2026-10-22`
+(`task_ec6625381f3e`) **failed with `BUSY`** and never reached the floor — **but its three
+decisions were delivered to this session through the relay's own result**, and they stand:
+**the restart, yes, after Cog's WI-086 turn lands** — it landed at `06c1b2f`, so the condition is
+met; **the ceiling patch, no** — `MAX_RUNNING = 2` is one line in vendor code in a content-addressed
+cache, and a patch there vanishes on the next plugin update; **a substituted verifier, yes** where
+the substitute wrote none of the work. **The floor's lock is not yet released** — it began at
+**07:04:29** when a Chief turn on the floor died with `status: error` and empty text, and **39 of
+the floor's 160 messages are dead turns of that kind.** The repair is the restart, and it is the
+owner's to call.
+
+**Four — the queue, as it stands.** **WI-121 is running**: Cog started the blocked-agent item at
+09:49. **WI-120's verification is queued** (Vision, `task_faa2e8e0f9f1`), and **the brief reached
+the lane** — the partial result on Vision's session reads _"Re-running it, and pulling up the item
+file and ignore rules. `2806f72..7ffa4e4` touches only `.factory/INTAKE.md` — no code, no docs, no
+front-page files"_ — **but that turn was interrupted by the cancellation of the stale task record
+it was attached to**, and the session is now `aborted`. **WI-120 stays in `review` until the verdict
+lands: the lead wrote that change and cannot accept its own work.**
