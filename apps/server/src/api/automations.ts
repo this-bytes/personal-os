@@ -1,7 +1,7 @@
 import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
 import { automationActionSchema, automationTriggerSchema } from '@personal-os/contracts';
-import { audit, parseBody, parseQuery, requireAuth } from './helpers.js';
+import { audit, parseBody, parseQuery, requestAuthor, requireAuth } from './helpers.js';
 
 const listQuerySchema = z.object({ workspaceId: z.string() });
 
@@ -26,7 +26,10 @@ export function registerAutomationRoutes(app: FastifyInstance): void {
 
   app.post('/api/automations', { preHandler: requireAuth }, async (request, reply) => {
     const body = parseBody(createSchema, request.body);
-    const automation = app.services.automations.create(body);
+    const automation = app.services.automations.create({
+      ...body,
+      author: requestAuthor(request),
+    });
     audit(request, 'automation.created', {
       type: 'automation',
       id: automation.id,
@@ -46,7 +49,13 @@ export function registerAutomationRoutes(app: FastifyInstance): void {
   app.patch('/api/automations/:id', { preHandler: requireAuth }, async (request) => {
     const { id } = request.params as { id: string };
     const body = parseBody(updateSchema, request.body);
-    return { automation: app.services.automations.update(id, body) };
+    const automation = app.services.automations.update(id, body);
+    audit(request, 'automation.updated', {
+      type: 'automation',
+      id,
+      workspaceId: automation.workspaceId,
+    });
+    return { automation };
   });
 
   app.post('/api/automations/:id/enable', { preHandler: requireAuth }, async (request) => {
@@ -73,7 +82,13 @@ export function registerAutomationRoutes(app: FastifyInstance): void {
 
   app.delete('/api/automations/:id', { preHandler: requireAuth }, async (request, reply) => {
     const { id } = request.params as { id: string };
+    const automation = app.services.automations.get(id);
     app.services.automations.remove(id);
+    audit(request, 'automation.removed', {
+      type: 'automation',
+      id,
+      workspaceId: automation.workspaceId,
+    });
     return reply.send({ ok: true });
   });
 }

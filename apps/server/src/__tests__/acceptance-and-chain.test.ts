@@ -70,6 +70,7 @@ describe('the task acceptance boundary', () => {
       workspaceId: 'wsp_1',
       title: 'Do the thing',
       acceptanceCriteria: ['The thing was done'],
+      author: { kind: 'owner' },
     });
 
     expect(() => stack!.factory.updateTask(task.id, { status: 'done' })).toThrow(
@@ -79,7 +80,11 @@ describe('the task acceptance boundary', () => {
 
   it('still allows the ordinary statuses', () => {
     stack = createTestStack();
-    const task = stack.factory.createTask({ workspaceId: 'wsp_1', title: 'Do the thing' });
+    const task = stack.factory.createTask({
+      workspaceId: 'wsp_1',
+      title: 'Do the thing',
+      author: { kind: 'owner' },
+    });
 
     expect(stack.factory.updateTask(task.id, { status: 'review' }).status).toBe('review');
     expect(stack.factory.updateTask(task.id, { status: 'blocked' }).status).toBe('blocked');
@@ -91,6 +96,7 @@ describe('the task acceptance boundary', () => {
       workspaceId: 'wsp_1',
       title: 'Do the thing',
       acceptanceCriteria: ['The thing was done'],
+      author: { kind: 'owner' },
     });
 
     const accepted = stack.factory.acceptTask(task.id, {
@@ -103,7 +109,11 @@ describe('the task acceptance boundary', () => {
 
   it('rejects an acceptance that was not satisfied', () => {
     stack = createTestStack();
-    const task = stack.factory.createTask({ workspaceId: 'wsp_1', title: 'Do the thing' });
+    const task = stack.factory.createTask({
+      workspaceId: 'wsp_1',
+      title: 'Do the thing',
+      author: { kind: 'owner' },
+    });
 
     const rejected = stack.factory.acceptTask(task.id, {
       satisfied: false,
@@ -115,7 +125,11 @@ describe('the task acceptance boundary', () => {
 
   it('bumps the revision so a concurrent writer is detected', () => {
     stack = createTestStack();
-    const task = stack.factory.createTask({ workspaceId: 'wsp_1', title: 'Do the thing' });
+    const task = stack.factory.createTask({
+      workspaceId: 'wsp_1',
+      title: 'Do the thing',
+      author: { kind: 'owner' },
+    });
     expect(task.revision).toBe(1);
 
     const updated = stack.factory.updateTask(task.id, { status: 'active' });
@@ -124,7 +138,11 @@ describe('the task acceptance boundary', () => {
 
   it('rejects an update that presents a stale revision', () => {
     stack = createTestStack();
-    const task = stack.factory.createTask({ workspaceId: 'wsp_1', title: 'Do the thing' });
+    const task = stack.factory.createTask({
+      workspaceId: 'wsp_1',
+      title: 'Do the thing',
+      author: { kind: 'owner' },
+    });
 
     const updated = stack.factory.updateTask(task.id, { status: 'active' });
     expect(updated.revision).toBe(2);
@@ -136,7 +154,11 @@ describe('the task acceptance boundary', () => {
 
   it('accepts an update that presents the current revision', () => {
     stack = createTestStack();
-    const task = stack.factory.createTask({ workspaceId: 'wsp_1', title: 'Do the thing' });
+    const task = stack.factory.createTask({
+      workspaceId: 'wsp_1',
+      title: 'Do the thing',
+      author: { kind: 'owner' },
+    });
 
     const updated = stack.factory.updateTask(task.id, {
       status: 'active',
@@ -149,7 +171,11 @@ describe('the task acceptance boundary', () => {
 describe('task resources', () => {
   it('reports the real revision', () => {
     stack = createTestStack();
-    const task = stack.factory.createTask({ workspaceId: 'wsp_1', title: 'Do the thing' });
+    const task = stack.factory.createTask({
+      workspaceId: 'wsp_1',
+      title: 'Do the thing',
+      author: { kind: 'owner' },
+    });
 
     const resource = stack.resources.get(task.id);
     expect(resource.revision).toBe(task.revision);
@@ -157,7 +183,11 @@ describe('task resources', () => {
 
   it('rejects an update based on a stale revision', () => {
     stack = createTestStack();
-    const task = stack.factory.createTask({ workspaceId: 'wsp_1', title: 'Do the thing' });
+    const task = stack.factory.createTask({
+      workspaceId: 'wsp_1',
+      title: 'Do the thing',
+      author: { kind: 'owner' },
+    });
 
     stack.resources.update(task.id, { expectedRevision: task.revision, title: 'First write' });
 

@@ -342,14 +342,17 @@ export async function createMcpServer(options: McpServerOptions): Promise<McpSer
           const workspaceId = args.workspaceId ?? (await defaultWorkspace());
           await assertWorkspace(workspaceId);
           return jsonResult(
-            options.capabilities.taskCreate({
-              workspaceId,
-              goalId: args.goalId,
-              title: args.title,
-              description: args.description,
-              assigneeId: args.assigneeId,
-              acceptanceCriteria: args.acceptanceCriteria,
-            }),
+            options.capabilities.taskCreate(
+              {
+                workspaceId,
+                goalId: args.goalId,
+                title: args.title,
+                description: args.description,
+                assigneeId: args.assigneeId,
+                acceptanceCriteria: args.acceptanceCriteria,
+              },
+              actor,
+            ),
           );
         } catch (error) {
           return errorResult(error);
@@ -449,13 +452,15 @@ export async function createMcpServer(options: McpServerOptions): Promise<McpSer
 
           assertOwnMemory(undefined, { type: args.type, data });
           return jsonResult(
-            options.capabilities.resourceCreate({
-              workspaceId,
-              type: args.type,
-              title: args.title,
-              data,
-              createdBy: actor.kind === 'agent' ? actor.agentConnectionId : 'owner',
-            }),
+            options.capabilities.resourceCreate(
+              {
+                workspaceId,
+                type: args.type,
+                title: args.title,
+                data,
+              },
+              actor,
+            ),
           );
         } catch (error) {
           return errorResult(error);
@@ -574,12 +579,15 @@ export async function createMcpServer(options: McpServerOptions): Promise<McpSer
           const workspaceId = args.workspaceId ?? (await defaultWorkspace());
           await assertWorkspace(workspaceId);
           return jsonResult(
-            options.capabilities.automationCreate({
-              workspaceId,
-              title: args.title,
-              trigger: args.trigger,
-              action: { ...args.action, method: args.action.method ?? 'GET' },
-            }),
+            options.capabilities.automationCreate(
+              {
+                workspaceId,
+                title: args.title,
+                trigger: args.trigger,
+                action: { ...args.action, method: args.action.method ?? 'GET' },
+              },
+              actor,
+            ),
           );
         } catch (error) {
           return errorResult(error);

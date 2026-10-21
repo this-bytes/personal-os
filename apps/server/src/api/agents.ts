@@ -87,6 +87,7 @@ export function registerAgentRoutes(app: FastifyInstance): void {
   app.post('/api/agents/:id/probe', { preHandler: requireAuth }, async (request) => {
     const { id } = request.params as { id: string };
     const agent = await app.services.agents.probe(id);
+    audit(request, 'agent.probed', { type: 'agent', id, workspaceId: agent.workspaceId });
     app.services.events.publish({
       type: 'agent.status',
       connectionId: agent.id,
@@ -118,8 +119,10 @@ export function registerAgentRoutes(app: FastifyInstance): void {
     '/api/agents/:id/tokens/:tokenId',
     { preHandler: requireAuth },
     async (request, reply) => {
-      const { tokenId } = request.params as { tokenId: string };
+      const { id, tokenId } = request.params as { id: string; tokenId: string };
+      const agent = app.services.agents.get(id);
       app.services.agentTokens.revoke(tokenId);
+      audit(request, 'agent.token.revoked', { type: 'agent', id, workspaceId: agent.workspaceId });
       return reply.send({ ok: true });
     },
   );

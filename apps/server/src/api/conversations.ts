@@ -103,7 +103,13 @@ export function registerConversationRoutes(app: FastifyInstance): void {
 
   app.delete('/api/conversations/:id', { preHandler: requireAuth }, async (request, reply) => {
     const { id } = request.params as { id: string };
+    const conversation = app.services.conversations.get(id);
     app.services.conversations.remove(id);
+    audit(request, 'conversation.removed', {
+      type: 'conversation',
+      id,
+      workspaceId: conversation.workspaceId,
+    });
     return reply.send({ ok: true });
   });
 
@@ -149,9 +155,13 @@ export function registerConversationRoutes(app: FastifyInstance): void {
     async (request, reply) => {
       const { id } = request.params as { id: string };
       const body = parseBody(participantSchema, request.body);
-      return reply
-        .code(201)
-        .send({ participant: app.services.conversations.addParticipant(id, body) });
+      const participant = app.services.conversations.addParticipant(id, body);
+      audit(request, 'conversation.participant.added', {
+        type: 'conversation',
+        id,
+        workspaceId: app.services.conversations.get(id).workspaceId,
+      });
+      return reply.code(201).send({ participant });
     },
   );
 
@@ -176,7 +186,13 @@ export function registerConversationRoutes(app: FastifyInstance): void {
     { preHandler: requireAuth },
     async (request, reply) => {
       const { id, participantId } = request.params as { id: string; participantId: string };
+      const conversation = app.services.conversations.get(id);
       app.services.conversations.removeParticipant(id, participantId);
+      audit(request, 'conversation.participant.removed', {
+        type: 'conversation',
+        id,
+        workspaceId: conversation.workspaceId,
+      });
       return reply.send({ ok: true });
     },
   );

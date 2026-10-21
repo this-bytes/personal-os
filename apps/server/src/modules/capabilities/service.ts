@@ -18,6 +18,7 @@ import {
 } from '@personal-os/contracts';
 import { errors } from '../../lib/errors.js';
 import type { Database } from '../../db/client.js';
+import type { Author } from '../../lib/author.js';
 import type { AuthenticatedUser } from '../auth/service.js';
 import type { ConversationsService, PostMessageResult } from '../conversations/service.js';
 import type { AgentService } from '../agents/service.js';
@@ -42,6 +43,18 @@ export interface Actor {
   agentConnectionId?: string;
 }
 
+/**
+ * The author an actor stands for.
+ *
+ * The actor is the authenticated identity of the request, so the id that
+ * ends up on the row is the actor's own and not one the request supplied.
+ */
+function authorFor(actor: Actor): Author {
+  return actor.kind === 'agent'
+    ? { kind: 'agent', agentConnectionId: actor.agentConnectionId }
+    : { kind: 'owner', userId: actor.user?.id };
+}
+
 export interface ConversationSnapshot {
   conversation: Conversation;
   participants: Participant[];
@@ -62,14 +75,18 @@ export interface CapabilitiesService {
 
   agentList(workspaceId: string): AgentConnectionDetail[];
 
-  taskCreate(input: {
-    workspaceId: string;
-    goalId?: string;
-    title: string;
-    description?: string;
-    assigneeId?: string;
-    acceptanceCriteria?: string[];
-  }): FactoryTask;
+  taskCreate(
+    input: {
+      workspaceId: string;
+      goalId?: string;
+      title: string;
+      description?: string;
+      assigneeId?: string;
+      acceptanceCriteria?: string[];
+    },
+    /** Who asked for the task. Recorded as the task's author. */
+    actor: Actor,
+  ): FactoryTask;
   taskUpdate(
     id: string,
     patch: {
@@ -84,13 +101,16 @@ export interface CapabilitiesService {
   ): FactoryTask;
   taskGet(id: string): { task: FactoryTask; evidence: Evidence[] };
 
-  resourceCreate(input: {
-    workspaceId: string;
-    type: ResourceType;
-    title: string;
-    data: unknown;
-    createdBy?: string;
-  }): Resource;
+  resourceCreate(
+    input: {
+      workspaceId: string;
+      type: ResourceType;
+      title: string;
+      data: unknown;
+    },
+    /** Who asked for the resource. Recorded as the resource's author. */
+    actor: Actor,
+  ): Resource;
   resourceGet(id: string): Resource;
   resourceUpdate(
     id: string,
@@ -101,12 +121,16 @@ export interface CapabilitiesService {
   /** One template, by reference, for the kind the caller is creating. */
   resourceTemplateGet(ref: ResourceTemplateRef, type: ResourceType): ResourceTemplate;
 
-  automationCreate(input: {
-    workspaceId: string;
-    title: string;
-    trigger: Automation['trigger'];
-    action: Automation['action'];
-  }): Automation;
+  automationCreate(
+    input: {
+      workspaceId: string;
+      title: string;
+      trigger: Automation['trigger'];
+      action: Automation['action'];
+    },
+    /** Who asked for the automation. Recorded as the automation's author. */
+    actor: Actor,
+  ): Automation;
   automationInspect(id: string): { automation: Automation; runs: AutomationRun[] };
 
   goalList(workspaceId: string): Goal[];
@@ -205,7 +229,7 @@ export function createCapabilitiesService(
       return agents.list(workspaceId);
     },
 
-    taskCreate(input): FactoryTask {
+    taskCreate(input, actor): FactoryTask {
       return factory.createTask({
         workspaceId: input.workspaceId,
         goalId: input.goalId,
@@ -213,6 +237,7 @@ export function createCapabilitiesService(
         description: input.description ?? '',
         assigneeId: input.assigneeId,
         acceptanceCriteria: input.acceptanceCriteria ?? [],
+        author: authorFor(actor),
       });
     },
 
@@ -224,7 +249,7 @@ export function createCapabilitiesService(
       return { task: factory.getTask(id), evidence: factory.listEvidence(id) };
     },
 
-    resourceCreate(input): Resource {
+    resourceCreate(input, actor): Resource {
       // Fail fast when the workspace does not exist.
       workspaces.get(input.workspaceId);
       return resources.create({
@@ -232,7 +257,7 @@ export function createCapabilitiesService(
         type: input.type,
         title: input.title,
         data: input.data,
-        createdBy: input.createdBy ?? 'system',
+        author: authorFor(actor),
       });
     },
 
@@ -252,8 +277,8 @@ export function createCapabilitiesService(
       return resources.templateGet(ref, type);
     },
 
-    automationCreate(input): Automation {
-      return automations.create(input);
+    automationCreate(input, actor): Automation {
+      return automations.create({ ...input, author: authorFor(actor) });
     },
 
     automationInspect(id): { automation: Automation; runs: AutomationRun[] } {
