@@ -6824,3 +6824,34 @@ so the only gate it can move is the format one, which the pre-push hook ran gree
 **And the count is recorded here**, because a push the ledger does not carry is read
 as a push that never happened — which is the fault this ledger already carries once,
 for five pushes. **This one is carried.**
+
+## The corrected check, run on live work for the first time — 2026-10-21 18:45
+
+**The rule in `.factory/watchdog.md` was corrected at 17:10, because a task's
+`result` is not a liveness signal. This is the first time the corrected rule
+has run against a task that might have been a stall, and it says something the
+old rule could not have said.**
+
+**Two tasks were over the 45-minute threshold:**
+
+| Task                | Chat                          | Held   | The chat's last message from that bot                   | Verdict                  |
+| ------------------- | ----------------------------- | ------ | ------------------------------------------------------- | ------------------------ |
+| `task_de340ccec5c2` | the Personal OS Factory group | 51 min | `msg_f7058b26bc13`, **`status: streaming`**, 51 min old | **live — not cancelled** |
+| `task_6274afe1abc1` | Wren's chat                   | 53 min | `msg_f3045ac82a7b`, **`status: streaming`**, 53 min old | **live — not cancelled** |
+
+**Neither was cancelled, because a turn was in flight in both chats.** The
+engine appends an empty placeholder with `status: 'streaming'` when a turn
+starts and fills it when the turn ends, so **a message that is still streaming
+is a turn that is still running.**
+
+**Under the old rule — the task's `result` — both would have looked exactly
+like the 462-minute stall**, whose `result` was five hours old and whose turn
+had in fact woken up eleven minutes before it was cancelled. **One of these
+two would have been killed for being busy.** And the two measurements that
+made the difference were cheap: the chat's message store, and a `status` field.
+
+**So the corrected rule is not a rule about elapsed time at all. It is a rule
+about whether a turn is in flight.** A task can hold a slot for an hour and be
+perfectly healthy; a task can hold it for six minutes and be dead. The check
+asks the second question, and the answer is in the chat, and **the chat is
+where the work is.**
