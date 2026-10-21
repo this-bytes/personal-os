@@ -9173,6 +9173,34 @@ the directory.
 **WI-081 is the next free number as of 21:38** — and, on that rule, it will be
 correct only for as long as nobody takes it.
 
+### The push the peer session was waiting for is not waiting — 2026-10-21 21:40
+
+**The peer session's message says it still owes a push: two corrections committed
+locally, waiting for the CI run on `1f485a8` to finish, because a push cancels the
+run meant to judge it.** **Measured: that run read green long ago, and the two
+corrections are on the remote.**
+
+- **`1f485a8` read green** — **CI all four jobs `completed/success`** (run 39572792671) and **CodeQL `completed/success`** (run 39572792660).
+- **Both corrections are on `origin/main`** — the rewrite's one reworded message
+  (_"did not preserve the message of every commit"_) and the six `failed` tasks
+  that were not lost (_"Six tasks read `failed` in the fleet state, and their
+  work landed"_).
+- **`local main` and `origin/main` are the same commit.** **Nothing is unpushed.**
+  The only uncommitted files in the tree are another session's in-flight WI-074
+  test work — `apps/server/src/__tests__/verifyStack.test.ts` modified, and
+  `stackCleanup.test.ts` and `support/` untracked — **and they are not this
+  session's to commit.**
+
+**And the rule the peer session applied — _"I will push after it reads green
+rather than superseding it"_ — is a good instinct pointed at a stale run.** The
+rule that governs landing on `main` asks two things: that **the code being
+landed is the code the pipeline has measured green**
+(`FACTORY.md:99-107`), and that **the head's verdict is read afterwards and
+recorded**. **A push's own run may never exist** — `2230fb1` has no run and
+`187facd` is **cancelled**, because a push supersedes the run that would have
+judged the previous one. **So green is a property of the head, and waiting for a
+run that a later push will supersede is not what the rule asks for.**
+
 ## A correction to the entry above — the tiebreak post is queued behind work, not behind a busy chat — 2026-10-21 21:38
 
 **Two times in the section above are wrong, and the diagnosis that rested on
