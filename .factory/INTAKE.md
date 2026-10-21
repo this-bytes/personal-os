@@ -3519,3 +3519,60 @@ and exports as `approvalEvidenceSchema`. **And the claim table now holds it:** t
 `CONTRACTS.md:1480` and the claim in `scripts/contract-status.json` cannot claim
 "implemented" while the route or the exported schema is gone, and the pointer gate checks
 the note's three line numbers. **WI-086 is landed, not accepted: Probe's verdict is owed.**
+
+## 2026-10-22 09:45 — Chief: the front page is published, and the platform's verdict on the pushed sha
+
+**One — the front page is published.** `20ce58e..ce51521  main -> main`, fast-forward, exit 0,
+and the repository's own pre-push hook ran the format gate over the files in the push and
+passed. **The published tip, read from the remote and not from a tracking ref:**
+`git ls-remote origin refs/heads/main` → **`ce51521`**.
+
+**Two — the gates on the tree that was pushed.** `npm run gates`, **exit 0**: typecheck 25272ms,
+test 75978ms, build 15625ms, format 11658ms, contract-status 703ms, contract-pointers 1348ms,
+smoke 10270ms, compiled-build 2499ms, bundle-size 685ms — **"Every gate passed. The tree is
+green."** The three conditions of `FACTORY.md:99-107` were met: the local gates green on the
+tree being pushed, the landed code byte-identical to a tree the pipeline has measured
+(`git diff --name-only origin/wi/086-evidence-read-route-v2..ce51521` touches only `.factory/**`,
+`PRODUCT.md`, `README.md`, `docs/dependency-licences.json` and `package.json` — **no code
+path**), and a fast-forward from where the work started.
+
+**Three — the platform's verdict, read afterwards and recorded** (`FACTORY.md:109-113`). **CI
+run `39687241876` on `ce51521`: `completed/success`. CodeQL run `39687241897` on `ce51521`:
+`completed/success`.** The previous run on `20ce58e` was green in 5m39s, so the pipeline was
+measuring green when this push superseded it, and **the run that judged the last push of the
+batch is the one that matters** — it judged a tree that carries everything `20ce58e` carried,
+plus the front page.
+
+**Four — the published front page, measured the way a stranger measures it.** An anonymous
+fetch of what GitHub serves: `raw.githubusercontent.com/this-bytes/personal-os/main/README.md`
+line 3 reads the product's own sentence — **The environment one person's agents operate and
+extend.** — which is `docs/strategy.md:20` with the product's name left off, and
+`raw.githubusercontent.com/this-bytes/personal-os/main/package.json` reads
+**"description": "Personal OS — the environment one person's agents operate and extend.",**.
+The old line — _"An agent-native control panel and personal software factory"_ — was the
+page title, the meta description and the social preview, and **it stated three of the
+product's own exclusions** (`docs/strategy.md:37`: not a chat home, not a workflow editor, not
+an inference engine, not a plugin marketplace). It is gone from the front page.
+
+**Five — the lead wrote this one, and the borrow is on the record.** The dispatch to Wren
+(`wi-120-front-page-identity-2026-10-22`, task `task_2b5160e24223`) **queued for fifteen
+minutes and never started** — the dispatch ceiling was full of two tasks that had already
+produced their results and were parked in `waiting_for_tasks`. The owner's answer was
+_"before anyone finds it"_, and the front page is the one artefact already in the world. **So
+the queued dispatch was cancelled** — so that no two workers would meet in one worktree — and
+the lead executed the two-line change itself, **borrowing `README.md` from Wren**, with the
+manifest's description inside WI-120's item. **Probe still verifies it, and the lead cannot
+accept its own work:** the verification is dispatched as
+`wi-120-verify-published-front-page-2026-10-22`, task `task_f8085b21663f`, against the
+**published** artefact. **WI-120 is in `review` and not accepted until that verdict comes
+back.**
+
+**Six — WI-121 is dispatched and waiting for a slot.** Vision's blocked-agent want — _"the
+decision surface carries what an agent is blocked on"_ — is numbered, filed and dispatched to
+Cog (`wi-121-blocked-agent-decision-surface-2026-10-22`, task `task_bbf11f83be2b`, **queued**).
+**The ceiling is the reason it has not started**, and the ceiling is the reason the front page
+was executed by the lead rather than by its owner.
+
+**Seven — one push at a time.** This record travels in the next push, and that push's run is
+the one that judges the tree. **The code is byte-identical to `ce51521`**, so the verdict
+cannot differ for a reason that touches code.
