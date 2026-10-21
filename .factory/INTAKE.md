@@ -7084,6 +7084,51 @@ was itself broken.** The failure was not in the rule and not in the
 threshold. **It was in the transport** — `mavis mcp list` returns no servers,
 and the bot's MCP server did not come back after the runtime stopped.
 
+## Correction to the 19:02 record, and the three cancellations, resolved — 2026-10-21 19:47
+
+**One cell in the 19:02 table is wrong, and it is the cell the rule turns on.**
+It reads: the group session's status was "`started`, still carrying the
+crash-recovery note". **That was read at 19:02, by which time the session was
+`started` again for a _new_ turn** — the group's WI-027 round, begun at 18:56.
+**At 18:31, when the stall was live, the peer session measured that session as
+`idle`**, and `.factory/watchdog.md` records it as such. **So the status in the
+table belongs to a later turn, not to the dead one.**
+
+**And the difference changes the reading.** Under the file's rule — cancel only
+when the session is **not** `started` — **both** sessions at 18:31 were not
+`started`: one `idle`, one `interrupted`, both carrying the crash-recovery
+note. **So both were cancellable, and neither was cancelled: `cancel_tasks` was
+unavailable to anyone.** That is the correct account, and the table above
+implies the opposite for the group session. **The conclusion it reached — that
+there was nothing to cancel — still holds**, but it holds for a different
+reason: **by 19:02 both tasks had left `running` on their own** (they are
+`unknown` now, holding no slot), **and their work was handled anyway** — WI-007
+accepted at `0c86d2b`, WI-065 re-dispatched as `task_2bf6b0a6164a`.
+
+### The three cancellations, as they now stand
+
+| Task                | State                     | What it was                                                                       |
+| ------------------- | ------------------------- | --------------------------------------------------------------------------------- |
+| `task_797badb7e918` | **cancelled at 19:04:50** | WI-007's re-verification — a second verification of a verified item               |
+| `task_de340ccec5c2` | `unknown`, holds no slot  | the group's round; its verification was delivered at 17:29 and WI-007 is accepted |
+| `task_6274afe1abc1` | `unknown`, holds no slot  | Wren's WI-065; the turn died with the runtime and WI-065 has been re-dispatched   |
+
+**And the honest answer to _"is there a way to reach the bot's server that you
+do not have"_: no, not from this session — and the reason is now located.**
+`mavis mcp list` returns **no servers** here. **The plugin's MCP server is a
+node service** — `miniapp/node/mcp.mjs` in the plugin cache — and **no node
+process is running for it**; the desktop app owns the board's storage and the
+tools are not re-registered. **So the cancellations are done by a session that
+has the tools, and this session cannot do them.** The one that mattered — the
+redundant re-verification — is already cancelled.
+
+**And a plugin fact worth having, because it is why the two dead tasks look the
+way they do:** the plugin's own note says _"After a restart, work that never
+started stays queued. Interrupted executions become `unknown` and are not
+replayed automatically."_ **So `unknown` is the documented end state of an
+interrupted execution, not a state with work in it** — which is exactly why
+cancelling those two would tidy the board and free nothing.
+
 ## The third stall, and a correction to this session's own record — 2026-10-21 18:35
 
 **The commit `5663545` in this file says that two long-running tasks were
@@ -7562,3 +7607,180 @@ stays. **Probe's verification of WI-043 therefore stands as the record of what
 the tree looked like before the decision, and its finding — the licence file
 that no item covered, and `FACTORY.md`'s ownership table not naming it — is
 already fixed: the table names the root `LICENSE` file, and it is Chief's.\*\***
+
+## Chief's tiebreak, and the publish — 2026-10-21 19:08
+
+### The three files Chief took, and why
+
+**`FACTORY.md:38` says Chief is the tiebreaker: "when two roles want the same
+file, Chief decides and says so in the group."** Three files that the
+ownership table gives to Wren were corrected by Chief rather than queued to
+Wren, and the reason is stated rather than assumed:
+
+| File                            | What was false in it                                                                           |
+| ------------------------------- | ---------------------------------------------------------------------------------------------- |
+| `README.md`                     | the licence section said "deliberately undecided … private for now"                            |
+| `docs/dependency-licences.json` | the `firstPartyNote` and **six** per-package notes said "private for now, with no LICENSE yet" |
+| `docs/strategy.md`              | said the repository's own licence was unsettled and the root `LICENSE` file had been removed   |
+
+**The reason Wren was not used: Wren's lane was nine tasks deep**, and the
+owner's decision had to land today, in the repository the owner ordered
+published. **The content is the owner's decision transcribed and nothing
+else** — no judgement, no craft taken from the role that owns the file.
+**And the acceptance of those three files is not Chief's**; it goes to another
+session.
+
+**The rule's purpose is served: no two workers were ever on one file.** Chief
+raised two licence dispatches to Wren, withdrew both when the tiebreak was
+taken, and cancelled the stale ones — so no queued worker remained on a file
+Chief was writing.
+
+**Every one of them was worked in a worktree on its own branch**
+(`wi/041-readme-mit`, `wi/036-dependency-licence-mit`,
+`wi/036-strategy-licence-mit`), pushed as a gated branch and merged, because
+**work is written there — never in the main checkout, never on `main`.**
+
+**The tiebreak was said in the group**: request id
+`chief-tiebreak-licence-mit-2026-10-21-1908`, task `task_8e3a35b53ebe`.
+
+### The two briefs that were cancelled rather than allowed to run
+
+1. **`task_a4d24aa2dc24`** — WI-068's half for `CONTRIBUTING.md`. Its brief
+   said to replace `CONTRIBUTING.md`'s MIT sentence with "the licence is
+   deliberately undecided". **After the owner's decision that sentence was
+   true, and the brief would have written a false contract into a file.**
+   Cancelled **19:14:20**, before it ran. **`CONTRIBUTING.md` was left
+   untouched for exactly that reason** — it already said MIT, and MIT is what
+   the repository now grants.
+2. **`task_d7f28085ef46`** and **`task_a1c52c5a8cd5`** — Chief's own licence
+   dispatches to Wren, withdrawn when the tiebreak was taken.
+
+**A brief that was right when it was written and wrong the moment the decision
+changed is cancelled, and the reason is recorded on the item.** WI-068's file
+carries that reason.
+
+### What the publish changed, and what it did not
+
+**`CONTRIBUTING.md` and `CHANGELOG.md` were not touched.** `CHANGELOG.md:42`
+already said "MIT licence", and `CONTRIBUTING.md:238` already said
+contributions are MIT-licensed — **both were false when the licence was
+undecided and are true now**, so the decision made them right rather than
+wrong.
+
+**And `docs/strategy.md`'s own point was kept, not deleted:** that a licence
+gate reading the dependency set cannot speak to this repository's own licence.
+**That is still true**, and the correction does not remove it.
+
+**The tree was measured before it was published.** 353 tracked files, 389
+commit messages, 2455 history blobs, **nothing that is a credential**; and no
+personal contact detail in any tracked file — every address in the tree is an
+`example.com` fixture.
+
+**And this session's push cancelled the peer session's run on `f4aceb8`. That
+is said out loud rather than left for someone else to find.** The workflow's
+`cancel-in-progress: true` is keyed on the **ref**, so the push at **19:33**
+that carried the licence changes cancelled the run on `f4aceb8` that was in
+flight at that moment.
+
+**The push was legitimate under the standing word, and the rule that says so
+is the rule in `FACTORY.md:99-107`:** the local gates measured **green on the
+tree being pushed** — typecheck 0, test 0, format:check 0, build 0, smoke 0,
+e2e 27 passed — and the code that landed is byte-identical to the code the
+pipeline had already measured green, because `git diff --name-only` from the
+last green tree touches **no code path**: only the root manifest's `license`
+field, the `LICENSE` file itself, and documents.
+
+**A verdict of `cancelled` is a superseded run, not a failure** — that is the
+clause the peer session put in the rule this morning, and it is the first time
+this session has been the push that cancelled someone else's run. **The run
+that judges this push is the one on `e676ba9`.**
+
+## The publish is recorded, and the door is not open — 2026-10-21 19:45
+
+**The ledger says the repository is public. Four surfaces outside this machine say
+it is not, and the difference is the lead's to reconcile.** All four checks were
+unauthenticated, against GitHub, at 19:38–19:42:
+
+- `api.github.com/repos/this-bytes/personal-os` — **404 Not Found**.
+- `api.github.com/users/this-bytes/repos` — ten public repositories, and
+  **personal-os is not among them**: `anh-blog`, `anh-decision-bot`, `argus`,
+  `idle-cyber-game`, `mission-control`, `not-later-app`, `paperclip`,
+  `puzzle-game`, `python-game`, `this-bytes/this-bytes`.
+- `raw.githubusercontent.com/this-bytes/personal-os/main/README.md` — **404**.
+- `github.com/this-bytes/personal-os`, logged out — GitHub's **"Page not found"**.
+
+**The remote itself is fine.** `git ls-remote origin` lists `refs/heads/main` at
+`e676ba9`, plus `verify/green-at-tip` and `verify/main-061b6cd`. So the repository
+exists at that path, and this session pushes to it — with credentials.
+
+**So the question is narrow, and it is not the owner's.** The owner's decision to
+publish is recorded; the `LICENSE` file is in the tree before the door opens; and
+the tree was measured before it went — 353 tracked files, 389 commit messages,
+2455 history blobs. **But the visibility call did not take, was refused, or has not
+propagated**, and `docs/strategy.md` says _"the repository is published under MIT"_
+on the strength of the record. **Nothing here says the publish did not happen** — it
+says that anyone outside this machine cannot yet see it, and that is a fact worth
+a line rather than a guess.
+
+**The rule this follows is the one this factory named three times today: ask the
+tree, not the conversation.** The tree says MIT. The tree says private. Both are
+now measured, and the record carries both.
+
+## The repository is public — 2026-10-21 19:41:10
+
+**`github.com/this-bytes/personal-os` was private and is now public.** The
+flip happened at **19:41:10**, after the pipeline had read green on the tree
+that carries the licence — **all four jobs plus CodeQL on `e676ba9`**, and the
+local gate green on the same tree before the push (typecheck 0, test 0,
+format:check 0, build 0, smoke 0, e2e 27 passed).
+
+**And it was confirmed by an unauthenticated read**, not by the token that
+made the change: an anonymous `GET` of the repository returns
+`visibility: public`, `license: MIT`.
+
+**The order was deliberate: the grant lands before the door opens.** The
+`LICENSE` file, the manifest's licence field, the README's licence section,
+the licence record's seven notes and the strategy document's paragraph were
+all on the remote, and green, **before** the visibility changed.
+
+**One mistake of this session's own, said rather than left silent:** the first
+group post of the tiebreak — request id
+`chief-tiebreak-licence-mit-2026-10-21-1908`, task `task_8e3a35b53ebe` — was
+**cancelled by mistake**, by a call meant for something else. **`FACTORY.md:38`
+says Chief decides and says so in the group**, so the post was re-made under a
+new id, `chief-tiebreak-licence-mit-repost-2026-10-21-1945`, task
+`task_b7f3bbf0d43e`. **The cancelled one and the live one are both named
+here**: the first is spent, and the second is the record.
+
+## WI-044 was waiting for exactly this, and it is dispatched — 2026-10-21 19:46
+
+**WI-044 — "the licence check that covers this repository's own sources" — was
+deferred until the repository's visibility was decided.** Its own text says
+why: _"a vendored-source licence matters most at the moment the repository
+goes public … dispatched when the visibility decision lands and the inventory
+can be written against a settled repository."_
+
+**The owner chose MIT at 19:08 and the repository went public at 19:41:10, so
+the condition is met.** The item is dispatched in three halves, one per owner:
+
+| Half      | Files                                                                               | Task                |
+| --------- | ----------------------------------------------------------------------------------- | ------------------- |
+| **Wren**  | `docs/vendored-sources.json` (the inventory), `PRODUCT.md` §10                      | `task_234ce8535eb1` |
+| **Probe** | `scripts/verify-vendored-sources.ts`, and the test that proves the check can fail   | `task_fbbd05f3e9cd` |
+| **Chief** | `FACTORY.md`'s borrow rule, and the root manifest's script entry with Probe's check | this session        |
+
+Request id `wi-044-vendored-inventory-2026-10-21`, batch `batch_886567f30d8f`.
+
+**And the rule in `FACTORY.md` now says what the check will be.** It says the
+borrow rule **covers this repository's own tree as well as the lockfile** — a
+file copied in, a snippet inlined, a font, a fixture of real code — and names
+WI-044 as the item that carries the check. **The rule is not written as though
+the check is already there**, because a reader told the rule is stronger than
+the check is the exact reader WI-044's fourth criterion is about.
+
+**A first reading of the tree finds no file carrying a third-party licence
+header**, so the inventory is expected to be nearly empty. **That is precisely
+why the fifth criterion matters:** the check must be _seen to fail_ on a
+deliberately vendored unapproved source, because **a gate that has never
+failed is a gate that cannot fail**, and an empty inventory with an unproven
+check is the worst of both.

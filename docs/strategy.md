@@ -91,19 +91,18 @@ additional conditions". Windmill's says its source is "variously licensed" acros
 Apache-2.0, AGPLv3 and a proprietary enterprise licence. A licence can change what
 the product is.
 
-**This repository's own licence is unsettled, and the record says so rather than
-implying otherwise.** The root `LICENSE` file (MIT) was tracked since the initial
-commit and was **removed** on 2026-10-21 — it granted a licence nobody had chosen,
-and it had no owner in the ownership table, which `FACTORY.md` now fixes by naming
-it. That removal rests on a reading the owner has been asked to confirm: _the
-repository carries no licence file_, rather than _it is not adding one now_. The root
-manifest's `"license": "MIT"` was removed earlier the same day, for the same reason.
-The README says the licence is deliberately undecided and that the repository is
-private for now — a correction that tells the truth rather than a licence that was
-never chosen — and `CONTRIBUTING.md` still claims MIT, which WI-068 is correcting.
-And the owner's answer at 08:54 was _"Private for now — push it, and decide
-visibility later."_ None of that is settled, and a licence gate that reads the
-dependency set cannot speak to any of it.
+**This repository's own licence is settled: MIT.** The owner chose it on
+2026-10-21 at 19:08, the root `LICENSE` file carries the full text, the root
+manifest says `"license": "MIT"`, and the README says the same. **The file was
+tracked since the initial commit and was removed earlier the same day** — it
+granted a licence nobody had chosen, and it had no owner in the ownership
+table, which `FACTORY.md` now fixes by naming it. **Its removal is what the
+README was for:** the repository carried a grant nobody had chosen, and the
+record said so rather than implying otherwise. **The owner's answer at 08:54
+was _"Private for now — push it, and decide visibility later"_; at 19:08 the
+owner decided visibility and the licence together, and the repository is
+published under MIT.** None of that is about the dependency set, and a licence
+gate that reads the dependency set cannot speak to any of it.
 
 **The owner's hard case, and what can actually catch it.** Vendoring AGPL-3.0 code
 into this repository's own tree changes this project's licence. **A gate over the
@@ -683,10 +682,11 @@ project does not modify them — `lightningcss` is a build-time dependency of
 Tailwind's CSS pipeline.
 
 Two things that answer should not be read as more than it is. **The six
-`@personal-os/*` packages in the lockfile carry no licence at all**, because the
-owner answered on 2026-10-21 that this repository is private for now with no
-LICENSE yet; that is about this repository, not about what it depends on, and
-"no AGPL in the dependency set" is not "everything here may be redistributed".
+`@personal-os/*` packages in the lockfile carry no licence of their own**, and
+are covered instead by this repository's MIT licence, whose text is in the root
+`LICENSE` file; that is about this repository, not about what it depends on,
+and "no AGPL in the dependency set" is not "everything here may be
+redistributed".
 And **the one attribution obligation in the set rides on `caniuse-lite`**
 (`CC-BY-4.0`), a browser-support data set used at build time: whether that data
 reaches the built client is worth settling before the gate is written.
