@@ -262,9 +262,12 @@ There are two panes, and the bridge between them is this document.
 2026-10-21, against the factory's recommendation of B — Desk, and the
 recommendation was the owner's to reject. Forge is an orientation room and an
 execution room held together by one material, with a Needs-you rail that carries
-the decision controls. The rule it settled: _if it is a picture of the system, it
-is in the orientation room; if it is a place where work is inspected or decided, it
-is in the execution room._
+the decision controls. The rule it settled, quoted exactly as the direction
+document states it: _If it is a picture of the system, it is in the orientation
+room. If it is a place where work is inspected or decided, it is in the execution
+room — with two declared exceptions, the Needs-you rail and the constellation,
+which carry decisions in the orientation room because a decision is taken where the
+list is._
 
 **This document is the factory's pane of glass.** The product's identity is spread
 across five files and an intake log of more than three thousand lines, and no reader
