@@ -36,6 +36,7 @@ import { registerExecutionRoutes } from './api/executions.js';
 import { registerWaitingRoutes } from './api/waiting.js';
 import { registerAuditRoutes } from './api/audit.js';
 import { registerMeasuresRoutes } from './api/measures.js';
+import { registerAutonomyRoutes } from './api/autonomy.js';
 import { registerEventRoutes } from './api/events.js';
 import { registerAgUiRoutes } from './api/agui.js';
 
@@ -92,17 +93,19 @@ export async function buildApp(options: BuildAppOptions = {}): Promise<FastifyIn
     allowPrivateTargets: config.allowPrivateTargets,
   });
   const automations = createAutomationsService({ db: runtime.db });
+  const approvals = createApprovalsService(runtime.db);
   const capabilities = createCapabilitiesService({
+    db: runtime.db,
     workspaces,
     conversations,
     agents,
     factory,
     resources,
     automations,
+    approvals,
   });
   const audit = runtime.audit;
   const measures = createMeasuresService({ resources, audit });
-  const approvals = createApprovalsService(runtime.db);
   const executions = createExecutionsService({ db: runtime.db });
 
   const services: AppServices = {
@@ -224,6 +227,7 @@ export async function buildApp(options: BuildAppOptions = {}): Promise<FastifyIn
   registerWaitingRoutes(app);
   registerAuditRoutes(app);
   registerMeasuresRoutes(app);
+  registerAutonomyRoutes(app);
   registerEventRoutes(app);
   registerAgUiRoutes(app);
 
