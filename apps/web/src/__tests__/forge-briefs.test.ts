@@ -16,17 +16,50 @@
  * quoting a rule the direction document no longer holds — and the last of
  * those has already happened once, which is why the boundary rule is compared
  * against the document rather than against a copy of itself.
+ *
+ * One pin in here has been re-stated, and it is worth saying why.
+ *
+ * Brief 02's amber table published ten lines across six files and said
+ * "Measured at `d343300`". That is a true record and the brief is not
+ * edited. But the pin over it asserted that the **live tree** still held
+ * amber at each cited line, and the rule brief 02 itself prescribed — its
+ * own "Under Forge" column — has since been carried out: WI-071's accent
+ * work took the amber off eight of the ten sites and split the ninth.
+ * `docs/panel-accent.md` is the inventory that replaced the table.
+ *
+ * So the pin now holds the rule that is in force. The ten sites brief 02
+ * names are the sites the accent rule claims, none of them holds amber
+ * again, the split the brief prescribed is still a split, and the two
+ * notices the brief called failures wear the error colour.
+ *
+ * The accent guard (`apps/web/src/__tests__/accentGuard.test.tsx`) is the
+ * other half of this. It scans every component and every shared primitive
+ * and fails if amber appears anywhere outside the token layer. A blanket
+ * scan cannot say *which* sites the rule claims, cannot say that the
+ * accent has to be *somewhere*, and cannot say what a caution became.
+ * Those are the things this file holds.
  */
 import { execFileSync } from 'node:child_process';
-import { readFileSync, readdirSync, statSync } from 'node:fs';
+import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const repoRoot = path.resolve(here, '..', '..', '..', '..');
+const webRoot = path.resolve(here, '..', '..');
 const briefsDir = path.join(repoRoot, 'prototypes', 'briefs');
 const directionPath = path.join(repoRoot, 'prototypes', 'DIRECTION.md');
+
+/**
+ * The inventory that replaced brief 02's amber table.
+ *
+ * WI-071's accent work carried out the "Under Forge" column of that table,
+ * and `docs/panel-accent.md` is where the rule now lives. The brief is the
+ * direction's record of what the tree held at `d343300`; this file is where
+ * the rule that replaced it is kept.
+ */
+const ACCENT_INVENTORY = path.join(repoRoot, 'docs', 'panel-accent.md');
 
 const BRIEF_FILES = [
   '01-rooms-and-surfaces.md',
@@ -208,6 +241,85 @@ function resolveSource(basename: string): string | null {
   return found.length === 1 ? (found[0] ?? null) : null;
 }
 
+/** A site an amber table names: a file, and the lines in it. */
+interface AmberSite {
+  /** The site as the record writes it, e.g. `TaskBoard.tsx:293-294`. */
+  cited: string;
+  /** The file that holds it, resolved against the tree. */
+  file: string;
+  /** The lines the record cites, 1-based. */
+  lines: number[];
+}
+
+/**
+ * A site, read out of one row of an amber table.
+ *
+ * Brief 02's table and `docs/panel-accent.md`'s inventory name a site the
+ * same way — a file and a line, or a line range — and the two records spell
+ * the file differently. The file is resolved against the tree rather than
+ * assumed, so a site naming a file the tree does not have fails here
+ * instead of passing on a name.
+ */
+function amberSite(row: string, label: string): AmberSite {
+  const cited = /^\|\s*`([^`]+)`\s*\|/.exec(row)?.[1];
+  expect(cited, `${label} has a site this test cannot read: ${row}`).toBeDefined();
+  const [raw = '', range = ''] = (cited as string).split(':');
+  const lines = range.includes('-')
+    ? range.split('-').map((part) => Number(part))
+    : [Number(range)];
+  const basename = raw.split('/').pop() ?? raw;
+  const file = resolveSource(basename);
+  expect(file, `the tree has no ${basename}`).not.toBeNull();
+  return { cited: cited as string, file: file as string, lines };
+}
+
+/**
+ * The identity of a site, so two records that spell it differently can be
+ * compared: the file's name and the lines, however each of them writes the
+ * path.
+ */
+function siteIdentity(site: AmberSite): string {
+  return site.cited.split('/').pop() ?? site.cited;
+}
+
+/** The body of one `###` section of a markdown file. */
+function section(markdown: string, heading: string): string {
+  const lines = markdown.split('\n');
+  const start = lines.findIndex((line) => line.trim() === heading);
+  if (start < 0) return '';
+  const rest = lines.slice(start + 1);
+  const end = rest.findIndex((line) => line.startsWith('### '));
+  return (end < 0 ? rest : rest.slice(0, end)).join('\n');
+}
+
+/** The text between two markers, or null when the first one is not there. */
+function between(source: string, start: string, end: string): string | null {
+  const from = source.indexOf(start);
+  if (from < 0) return null;
+  const to = source.indexOf(end, from + start.length);
+  if (to < 0) return null;
+  return source.slice(from, to);
+}
+
+/** The first line after a marker that carries something. */
+function nextLine(source: string, marker: string): string | null {
+  const at = source.indexOf(marker);
+  if (at < 0) return null;
+  const row = source
+    .slice(at + marker.length)
+    .split('\n')
+    .find((line) => line.trim().length > 0);
+  return row ?? null;
+}
+
+/** The badge variant on the element that carries a label. */
+function badgeVariant(source: string, label: string): string | null {
+  const at = source.indexOf(label);
+  if (at < 0) return null;
+  const before = [...source.slice(0, at).matchAll(/<Badge variant="([^"]+)"/g)];
+  return before.length > 0 ? (before[before.length - 1]?.[1] ?? null) : null;
+}
+
 const index = read(path.join(briefsDir, 'README.md'));
 const direction = read(directionPath);
 const briefs = new Map<BriefFile, string>(BRIEF_FILES.map((file) => [file, readBrief(file)]));
@@ -372,39 +484,111 @@ describe('the palette numbers', () => {
   );
 });
 
-describe('the amber collision', () => {
-  it('names ten usages across six files, and every one of them still holds amber', () => {
+describe('the amber collision, and the rule that resolved it', () => {
+  it('is still ten usages across six files, and the accent inventory claims the same ten', () => {
     const rows = tableUnder(briefs.get('02-material.md') ?? '', 'What it says today');
     expect(rows.length).toBeGreaterThan(0);
+    const sites = rows.map((row) => amberSite(row, 'brief 02'));
 
-    let lines = 0;
-    const files = new Set<string>();
+    expect(sites.length, 'brief 02 names eight amber elements').toBe(8);
+    expect(sites.flatMap((site) => site.lines).length, 'brief 02 names ten amber lines').toBe(10);
+    expect(
+      new Set(sites.map((site) => path.basename(site.file))).size,
+      'the amber collision is across six files',
+    ).toBe(6);
+
+    // The inventory is the successor of the brief's table, and the two have
+    // to agree about which sites they are talking about. Nothing else
+    // checks this: the accent guard reads the code, not the records.
+    expect(
+      existsSync(ACCENT_INVENTORY),
+      'docs/panel-accent.md is the inventory the accent rule replaced the brief table with',
+    ).toBe(true);
+    const claimed = tableUnder(
+      section(read(ACCENT_INVENTORY), '### The eight elements that named amber'),
+      'Colour today',
+    ).map((row) => amberSite(row, 'the accent inventory'));
+
+    expect(claimed.length, 'the accent inventory names eight elements').toBe(8);
+    expect(
+      claimed.flatMap((site) => site.lines).length,
+      'the accent inventory claims ten amber lines',
+    ).toBe(10);
+    expect(
+      claimed.map(siteIdentity).sort(),
+      'the accent inventory does not claim the sites brief 02 names',
+    ).toEqual(sites.map(siteIdentity).sort());
+  });
+
+  it('holds no amber at any of the ten, in the live tree', () => {
+    const rows = tableUnder(briefs.get('02-material.md') ?? '', 'What it says today');
     for (const row of rows) {
-      const site = /^\|\s*`([^`]+)`\s*\|/.exec(row)?.[1];
-      expect(site, `brief 02 has a site this test cannot read: ${row}`).toBeDefined();
-      const split = (site as string).split(':');
-      // Brief 02 names its sites by file name, and the shared package by its
-      // path: resolve them against the tree either way.
-      const raw = split[0] ?? '';
-      const basename = raw.split('/').pop() ?? raw;
-      const range = split[1] ?? '';
-      const source = resolveSource(basename);
-      expect(source, `the tree has no ${basename}`).not.toBeNull();
-      files.add(basename);
-
-      const sourceLines = read(source as string).split('\n');
-      const numbers = range.includes('-')
-        ? range.split('-').map((part) => Number(part))
-        : [Number(range)];
-      for (const number of numbers) {
-        lines += 1;
+      const site = amberSite(row, 'brief 02');
+      const source = read(site.file);
+      const sourceLines = source.split('\n');
+      for (const number of site.lines) {
         const line = sourceLines[number - 1] ?? '';
-        expect(line, `${basename}:${number} no longer holds amber`).toContain('amber-');
+        expect(
+          line,
+          `${site.cited} holds amber again. The accent rule took the amber off this site, ` +
+            'and the rule is that amber means live or waiting on you and nothing else.',
+        ).not.toContain('amber-');
       }
+      expect(
+        source,
+        `${path.basename(site.file)} holds amber again, and it is the file that carries ${site.cited}.`,
+      ).not.toMatch(/amber-/);
     }
+  });
 
-    expect(lines, 'brief 02 names ten amber lines').toBe(10);
-    expect(files.size, 'the amber collision is across six files').toBe(6);
+  it('splits the one site that carried two meanings, and the accent stays on the review side', () => {
+    const board = read(path.join(webRoot, 'src', 'components', 'TaskBoard.tsx'));
+
+    // The badges. A task in review is waiting on the owner, so it wears the
+    // accent; a task whose outcome is unknown is a caution, so it does not.
+    expect(badgeVariant(board, 'awaiting acceptance'), 'the badge a task in review wears').toBe(
+      'accent',
+    );
+    expect(
+      badgeVariant(board, 'outcome unknown'),
+      'the badge a task with an unknown outcome wears',
+    ).not.toBe('accent');
+
+    // The block both statuses share, and the split inside it. The accent has
+    // to be somewhere: a rule that forbids a colour and never says where it
+    // goes is a rule that erodes from the other side.
+    const block = between(
+      board,
+      "{task.status === 'review' || task.status === 'unknown' ? (",
+      ') : null}',
+    );
+    expect(block, 'the acceptance block brief 02 names is gone').not.toBeNull();
+    const split = /task\.status === 'review'\s*\?\s*'([^']*)'\s*:\s*'([^']*)'/.exec(block ?? '');
+    expect(split, 'the acceptance block no longer splits on the review status').not.toBeNull();
+    expect(
+      split?.[1],
+      'a task in review is waiting on the owner, so its half of the block wears the accent',
+    ).toMatch(/accent-/);
+    expect(
+      split?.[2],
+      'a task whose outcome is unknown is a caution, so its half of the block does not',
+    ).not.toMatch(/accent-/);
+  });
+
+  it('sends the two failures it named to the error colour', () => {
+    // The routing-blocked notice: the message was not delivered. It failed.
+    const detail = read(path.join(webRoot, 'src', 'pages', 'ConversationDetail.tsx'));
+    const blocked = nextLine(detail, 'routingNotice.routing.blocked');
+    expect(blocked, 'the routing-blocked notice is gone').not.toBeNull();
+    expect(blocked, 'the routing-blocked notice wears the error colour').toMatch(/\berr\b/);
+    expect(blocked, 'the routing-blocked notice does not wear the accent').not.toMatch(/accent-/);
+
+    // The revision conflict: the save cannot land. It failed.
+    const editor = read(path.join(webRoot, 'src', 'components', 'ResourceEditor.tsx'));
+    const conflict = between(editor, '{conflict ? (', ') : null}');
+    expect(conflict, 'the revision-conflict notice is gone').not.toBeNull();
+    expect(conflict, 'the revision conflict wears the error colour').toMatch(/\berr\b/);
+    expect(conflict, 'the revision conflict does not wear the accent').not.toMatch(/accent-/);
   });
 
   it.skipIf(!measuredCommitReachable)(
