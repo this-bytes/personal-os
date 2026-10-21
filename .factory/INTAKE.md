@@ -2636,3 +2636,109 @@ request id there.** Probe's lane: **still refusing**, 30 delegations refused sin
 2026-10-20 21:46:39, the last at 04:25:20. **And the restart still has not happened** —
 `runtime.start_requested` and `runtime.ready` are both at **2026-10-21 23:37:39**, one
 run id `5bc9c2db`, `current: true`.
+
+## 2026-10-22 08:05 — the branch pile-up, measured: 73 branches, 0 pull requests, and neither is what it looks like
+
+**The owner asked whether the remote branches piling up had created an unmergable
+mess, each branch a different direction.** The measurement says no, and the reason
+is not reassurance — it is that the two halves of the worry have different causes,
+and both causes are fixable and mostly already fixed.
+
+**There are no pull requests because this factory does not use them, not because
+the agents failed to open them.** `FACTORY.md:85-97` defines the landing model: the
+branch is the unit of work, landing is `git merge --ff-only` + `git push origin
+main` under a standing owner authorisation, and **CI runs on every branch push**
+(`.github/workflows/ci.yml:12`, `branches: ['**']`) — so a pushed branch is already
+a gated branch. The `pull_request:` trigger at `ci.yml:13` exists, but nothing
+creates one. The GitHub API confirms it: `pulls?state=all` returns **zero**
+pull requests, open or closed, for the life of the repository, and `gh` is not
+installed on this machine. **A pull request here would be a second review gate on
+top of a gate that already runs.**
+
+**The pile-up is 57 closed branches, not 73 live directions.** `git merge-base
+--is-ancestor <branch> origin/main` says **57 of the 73 remote branches are fully
+merged into `main`** — every commit reachable from `main`, so they carry nothing
+that is not already landed. They are noise, not work.
+
+**And the branches converge rather than diverge.** `wi/112-second-landing` was the
+convergence vehicle: it contained `wi/106-publish-template-contract`,
+`wi/104-land-five-domains`, `wi/101-integration-landing`, `wi/105-record-turn-cost`
+and **12 of the 29** then-unlanded WI branches as ancestors, and it merged into
+`main` with **zero conflicts** (`git merge-tree --write-tree`, which reports the
+result tree rather than an opinion). **The peer session landed it while this was
+being measured** — the unlanded count fell from **35 to 17**, and `origin/main`
+moved four times underneath the measurement (`c63d270` → `87c7b16` → `9a88ebe` →
+`4e64f3d` → `76ce2a3`). **Every number below is measured against the current
+`origin/main`, not against the tree this measurement started on** — which is the
+same stale-measurement failure this ledger records at 07:39.
+
+### The verdict, per branch
+
+**2 are dead weight** (content already on `main`, `+0/−0`): `wi/071-accent-one-meaning`
+(the Forge accent system, landed via `wi/087-accent-salvage`), `wi/062-measures-citation-refresh`
+(WI-062 is `accepted` on `main` by another commit).
+
+**2 are landable now** — clean merge, **green on CI**:
+`wi/092-bundle-budget-timeout` (+84/−44, 1 file) and
+`wi/106-record-four-loose-sentences` (+133/−7, 3 files).
+
+**5 carry real, unique product work** that exists nowhere else and needs a
+re-base onto `main`: `wi/095-resolver-robustness` (+1850/−34, 3 files) and
+`wi/085-autonomy-policy-attack` (+1715, 1 test file — **`wi/095` contains
+`wi/085`'s commit, so landing `095` alone closes `085`**),
+`wi/077-agent-adapter-domain` (the worker agent probe;
+`apps/worker/src/__tests__/agent-probe.test.ts` is **absent from `main`**),
+`wi/067-mcp-workspace-scope` (+86, 2 files) and `wi/044-vendored-sources`
+(+208/−5, the borrow-rule inventory).
+
+**2 are stale — their text would now be false**: `wi/042-product-record-closed-questions`
+(says the measures are "funded and in flight"; WI-020 has since landed) and
+`wi/062-measures-citation-refresh` (two of its three corrections are stale again).
+
+**4 are in flight with the live peer session**: `wi/086-evidence-read-route`,
+`wi/088-ledger-state-and-history`, `wi/103-contract-pointers-after-wi-080`,
+`wi/106-record-four-loose-sentences`.
+
+**None of the 17 is a "different direction".** Each was measured for what it
+_adds_ (`git cherry`, plus a diff from its merge-base), not for how far behind it
+is, and the five with real work are the same product direction as `main` — patches
+that need re-basing, not rival architectures.
+
+### One piece of work existed in exactly one place, and now does not
+
+**`wi/072-queue-index` held 11,306 lines of work that existed nowhere but one
+uncommitted working tree.** Its branch was already merged into `main`
+(`dd8af11`), so `work-item.ts remove` would have deleted the worktree with the
+work still uncommitted in it: the 33 migrated item files, the rewritten
+`scripts/work-item.ts` (1,712 lines against `main`'s 358), the migration script,
+the queue index and the test suite. **That work is now on
+`origin/wi/072-queue-index` as `ad184b4`.** It is **not ready to land, and its
+commit message says so on its face**: `typecheck:scripts` passes, `vitest run` is
+**red at 2 of 14** (the queue index reports `not` where the list reports
+`not-migrated` — two names for one state, which is the defect the item is about),
+and the format gate on the files it touches passes.
+
+### What was cleaned up, and what was not
+
+**40 merged worktrees were removed** (78 → 38) through the repo's own
+`npx tsx scripts/work-item.ts remove WI-NNN`, which refuses a dirty worktree and
+refuses to delete an unmerged branch. **10.1 GB reclaimed** (18.3 → 8.2 GB).
+
+**A branch is closed by marking it superseded in its own item file, not by
+deleting it** (WI-087, rule 2). **No remote branch was deleted and nothing was
+force-pushed.** **Nothing was landed on `main` by this item** — the peer session
+was pushing throughout, and `FACTORY.md:115-121` is explicit that a push cancels
+the run that judges it.
+
+**Seven numbers were each claimed by more than one branch** — WI-034 (3), WI-036
+(4), WI-041 (2), WI-046 (2), WI-077 (2), WI-086 (2), WI-092 (2). Every one is now
+merged or superseded, so the collisions are closed rather than live — but they are
+how three branches came to share a number, and `work-item.ts remove` cannot tell
+`034-citation-drift` from `034-outcome-vocabulary-check`, so it removed only one
+of them. That is a real limit in the tool.
+
+**The full verdict table, the measurements and the recommended landing order are
+in `.factory/work/WI-117.md`.** This item is **WI-117**, read immediately before it
+was taken: `main` runs to WI-116, the peer holds WI-113, WI-114 and WI-115 are
+taken, WI-116 is reserved for the contract-publication item, and WI-117 appeared
+in no item file, no dispatch record and no commit.
