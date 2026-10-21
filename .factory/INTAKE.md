@@ -2801,3 +2801,29 @@ item is ever opened, it takes WI-116"_ — **so the next number either session m
 is WI-117.** WI-113 is the peer's; WI-114 and WI-115 are the lead's; and both of the
 lead's are **held behind WI-086, which is `CONTRACTS.md`'s live file and is running
 right now.**
+
+### One gate failed and the cause was a race, not the tree — 2026-10-22, 08:18
+
+**A full `npm run test` run on the tree this session was about to push came back
+`TEST_EXIT=1`, with the failing workspace's output cut off by the lead's own
+`Select-Object -Last 14`. The lead did not know what had failed, and a red gate with
+no known cause is exactly the kind of thing that gets pushed anyway or buried.**
+
+**The cause, from the commit timestamps rather than from a guess.** The failed run
+spanned roughly 08:08 to 08:14, and **the peer session committed `683ad44` at
+08:10:05 — inside that window** — "Accept WI-112 on Vision's substituted verification,
+and record the green verdict". **Two Chief sessions share one working tree, and a test
+suite that reads files while the other session is writing them is measuring a tree
+that does not exist.**
+
+**The lead's re-measurement, in order: the server workspace alone — 39 files, 423
+tests, exit 0; then the full suite with every line captured to a file — `TEST_EXIT=0`,
+61 files, 615 tests, 0 failures, and no failure line anywhere in the log.** **So the
+tree is green and the failed run was a race.**
+
+**The rule, because it will happen again: the lead and the peer session share
+`G:\code\personal-os`, and a gate measured while the other session is committing is
+not a measurement.** **Check the commit timestamps on both sides before believing a
+red, and measure again on a tree that has stopped moving.** And the lead's own habit of
+truncating a gate's output with `-Last` is what made this cost an hour of
+re-measurement: **capture the whole log, then read it.**

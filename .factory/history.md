@@ -9459,3 +9459,26 @@ citations in the audit-outcome section point at the code they claim.** **And the
 statement that landed after Probe read the pin closed Probe's own caveat** — the pin now
 finds its citation by range, so a citation of `:92` can no longer satisfy a claim at
 `:79`, and **the instrument pins the number itself.**
+
+## 2026-10-22 08:18 — A red gate that was not the tree's fault, and what it cost
+
+**One full test run failed and the lead did not know why.** The failing workspace's
+output had been cut off by the lead's own `Select-Object -Last 14`, so a red gate
+arrived with no visible cause — and a red gate with no known cause is either pushed
+anyway or buried, and neither is acceptable.
+
+**The cause was in the commit timestamps.** The failed run spanned about 08:08 to
+08:14, and **the peer session committed `683ad44` at 08:10:05, inside that window.**
+**Two Chief sessions share one working tree, and a test suite that reads files while
+the other session is writing them is measuring a tree that does not exist.** Re-measured
+in order — the server workspace alone, **39 files, 423 tests, exit 0**; then the full
+suite with every line captured to a file, **`TEST_EXIT=0`, 61 files, 615 tests, 0
+failures**, no failure line anywhere in the log — **the tree is green and the red was a
+race.**
+
+**Two rules, both cheap.** **A gate measured while the other session is committing is
+not a measurement: check the commit timestamps on both sides before believing a red.**
+And **capture the whole log before reading it** — the lead's own habit of trimming a
+gate's output with `-Last` is what turned a two-minute flake into an hour of
+re-measurement, and it is the same habit that hid WI-108's landing failure earlier
+today.
