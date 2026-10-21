@@ -1187,3 +1187,27 @@ worker 5 / 31, agent-adapters 2 / 16, contracts 4 / 28, web 8 files / 68 tests
 with **3 failed, all three in this one file**. `forge-briefs.test.ts` is the
 only file in the tree that reads `DIRECTION.md`. **So `main` is still not
 pushed**, and the push waits on one thing: the pin's successor landing.
+
+**WI-065's correction landed on `main` at 02:21, and WI-031's landed with it.**
+The template record's false sentence is gone — `CONTRACTS.md` no longer says "The
+code does not implement this yet" about the template record. **The two that
+remain are at `:964` and `:1169`, and they are different entries and different
+items** (the audit outcome, and the approval evidence). The merge was measured
+before it was taken — `merge-tree` named no conflicted file — and measured again
+after: typecheck 0, format 0, build 0, and **the same three pin cases and
+nothing else** — server 28 files / 295 tests, worker 5 / 31, agent-adapters
+2 / 16, contracts 4 / 28, web 8 files / 68 with 3 failed, all three in
+`forge-briefs.test.ts`. **The merge is Chief's, and the merge message says so
+out loud.** The peer session merged WI-031 in the same window (`e125039`), so
+`CONTRACTS.md` now also says the code implements WI-031's route and names both
+writers of an outcome — **which is the merge WI-031's verification was waiting
+on, so what WI-031 owes next is Probe's verification of the merged
+correction**, and this session will dispatch it as soon as it has transport
+again.
+
+**And one measurement worth keeping, because it nearly produced a wrong
+conclusion.** Running `vitest run --root apps/server` by hand reports **21
+failed test files and 59 failed tests on a tree the official gate calls green**
+— it does not load the package's own configuration, and 125 tests are skipped
+instead of run. **The gate is `npm run test`; a hand-rolled vitest invocation is
+not the gate, and a red it reports is not a red in the tree.**
