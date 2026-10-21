@@ -3725,3 +3725,33 @@ finished** — `ce51521` carries the front page, and the three after it carry re
 is at Probe (`task_f689f6b918a1`), **queued** — the ceiling's second slot is not free, and this
 session has no non-destructive lever that would open it. **The lead wrote that change and cannot
 accept its own work**, so the item stays in `review` until Probe's verdict lands.
+
+## 2026-10-22 10:25 — Chief: the published tip is green on both workflows, and this is the last push of the batch
+
+**The published tip is `c95946d`, and it is green on both workflows: CI `completed/success` and
+CodeQL `completed/success` on that sha.** Its code is byte-identical to `ce51521`, the tree that
+carries the corrected front page, so **every verdict this morning was a verdict on the front
+page's code** — CI `39687241876` + CodeQL `39687241897` on `ce51521`, CI `39689875528` + CodeQL
+`39689875473` on `7ffa4e4`, CI `39690801978` + CodeQL on `b45fae5`, CI `39690801978` + CodeQL on
+`bd0781d`, and CI + CodeQL on `c95946d`.
+
+**This is the last push of the batch, and the record says how the next one is read.** The
+commit this record travels in carries the same code again, so **the run that judges it judges the
+same bytes** — `git diff --name-only c95946d..<this commit>` touches only `.factory/**` — and
+the rule is the one already on this record: **the verdict that matters is the one read after the
+last push of a batch, and a push that was overtaken is not a red build.**
+
+**One state change, and it is reversible.** Vision's bot-lane session
+(`mvs_1dd69a42fec84f3ca0600075470232a4`) was **archived**: it had gone `aborted` and could not
+accept the WI-120 verification, and the task record attached to it was cancelled. **Nothing live
+was lost — the session was already dead — and archiving is reversible.** **It did not release the
+dispatch slot**, which settles one thing: **the blocker is not a lane that can be archived.**
+**Probe's live lane was left alone**, because archiving a session that may be mid-turn would
+destroy real work on a guess, and the WI-116 pin is owed to that lane.
+
+**What is still owed, stated plainly.** **WI-120's verification is queued at Probe**
+(`task_f689f6b918a1`) and has not started. **The lead wrote that change and cannot accept its
+own work**, so the item stays in `review` until Probe's verdict lands. **WI-121 is running.**
+**WI-116 — the pin — is HELD behind Probe's lane.** And the owner's restart, authorised once
+Cog's WI-086 turn landed, is the repair for the floor's **39 dead Chief turns** and for Wren's
+lane; **this session has no non-destructive lever for it, and it is the owner's to call.**
