@@ -3445,3 +3445,92 @@ put it in the queue. It is a defect against a rule the code already states —
 `apps/server/src/modules/mcp/server.ts:96` says _"An agent may only act inside
 a workspace it has been granted"_ — and **WI-017 is adding a tool to this same
 surface**, so a rule that lands after it has to be applied to it as well.
+
+## The owner's two answers, and the corrections this tick made — 2026-10-21 11:15
+
+**The owner's answers, asked at 11:05 and answered at 11:05.**
+
+1. **Should an unconfirmed turn keep dispatching work? No.** An unconfirmed
+   turn stops and waits for the owner. This is the question WI-008 could not
+   close on, and it is now closed: `planAndDispatch`
+   (`apps/server/src/modules/conversations/dispatch.ts:85-103`) never reads
+   `message.status`, so a turn whose outcome could not be confirmed still
+   routes work onward. **The owner's answer says it must not.** That is a
+   behaviour change, and it belongs to the item that owns the waiting list's
+   behaviour — WI-008, whose file is the other Chief session's live claim.
+2. **Forge's place in the queue: the three in flight first.** WI-017 (a
+   template for all six kinds), WI-020 (the product reporting on itself) and
+   WI-031 (the route that closes a turn) stay ahead of WI-024. Reordering
+   dispatched work strands it, and the factory has been burned by that twice
+   today; WI-031 also closes WI-027's last criterion, which is the one the
+   owner's push waited on.
+
+**WI-034's scope was wrong, and the correction is right.** The item said the
+contract "does not say what 'authored by an agent' means" and that the audit
+outcome set "is published nowhere". **Both were false**: WI-030 published both
+at 08:34, before the wants were triaged, and as written the item would have
+published the same thing twice. The other Chief session found it, the
+reasoning is in `docs/strategy.md` (`e1f50ae`), and WI-034 is rewritten to
+the narrowed scope. **The lead who wrote the item did not notice that the
+item was wrong; a verifier reading the contract instead of the brief did.**
+That is the whole argument for the implementer not being the verifier, in one
+incident.
+
+**One thing the narrowing leaves open, and the item now says so.** The
+published outcome set is `success | failure | unknown`, and the unknown
+outcome **is** written to the trail today. The narrowed vocabulary is
+`queued | succeeded | failed`. **A vocabulary that dropped `unknown` would
+make the unknown outcome unrepresentable in the audit trail**, so WI-034's
+criteria now require the vocabulary to express every outcome the product can
+produce, or the migration note to say where an unknown outcome is recorded
+instead. That is a judgement for the item's owner, and it is not a detail.
+
+**W8 is funded, and numbered.** The same review produced a want: the licence
+gate reads the **dependency set**, so it cannot see source vendored into this
+repository's own tree — the owner's own hard case. **WI-044.** It is numbered
+so it is not lost, and it is **not dispatched**: the inventory it needs is
+worth writing against a settled repository, and the repository's visibility
+is the owner's open decision.
+
+**The number space, as it now stands.** This session: WI-030 through WI-038,
+and WI-044. The other Chief session: WI-024 through WI-029, and WI-039
+through WI-043. Continuous, collision-free, and recorded here because two
+claims in one tree have already collided twice.
+
+## WI-032 — the security leg of the pipeline, and what it took to fix it
+
+**Two defects, and only one of them was in the repository.**
+
+1. **The token could not read the workflow run it belonged to.** The job
+   declared `security-events`, `packages` and `contents`, and a job-level
+   `permissions:` block replaces the workflow-level one wholesale — so
+   `actions: read`, which GitHub's own documentation for the action requires,
+   was never granted. The step failed with _"Resource not accessible by
+   integration"_ before it analysed anything.
+2. **And then the licence.** With the permission fixed, the failure moved
+   one step along: _"Code scanning is not enabled for this repository."_
+   Enabling it is `code_security` in the repository's settings, and GitHub
+   answers that with _"When billing is bundled Code Security can only be
+   enabled if Advanced Security is enabled"_. **Code scanning is free on a
+   public repository; on a private one it needs GitHub Advanced Security,
+   which a personal account does not have.** The repository is private — the
+   owner's choice — so the scan cannot upload and cannot be made to.
+
+**The scan itself works.** The `analyze` step's `upload` input takes `never`,
+which produces the SARIF without sending it to code scanning, and the
+results are published with the run as an artifact instead. The run fails if
+the scan produced none. **When the repository is public, where the owner said
+it is going, the upload is one word away.**
+
+**And the branch is a gated branch in both senses now.** `codeql.yml` ran on
+`main` only, while `ci.yml` ran on every branch — so a branch was checked by
+half the pipeline, and the half that was missing is the one that catches a
+bad pattern in a change nobody read carefully. It runs on every branch now.
+
+**It is proved, not asserted.** The branch `wi/032-codeql-permissions` was
+pushed and **both runs are green on it**: CI success on all four jobs, and
+CodeQL success on the analyze step
+(`39508958420`). The fix is merged into `main` as `061b6cd`. **The branch's
+own draft of this ledger section was superseded rather than merged** — it was
+written before the licence was known, and the record above is the corrected
+one.
