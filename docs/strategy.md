@@ -291,11 +291,13 @@ recorded read from its repository, and the build fails when a licence changes or
 unapproved one appears. That splits into two wants, because the record and the gate
 are different files and different owners — W5 records it, W7 checks it.
 
-**The record half is done; the gate is not.** WI-036 wrote the record — 494
+**The record half is done; the gate is in flight.** WI-036 wrote the record — 494
 packages, one copy, in `docs/dependency-licences.json` — and it is at verify.
-**WI-038 (W7) is the half that makes this a check rather than a record**, and it
-has not started. Until it does, the borrow rule is still a claim with a ground
-truth attached, and not a fact the build proves.
+**WI-038 (W7) is the half that makes this a check rather than a record, and it has
+started**: the CI step and the root manifest entry are written on
+`wi/038-borrow-rule-gate`, and the gate script itself is dispatched. **Until that
+script lands and the gate runs, the borrow rule is a claim with a ground truth
+attached, and not a fact the build proves.**
 
 **What the check does not cover, said before anyone assumes that it does.** It reads
 the **dependency set**. The owner's hard case — vendoring AGPL-3.0 code into this
@@ -339,7 +341,7 @@ came out of this document's own review and was numbered later, as WI-044.
 | W4   | **folded**           | [WI-007](../.factory/work/WI-007.md) | Cog   | The same subject under a different name. **The fold is recorded in `.factory/INTAKE.md`, not in WI-007's own file** — that item does not yet name the fold, which is a gap in the item, not in this record.                   |
 | W5   | accepted, landed     | [WI-036](../.factory/work/WI-036.md) | Wren  | The record the gate compares against. **Landed — at verify**: 494 packages, one copy, in `docs/dependency-licences.json`. Lands **before** W7.                                                                                |
 | W6   | accepted, landed     | [WI-037](../.factory/work/WI-037.md) | Wren  | The cheapest item in the set and the most overdue. **Landed — at verify**: the product record now says Forge.                                                                                                                 |
-| W7   | accepted             | [WI-038](../.factory/work/WI-038.md) | Chief | The gate. Lands **after** W5 — a gate that compares against nothing catches nothing.                                                                                                                                          |
+| W7   | accepted, in flight  | [WI-038](../.factory/work/WI-038.md) | Chief | The gate. Lands **after** W5 — a gate that compares against nothing catches nothing — and W5 has landed, so it can. The CI step and manifest entry are written; the gate script is dispatched.                                |
 | W8   | **funded, deferred** | [WI-044](../.factory/work/WI-044.md) | Chief | The check over this repository's own sources. Numbered so it is not lost, and **not dispatched** — the inventory is worth writing against a settled repository, and the repository's visibility is the owner's open decision. |
 
 **Two of the lead's decisions are worth carrying here, because they are judgements
