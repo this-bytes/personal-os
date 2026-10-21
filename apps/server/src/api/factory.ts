@@ -47,6 +47,7 @@ export function registerFactoryRoutes(app: FastifyInstance): void {
   app.post('/api/goals', { preHandler: requireAuth }, async (request, reply) => {
     const body = parseBody(createGoalSchema, request.body);
     const goal = app.services.factory.createGoal(body);
+    audit(request, 'goal.created', { type: 'goal', id: goal.id, workspaceId: body.workspaceId });
     return reply.code(201).send({ goal });
   });
 

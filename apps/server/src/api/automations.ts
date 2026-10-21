@@ -50,6 +50,11 @@ export function registerAutomationRoutes(app: FastifyInstance): void {
     const { id } = request.params as { id: string };
     const body = parseBody(updateSchema, request.body);
     const automation = app.services.automations.update(id, body);
+    audit(request, 'automation.updated', {
+      type: 'automation',
+      id,
+      workspaceId: automation.workspaceId,
+    });
     return { automation };
   });
 
@@ -77,7 +82,13 @@ export function registerAutomationRoutes(app: FastifyInstance): void {
 
   app.delete('/api/automations/:id', { preHandler: requireAuth }, async (request, reply) => {
     const { id } = request.params as { id: string };
+    const automation = app.services.automations.get(id);
     app.services.automations.remove(id);
+    audit(request, 'automation.removed', {
+      type: 'automation',
+      id,
+      workspaceId: automation.workspaceId,
+    });
     return reply.send({ ok: true });
   });
 }

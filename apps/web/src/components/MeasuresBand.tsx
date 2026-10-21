@@ -114,8 +114,8 @@ export function MeasuresBand(): React.JSX.Element {
               <p className="text-xs font-medium text-slate-200">Operations performed by an agent</p>
               <p className="mt-0.5 text-[11px] leading-snug text-slate-500">
                 Not a number yet. The audit trail records that something happened, not what
-                happened: twelve of the thirty-five mutating routes write no entry, the MCP surface
-                writes none, and every entry records success regardless.
+                happened: every mutating route writes an entry, but the MCP surface writes none, and
+                every entry records success regardless.
               </p>
             </div>
           </CardContent>
