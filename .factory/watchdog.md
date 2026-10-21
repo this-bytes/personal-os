@@ -342,6 +342,36 @@ Measured: the 462-minute stall's report was **refused** for that reason, at
 depend on the group post.** It lands where the check already runs — the bot's
 own chat — and the group post is an extra attempt that may be refused.
 
+**4. A slot can be held by a task that _nothing is running_.** The third
+correction was about a task whose turn died inside a live runtime. The fourth is
+worse, and it was the one that held this factory for hours: **the runtime
+itself stopped.** The local runtime stopped and came back, and the two tasks it
+left behind stayed `running` in the fleet state — `endedAt` empty, `result`
+empty, zero characters produced — **while no process was running them at all.**
+
+**The dispatcher's host is the Mini App runtime.** `MAX_RUNNING = 2` and
+`pump()` live in the Mini App's own `node/task-dispatcher.mjs`, so **when that
+runtime is stopped, nothing dispatches at all**, and a row marked `running` in
+the fleet state means only that _some earlier run_ marked it running.
+
+**The signal that separates this from a live turn is the dispatcher's own
+liveness, not the task's.** `miniapp list` reports the runtime's `status`, and
+`stopped` means the `running` rows are **leftovers, not work in flight.**
+Measured on 2026-10-21 at 18:56: the Mini App runtime `stopped`; both orphaned
+tasks `running` with 0 characters and no `endedAt`; **no node process for
+`server.mjs` anywhere on the machine**; and the queue at 29 with nothing
+moving for hours. Every one of those looked, from the fleet state alone, like a
+stall — and none of them was a stall.
+
+**The repair is a restart, not a cancellation.** `miniapp restart` on
+`minimax-bot` brought the dispatcher back, the two orphaned rows went to
+`unknown` — **released, not cancelled** — and the dispatcher refilled both slots
+within seconds (WI-027 and WI-031's verification started; the queue went
+29 → 27 → 26). **So the fourth condition on cancelling is: if the dispatcher's
+host is not running, the tasks are not the fault, and restarting the runtime
+fixes it for free.** Cancelling them would have thrown away two tasks that were
+only unmarked.
+
 ### Silence is ambiguous, so the check always says what it measured
 
 **The first version of this file said "if nothing is over the threshold, do
@@ -374,6 +404,9 @@ something or whenever its previous run failed** — so the ledger says both
   and carry the failure forward.
 - **Never let the group post be the only report.** It is refused exactly when a
   group round is stuck.
+- **Never cancel a task while the dispatcher's host is not running.** Those
+  rows are leftovers from a stopped runtime, and a restart releases them for
+  free.
 
 ## Why this is not a second verifier
 
