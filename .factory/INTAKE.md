@@ -6259,3 +6259,198 @@ whether a check should watch the implementation-status claim, and answered
 _yes_ — it is **WI-075**, `task_db738ae1549b`, with the narrow form as the
 must-have, the general form attempted if a reliable detection exists, and **the
 merge gated on WI-065's correction so that `main` never goes red.**
+
+### The queue's real constraint, measured at 17:25 — slots, not verifiers
+
+**All eleven of Probe's verifications are queued and none is running**, checked
+one by one at 17:25: WI-041, WI-031, WI-045, WI-074, WI-024, WI-038, WI-022,
+WI-010, WI-007, WI-025 and WI-075 — **eleven `queued`, zero `running`, zero
+`done`**. **And the reason is two tasks that are both legitimately running**:
+Wren's WI-034 implementation (`task_55c33b744ef5`, kind `bot`, its own chat,
+started **17:15:20**) and the group's own round — **this session's turn**
+(`task_ef428a0ed84b`, kind `discussion`, chat `group:grp_cc2adeea48f4`, started
+**17:17:05**).
+
+**So the accept queue is not waiting on Probe's capacity. It is waiting on the
+factory's two slots, and one of them is this group round.** A group round holds
+a slot for the length of the round, and the round is long because the status is
+written carefully — **so the careful reporting and the verifications are
+competing for the same two places.** The thing to say out loud is that **the
+fix is fewer, shorter rounds and one batched status, not another verifier** —
+which is the shape the owner's 15:40 answer already chose, and this measurement
+confirms it from the other side.
+
+**And the gates are green on the tree that accepted WI-017.** typecheck 0, test
+0 (server 23 files / 230 tests · web 52 · worker 31 · agent-adapters 16 ·
+contracts 28), format:check 0, build 0 — measured at `2f8ed30`, after WI-017's
+acceptance landed.
+
+## The 462-minute stall — cancelled, and the watchdog corrected twice
+
+**The full account, with the measurements, is in `.factory/watchdog.md`** — the
+watchdog file carries the correction to its own discriminator, and this section
+is the ledger's pointer to it. **This section was appended, then dropped by a
+whole-file write from the other Chief session at 17:22, and re-appended.**
+
+**The slot.** `task_721e68cc2556` — a discussion task in the Personal OS Factory
+group — started at **08:28:11** on 2026-10-21 and was still `running` at
+**17:10**, **462 minutes**, holding one of the factory's two dispatcher slots.
+`MAX_RUNNING = 2` is hard-coded in the runtime's dispatcher, so **one task that
+had already delivered its work was worth half the factory.**
+
+**What it cost, measured.** The factory's own daily tick, `task_ef428a0ed84b`,
+was **created at 12:00:46 and queued for five hours** because there was no slot
+for it. The accept queue stood at **32**. And the watchdog's **16:57:58** run —
+the first run while something was genuinely over the threshold — **died with
+`AGENT_UNAVAILABLE` after two retries**, so the stall was never reported at all.
+
+**The cancellation, and the evidence it rested on.** The task's `result` was the
+**11:50** post (`msg_fef6d97d1eb0`, 7456 characters), its work was committed and
+pushed (`4cc09c2`, `84c4365`, `13342cf` — all ancestors of `origin/main`), and
+its chat had posted nothing for five hours. Cancelled at **17:10:25** with
+`cancel_tasks`. **The slot refilled in twelve seconds**: the daily tick started
+at once, `task_55c33b744ef5` (WI-034) took the other, and the queue went
+**32 → 31**.
+
+**And then the task's own last words were read, and they were not idle.** Its
+chat's last message — `msg_29329712a9b1`, `kind: task_review`, **started
+16:59:05**, `status: streaming` — was a turn **eleven minutes old** that had
+accepted WI-037, dispatched WI-075, and was midway through writing WI-017's
+acceptance. **The cancellation aborted it mid-write.**
+
+### The correction — and it is in `.factory/watchdog.md`, not overwritten
+
+**"The task's `result` is five hours old" does not mean "nothing has happened
+since".** A `task_review` continuation turn runs under the **same `taskId`** and
+posts new messages **without touching `result`**. The task's `result` records
+the last **settled** turn of the task, not the task's current output.
+
+**The sound liveness signal is the chat's last message from that bot: its
+`startedAt` and its `status`.** The engine appends a placeholder with
+`status: 'streaming'` when a turn starts and flips it to `done`, `error` or
+`aborted` when it ends. The idle window was real and it was five hours
+(11:51:26 → 16:59:05), and then the task woke up. **A check run at 13:00 would
+have been right to cancel it; a check run at 17:05 would have been wrong to.**
+
+**So cancelling now has two conditions, not one:** over the 45-minute threshold,
+**and** the chat's last message from that bot is not `streaming`. The file's old
+rule — _"never cancel a task whose chat is showing fresh output"_ — was right,
+and it was written as a caution instead of as a **precondition**. That is the
+error, and it is now the precondition.
+
+### What the cancellation cost, and what it did not
+
+**Survived:** `3816382` (WI-037 accepted), `df3a5c1` (the owner's two answers)
+and `c136b8e` (W6 accepted, WI-063's renumbering repaired) — all committed, all
+ancestors of `HEAD`; and WI-075's dispatch `task_db738ae1549b`, **queued**.
+
+**Not committed:** `.factory/work/WI-017.md`'s acceptance — written but
+unformatted and uncommitted — and `.factory/work/WI-075.md`, untracked. **Both
+are the peer session's files and this session did not touch them.** The peer
+was told, in the session message, exactly what survived and what did not, and
+asked to commit them before anything discards them.
+
+**WI-075's dispatch has no row in the dispatch table yet.** It is live, and the
+row belongs to the session that dispatched it.
+
+### The watchdog corrected three more ways
+
+1. **The check needs no fleet slot.** A schedule fires by `fireSchedule` →
+   `runBotTurn` in `engine.mjs`, into the bot's own chat; it never enters the
+   dispatcher's queue and is not subject to `MAX_RUNNING = 2`. Measured: the
+   watchdog reported normally at **15:50:26** and at **16:20:56**, and at both
+   moments **both dispatcher slots were occupied**. **The belief that a wedged
+   factory can starve its own watchdog was wrong.**
+2. **A failed check is invisible.** The runtime advances a schedule's `last_run`
+   whether the turn succeeded or failed, and it creates **no task** for a
+   schedule — so **a failed check is indistinguishable from a clean sweep** in
+   the fleet state. The error survived only in the chat's message record. **The
+   check now reads its own previous run and carries a failure forward.**
+3. **The report channel fails exactly when it is needed.** `post_group` is
+   refused with _"the group is mid-discussion"_ while a group round is open —
+   **and a stalled group round is precisely what keeps a group round open.** The
+   462-minute stall's report was **refused at 17:12** by a _healthy_ group
+   round. **The report must not depend on the group post**; it lands where the
+   check already runs, and the group post is an extra attempt that may be
+   refused.
+
+**And silence is ambiguous, so the check now always says what it measured** —
+one line when nothing is over the threshold, the full report when something is,
+and a ledger line whenever it finds something **or whenever its previous run
+failed**. The old rule — _"do nothing and say nothing"_ — is what let a failed
+check look like a clean one.
+
+**The check also learned where the fleet state actually lives:** `taskBatches`
+is an **array of batches**, each with a `tasks` array — not a keyed object.
+Reading it as an object yields nothing, and that is how a reader loses twenty
+minutes.
+
+### What is still owed
+
+The stall report to the group, request id
+`factory-group-stall-report-2026-10-21-1712`, was **refused at 17:12** and is
+**owed**. **This section is the report's content**, so it goes out intact when
+the round opens.
+
+### The stack test's failure mode is a lock, not a budget — 2026-10-21 17:45
+
+**The gates were run against `main` at `5e0c30a` and one of them is red, and the red
+is not the one WI-074's brief names.** `npm run typecheck` passed, `npm run build`
+passed, and `npx tsx scripts/smoke.ts` passed with every assertion ok, including the
+owner-recovery path. `npm run test` failed in one file:
+`apps/server/src/__tests__/verifyStack.test.ts`. **230 tests passed and the file still
+failed** — the same shape WI-074 was opened for, and the second reproduction today.
+
+**The error is `EBUSY`, not an overrun.** The failure is
+`EBUSY: resource busy or locked, unlink 'C:\Users\Aaron\AppData\Local\Temp\verify-stack-no-owner-AK7d7G\personal-os.db'`
+at `apps/server/src/__tests__/verifyStack.test.ts:133` — the same `fs.rmSync` line the
+earlier failure named, but the cause is **a lock**, not a timeout. The teardown budget
+was raised once already (`1c92001`), and **raising it again would not fix this**: the
+call is `fs.rmSync(dir, { recursive: true, force: true })`, and Node's `fs.rmSync`
+retries `EBUSY` and `EPERM` on Windows **only** when `maxRetries` is above its default
+of `0`. At `0` it throws on the first attempt. **The lever is `maxRetries` (with
+`retryDelay`), not the `afterAll` timeout.** WI-074's brief should say so before Probe
+spends the budget a second time on the wrong lever.
+
+**And it is load-dependent, which is measurable.** The same server suite, run alone
+four minutes later with no change to the tree, **passed** — 23 files, 230 tests, exit 0.
+So the teardown loses its race with the child process only under contention. The fix
+and the trigger are different things, and the brief needs both.
+
+**The format gate is red on the working tree, and it is another session's in-flight
+edit rather than a committed defect.** `npm run format:check` named
+`.factory/INTAKE.md` and `.factory/work/WI-075.md`, both of which are being written
+right now. **The committed tree is clean**: `Build and test` completed green on
+`5e0c30a`.
+
+### The ready set is one item, and nothing was landed in this sweep
+
+**`main` is `5e0c30a` and equals `origin/main`, and all five checks are green on it.**
+Three branches hold unlanded product work, and each is blocked by a different
+condition, so **none of them was landed**:
+
+- `wi/020-measures-route` (`d79aff7`) — four checks green, `Build and run the stack`
+  still in flight, and another session's worker is repairing the branch right now.
+- `wi/071-accent-one-meaning` (`abb3fc1`) — **green on all five**, and being written
+  right now by another session's live worker, `Implement WI-071 one-accent rule`.
+- `wi/046-domains-interaction-model` (`1fb60e7`) — **green on all five**, one commit
+  ahead, and its file is `CONTRACTS.md`, which WI-034's live worker is writing now.
+
+Landing any of them would be two hands on one landing, so none was. The merge itself
+is clean — `git merge-tree --write-tree main wi/071-accent-one-meaning` returns a tree
+with no conflict — so the only thing standing between these branches and `main` is an
+owner with the dispatch authority.
+
+**Of the thirty items at `implement`, one is ready to go: WI-029.**
+`apps/server/src/__tests__/ownerPasswordExposure.test.ts`, Probe's lane, no branch, no
+live dispatch, and **no worktree touches that file**. WI-043 is ready for its
+verification — the implementation is a one-line removal and it is done. The rest are
+blocked for reasons written on their own files: WI-011 and WI-013 wait on
+`PRODUCT.md` and `CONTRACTS.md`, which WI-071's and WI-034's live workers are writing;
+WI-040 waits on WI-020, WI-031 and WI-024; WI-033 waits on WI-034; WI-073 waits on
+WI-020's repair; WI-035, WI-044 and WI-069 wait on the owner.
+
+**One slot was freed during the sweep and the queue moved.** The group task that had
+held a slot for 462 minutes was cancelled by another session at 17:10, and **the slot
+refilled in twelve seconds**: the factory's daily tick started at 17:10:25 and
+WI-034's dispatch took the other. The queue went 32 → 31.
