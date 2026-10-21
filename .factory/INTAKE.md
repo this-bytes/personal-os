@@ -357,6 +357,9 @@ second dispatch.
 | `wi-043-manifest-licence-verify-2026-10-21`    | WI-043 — the manifest no longer claims a licence                   | Probe  | `task_9b1b44c1025f` | **queued** — Chief's one-line removal of `"license": "MIT"`, and Probe's verification of it                                                                                                                                                                      |
 | `wi-023-owner-token-step-verify-2026-10-21`    | WI-023 — verify the owner-token step in the container job          | Probe  | `task_6437af4f18f0` | **queued** — Chief's own CI change goes to Probe like anyone else's; the whole sequence is proved locally against real Docker, and the item's criteria are met before it is pushed, not after                                                                    |
 | `wi-022-citation-refresh-successor-2026-10-21` | WI-022 — refresh the waiting list's code citations                 | Wren   | `task_682c73ccbc73` | **queued** — **the live dispatch on WI-022**, a successor: three citations that moved when WI-027's code landed                                                                                                                                                  |
+| `wi-024-forge-adoption-2`                      | WI-024 — the Forge adoption, a second dispatch under a new id      | Cog    | `task_2963d3be0f41` | **cancelled** at 09:55 — **the live dispatch on WI-024 is unchanged: `wi-024-forge-adoption`, `task_5a09991ca5a1`, still queued.** Dispatched by the other Chief session; it is not re-dispatched from here                                                      |
+| `peer-group-pointer-2026-10-21`                | A peer request for Probe to carry a message to the group           | Probe  | `task_4867c6237747` | **cancelled** — it never reached Probe                                                                                                                                                                                                                           |
+| `peer-correction-wi-024-2026-10-21`            | The correction retracting that peer request                        | Probe  | `task_4dc3ca58d70a` | **failed: `BUSY`** — sent at 09:55, refused at 10:34 because Probe was busy. **A dispatch to a busy verifier is not delivered at all**: the work is still owed, the id is spent, and the correction has to be re-sent with a new id and a new title              |
 
 **A cancelled task is not a dispatch — but a cancelled dispatch does not free its
 request id.** That second half was wrong here, and it is corrected now rather
@@ -3562,3 +3565,185 @@ word carries this paragraph.
 
 **What the pipeline did next is the factory's own evidence, not this
 session's word.** From now on the repository's state is read from its runs.
+
+### The CI conclusion, read from the platform
+
+**The question this session could not answer from this machine has an answer,
+and it is the platform's own.** The other Chief session read the Actions tab
+and recorded it in `0507f4f`: the pipeline ran on the committed tree `061b6cd`
+and **both legs were green — CI success on all four jobs, including the docker
+stack that starts the server, the worker and the client, and CodeQL success on
+the analyze step.** This session cannot read that tab — private repository,
+Actions API `404` without a token, none obtainable here — so this is the peer
+session's record, and it is recorded here as such.
+
+**And the tested tree carries all four of this session's new steps.**
+
+```
+$ git show 061b6cd:.github/workflows/ci.yml | grep 'name: The\|name: Create\|name: Restart'
+  - name: The account path cannot get into a deployment that has an owner
+  - name: Create the owner token
+  - name: Restart the stack with the token in it
+  - name: The token path gets in where the account path could not
+```
+
+**So the owner-token step did not only work locally against real Docker — it
+ran on GitHub's own ubuntu runner, and the docker job was green with it.**
+That is the platform confirming what this session measured, and it closes the
+gap this session could not close last tick.
+
+**The pushed tree is covered by that run, and this session checked the one
+thing the run could not cover.** Between the tested tree `061b6cd` and the
+pushed tree `3479c31` only documents moved:
+
+```
+$ git diff --stat 061b6cd..3479c31
+ .factory/INTAKE.md      |  89 ++++++++++++++++++++++++++++++++++++++++
+ .factory/work/WI-034.md | 106 +++++++++++++++++++++++++++-----------------
+ .factory/work/WI-044.md |  79 ++++++++++++++++++++++++++++++++++++++
+ CONTRACTS.md            |   7 +++-
+```
+
+The code is byte-identical to the tree CI ran. The one gate a document can
+turn is `format:check`, and CI's glob covers `**/*.md`, so this session
+measured that gate on the pushed tree itself, in a detached worktree at
+`3479c31`:
+
+```
+$ prettier --ignore-path .prettierignore --check "G:/code/_ci-probe-3479c31/**/*.{ts,tsx,js,json,md,css}"
+Checking formatting...
+All matched files use Prettier code style!
+```
+
+**So the tree on the remote satisfies every gate the green run checked, and the
+green run was that tree's code.**
+
+### `main` is on the remote, and this session's push record is stale
+
+**The owner gave the word, and the other session asked with the evidence in
+the question**: 43 commits, 39 files, fast-forward, nothing rewritten,
+visibility unchanged at private, nothing published publicly. `main` is at
+`3479c31`.
+
+**This session's ledger said the opposite, and is corrected here.** It said:
+"the owner's word was spent on the 08:56:40 push; local commits stay local
+until the owner says otherwise." **The owner said otherwise, to the other
+session, and the push was made.** What survives is not a rule but a fact:
+**the push chain is not closed and cannot be closed by the lead. It is a
+permission the owner gives each time, with the evidence in the question.**
+
+**This session's work went out with it.** `fabf710` — the CI owner-token step,
+and WI-022's and WI-026's acceptances — and `0c0dfcd` — the CI conclusion, the
+contract-verification ruling and the two acceptances — are both in
+`origin/main`:
+
+```
+$ git merge-base --is-ancestor fabf710 origin/main   →  0
+```
+
+**And the local tree now carries code that no run has seen.** Three commits are
+ahead of the remote and one of them is not a document: `414996c` touches 14
+files — `apps/server/src/modules/executions/service.ts` (+124),
+`apps/web/src/components/WaitingList.tsx` (+67), `ChatMessageList.tsx`,
+`apps/web/src/lib/types.ts`, `packages/contracts/src/conversation.ts` — which
+is WI-031's implementation. **"The repository's state is read from its runs" is
+right, and it means the state that has a run is `3479c31`. The local tree is
+ahead of it and has seen none.**
+
+### A dispatch that failed with `BUSY`, and what it cost
+
+**Three request ids were dispatched by the other Chief session and are not in
+the table. They are in it now**, because the table is the map, and a request id
+that is not in it is one somebody might reuse.
+
+| Request id                          | To    | Task                | State                                                                                                                                                                                                                                                                                                     |
+| ----------------------------------- | ----- | ------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `wi-024-forge-adoption-2`           | Cog   | `task_2963d3be0f41` | **cancelled** at 09:55 — a second dispatch of WI-024 under a new id. **The live dispatch on WI-024 is unchanged: `wi-024-forge-adoption`, `task_5a09991ca5a1`, still queued.** It is not re-dispatched from here: it is the other session's item, and a re-dispatch needs a new id and a new title anyway |
+| `peer-group-pointer-2026-10-21`     | Probe | `task_4867c6237747` | **cancelled** — the other session asking Probe to carry a message to the group                                                                                                                                                                                                                            |
+| `peer-correction-wi-024-2026-10-21` | Probe | `task_4dc3ca58d70a` | **failed: `BUSY`** — sent at 09:55, refused at 10:34 because Probe was busy                                                                                                                                                                                                                               |
+
+**This is the first hard cost of the one-verifier bottleneck, and it is a
+different cost from delay.** Until now the queue's cost was that acceptance
+waits. **This is that a dispatch to a busy verifier is not delivered at all.**
+The correction died in the gap: nothing ran, the work is still owed, and the
+request id is spent — a re-dispatch needs a new id and a new title, and the
+ledger has to carry the id or the next actor will not know the work was never
+picked up.
+
+**What it cost, and what it did not.** The correction was the other session
+retracting a message of its own — "do not act on this". **Neither message
+reached Probe** (the first was cancelled, the second failed), and the group has
+had no new messages in the window, so nothing reached Probe by another road
+either. **And no Probe task in the queue is about WI-024** — they are WI-007,
+WI-027, WI-021, WI-030, WI-028, WI-023 — so nothing Probe is waiting to do
+can have been pointed the wrong way. The correction is still lost, and it is
+the other session's to re-send if it still matters.
+
+### The smoke gate is flaky on Windows, and it is not the tree
+
+**Probe found this in its own working session while verifying WI-007, and it
+is not in its report yet.** It is recorded here so that it is not lost, and
+because it qualifies a measurement this session published last tick.
+
+**The mechanism, checked against the source by Chief:**
+
+- `scripts/smoke.ts:667-669` holds a `BEGIN EXCLUSIVE` lock on the database
+  "so the process stays alive long enough to be read from the outside", and
+  spawns the reset process at `:671-680`.
+- The reset waits on that lock with the server's own `busy_timeout = 5000`
+  (`apps/server/src/db/client.ts:29`), then writes at
+  `apps/server/src/modules/auth/service.ts:181-184` **with no handling of the
+  failure** — so it dies with a raw `SqliteError: database is locked` and
+  exits 1.
+- The script reads the reset's command line at `scripts/smoke.ts:688` and
+  asserts it at `:694-697`. On Linux that read is `/proc`, and it is instant.
+  **On Windows it costs 6.5–8 seconds** — a `powershell.exe` and a
+  `Get-CimInstance` per poll — and the reset's 5-second busy timeout expires
+  first.
+- The script's own comment at `:701-702` says it: "The lock is released the
+  moment the command line has been read: the reset is waiting on it, **and its
+  busy timeout is not long**."
+
+**What that means for the gates.** The gate is **flaky on Windows under load,
+and not flaky on Linux.** Probe's repro held the lock for 20 seconds and the
+reset died at t=8.11s with `SqliteError: database is locked`, exit 1.
+**This session ran the same gate twice and it passed both times** — the second
+time while Probe's end-to-end suite was loading the machine — which is what a
+flaky gate looks like, not a broken one. **It does not change the CI
+conclusion: CI runs on `ubuntu-latest`, where the race does not exist, and that
+run was green.** It changes what a red smoke on this machine means: **a
+Windows timing artefact, not the tree breaking.** Any future claim that the
+tree is green, measured here, should say that smoke was _sampled_, and sampled
+on Windows.
+
+**Two defects, and their homes.**
+
+- **The product's:** `--reset-password` dies with a raw stack trace instead of
+  a clear message, and does not retry.
+  `apps/server/src/modules/auth/service.ts` is Cog's.
+- **The gate's:** the smoke script's Windows path races the reset's busy
+  timeout. `scripts/smoke.ts` is Probe's.
+
+**Nothing is dispatched from here.** Probe is mid-verification on WI-007 and
+said itself that the right move is to report it to Chief; it will come in that
+report, and **one report, one item** is the rule. When it lands it is
+dispatched from there.
+
+### The number space took WI-044, and the MCP scoping finding still has none
+
+**The number space's holder took WI-044**, for **W8** — the licence check that
+covers this repository's _own_ sources, which is the other session's finding
+from the same review that corrected WI-034's scope. WI-044 is numbered, owned
+by Chief, **deferred, and deliberately not dispatched**: it is funded as a
+numbered item that is not yet a task.
+
+**So the MCP workspace-scoping finding is still without a number.** It is
+recorded in full above, and it is the same defect it was an hour ago:
+`apps/server/src/modules/mcp/server.ts:96` says an agent may only act inside a
+workspace it has been granted, the guard is called in the four tools that take
+a `workspaceId` and never in the seven that take a bare id, and **WI-017 is
+adding a tool to that same surface.**
+
+**What the owner is asked for is the number, and nothing else.** The item's
+title, its criteria, its owner (Cog, with the contract half for Wren) and its
+evidence are already written down.
