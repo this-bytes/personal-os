@@ -30,6 +30,15 @@ export function registerApprovalRoutes(app: FastifyInstance): void {
     return { approval: app.services.approvals.get(id) };
   });
 
+  // The evidence a decision is taken against: the owner decides on two buttons
+  // and a title, and this is what the buttons are about. Read-only, one
+  // approval, and the same authentication as every other route — a session
+  // cookie or the owner token, and never an agent token.
+  app.get('/api/approvals/:id/evidence', { preHandler: requireAuth }, async (request) => {
+    const { id } = request.params as { id: string };
+    return app.services.approvals.evidence(id);
+  });
+
   app.post('/api/approvals/:id/decide', { preHandler: requireAuth }, async (request) => {
     const { id } = request.params as { id: string };
     const body = parseBody(decideSchema, request.body);

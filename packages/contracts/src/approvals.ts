@@ -1,0 +1,65 @@
+import { z } from 'zod';
+import { executionStatusSchema } from './agent.js';
+
+/**
+ * The evidence a decision is taken against.
+ *
+ * The owner decides on two buttons and a title; this is what the buttons are
+ * about. The shapes are published member for member, and the read that answers
+ * them is written against them rather than against a copy of them.
+ */
+
+/** One tool call, and how it ended. */
+export const toolCallEvidenceSchema = z.object({
+  /** The tool the agent called. The events name the tool and not the call. */
+  toolName: z.string(),
+  startedAt: z.string(),
+  /** Null when nothing answered the call. */
+  completedAt: z.string().nullable(),
+  /**
+   * Whether the call was answered.
+   *
+   * There is no failure event for a tool call in the published vocabulary, so
+   * the evidence says whether a call finished and never why it did not.
+   */
+  outcome: z.enum(['completed', 'unfinished']),
+});
+export type ToolCallEvidence = z.infer<typeof toolCallEvidenceSchema>;
+
+/** One thing the run produced. */
+export const artifactEvidenceSchema = z.object({
+  /** Null when the artifact was given no title. */
+  title: z.string().nullable(),
+  /** Null when the artifact was given no resource. */
+  resourceId: z.string().nullable(),
+  createdAt: z.string(),
+});
+export type ArtifactEvidence = z.infer<typeof artifactEvidenceSchema>;
+
+/** The execution, and what it did, what it made and what it cost. */
+export const executionEvidenceSchema = z.object({
+  id: z.string(),
+  status: executionStatusSchema,
+  /** The reason the execution stopped, and null when it was not a fault. */
+  error: z.string().nullable(),
+  /** The spend units as they are recorded. */
+  spendUnits: z.number().int(),
+  startedAt: z.string().nullable(),
+  finishedAt: z.string().nullable(),
+  toolCalls: z.array(toolCallEvidenceSchema),
+  artifacts: z.array(artifactEvidenceSchema),
+});
+export type ExecutionEvidence = z.infer<typeof executionEvidenceSchema>;
+
+/** The evidence for one approval. */
+export const approvalEvidenceSchema = z.object({
+  approvalId: z.string(),
+  workspaceId: z.string(),
+  /**
+   * The execution the approval was raised against, and null when there is
+   * none: an approval can name no execution, and the execution it names can be
+   * gone. There was nothing to show, not an empty run.
+   */
+  execution: executionEvidenceSchema.nullable(),
+});
+export type ApprovalEvidence = z.infer<typeof approvalEvidenceSchema>;
