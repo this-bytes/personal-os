@@ -99,8 +99,9 @@ free number above the highest taken.**
 | WI-126 | The repository's own description still publishes the sentence the owner replaced                                                                                                                                                  | lead   |
 | WI-127 | Nothing holds the front page's identity sentence                                                                                                                                                                                  | lead   |
 | WI-128 | The owner can set the autonomy policy, not only read it                                                                                                                                                                           | worker |
+| WI-129 | A template creates a draft: a resource is never born live                                                                                                                                                                         | worker |
 
-**The next free number is WI-129.**
+**The next free number is WI-130.**
 
 **Two decisions the owner took, and the numbers they took.** The owner answered
 the two questions that were open: `manual` **does not gate delegation**
@@ -672,6 +673,7 @@ second dispatch.
 | `wi-124-mode-is-settled-2026-10-22` | WI-124 — the mode's meaning is settled: `manual` does not gate delegation | worker, under Chief | — | **OPENED AT 09:48 BY CHIEF, FROM THE OWNER'S ANSWER, AND RENUMBERED TO WI-124 BEFORE IT LANDED.** The owner was asked what `manual` means, because the contract said the meaning of the modes was the owner's decision and it was not settled. The answer was: **leave it — `manual` does not gate delegation, and that is stated plainly in the product's own words.** This item changes no behaviour, because the mode was never a gate. It makes `PRODUCT.md`, `CONTRACTS.md`, the comment beside the write, WI-082's decision 4 and WI-085's attack suite all say the same true thing. WI-085's suite and WI-095's resolver fix land with it, and the suite is **33 pass, 0 fail**. **THE NUMBER, AND WHY IT MOVED:** this item was opened as WI-122 at 09:48 against a block that said "the next free number is WI-122", **and the peer session took WI-122 at 10:37 off that same stale block** — for the gate that holds the contract note's three citations — **because the claim was on a pushed branch, so a session reading `main` could not see it.** **The peer's claim is bound to a live dispatch** — request `wi-122-verify-note-citations-pin-vision-2026-10-22`, task `task_ae9f26b09fd3`, **queued** — **and this item's claim is bound to none**, so the published tiebreak applies as it was written: **a claim bound to a live dispatch keeps its number.** **WI-122 is the peer's, and this item is WI-124.** The block was the defect, for the third time, and this landing extends it to carry every number the ledger has taken — WI-113 through WI-124 — so the next session that reads `main` sees the numbers this session saw |
 | `wi-125-publish-approval-decided-2026-10-22` | WI-125 — publish `approval.decided`, so a decided approval can leave the waiting list | worker, under Chief | — | **OPENED AT 09:48 BY CHIEF, FROM THE OWNER'S ANSWER, AND RENUMBERED TO WI-125 BEFORE IT LANDED.** The owner was asked whether the product should publish an `approval.decided` event, because `POST /api/approvals/:id/decide` publishes nothing and a decided approval therefore has a way into the waiting list and no way out of it. The answer was: **yes — publish it, and the contract changes with it.** So the event is published, the approval's shape is published with it, and the change to the published contract comes with a migration note. **THE NUMBER, AND WHY IT MOVED:** this item was opened as WI-123 at 09:48 against a block that said "the next free number is WI-123", **and the peer session took WI-123 at 11:14 off that same stale block**, for the licence record's pin, **because the claim was on a pushed branch and a session reading `main` could not see it.** **The peer's claim is bound to a live dispatch** — request `wi-123-licence-record-pin-probe-2026-10-22`, task `task_a606329a3dc1`, **queued** — **and this item's claim is bound to none**, so the published tiebreak applies as it is written: **a claim bound to a live dispatch keeps its number.** **WI-123 is the peer's, and this item is WI-125** |
 | `wi-128-policy-write-path-2026-10-22` | WI-128 — the owner can set the autonomy policy, not only read it | worker, under Chief | — | **OPENED AT 12:15 BY CHIEF, FROM F5 IN WI-082'S VERDICT.** The effective policy was readable everywhere and writable nowhere: `autonomyPolicy` appeared in no route at all, `PATCH /api/workspaces/:id` stripped it silently and answered 200, the service already supported it and was unreachable through the API, and `goals.autonomyPolicy` had no route either. **Every limit, every action list and every approval list could only be set by editing the database — while the contract says the limits are enforced.** This item gives the owner a write path for the workspace's own policy: a change merges into the policy rather than replacing it, an action the system does not know is refused out loud rather than accepted and ignored, and the mode still lands in both of the places a workspace keeps it. **The goal's policy is still unwritable, and the contract now says so.** Eight cases and four mutation proofs, each restored |
+| `wi-129-template-creates-a-draft-2026-10-22` | WI-129 — a template creates a draft: a resource is never born live | worker, under Chief | — | **CLAIMED AT 13:10 BY CHIEF, AND THE CLAIM IS PUBLISHED BEFORE THE WORK IS DONE.** The two template kinds disagree about the one thing the guides say they agree about. **The automation**'s provider writes `enabled: false` on create (`apps/server/src/modules/resources/service.ts:276`), so a template-created automation is always disabled, and its guide says so. **The dashboard**'s provider writes the spec as it arrives (`apps/server/src/modules/resources/service.ts:180`), `dashboardSpecSchema` accepts `published: true` (`packages/contracts/src/resource.ts:184`), and the merge lets a caller's `published: true` override the template's `published: false` — **so a template-created dashboard can be born published, and its own guide says it cannot** (`apps/server/src/modules/resources/templates.ts:81`, `:93`; `docs/resource-templates.md:594`). **The merge is not a judge** (`templates.ts:485`) — the owning provider is — and the two providers judge differently. **The rule this item makes is one rule: a resource is never born live, and publishing or enabling it is a separate act.** The owner question behind it — _may a template produce a live resource?_ — is answered **no**: a template creates a draft. The claim is published here first so the next session that reads `main` sees WI-129 taken |
 | `wi-118-mode-the-owner-sets-2026-10-22` | WI-118 — the mode the owner sets is the mode that is in force | worker, under Chief | — | **OPENED AT 07:50 BY CHIEF AS WI-113, FROM WI-085's RED CASE ABOUT THE MODE THE OWNER CAN SEE, AND RENUMBERED TO WI-118 BEFORE IT LANDED.** The panel shows `workspace.autonomyMode` and `PATCH /api/workspaces/:id` is the only way an owner can set a mode, but the policy in force is resolved from `autonomyPolicy.mode`, so the owner's setting landed in one of them and not the other — the panel said "autonomous" and the policy in force said "manual". The service now writes both together, whichever way round the change arrives, and the contract says so in the same breath as **the mode is still enforced nowhere.** Four cases, two mutation proofs, both red and both restored. **THE NUMBER, AND WHY IT MOVED:** this item was opened as WI-113 at 07:50 against a block that said "the next free number is WI-113", and **the peer session had published WI-113 at 07:27 for the contract's refusal publication** — neither claim was bound to a live dispatch, so the tiebreak applies and **the claim published first keeps the number; WI-113 is the peer's.** The block was the defect: it said WI-113 was free while the ledger three hundred lines below already recorded it as taken, **and a block that disagrees with its own ledger is a guess.** This landing extends the block to carry every number the ledger has taken — WI-113 through WI-118 — so the next session that reads `main` sees the numbers this session saw |
 | `wi-106-and-wi-111-lead-dispatches-2026-10-22` | WI-106 and WI-111 — the lead's two dispatches, and why both were refused | Wren | `task_7effecefa1b9` | **BOTH REFUSED `BUSY`, AND NEITHER ID IS REUSED.** The lead dispatched WI-098's pointer correction (`wi-098-adr-provenance-pointer-2026-10-22`, `task_7effecefa1b9`) and WI-111's strategy copy (`wi-111-strategy-fifth-copy-2026-10-22`, `task_33fdaa157940`) at 06:31, and **both were refused in 28 and 29 seconds — because Wren's chat was already inside the same work for the peer session.** That is the documented refusal and not a broken lane: **a delegation into a busy chat is refused, and a refused id is spent.** **WI-098's pointer correction turned out not to be needed at all: the edit was already on Wren's branch at `origin/wi/098-adr-rule-resync`, pushed at 06:35, and the lead measured it and merged it as `3fab75a`.** |
 | `wi-112-strategy-fifth-copy-2026-10-22` | WI-112 — the rule's fifth copy in the strategy record, brought up to date | Wren | `task_33fdaa157940` | **OPENED AND DISPATCHED AT 06:31, FROM A FINDING IN WI-098's VERIFICATION, AND RENUMBERED TO WI-112 BY CHIEF AT 06:50 WHEN WI-111 WAS CLAIMED TWICE.** The number was read immediately before it was taken: WI-102 through WI-110 are taken, and WI-111 appeared in no item file, no dispatch record and no commit — **on `main`, which is where this session reads; the publication had claimed WI-111 on its own branch at 06:13 and published it at 06:35, and this session had not looked there.** **The dispatch then died `BUSY` at 06:31:50, so nothing live binds the number, and the earlier published claim keeps it: the publication is WI-111 and this item is WI-112.** The work is untouched by the rename — the branch carries the fix to `docs/strategy.md` either way. **The finding:** `docs/strategy.md:248-250` still carries the boundary rule **with no exception clause at all** — "_if it is a picture of the system, it is in the orientation room; if it is a place where work is inspected or decided, it is in the execution room._" — **and the rule now has two declared exceptions, the Needs-you rail and the constellation, which `prototypes/DIRECTION.md` publishes.** **So this copy does not merely repeat the rule, it under-states it, and a reader of `docs/strategy.md` gets a rule that contradicts the settled direction.** It is live on `main` at the same lines, it is **not** in WI-093's copy list (that pin covers brief 01, brief 05 and `prototypes/briefs/README.md`), and **no test reads `docs/strategy.md`** — `git grep -ln 'strategy\.md'` over the test trees returns nothing. **"Four places" is four places the ADR touches; a fifth copy of the rule text, in the flattest form, is live and unpinned.** **The file is free, and the lead measured it before the dispatch:** the peer's unlanded branch changes `docs/strategy.md` at lines 108, 154, 179, 326, 359, 450, 562 and 578 — **not at 248-250**, and the sentence itself is unchanged there — **so this item merges cleanly with that branch.** Batch `batch_5606d02332eb`, queued at Wren. **The check that pins this copy is named as owed and is Probe's file to write.** |
@@ -4758,3 +4760,61 @@ the owner has been asked for.
 **One stale copy cancelled:** `task_cac389dbf50d` — Probe's WI-126 verdict addressed to
 Chief's private chat, a route that never runs. **WI-126 is accepted and on the record**,
 so the copy was a duplicate and a queue slot.
+
+## 2026-10-22 13:10 — Chief: WI-128 is on `main`, and a template is about to stop being able to be born live
+
+**WI-128 is LANDED.** `origin/main` is `3eca489`, and the landing is a fast-forward over
+`c6ba728`. **All seven CI jobs are green on it** — the six the pipeline runs, plus CodeQL —
+and **the nine local gates are green on the exact tree that was pushed.** The owner can now
+set the workspace's autonomy policy: a change merges into the policy rather than replacing
+it, an action the system does not know is refused `422 validation_failed`, and the mode
+still lands in both of the places a workspace keeps it. **The goal's policy is still
+unwritable, and the contract says so in the same entry rather than leaving it to be found.**
+
+**And the landing carried the peer's work, because the peer's work would otherwise have been
+stranded.** The peer's local `main` held two commits that were on no remote branch —
+`8ff041e` (on `origin/wi/127-front-page-pin`) and `8a97178`, the WI-127 pin's
+`frontPage.test.ts`. **A plain push of that `main` would have been refused as a
+non-fast-forward.** So `8a97178` was merged into the landing branch rather than left
+behind, and the peer's own ledger commit `022a261` was merged in with it. The peer has been
+told what happened and what to do about the `.factory/INTAKE.md` rows they have uncommitted.
+
+**One thing I did not do, and why.** I did **not** move the `main` ref in the shared
+checkout: that would have made every file the landing touched look like a deletion in the
+peer's working tree. The fast-forward was pushed from the landing worktree instead, and the
+pre-push hook still enforced that it was a fast-forward.
+
+**And the number block is right for the first time today.** It carries WI-113 through WI-129
+and says **the next free number is WI-130**. The peer's last ledger entry read "the next free
+number is WI-128" — true when it was written, and now taken.
+
+**The claim below is published before the work is done, and that is the point.** The number
+block has been the defect in every one of this morning's collisions: **a claim published on
+a branch is invisible to a session reading `main`.** So WI-129's row is on `main` before
+its implementation exists, and this session is the one that holds the number.
+
+### WI-129 — a template creates a draft
+
+**The owner's open question — _may a template produce a live resource?_ — is answered: no.**
+A template creates a draft, and publishing or enabling it is a separate, deliberate act.
+
+**The two kinds disagree today, and the guide is right about one of them.** The
+**automation**'s provider writes `enabled: false` on create
+(`apps/server/src/modules/resources/service.ts:276`), so a template-created automation is
+always disabled — and its guide says exactly that. The **dashboard**'s provider writes the
+spec as it arrives (`apps/server/src/modules/resources/service.ts:180`),
+`dashboardSpecSchema` accepts `published: true`
+(`packages/contracts/src/resource.ts:184`), and the merge lets a caller's `published: true`
+override the template's `published: false` — **so a template-created dashboard can be born
+published.** Its own guide says the opposite, in three places:
+`templates.ts:81`, `templates.ts:93`, `docs/resource-templates.md:594`.
+
+**The merge is not a judge** — `templates.ts:485` says so in the code's own words — **so
+the owning provider is, and the two providers judge differently.** The rule this item makes
+is one rule, and it covers the next kind of resource that grows a liveness flag without
+anyone having to think about it again: **a resource is never born live.** The dashboard's
+provider will judge `published` the way the automation's provider judges `enabled`, and
+the act of publishing stays where it is — `POST /api/resources/:id/publish`, and an update
+that names `published: true`.
+
+**And the guide stops being a false statement in the product's own words.**
