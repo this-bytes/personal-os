@@ -4564,3 +4564,48 @@ re-based pin.
 WI-120 group post. **Queued:** Cog's WI-122 verification (`task_d374c36981e7`), Cog's
 WI-123 verification (`task_017a543cd28d`), Probe's WI-127 (`task_e33a476f252f`), Probe's
 WI-126 verification (`task_74ee53b2ab2d`). **Ceiling two. Next free number WI-128.**
+
+## 2026-10-22 12:10 — Chief: a correction to this session's own 11:55 entry, and the front page's first field is corrected too
+
+**One — and the 11:55 entry's third section was wrong, and the wrongness is named here
+rather than left standing.** It said: _"the decision C-16/C-22 asks for has been implemented
+by a session that did not have the answer, and it is waiting — not for the owner's word alone,
+but for its own verification."_ **Measured now: the owner answered, and the answer is on the
+record in the item files.** WI-125: _"The owner answered: **Yes — publish it, and the
+contract changes with it.**"_ WI-124: _"The owner was asked what `manual` means... The owner
+answered: **Leave it: `manual` does not gate delegation, and that is stated plainly in
+...**"_ — and the other Chief session's commit `fcbc8d0` is titled **"Take WI-122 and WI-123,
+and record the two decisions the owner made."** **So this session read the owner's silence
+where there was none: it read the item files' numbering and did not read the decisions they
+carry, and it published a claim about a decision the owner had already made.** _The rule that
+replaces it: read the item's whole file before publishing a claim about what the owner
+decided._ **Both items have landed** — WI-124 and WI-125 are on the published tip `359a76e`,
+which is **green on CodeQL (`completed/success`) with CI reading.**
+
+**Two — and WI-126's change was inside the owner's word, not outside it.** The repository's
+own GitHub description still carried the replaced sentence — _"An agent-native control panel
+and personal software factory: talk to agents, run group conversations, and let agents build
+the things you need."_ — and **that field is what GitHub renders into the repository page's
+meta description, its social preview card and its search-result line**, so it is the first
+thing a stranger meets. WI-120 corrected the two files, and WI-120's own problem statement
+said GitHub's meta description was _"derived from these two"_ — **which was wrong, and WI-126
+is the correction of that claim.** The field was changed at 11:58 through the credential the
+pushes already use; it now reads `Personal OS — the environment one person's agents operate
+and extend.`, **byte-identical to `package.json`'s `description`**, and the old tagline
+appears **nowhere** in the served page. **No commit was made for it and no file changed.**
+The full record is in `.factory/work/WI-126.md`; the verification is with **Probe** —
+`wi-126-verify-repository-description-probe-2026-10-22`, `task_74ee53b2ab2d` — **not
+accepted**, and the acceptance is Chief's.
+
+**Three — the floor at 12:10.** **Running:** Cog's WI-121 (`task_bbf11f83be2b`, streaming, no
+artefact in two hours). **Queued:** Cog's WI-122 verification (`task_d374c36981e7`), Cog's
+WI-123 verification (`task_017a543cd28d`), Probe's WI-127 (`task_e33a476f252f`), Probe's
+WI-126 verification (`task_74ee53b2ab2d`). **Ceiling two. Next free number WI-128.**
+
+**Four — the one word the owner owes, and it is two now.** `miniapp restart minimax-bot` is
+the repair for the two chat lanes that refuse **and for Cog's stalled turn**, and it is the
+only thing that unblocks **WI-114 and WI-115** (Wren's items, and `CONTRACTS.md` is on the
+peer's landed branch). **Reversibility (Q4) is still unanswered**, with WI-035 carrying the
+work. **The front-page story needs nothing from the owner now: the README, the manifest, the
+repository's own description, the identity sentence's own pin and the licence record's pin
+are all corrected, published and green.**
