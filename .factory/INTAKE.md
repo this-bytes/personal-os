@@ -701,6 +701,8 @@ second dispatch.
 | `wi-072-queue-is-a-file-2026-10-21` | WI-072 — the factory's queue is a file a program can read | Chief | — | **TAKEN ON 2026-10-21, AND THE LEDGER HAD NO ROW FOR IT AT ALL — the peer recreated the item file today (`c61cd7b`) and the lead records it here, because a number with no ledger row is a collision waiting to happen.** WI-072 was numbered on 2026-10-21 as the next free number above all allocated ones, renumbered from WI-071 when WI-069 was taken. **Owner: Chief. Verifier: Probe. State: `implement`, with no live dispatch — one of the twenty-three the peer's census found bound to a dead dispatch.** **And the census is this item's own evidence, measured today: the state of every work item lives in a `**State:**` line inside a prose file, a program has to parse prose to know what is live, and the numbers move because the queue moves.** **The lead corrected seven of those lines by hand today and the peer's count fell from fifty-seven to forty-seven — the defect the item names, caught in the act.** **The lead has not read the item in full and has not started it, and says so: the dispatch waits on that reading, and the lane is full in any case** |
 | `wi-130-verify-the-check-cog-2026-10-22` | WI-130 — Probe's check can fail, and the published rule is the code's rule | Cog | `task_d84ee17f8693` | **DISPATCHED AT 18:41 BY CHIEF, ON THE MERGED TREE `6f8e2ce`, REPORT TO THE GROUP.** WI-130 is LANDED — the implementation (`b7dcc8f`) and Probe's check (`3c745bc`) merged into `main` together in `6f8e2ce`, because a claim and its check move together. **Nine of nine gates on the merged tree, exit 0: 493 server / 84 web / 92 worker / 23 adapters / 28 contracts tests, 147 contract pointers, 0 failures.** **The scope is the split the file ownership makes, because Probe wrote the check and Cog wrote the implementation and neither may verify the whole item:** Probe's report (`task_984a7561b69d`) covers the implementation — he wrote none of it — and **Cog is asked for the check**, the one thing only a second pair of eyes can close. **The brief says it outright: you wrote the implementation; this brief does not ask you to verify your own code.** The brief also asks for one thing that is not a verification and is labelled as one: that the four sentences WI-130 added to `CONTRACTS.md` say what the code does. **A stale brief is cancelled: `task_c8d80aa01bfa` (request `wi-130-policy-clear-fails-open-cog-2026-10-22`) was still queued while the item was implemented, gated, pushed and merged — its id is spent and never reused** |
 | `wi-137-two-holders-for-the-boundary-2026-10-22` | WI-137 — the contract says one gate holds the adapter boundary; two hold it | worker, under Chief | — | **OPENED AT 18:41 BY CHIEF, FROM WI-134's VERIFICATION, AND ITS DISPATCH WAITS ON WI-135's LANDING.** Finding **A** in Probe's verification (`task_33fe48307f92`): `CONTRACTS.md:498-499` says _"What the check holds is that the domain cannot reach an adapter."_ **The check holds the named edge only** — a domain module reaching the adapters by a **relative path** left the check **3/3 green**, and `tsc` caught it (TS2307) — **so the boundary is held by two mechanisms and the contract names one.** **The claim is published on `main` today** (the block row and `.factory/work/WI-137.md`), and **the request id in this row is reserved and not yet used.** **It waits on WI-135 and not on a queue: both items write `CONTRACTS.md`, and one file, one live item, one writer at a time.** Owner: the contract lane (Wren — in practice Cog, because Wren's lane refuses). Finding **B** (the item file's "allow-list", of which there is none) is corrected in the lead's own file, by append |
+| `wi-124-verify-mode-settled-cog-2026-10-22` | WI-124 — the mode's meaning is settled, and the product says it plainly | Cog | `task_acf30c5c9b84` | **DISPATCHED AT 19:15 BY CHIEF, REPORT TO THE GROUP.** WI-124 was landed by the **peer session** in `c4f20d6` and reached `main` through the peer's merge, **with every criterion checked in its own item file and no verification anywhere** — an item that looked busy and was not. **Cog wrote none of it**, and Probe wrote the attack suite's other cases, so neither is clean; **Vision is not on this floor**, so Cog stands for him. **The lead's re-measurement: six of the item's seven files moved since the landing and `PRODUCT.md` did not**, so the claims are read in the tree as it stands — `PRODUCT.md:164`, `CONTRACTS.md:1255`, the comment at `workspaces/service.ts:116-117`, and the attack suite's `describe('manual does not regress today (decision 4)')` at `:1206`. **The brief asks for one mutation that makes the mode gate delegation, so the case is seen to turn red** — the mode is never read, and that is the proof |
+| `wi-125-verify-approval-decided-probe-2026-10-22` | WI-125 — a decided approval can leave the waiting list, verified | Probe | `task_fdfafafd9ca2` | **DISPATCHED AT 19:15 BY CHIEF, REPORT TO THE GROUP.** WI-125 was landed by the **peer session** in `05a3e96` and reached `main` through the peer's merge, **with every criterion checked in its own item file and no verification anywhere**. The peer session wrote the implementation **and** the check (`apps/server/src/__tests__/approval-decided-event.test.ts`, 166 lines, in the same commit), **so Probe wrote none of it and may verify all of it.** **The lead's re-measurement: every code file of the item is byte-identical since the landing and only `CONTRACTS.md` moved**, so the contract's sentences are the ones to read again. **The brief also puts the peer's own recorded break in front of the verifier**: WI-125 moved a line the peer's pin had hardcoded (`approvalEvidenceSchema` `:55` → `:91`) and the pin's test broke; the peer fixed it in `ea21b2e` — _make the drift cases find their citation instead of hardcoding it_ — and **the lead has not verified that fix independently** |
 
 **A cancelled task is not a dispatch — but a cancelled dispatch does not free its
 request id.** That second half was wrong here, and it is corrected now rather
@@ -6448,3 +6450,52 @@ items the lead had changed, and the per-item re-measurement — WI-130 no, WI-13
 sentence about the pattern, and the second instrument is the one that settles it.**
 
 **The floor at 19:00.** **Ceiling two. Next free number WI-138.**
+
+### 19:15 — two items that looked busy and were not, and the one question WI-072 left open
+
+**The lead went looking for the items with no verdict, and found two of the lead's own
+own session's: WI-124 and WI-125. Both were landed by the peer session, both have every
+criterion checked in their own item file, and neither has a verification anywhere — nor,
+until today, a `**State:**` line at all, so a program reading the queue saw nothing.**
+
+**WI-125 — "Publish `approval.decided`, so a decided approval can leave the waiting
+list."** Landed in `05a3e96`, reached `main` through the peer's merge. The peer session
+wrote the implementation **and** the check (`apps/server/src/__tests__/approval-decided-event.test.ts`,
+166 lines, in the same commit), **so Probe wrote none of it and may verify all of it.**
+**The lead's re-measurement: every code file of the item is byte-identical since the
+landing and only `CONTRACTS.md` moved.** Dispatched to Probe, `task_fdfafafd9ca2`.
+
+**WI-124 — "The mode's meaning is settled: `manual` does not gate delegation."** Landed
+in `c4f20d6`, reached `main` through the peer's merge. The peer session wrote the
+contract, `PRODUCT.md`, the comment beside the write and the re-stated case in WI-085's
+attack suite. **Cog wrote none of it, and Probe wrote the attack suite's other cases,
+so neither is clean — and Vision is not on this floor.** Dispatched to Cog as Vision's
+standing substitute, `task_acf30c5c9b84`. **The lead's re-measurement: six of the
+item's seven files moved since the landing and `PRODUCT.md` did not**, so the claims
+are read in the tree as it stands: `PRODUCT.md:164` (_"`manual` does not gate
+delegation"_), `CONTRACTS.md:1255` (_"The mode is resolved, readable, and enforced
+nowhere"_), the comment at `workspaces/service.ts:116-117`, and the attack suite's
+`describe('manual does not regress today (decision 4)')` at `:1206`.
+
+**Both items now carry a State line that says what is true: `verify`, the landed sha,
+and no verifier's report yet.** And the count that WI-072's migration cares about moved
+with them: **132 item files, 127 carrying a prose `**State:**` line, and three that do
+not — WI-132, WI-133 and WI-136** — down from **ten** at 17:20, because the lead has
+been adding those lines all day.
+
+**And WI-072 itself: the lead has read it in full, and the one question it left open is
+answered.** The item asked whether `itemIsOpen()` reads the header when there is no prose
+line, or the migration keeps the prose line until the consumers read the header.
+**The first one.** The prose line goes — _"two representations of the state is the drift
+this item exists to remove"_ — and the gate is taught the new shape, because **a fix
+that preserves the defect the item is about is not a fix.** The fix is in a test file,
+so it is Probe's, and the defect is recorded in the item file and not fixed there.
+**The branch is stale and the lead says so: `wi/072-queue-index` at `0f992d` was pushed
+at 07:33, and the migration removes the prose line from ninety-six files — the files the
+lead has been adding those lines to all day — so the merge conflicts on exactly those
+files, and the migration must be re-run over the current tree with its mapping recorded
+in the commit that converts.** **The dispatch waits for a free slot, with verification
+first** (the owner's standing word at 15:40), and the answer above is the brief's first
+line when it goes.
+
+**The floor at 19:15.** **Ceiling two. Next free number WI-138.**
