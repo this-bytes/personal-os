@@ -13,7 +13,6 @@
     "test": "vitest run"
   },
   "dependencies": {
-    "@personal-os/agent-adapters": "0.1.0",
     "@personal-os/contracts": "0.1.0",
     "@personal-os/server": "0.1.0",
     "better-sqlite3": "13.0.3",

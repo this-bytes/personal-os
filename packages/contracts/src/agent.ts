@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import { idSchema, isoDateSchema } from './common.js';
 import { mcpToolNameSchema } from './mcp.js';
+import type { AdapterConfig } from './adapter-config.js';
 
 /**
  * Adapter categories. A new agent type must be addable without changing
@@ -264,4 +265,48 @@ export interface AgentAdapterExtras {
   nativeCapabilities?(connection: AgentConnection): Promise<Record<string, unknown>>;
   /** Stable external task identifier when work is delegated to an orchestrator. */
   externalTaskId?(connection: AgentConnection): Promise<string | undefined>;
+}
+
+/**
+ * The rest of the adapter boundary.
+ *
+ * `AgentAdapter` above is the interface an agent is reached through. These are
+ * the shapes around it: what an adapter is given, and the shape of the thing
+ * that hands one out.
+ *
+ * **They live here, and not in the package that holds the adapters, because the
+ * domain must depend on the interface and never on the adapters.**
+ * `packages/agent-adapters` holds the adapters themselves; the domain holds
+ * these. That is what turns ADR 0004's rule — "the domain never mentions a
+ * specific provider" — into something the tree can be checked against rather
+ * than a convention somebody has to remember.
+ */
+
+/** What an adapter may say. */
+export interface AdapterLogger {
+  info(message: string, meta?: unknown): void;
+  warn(message: string, meta?: unknown): void;
+  error(message: string, meta?: unknown): void;
+}
+
+/**
+ * Context handed to every adapter. Secrets are resolved through the
+ * server-held secret store and never travel through the browser client.
+ */
+export interface AdapterContext {
+  resolveSecret(ref: string): Promise<string | undefined>;
+  logger: AdapterLogger;
+}
+
+/**
+ * A registry of adapters, as the domain needs it.
+ *
+ * The domain asks a registry whether it has an adapter type and asks it for
+ * one. **It does not know which adapters exist**, and the class that implements
+ * this lives with the adapters, not with the domain.
+ */
+export interface AdapterProvider {
+  has(type: AdapterType): boolean;
+  list(): AdapterType[];
+  create(config: AdapterConfig, ctx: AdapterContext): AgentAdapter;
 }
