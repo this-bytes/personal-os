@@ -1,11 +1,23 @@
-import { useState } from 'react';
-import { ChevronRight, CircleAlert, Info } from 'lucide-react';
-import { cn } from '@personal-os/ui';
+import { CircleAlert, Info } from 'lucide-react';
+import {
+  CodeBlock,
+  CodeBlockContent,
+  Trace,
+  TraceCollapsible,
+  TraceCollapsibleContent,
+  TraceCollapsibleTrigger,
+  TraceDescription,
+  TraceIcon,
+  TraceLine,
+  TraceTitle,
+  cn,
+} from '@personal-os/ui';
 import type { ChatActivity } from '@personal-os/contracts';
 import {
   activityDurationMs,
   activityLabel,
   activityTone,
+  activityTraceStatus,
   formatDuration,
   groupActivityByTurn,
   type TraceTone,
@@ -20,11 +32,24 @@ import { plainText } from './markdownBlocks';
  * The rows are the events that actually arrived, in the order they arrived —
  * a row is not drawn because it was expected.
  *
+ * The rows are built on the `Trace` primitive, which is adopted from
+ * shadcn/ui (MIT). The primitive owns the shape of a row — the dot's slot, the
+ * sentence's slot, the secondary text's slot, the disclosure, and the
+ * accessibility rules that go with them — and this file owns what the row
+ * *means*.
+ *
  * The colour of a row means one thing. The accent is the work in flight, the
  * green is work that succeeded, the rose is work that failed, and the slate
  * is a notice that is not a failure — and a notice always carries an icon
  * beside it, because the slate and the accent are the hardest pair to tell
  * apart.
+ *
+ * The order inside a row is the Forge prototype's: the dot, then the time, then
+ * the sentence. Upstream draws the title before the secondary text; the
+ * prototype draws the time first, and the prototype is the product's own
+ * visual language, so it wins. The slots are used for the roles upstream
+ * gives them either way: the dot is the icon, the time is the secondary text,
+ * and the sentence is the title.
  */
 
 /** The dot of a row, and the tone it wears. */
@@ -61,10 +86,9 @@ function clockTime(value: string): string {
 /** The sentence a row carries. */
 function RowSentence({ activity }: { activity: ChatActivity }): React.JSX.Element {
   const label = activityLabel(activity);
-  const duration = formatDuration(activityDurationMs(activity));
 
   return (
-    <span className="text-[11px] leading-relaxed text-slate-400">
+    <>
       <span className="font-mono text-slate-300">{label}</span>
       {activity.toolName ? (
         <span className="ml-1 font-semibold text-slate-100">{activity.toolName}</span>
@@ -72,11 +96,7 @@ function RowSentence({ activity }: { activity: ChatActivity }): React.JSX.Elemen
       {activity.summary && activity.summary !== label ? (
         <span className="ml-1 text-slate-500">{activity.summary}</span>
       ) : null}
-      {duration ? <span className="ml-1 text-slate-600">{duration}</span> : null}
-      {activity.count && activity.count > 1 ? (
-        <span className="ml-1 text-slate-600">×{activity.count}</span>
-      ) : null}
-    </span>
+    </>
   );
 }
 
@@ -92,17 +112,21 @@ function RowDetail({ activity }: { activity: ChatActivity }): React.JSX.Element 
       {input !== null ? (
         <div>
           <p className="text-[10px] uppercase tracking-wide text-slate-600">input</p>
-          <pre className="mt-0.5 max-h-40 overflow-auto whitespace-pre-wrap break-words rounded border border-slate-800 bg-slate-950/70 px-2 py-1 font-mono text-[10px] text-slate-300">
-            {input}
-          </pre>
+          <CodeBlock size="sm" variant="default" className="mt-0.5 max-h-40 overflow-auto">
+            <CodeBlockContent className="max-h-40 text-[10px] whitespace-pre-wrap break-words">
+              {input}
+            </CodeBlockContent>
+          </CodeBlock>
         </div>
       ) : null}
       {output !== null ? (
         <div>
           <p className="text-[10px] uppercase tracking-wide text-slate-600">output</p>
-          <pre className="mt-0.5 max-h-40 overflow-auto whitespace-pre-wrap break-words rounded border border-slate-800 bg-slate-950/70 px-2 py-1 font-mono text-[10px] text-slate-300">
-            {output}
-          </pre>
+          <CodeBlock size="sm" variant="default" className="mt-0.5 max-h-40 overflow-auto">
+            <CodeBlockContent className="max-h-40 text-[10px] whitespace-pre-wrap break-words">
+              {output}
+            </CodeBlockContent>
+          </CodeBlock>
         </div>
       ) : null}
     </div>
@@ -110,56 +134,53 @@ function RowDetail({ activity }: { activity: ChatActivity }): React.JSX.Element 
 }
 
 function Row({ activity }: { activity: ChatActivity }): React.JSX.Element {
-  const [open, setOpen] = useState(false);
   const tone = activityTone(activity);
+  const status = activityTraceStatus(activity);
   const expandable = activity.input !== undefined || activity.output !== undefined;
+  const duration = formatDuration(activityDurationMs(activity));
+
+  const line = (
+    <TraceLine status={status}>
+      <TraceIcon>
+        <span aria-hidden="true" className={cn('h-1.5 w-1.5 rounded-full', DOT_TONE[tone])} />
+      </TraceIcon>
+      <TraceDescription>
+        {clockTime(activity.startedAt)}
+        {duration ? ` · ${duration}` : ''}
+        {activity.count && activity.count > 1 ? ` · ×${activity.count}` : ''}
+      </TraceDescription>
+      <TraceTitle>
+        <RowSentence activity={activity} />
+      </TraceTitle>
+      {tone === 'caution' ? (
+        <span className="inline-flex items-center gap-1 text-caution">
+          <Info className="h-3 w-3" />
+          <span className="text-[10px]">outcome unknown</span>
+        </span>
+      ) : null}
+      {tone === 'failed' ? (
+        <span className="inline-flex items-center gap-1 text-err">
+          <CircleAlert className="h-3 w-3" />
+          <span className="text-[10px]">failed</span>
+        </span>
+      ) : null}
+    </TraceLine>
+  );
 
   return (
-    <li className="relative grid grid-cols-[13px_minmax(0,1fr)] gap-2 py-[3px]">
-      <span className="relative flex justify-center">
-        <span
-          aria-hidden="true"
-          className={cn('mt-[5px] h-1.5 w-1.5 rounded-full', DOT_TONE[tone])}
-        />
-      </span>
-      <div className="min-w-0">
-        <div className="flex flex-wrap items-baseline gap-x-2">
-          <span className="font-mono text-[10px] text-slate-600">
-            {clockTime(activity.startedAt)}
-          </span>
-          {expandable ? (
-            <button
-              type="button"
-              onClick={() => setOpen((value) => !value)}
-              aria-expanded={open}
-              className="inline-flex items-center gap-1 text-left"
-            >
-              <ChevronRight
-                className={cn(
-                  'h-3 w-3 shrink-0 text-slate-600 transition-transform',
-                  open && 'rotate-90',
-                )}
-              />
-              <RowSentence activity={activity} />
-            </button>
-          ) : (
-            <RowSentence activity={activity} />
-          )}
-          {tone === 'caution' ? (
-            <span className="inline-flex items-center gap-1 text-caution">
-              <Info className="h-3 w-3" />
-              <span className="text-[10px]">outcome unknown</span>
-            </span>
-          ) : null}
-          {tone === 'failed' ? (
-            <span className="inline-flex items-center gap-1 text-err">
-              <CircleAlert className="h-3 w-3" />
-              <span className="text-[10px]">failed</span>
-            </span>
-          ) : null}
-        </div>
-        {open ? <div className="mt-1.5 pl-1">{<RowDetail activity={activity} />}</div> : null}
-      </div>
+    <li className="relative py-[3px]">
+      <Trace>
+        {expandable ? (
+          <TraceCollapsible>
+            <TraceCollapsibleTrigger>{line}</TraceCollapsibleTrigger>
+            <TraceCollapsibleContent>
+              <RowDetail activity={activity} />
+            </TraceCollapsibleContent>
+          </TraceCollapsible>
+        ) : (
+          line
+        )}
+      </Trace>
     </li>
   );
 }

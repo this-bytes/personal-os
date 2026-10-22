@@ -1,6 +1,12 @@
-import { useState } from 'react';
-import { Check, Copy } from 'lucide-react';
-import { cn } from '@personal-os/ui';
+import {
+  CodeBlock as CodeBlockRoot,
+  CodeBlockActions,
+  CodeBlockContent,
+  CodeBlockCopyButton,
+  CodeBlockHeader,
+  CodeBlockTitle,
+  cn,
+} from '@personal-os/ui';
 import { parseMarkdown, type MarkdownBlock, type MarkdownInline } from './markdownBlocks';
 
 /**
@@ -115,42 +121,33 @@ function Inline({
   );
 }
 
-/** A code block, with the language it was written in and a way to copy it. */
+/**
+ * A code block, with the language it was written in and a way to copy it.
+ *
+ * The block itself is the `Code Block` primitive, adopted from shadcn/ui
+ * (MIT). It brings the copy button, the language header, the focusable
+ * scrollable panel and the accessibility rules that go with them. What it
+ * does not bring is a syntax highlighter: upstream's highlighter is optional
+ * and lives in a separate hook, and a code block here shows the code as it
+ * was written.
+ */
 function CodeBlock({ lang, text }: { lang: string | null; text: string }): React.JSX.Element {
-  const [copied, setCopied] = useState(false);
-
-  async function copy(): Promise<void> {
-    try {
-      await navigator.clipboard.writeText(text);
-      setCopied(true);
-      window.setTimeout(() => setCopied(false), 1500);
-    } catch {
-      // The clipboard is not available. The code is still there to be read and
-      // selected by hand, and the button says nothing that is not true.
-      setCopied(false);
-    }
-  }
-
   return (
-    <div className="overflow-hidden rounded border border-slate-800 bg-slate-950">
-      <div className="flex items-center justify-between border-b border-slate-800 px-2 py-1">
-        <span className="font-mono text-[10px] uppercase tracking-wide text-slate-500">
+    <CodeBlockRoot size="sm" variant="default">
+      <CodeBlockHeader>
+        <CodeBlockTitle className="font-mono text-[10px] uppercase tracking-wide">
           {lang ?? 'text'}
-        </span>
-        <button
-          type="button"
-          onClick={() => void copy()}
-          className="inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-[10px] text-slate-400 transition-colors hover:bg-slate-800 hover:text-slate-200"
-          aria-label={copied ? 'Copied the code' : 'Copy the code'}
-        >
-          {copied ? <Check className="h-3 w-3" /> : <Copy className="h-3 w-3" />}
-          {copied ? 'copied' : 'copy'}
-        </button>
-      </div>
-      <pre className="overflow-x-auto px-2.5 py-2 font-mono text-[11px] leading-relaxed text-slate-200">
-        <code>{text}</code>
-      </pre>
-    </div>
+        </CodeBlockTitle>
+        <CodeBlockActions>
+          <CodeBlockCopyButton
+            value={text}
+            copyLabel="Copy the code"
+            copiedLabel="Copied the code"
+          />
+        </CodeBlockActions>
+      </CodeBlockHeader>
+      <CodeBlockContent className="text-[11px] text-slate-200">{text}</CodeBlockContent>
+    </CodeBlockRoot>
   );
 }
 

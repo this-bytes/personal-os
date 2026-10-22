@@ -60,6 +60,18 @@ says which tool the agent was refused and widens the grant from the row itself,
 through the published route, and it is labelled "Needs a grant" rather than
 "Blocked" — a grant the owner can widen from the row is not work that is stuck.
 
+**The chat surface now stands on adopted source.** The owner asked for the
+conversation to be built from existing open-source work rather than from
+scratch, so the trace and the code block were re-anchored onto shadcn/ui's
+`Trace` and `Code Block` (MIT), adapted to this repository's tokens and kept
+in this repository's hands. What was adopted, what was rejected and on what
+evidence, what is upstream, and what is still genuinely missing are written
+down in [the reuse inventory](reuse-inventory.md). Three things came out of
+the evaluation that are worth naming here: the adapters, the presets and the
+route already cover most of the brief, and **the chat surface was never the
+gap** — steering, the five native runtimes and a real runtime demonstration
+are.
+
 ## R0 — establish the execution foundation
 
 **First slice to implement: repair MCP initialization through the worker.**

@@ -325,6 +325,7 @@ personal-os/
 
 - [docs/roadmap.md](docs/roadmap.md) — the active delivery sequence
 - [docs/adapters.md](docs/adapters.md) — runtime integration research
+- [docs/reuse-inventory.md](docs/reuse-inventory.md) — what the chat surface takes from other people's code, and what it still has to build
 - [PRODUCT.md](PRODUCT.md) — product ownership boundaries and scope
 - [ARCHITECTURE.md](ARCHITECTURE.md) — components, data flow and design decisions
 - [CONTRACTS.md](CONTRACTS.md) — the conversation, connection, resource and factory contracts

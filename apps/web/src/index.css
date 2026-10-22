@@ -138,3 +138,46 @@
     @apply max-h-96 overflow-auto rounded-md border border-slate-800 bg-slate-950 p-3 font-mono text-xs leading-relaxed text-slate-300;
   }
 }
+
+/*
+ * The shimmer a running row wears.
+ *
+ * A row that is working is alive, and this is how it says so: a light pass
+ * travels across it. The movement is the only thing that changes — a reader
+ * who has asked for reduced motion gets a still row, and the row's title
+ * still says what is happening.
+ *
+ * The shimmer comes from shadcn/ui's Trace, which is MIT licensed. Personal
+ * OS's own version is quieter: it passes over the text rather than over a
+ * panel, and it wears the slate scale rather than a colour of its own.
+ */
+@utility shimmer {
+  position: relative;
+  overflow: hidden;
+
+  &::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    transform: translateX(-100%);
+    background: linear-gradient(
+      90deg,
+      transparent,
+      color-mix(in oklab, var(--color-slate-100) 20%, transparent),
+      transparent
+    );
+    animation: pos-shimmer 2s infinite;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    &::after {
+      display: none;
+    }
+  }
+}
+
+@keyframes pos-shimmer {
+  100% {
+    transform: translateX(100%);
+  }
+}

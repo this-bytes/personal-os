@@ -8,6 +8,7 @@ import type {
   TurnStatus,
   TurnView,
 } from '@personal-os/contracts';
+import type { TraceStatus } from '@personal-os/ui';
 
 /**
  * The chat surface's own types.
@@ -154,6 +155,34 @@ export function activityTone(activity: ChatActivity): TraceTone {
       return 'caution';
     default:
       return 'quiet';
+  }
+}
+
+/**
+ * The state a trace row is in, in the primitive's own vocabulary.
+ *
+ * The `Trace` primitive knows three states — running, error, and pending — and
+ * this is where an activity becomes one of them.
+ *
+ * **An outcome nobody can confirm is not one of them.** `unknown` means the
+ * work started and nobody can say how it ended, and that is neither a failure
+ * nor a success, so the row wears no status at all. It says so in words, in
+ * the caution colour, with an icon beside it — because a row that is only
+ * coloured is a row that a reader who cannot see the colour cannot read.
+ *
+ * A row that is done wears no status either: there is nothing left to say
+ * about work that finished.
+ */
+export function activityTraceStatus(activity: ChatActivity): TraceStatus | undefined {
+  switch (activity.status) {
+    case 'running':
+      return 'running';
+    case 'failed':
+      return 'error';
+    case 'pending':
+      return 'pending';
+    default:
+      return undefined;
   }
 }
 
