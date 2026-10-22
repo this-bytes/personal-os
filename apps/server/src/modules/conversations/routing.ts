@@ -50,6 +50,16 @@ export interface RoutingInput {
   chain: RoutingChainState;
   /** Explicit targets supplied by the client, if any. */
   explicitTargets?: string[];
+  /**
+   * The delegation whose result this message delivers.
+   *
+   * A worker reporting back is not the coordinator delegating, so the report
+   * is marked: it is the one agent message that wakes the coordinator without
+   * the coordinator having asked. The marker is set by the host that knows the
+   * delegation — never by anything a message says about itself — so an agent
+   * cannot use it to wake the coordinator at will.
+   */
+  delegation?: { id: string };
 }
 
 export type RoutingBlockReason =
@@ -186,6 +196,22 @@ export function planRouting(input: RoutingInput): RoutingDecision {
           ) {
             return { targets: unique(delegated), reason: 'Delegated by the coordinator.' };
           }
+
+          // A worker handing back the result of a delegation is not the
+          // coordinator delegating, and it is not a delegation either. It
+          // wakes the coordinator that asked for the work, and nobody else:
+          // one participant, named by the delegation, never the room.
+          if (
+            input.delegation &&
+            coordinatorConnection &&
+            explicit.includes(coordinatorConnection)
+          ) {
+            return {
+              targets: [coordinatorConnection],
+              reason: 'A delegated result was delivered to the coordinator.',
+            };
+          }
+
           if (!coordinatorConnection) {
             return {
               targets: [],

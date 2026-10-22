@@ -4,7 +4,9 @@ import type {
   AgentConnectionStatus,
   AutomationAction,
   AutomationTrigger,
+  BotRole,
   ContentPart,
+  DelegatedTaskStatus,
   ExecutionStatus,
   McpToolName,
   MessageOrigin,
@@ -290,6 +292,94 @@ export const executionEvents = sqliteTable(
   (table) => [
     uniqueIndex('execution_events_seq_idx').on(table.seq),
     index('execution_events_execution_idx').on(table.executionId),
+  ],
+);
+
+/**
+ * The team of a conversation.
+ *
+ * A bot is an agent connection with a role in a room and a scope of what it
+ * may hand work to. The scope is an allowlist: a bot dispatches to the agents
+ * it was given, and to nobody else.
+ */
+export const bots = sqliteTable(
+  'bots',
+  {
+    id: text('id').primaryKey(),
+    workspaceId: text('workspace_id').notNull(),
+    conversationId: text('conversation_id')
+      .notNull()
+      .references(() => conversations.id, { onDelete: 'cascade' }),
+    /** The connection the bot speaks through. */
+    agentConnectionId: text('agent_connection_id').notNull(),
+    role: text('role').$type<BotRole>().notNull(),
+    displayName: text('display_name').notNull(),
+    /** Whether the bot may hand work to another agent. */
+    mayDispatch: integer('may_dispatch', { mode: 'boolean' }).notNull().default(false),
+    /** The connections this bot may hand work to. Empty means nobody. */
+    dispatchableAgentConnectionIds: text('dispatchable_agent_connection_ids', { mode: 'json' })
+      .$type<string[]>()
+      .notNull(),
+    createdAt: text('created_at').notNull(),
+  },
+  (table) => [
+    index('bots_conversation_idx').on(table.conversationId),
+    uniqueIndex('bots_conversation_agent_idx').on(table.conversationId, table.agentConnectionId),
+  ],
+);
+
+/**
+ * The work a turn handed to another agent.
+ *
+ * The row is the visible tree of delegated work: which turn delegated it,
+ * which agent does it, what it was asked for, what came back, and whether the
+ * result reached the room that asked and whether that room used it. Delivery
+ * and consumption are separate columns on purpose.
+ */
+export const delegatedTasks = sqliteTable(
+  'delegated_tasks',
+  {
+    id: text('id').primaryKey(),
+    workspaceId: text('workspace_id').notNull(),
+    /** The room the delegation came from. */
+    conversationId: text('conversation_id')
+      .notNull()
+      .references(() => conversations.id, { onDelete: 'cascade' }),
+    /** The room the delegated work ran in. It is not the parent's room. */
+    childConversationId: text('child_conversation_id').notNull(),
+    /** The turn that delegated the work. */
+    parentTurnId: text('parent_turn_id').notNull(),
+    /** The child turn that did the work. */
+    childTurnId: text('child_turn_id'),
+    /** The connection that delegated the work. */
+    parentAgentConnectionId: text('parent_agent_connection_id').notNull(),
+    /** The connection that does the delegated work. */
+    agentConnectionId: text('agent_connection_id').notNull(),
+    role: text('role').$type<BotRole>().notNull(),
+    status: text('status').$type<DelegatedTaskStatus>().notNull().default('queued'),
+    /** The factory task the work is tracked as. */
+    taskId: text('task_id'),
+    /** What the coordinator asked for. */
+    instruction: text('instruction').notNull(),
+    /** What came back. */
+    result: text('result'),
+    /** The reference to the output: the message the worker answered with. */
+    outputRef: text('output_ref'),
+    /** The delivery message that carried the result into the parent's room. */
+    deliveryMessageId: text('delivery_message_id'),
+    /** When the result reached the parent. */
+    deliveredAt: text('delivered_at'),
+    /** When the parent read the output and its turn ended completed. */
+    consumedAt: text('consumed_at'),
+    /** The delegation depth of the child turn. */
+    depth: integer('depth').notNull().default(0),
+    createdAt: text('created_at').notNull(),
+    updatedAt: text('updated_at').notNull(),
+  },
+  (table) => [
+    index('delegated_tasks_conversation_idx').on(table.conversationId),
+    index('delegated_tasks_child_turn_idx').on(table.childTurnId),
+    index('delegated_tasks_parent_turn_idx').on(table.parentTurnId),
   ],
 );
 

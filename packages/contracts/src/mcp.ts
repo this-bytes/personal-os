@@ -11,6 +11,13 @@ export const mcpToolNames = [
   'workspace.list',
   'conversation.read',
   'conversation.post',
+  /**
+   * Hand a bounded piece of work to another agent and receive its result.
+   *
+   * It is not in the default grant set: a connection that may delegate is a
+   * connection the owner has said may delegate.
+   */
+  'bot.dispatch',
   'agent.list',
   'task.create',
   'task.update',

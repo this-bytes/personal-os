@@ -9,6 +9,7 @@ export * from './common.js';
 export * from './autonomy.js';
 export * from './conversation.js';
 export * from './chat.js';
+export * from './bot.js';
 export * from './agent.js';
 export * from './adapter-config.js';
 export * from './adapter-presets.js';

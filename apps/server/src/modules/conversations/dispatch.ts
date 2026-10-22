@@ -42,6 +42,14 @@ export interface DispatchInput {
   depth: number;
   /** Restrict dispatch to these agent connections. */
   explicitTargets?: string[];
+  /**
+   * The delegation whose result this message delivers.
+   *
+   * The marker is what lets a worker's report wake the coordinator that asked
+   * for the work. It is set by the host, which knows the delegation, and it
+   * is not something a message can claim for itself.
+   */
+  delegation?: { id: string };
 }
 
 /**
@@ -125,6 +133,7 @@ export function planAndDispatch(input: DispatchInput): DispatchResult {
     },
     chain,
     ...(input.explicitTargets ? { explicitTargets: input.explicitTargets } : {}),
+    ...(input.delegation ? { delegation: input.delegation } : {}),
   });
 
   if (conversation.paused) {

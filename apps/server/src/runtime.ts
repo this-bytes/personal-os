@@ -36,6 +36,20 @@ export { createAuthService } from './modules/auth/service.js';
 export type { AuthenticatedUser } from './modules/auth/service.js';
 export { planAndDispatch } from './modules/conversations/dispatch.js';
 export { planRouting, deriveChainState } from './modules/conversations/routing.js';
+export { createConversationsService } from './modules/conversations/service.js';
+export {
+  createBotsService,
+  authorityExcess,
+  dispatchScopeDecision,
+  nextDelegatedStatus,
+  taskStatusForDelegation,
+} from './modules/conversations/bots.js';
+export type {
+  BotsService,
+  DelegationOutcome,
+  DispatchScopeDecision,
+} from './modules/conversations/bots.js';
+export { createFactoryService } from './modules/factory/service.js';
 export { loadEffectiveAutonomyPolicy } from './modules/autonomy/service.js';
 export type { EffectivePolicyScope } from './modules/autonomy/service.js';
 export { listAgentMemories } from './modules/resources/agent-memory.js';

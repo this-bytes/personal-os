@@ -6,6 +6,7 @@ import type { AgentTokenService } from './modules/auth/tokens.js';
 import type { WorkspaceService } from './modules/workspaces/service.js';
 import type { AgentService } from './modules/agents/service.js';
 import type { ConversationsService } from './modules/conversations/service.js';
+import type { BotsService } from './modules/conversations/bots.js';
 import type { ResourceService } from './modules/resources/service.js';
 import type { FactoryService } from './modules/factory/service.js';
 import type { AutomationsService } from './modules/automations/service.js';
@@ -29,6 +30,7 @@ export interface AppServices {
   workspaces: WorkspaceService;
   agents: AgentService;
   conversations: ConversationsService;
+  bots: BotsService;
   resources: ResourceService;
   factory: FactoryService;
   automations: AutomationsService;

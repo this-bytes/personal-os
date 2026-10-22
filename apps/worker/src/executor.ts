@@ -6,6 +6,7 @@ import {
   buildAgentMemoryBrief,
   dashboardSpecSchema,
   dataSourceSpecSchema,
+  defaultAgentToolGrants,
   isActionAllowed,
   parseAdapterConfig,
   resolvePersona,
@@ -41,10 +42,14 @@ import {
 import {
   assertReadableQuery,
   assertSafeUrl,
+  createBotsService,
+  createConversationsService,
+  createFactoryService,
   deriveChainState,
   loadEffectiveAutonomyPolicy,
   newId,
   planAndDispatch,
+  type BotsService,
   type QueueJob,
   type Runtime,
 } from '@personal-os/server/runtime';
@@ -655,6 +660,27 @@ async function executeChatTurn(context: ExecutorContext, job: QueueJob): Promise
     });
   }
 
+  // The delegated work. When this turn was the work another agent handed
+  // over, its answer goes back to the room that asked for it, attributed to
+  // this agent, and the handoff is closed with what came back.
+  settleDelegation(runtime, {
+    executionId: payload.executionId,
+    outcome: failed ? 'failed' : unknown ? 'lost' : 'succeeded',
+    result:
+      accumulated.trim().length > 0
+        ? accumulated.trim()
+        : (explanation ?? failure ?? 'The delegated work ended without an answer.'),
+    outputRef: messageId,
+  });
+
+  // The parent turn. When this turn read a delivered result and ended
+  // completed, that result is consumed. A turn that failed leaves it
+  // unconsumed, so the next continuation is reminded of it again: delivery is
+  // not consumption.
+  if (!failed && !unknown) {
+    consumeDeliveredResult(runtime, payload.parentMessageId);
+  }
+
   return failed
     ? { status: 'failed', error: failure }
     : unknown
@@ -682,6 +708,75 @@ interface EventContext {
    * reason it gave is the reason the owner reads.
    */
   onFailure: (reason: string) => void;
+}
+
+/**
+ * The bot seam, as the worker sees it.
+ *
+ * The worker is the only place a delegated turn runs, so it is the only place
+ * a delegated answer can come back. The service is built over the same
+ * database the server uses: the worker writes to it, and the server streams
+ * what it finds.
+ */
+function botsService(runtime: Runtime): BotsService {
+  const { db, events, queue, audit } = runtime;
+
+  const connection = (agentConnectionId: string) =>
+    db.select().from(agentConnections).where(eq(agentConnections.id, agentConnectionId)).get();
+
+  return createBotsService({
+    db,
+    events,
+    queue,
+    audit,
+    factory: createFactoryService({ db, events, queue, audit }),
+    conversations: createConversationsService({ db, events, queue, audit }),
+    agentToolGrants: (agentConnectionId) =>
+      connection(agentConnectionId)?.toolGrants ?? defaultAgentToolGrants,
+    agentConnection: (agentConnectionId) => {
+      const row = connection(agentConnectionId);
+      return row ? { id: row.id, workspaceId: row.workspaceId, enabled: row.enabled } : undefined;
+    },
+    agentDisplayName: (agentConnectionId) =>
+      connection(agentConnectionId)?.name ?? agentConnectionId,
+  });
+}
+
+/**
+ * Close a delegation whose turn has ended.
+ *
+ * The answer is delivered into the room that asked for it, through the
+ * routing safeguards: the coordinator that asked is woken, and nobody else
+ * is. A turn that was not delegated work has no delegation to close.
+ */
+function settleDelegation(
+  runtime: Runtime,
+  input: {
+    executionId: string;
+    outcome: 'succeeded' | 'failed' | 'cancelled' | 'lost';
+    result: string;
+    outputRef?: string;
+  },
+): void {
+  const service = botsService(runtime);
+  if (!service.findDelegationByChildTurn(input.executionId)) return;
+
+  service.completeDelegation({
+    childTurnId: input.executionId,
+    outcome: input.outcome,
+    result: input.result,
+    outputRef: input.outputRef,
+  });
+}
+
+/**
+ * Record that a parent turn read a delivered result.
+ *
+ * Only a turn that ended completed consumes it. The result of a turn that
+ * failed stays unconsumed, so the next continuation is reminded of it again.
+ */
+function consumeDeliveredResult(runtime: Runtime, parentMessageId: string): void {
+  botsService(runtime).consumeDelivery(parentMessageId);
 }
 
 /**

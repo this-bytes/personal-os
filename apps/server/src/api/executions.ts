@@ -18,6 +18,30 @@ const resolveSchema = z.object({
  * only for the owner: the worker stopped and could not say how the turn ended.
  */
 export function registerExecutionRoutes(app: FastifyInstance): void {
+  /**
+   * The turn: its status and the work it handed over.
+   *
+   * The delegation tree is part of the turn, not a second thing to look up
+   * under another name: a turn that delegated work carries that work, and a
+   * turn that was delegated work carries the turn that delegated it.
+   *
+   * The capability view and the committed revision are absent rather than
+   * empty. They are published, and they are not implemented yet; an empty
+   * view would say the agent had no tools, which is a different claim.
+   */
+  app.get('/api/executions/:id', { preHandler: requireAuth }, async (request) => {
+    const { id } = request.params as { id: string };
+    const execution = app.services.executions.get(id);
+    const tree = app.services.bots.delegationTree(id);
+
+    return {
+      execution,
+      capabilityView: null,
+      committedRevision: null,
+      delegationTree: tree,
+    };
+  });
+
   app.post('/api/executions/:id/resolve', { preHandler: requireAuth }, async (request) => {
     const { id } = request.params as { id: string };
     const body = parseBody(resolveSchema, request.body);

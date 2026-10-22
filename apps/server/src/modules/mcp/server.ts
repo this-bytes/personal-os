@@ -327,6 +327,60 @@ export async function createMcpServer(options: McpServerOptions): Promise<McpSer
     );
   }
 
+  /**
+   * The dispatch tool: the seam a coordinator uses to hand a bounded piece of
+   * work to another agent.
+   *
+   * The tool records the intent and enqueues the work; the worker runs it and
+   * the answer comes back to the room that asked. A connection that was not
+   * granted this tool does not have it registered at all, and a bot whose
+   * scope does not name the target is refused.
+   */
+  if (granted.has('bot.dispatch')) {
+    server.registerTool(
+      'bot.dispatch',
+      {
+        description:
+          'Hand a bounded piece of work to another agent in this conversation, and get its result back. ' +
+          'The agent must be one your scope names. The work is tracked as a task and runs on the worker.',
+        inputSchema: {
+          conversationId: z.string(),
+          agentConnectionId: z.string(),
+          instruction: z.string(),
+          title: z.string().optional(),
+        },
+      },
+      async ({ conversationId, agentConnectionId, instruction, title }) => {
+        try {
+          await guard('bot.dispatch');
+          if (actor.kind !== 'agent') {
+            throw new AppError(
+              'forbidden',
+              'Only an agent connection may delegate work to another agent.',
+              403,
+            );
+          }
+          const result = options.capabilities.botDispatch(
+            {
+              conversationId,
+              agentConnectionId,
+              instruction,
+              ...(title ? { title } : {}),
+            },
+            actor,
+          );
+          return jsonResult({
+            delegatedTask: result.delegatedTask,
+            taskId: result.taskId,
+            childTurnId: result.childTurnId,
+          });
+        } catch (error) {
+          return errorResult(error);
+        }
+      },
+    );
+  }
+
   if (granted.has('agent.list')) {
     server.registerTool(
       'agent.list',

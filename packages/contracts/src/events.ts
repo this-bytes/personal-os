@@ -2,6 +2,7 @@ import { z } from 'zod';
 import { isoDateSchema } from './common.js';
 import { agentEventSchema, agentConnectionStatusSchema, agentCapabilitiesSchema } from './agent.js';
 import { messageSchema } from './conversation.js';
+import { delegatedTaskSchema } from './bot.js';
 import { factoryTaskSchema } from './factory.js';
 import { resourceSchema } from './resource.js';
 import { automationRunSchema } from './automation.js';
@@ -48,6 +49,27 @@ export const serverEventSchema = z.discriminatedUnion('type', [
   z.object({
     type: z.literal('approval.decided'),
     approval: approvalSchema,
+  }),
+  /**
+   * The lifecycle of a delegated task.
+   *
+   * `delegation.started` is when the work was handed over, `delegation.delivered`
+   * is when the result reached the room that asked for it, and
+   * `delegation.consumed` is when that room's turn read it and ended
+   * completed. Delivery is not consumption: the two are separate moments, and
+   * a result that was delivered but not consumed is still waiting.
+   */
+  z.object({
+    type: z.literal('delegation.started'),
+    delegatedTask: delegatedTaskSchema,
+  }),
+  z.object({
+    type: z.literal('delegation.delivered'),
+    delegatedTask: delegatedTaskSchema,
+  }),
+  z.object({
+    type: z.literal('delegation.consumed'),
+    delegatedTask: delegatedTaskSchema,
   }),
   z.object({
     type: z.literal('heartbeat'),
