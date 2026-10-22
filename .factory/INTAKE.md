@@ -5474,7 +5474,7 @@ the file carries now, and it says which lines they were before.**
 
 **And one more correction, on an instrument this ledger has already named.** The Formatting step of CI failed on `6bca3c5` and on nothing else — typecheck, the tests and the build all passed — and the cause was this entry: it was missing the blank line before its heading, and one of its bold spans wrapped another, so the markers paired the wrong way round.** Both are fixed, in `6849e62`.** The wrong conclusion came first, and it was mine: a prettier check run against `git show origin/main:.factory/INTAKE.md | Out-File` flagged the file as dirty, and **a copy is not the file** — `Out-File` wrote CRLF where the blob holds LF, and the copy sat outside the repository, so prettier resolved its defaults instead of `.prettierrc.json`. The 08:45 section of this ledger already named that instrument and the rule it earns: “a red measured on an extracted copy is a red measured on the extraction — check the copy's line endings before believing it, and check the committed bytes.” This is the second time it has cost something, and the rule was already written down.
 
-**And this branch dropped `main`'s 16:05 entry once, and it is restored here rather than left to the next reader.** A merge resolution that took only the text between the conflict markers dropped everything after them, **and the net effect of a branch is what it deletes as well as what it adds.** The diff is where a deletion shows up, and it was read too late the first time.
+**And this branch dropped `main`'s own 16:05 entry once, and this ledger is built from `main`'s file so it cannot drop anything again.** A merge resolution that took only the text between the conflict markers dropped everything after them, **and the net effect of a branch is what it deletes as well as what it adds.** The diff is where a deletion shows up, and it is read before a push now, not after.
 
 ### 15:45 — WI-129's verification asked for two things, and both are closed
 
@@ -5713,3 +5713,29 @@ measured npm 11.2.0 locally; that is the limit the peer's measurement removes.**
 entry stays, and this is the correction beside it.**
 
 **The floor at 16:40.** **Ceiling two. Next free number WI-135.**
+
+### 16:50 — a want with four measured findings that are still open, and the number that is free
+
+**WI-129 was verified twice, and the two verdicts disagree.** Probe's `task_b433527c33d7` finished: **ACCEPT with four findings for the lead to number.** The peer session's own verification reported **PASS WITH FINDINGS, two findings, both closed, no should-fix.** **Both ran, so the one-verification rule cannot be restored by cancelling anything** — Probe's task is `done` and cannot be cancelled, and the peer session's has now reported too. **What the overlap bought is that two people measured the same item and found different things, and only one of them found four.**
+
+**Measured on `main` @ `f932208`, all four of Probe's findings are still open.** Every line below was read, not relayed:
+
+| #   | Where                                           | What it names                                                   | Where the thing is                                                                                                                         |
+| --- | ----------------------------------------------- | --------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
+| F1  | `CONTRACTS.md:2098`                             | "the projections read it" — the **author**                      | cites `service.ts:363`, which holds `title: task.title,`; the author is at **`:365`**, `createdBy: author,`                                |
+| F1  | `CONTRACTS.md:806`                              | the resource recording the **template's id and version**        | cites `service.ts:399-400`, which holds `acceptanceCriteria` and `author`; `templateId` and `templateVersion` are at **`:401-402`**        |
+| F2  | `docs/resource-templates.md:76`                 | "refuses one that breaks the contract"                          | cites `service.ts:351-360`, which now holds the `taskProvider` doc comment and the head of `toResource`                                    |
+| F3  | `docs/resource-templates.md:97`, `:289`, `:425` | the provider, and the dashboard and document templates          | cite `service.ts:581-591` and `service.ts:573-578`                                                                                         |
+| F4  | `.factory/work/WI-129.md:37`                    | "The dashboard is not published. Publishing is a separate act." | cites `docs/resource-templates.md:594`, which holds "The metric counts the thing its title says it counts."; the sentence is at **`:595`** |
+
+**And the guide and the contract now name different lines for one line**: the guide, re-pointed in the same landing, cites `:365` for the author that `CONTRACTS.md:2098` still cites as `:363`.
+
+**The peer session's five stale guide citations all measure correctly**, and they are in the ledger: `mcp/server.ts:467-483` holds the tail of `resource.create` and the head of `resource.get` while the tool is registered at `:533`; `mcp/server.ts:352-402` is inside `task.create` while the tool is at `:418`; `resource.ts:58-70` holds `templateId` and `templateVersion` of `resourceSchema` while `resourceTemplateSchema` is at `:128`; `resource.ts:79-83` holds the doc comment for the guide while `resourceTemplateRefSchema` is at `:157`; and `templates.ts:21-124` starts the registry at `:21` and runs to `:394`. **One count slip in the prose: it says "four" and the table has five**, and the fifth is a guide file rather than a contract citation.
+
+**This is a want, not a number.** The files are `CONTRACTS.md`, `docs/resource-templates.md` and `.factory/work/*.md` — and `*.md`, `CONTRACTS.md` and `docs/` are **Wren's** by the ownership table in `FACTORY.md` — and **Wren's lane refuses** with WI-114 held on it. **So the number is the lead's to give and the owner is Wren's to be, and `main`'s block reads "The next free number is WI-135."**
+
+- **Proposed title:** the four citations that do not name what they claim.
+- **Proposed owner:** Wren.
+- **Criteria:** every cited line holds the code its sentence names; the guide and the contract name the same line for the same fact; the pointer gate green. **A citation is checked by following it, so it needs no mutation.**
+
+**And one thing this session's own floor says about the number space:** Probe's WI-129 verification is finished, so that slot is free, and **WI-135 is the next number after WI-134** — which the peer session has already taken and implemented.
