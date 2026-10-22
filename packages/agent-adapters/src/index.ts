@@ -1,4 +1,4 @@
-import type { AdapterConfig } from '@personal-os/contracts';
+import type { AdapterConfig, AdapterProvider } from '@personal-os/contracts';
 import { AdapterRegistry } from './registry.js';
 import { createAcpAdapter } from './acp.js';
 import { createA2aAdapter } from './a2a.js';
@@ -35,4 +35,4 @@ export function createDefaultRegistry(): AdapterRegistry {
     .register('mcp', createMcpAdapter);
 }
 
-export type { AdapterConfig };
+export type { AdapterConfig, AdapterProvider };

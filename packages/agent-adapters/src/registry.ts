@@ -1,12 +1,21 @@
-import type { AdapterConfig, AdapterType, AgentAdapter } from '@personal-os/contracts';
-import type { AdapterContext, AdapterFactory, ConfigOf } from './types.js';
+import type {
+  AdapterConfig,
+  AdapterContext,
+  AdapterProvider,
+  AdapterType,
+  AgentAdapter,
+} from '@personal-os/contracts';
+import type { AdapterFactory, ConfigOf } from './types.js';
 
 /**
  * The adapter registry is the only place that knows which adapter types
  * exist. Adding a new agent must not require changes to conversation
  * storage or the factory task model.
+ *
+ * It implements `AdapterProvider` — the shape the domain depends on — so the
+ * domain never names this class, and this package never leaks into it.
  */
-export class AdapterRegistry {
+export class AdapterRegistry implements AdapterProvider {
   private readonly factories = new Map<AdapterType, AdapterFactory>();
 
   register<T extends AdapterType>(
