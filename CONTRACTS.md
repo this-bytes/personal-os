@@ -633,6 +633,83 @@ optional, so a connection and a participant written before this change stay vali
 and resolve to the runtime's default. The persona applies only to turns taken after
 it.
 
+### The adapter presets
+
+A preset is a **starting template** for an agent connection. Every adapter type
+has one, and each of the five approved target runtimes has one.
+
+```ts
+interface AdapterPreset {
+  id: string; // stable, the key the client and server use
+  adapterType: AdapterType; // the type the preset belongs to
+  name: string; // what the owner reads in the picker
+  description: string; // what it is for, in a line or two
+  config: AdapterConfig; // validated against the schema for its type
+  persona: Persona; // the published persona shape
+  capabilities: AgentCapabilities; // what the adapter type can deliver
+  requires: string[]; // what the owner still has to supply
+  credential?: 'apiKey' | 'authToken'; // which secret field belongs here
+  verified: boolean; // has this template been run here?
+  runtime?: 'Codex' | 'OpenCode' | 'Pi' | 'Hermes' | 'OpenClaw';
+}
+```
+
+**A preset is not an integration.** The five approved target runtimes are
+integration _candidates_: none has been demonstrated in this repository. Every
+preset that names a runtime carries `verified: false` and says so in the copy the
+owner reads. The difference between "here is the command line we believe this
+runtime uses" and "this integration is proven" is visible in the data and in the
+panel, not only in a changelog.
+
+**A preset carries the persona whole.** The schema requires both `role` and
+`instructions`, because [the persona](#the-persona) is resolved by
+`resolvePersona`: a conversation's override **replaces** the connection's base
+persona field by field and never merges with it. A preset that supplied only a
+role would leave a stranger the moment a conversation overrode the
+instructions, and the other way round. A preset's persona becomes the
+**connection's base persona** — the base, never an override.
+
+**The catalogue is a pure function of the module**, so it is testable without a
+database: `listAdapterPresets()`, `listAdapterPresetsFor(adapterType)` and
+`getAdapterPreset(id)`. Every entry is parsed through the schema when the module
+is loaded, so a preset whose configuration does not parse against its own
+adapter type throws at import — in the build and in the tests — rather than
+reaching an owner.
+
+**A preset's capabilities are a ceiling, not a promise.** They say what the
+adapter type can deliver for that template. What the agent actually supports is
+discovered by the probe the server runs on save, and the panel shows the probe's
+answer rather than the preset's list.
+
+**A preset names a credential and never carries one.** It carries no value and
+no `*Ref` either — a reference names a secret record on the server, and a preset
+cannot know which record the owner will create. The catalogue is served to the
+browser, so a preset that carried a credential would leak it.
+
+**A preset is a base, not a replacement.** `POST /api/agents` takes an optional
+`presetId`; the server lays the owner's configuration over the preset's,
+validates the merged configuration with the existing `parseAdapterConfig` path,
+and takes the preset's persona as the base persona when the owner wrote none.
+The owner's own persona wins.
+
+The runtime mapping — each preset picks **one** surface and names the
+alternative in its copy, so the owner chooses the surface rather than having
+one hidden from them:
+
+| Runtime  | Adapter type | The surface the preset uses         | The alternative it names                        |
+| -------- | ------------ | ----------------------------------- | ----------------------------------------------- |
+| Codex    | `cli`        | the command line                    | the native App Server and ACP surfaces          |
+| OpenCode | `acp`        | an ACP-compatible session           | the native HTTP server and its SSE event stream |
+| Pi       | `cli`        | the long-lived JSONL RPC subprocess | —                                               |
+| Hermes   | `http`       | the HTTP run API                    | ACP and the programmatic gateway                |
+| OpenClaw | `http`       | the HTTP gateway surface            | the gateway WebSocket and the ACP bridge        |
+
+This entry is the contract for **WI-142**, and the code implements it — as of
+`0c7c1f5` — the catalogue is `packages/contracts/src/adapter-presets.ts`, the
+route is `GET /api/agent-presets`, and the panel's connection form carries the
+template picker. The slice's own record is
+[docs/contract-adapter-presets.md](docs/contract-adapter-presets.md).
+
 ### Important design rules
 
 **Preserve native capabilities.** Do not reduce sophisticated agents to basic
@@ -2029,6 +2106,7 @@ is not left deleting the database.
 | `GET/POST`         | `/api/workspaces`                                    | List and create workspaces.                                                             |
 | `GET/PATCH`        | `/api/workspaces/:id`                                | Read and update a workspace. `PATCH` accepts `autonomyPolicy`.                          |
 | `GET/POST`         | `/api/agents`                                        | List and create agent connections.                                                      |
+| `GET`              | `/api/agent-presets`                                 | The adapter preset catalogue. A template, never an integration.                         |
 | `GET/PATCH/DELETE` | `/api/agents/:id`                                    | Read, update, remove a connection. `PATCH` accepts `toolGrants`.                        |
 | `POST`             | `/api/agents/:id/probe`                              | Re-run capability discovery.                                                            |
 | `POST`             | `/api/agents/:id/grants`                             | Widen one tool grant. The action a blocked agent needs.                                 |
