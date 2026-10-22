@@ -5959,7 +5959,12 @@ is not affected.
 ### 16:30 — the queue is measured, WI-135 was dispatched twice under one number, and one turn is holding a slot
 
 **This is the 16:00 shift's report, and it opens with the number, because the number is
-the whole problem.** **Fifty-seven work items are recorded at `implement`.** **None of them
+the whole problem.** **Fifty-seven work items were recorded at `implement` when this was
+measured, on `8696d4c`.** **The peer session corrected seven of those `State:` lines four
+minutes later, in `55f173c` — WI-121, WI-122, WI-123, WI-126, WI-127, WI-128 and WI-129
+all move to `accepted` — and the census at that tip is forty-seven.** **The number here is
+the number on the tree it was measured on, and the correction is the peer's and is on
+`main` already.** **None of the fifty-seven
 has a live dispatch.** Twenty-three are bound to a dispatch that is `done`, `failed`,
 `cancelled` or `unknown` — **dead, not busy** — and thirty-four have **no dispatch row at
 all** in the table above. The table was rebuilt by reading every item file's last
