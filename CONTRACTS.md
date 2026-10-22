@@ -683,23 +683,49 @@ interface AdapterPreset {
   requires: string[]; // what the owner still has to supply
   credential?: 'apiKey' | 'authToken'; // which secret field belongs here
   verified: boolean; // has this template been run here?
+  evidence?: {
+    runtime: string; // the runtime that answered
+    version?: string; // the version that answered, when it publishes one
+    demonstratedOn: string; // the day, as YYYY-MM-DD
+    observed: string; // what was observed, in a sentence the owner can read
+  };
   runtime?: 'Codex' | 'OpenCode' | 'Pi' | 'Hermes' | 'OpenClaw';
 }
 ```
 
-**A preset is not an integration.** The five approved target runtimes are
-integration _candidates_: no runtime has completed a turn in this repository,
-so every preset that names a runtime carries `verified: false` and says so in
-the copy the owner reads. The difference between "here is the command line we
-believe this runtime uses" and "this integration is proven" is visible in the
-data and in the panel, not only in a changelog.
+**A preset claims an integration only when it can show the evidence.** A
+preset that says it has been demonstrated carries the evidence it rests on —
+the runtime, the version, the day and what was observed — and **a preset that
+claims the demonstration without the evidence does not parse**. A preset that
+has not been demonstrated says so in the copy the owner reads, and the panel
+wears the caution treatment beside it.
 
-**A handshake is worth something, and it is not a turn.** The ACP surface of an
-installed Hermes answered the handshake this repository ran against it, and
-reported that it can restore a session — which is what `connect()` asks and
-what the panel shows beside a connection. **A runtime that answers the
-handshake and then refuses the turn has still not demonstrated an
-integration**, and the copy keeps saying so.
+**What has been demonstrated.** The built-in echo agent is this repository's own
+runtime: the server tests drive it, and the browser suite runs the whole chain
+— server, queue, worker, adapter, event log, stream — against it. **The Hermes
+ACP template has been run against the installed Hermes 0.21.0**: the handshake
+answered, and a turn completed with the runtime's own answer, both through
+this product's adapter. The other four approved runtimes — Codex, OpenCode, Pi
+and OpenClaw — are still candidates: they are not installed here, and their
+presets carry `verified: false`.
+
+**A handshake is worth something, and it is not a turn.** The handshake asks
+whether a runtime is there; the turn asks whether it works. A runtime that
+answers the handshake and then refuses the turn has demonstrated the first and
+not the second. **A preset that names one of the five runtimes carries
+`verified: false` until this repository has run that exact template against
+that runtime and completed a turn with it.**
+
+**A handshake is worth something, and it is not a turn.** The handshake asks
+whether a runtime is there; the turn asks whether it works. A runtime that
+answers the handshake and then refuses the turn has demonstrated the first and
+not the second. **A preset that names one of the five runtimes carries
+`verified: false` until this repository has run that exact template against
+that runtime and completed a turn with it.**
+
+**The ACP surface of an installed Hermes answered the handshake this
+repository ran against it**, and reported that it can restore a session — which
+is what `connect()` asks and what the panel shows beside a connection.
 
 **A preset carries the persona whole.** The schema requires both `role` and
 `instructions`, because [the persona](#the-persona) is resolved by
@@ -749,7 +775,10 @@ preset, builds the adapter the worker would build for it, and asks the runtime
 two questions through the product's own code: does it answer the handshake,
 and does it answer a turn. It runs a real agent and spends the runtime's
 tokens, and it refuses a preset that needs a credential it cannot supply
-rather than half-running it.
+rather than half-running it. **What it prints is the evidence a preset's
+`verified: true` rests on**, and the script says what it observed and no
+more: a runtime that reports its own failure as its answer has still produced
+an answer, and the text is the only evidence of what happened.
 
 This entry is the contract for **WI-142**, and the code implements it — as of
 `0c7c1f5` — the catalogue is `packages/contracts/src/adapter-presets.ts`, the

@@ -78,22 +78,41 @@ describe('the runtime presets', () => {
     }
   });
 
-  it('claims no runtime to be verified', () => {
-    for (const preset of presets.filter((entry) => entry.runtime !== undefined)) {
-      expect(
-        preset.verified,
-        `${preset.id} claims to be verified, and no runtime has been demonstrated in this repository`,
-      ).toBe(false);
-    }
-  });
-
   it('says in its own copy that the integration has not been demonstrated', () => {
-    for (const preset of presets.filter((entry) => entry.runtime !== undefined)) {
+    for (const preset of presets.filter(
+      (entry) => entry.runtime !== undefined && !entry.verified,
+    )) {
       expect(
         preset.description.toLowerCase(),
         `${preset.id} does not say that it has not been demonstrated`,
       ).toContain('not been demonstrated');
     }
+  });
+
+  it('rests a claim of demonstration on evidence', () => {
+    for (const preset of presets.filter((entry) => entry.verified)) {
+      expect(
+        preset.evidence,
+        `${preset.id} claims to have been demonstrated and names nothing it rested on`,
+      ).toBeDefined();
+      expect(preset.evidence?.runtime).toBeTruthy();
+      expect(preset.evidence?.observed.length ?? 0).toBeGreaterThan(0);
+      // The copy says the same thing the data does.
+      expect(preset.description.toLowerCase()).toContain('demonstrated in this repository');
+    }
+  });
+
+  it('refuses a claim of demonstration with nothing behind it', () => {
+    const preset = getAdapterPreset('hermes-acp');
+    expect(preset).toBeDefined();
+
+    const withoutEvidence = { ...preset, verified: true, evidence: undefined };
+    const refused = adapterPresetSchema.safeParse(withoutEvidence);
+    expect(refused.success).toBe(false);
+
+    // Evidence for a claim that was never made is the same mistake backwards.
+    const withoutClaim = { ...preset, verified: false };
+    expect(adapterPresetSchema.safeParse(withoutClaim).success).toBe(false);
   });
 
   it('names the surface it uses, and the alternative that exists', () => {

@@ -15,13 +15,15 @@ import { adapterConfigSchema } from './adapter-config.js';
  * from, so the owner does not have to remember a command line and a role from
  * memory.
  *
- * **A preset never claims an integration works.** The five approved target
- * runtimes in `docs/adapters.md` are integration *candidates*: none of them
- * has been demonstrated in this repository, so every preset that names one
- * carries `verified: false` and says so in the copy the owner reads. The
- * difference between "here is the command line we believe this runtime uses"
- * and "this integration is proven" has to be visible in the data, not only in
- * a changelog.
+ * **A preset claims an integration only when it can show the evidence.** The
+ * five approved target runtimes in `docs/adapters.md` are integration
+ * *candidates*: a preset that names one carries `verified: false` until this
+ * repository has run that exact template against that runtime, and says so in
+ * the copy the owner reads. A preset that claims to have been demonstrated
+ * carries the evidence it rests on — the runtime, the version, the day and
+ * what was observed — because the difference between "here is the command line
+ * we believe this runtime uses" and "this integration is proven" has to be
+ * visible in the data, not only in a changelog.
  *
  * The catalogue is a pure function of the module: it needs no database, and
  * every entry is parsed through the contract's own schema, so a preset whose
@@ -94,6 +96,26 @@ const adapterPresetBaseSchema = z.object({
    */
   verified: z.boolean().default(false),
   /**
+   * What the demonstration rested on.
+   *
+   * A claim without evidence is a slogan, so a preset that says it has been
+   * demonstrated has to say against which runtime, in which version, on which
+   * day, and what was actually observed. The evidence is part of the data
+   * rather than a line in a changelog, because the panel shows the catalogue.
+   */
+  evidence: z
+    .object({
+      /** The runtime that answered. */
+      runtime: z.string().min(1).max(120),
+      /** The version that answered, when the runtime publishes one. */
+      version: z.string().min(1).max(60).optional(),
+      /** The day the demonstration was made, as `YYYY-MM-DD`. */
+      demonstratedOn: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+      /** What was observed, in a sentence the owner can read. */
+      observed: z.string().min(1).max(400),
+    })
+    .optional(),
+  /**
    * The runtime this preset targets, when it targets one of the five
    * approved runtimes.
    */
@@ -129,6 +151,24 @@ export const adapterPresetSchema = adapterPresetBaseSchema.superRefine((preset, 
       code: z.ZodIssueCode.custom,
       path: ['persona', 'instructions'],
       message: 'A preset gives the agent standing instructions.',
+    });
+  }
+
+  // A claim of demonstration without evidence is a slogan. A preset that says
+  // it has been demonstrated says against which runtime, in which version,
+  // on which day, and what was actually observed.
+  if (preset.verified && !preset.evidence) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ['evidence'],
+      message: 'A preset that claims to have been demonstrated says what it rested on.',
+    });
+  }
+  if (!preset.verified && preset.evidence) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ['evidence'],
+      message: 'Evidence belongs to a preset that claims to have been demonstrated.',
     });
   }
 });
@@ -375,7 +415,8 @@ const RAW_PRESETS = [
     name: 'Built-in echo (local test)',
     description:
       'The built-in deterministic agent, for local use and tests. Nothing to install and nothing ' +
-      'to configure: it is how the room is proved to work end to end.',
+      'to configure: it is how the room is proved to work end to end. This integration has been ' +
+      'demonstrated in this repository — the browser suite runs the whole chain against it.',
     config: {
       adapterType: 'echo',
       reply: 'pong',
@@ -393,6 +434,13 @@ const RAW_PRESETS = [
     // The built-in adapter is this repository's own code and is exercised by
     // its tests. It is not an external runtime, and it does not claim to be.
     verified: true,
+    evidence: {
+      runtime: 'Personal OS',
+      version: '0.1.0',
+      demonstratedOn: '2026-10-23',
+      observed:
+        'The built-in agent answers every turn: the server tests drive it, and the browser suite runs the whole chain — server, queue, worker, adapter, event log, stream — against it.',
+    },
   },
   {
     id: 'mcp-tool-server',
@@ -577,8 +625,9 @@ const RAW_PRESETS = [
       'Hermes over an ACP-compatible session: the panel keeps one session across the conversation, ' +
       'the runtime streams its work, and its own permission and question requests come back to the ' +
       'owner instead of being decided for them. Hermes also publishes an HTTP run API and a ' +
-      'programmatic gateway — this template is the ACP surface. This integration has not been ' +
-      'demonstrated in this repository.',
+      'programmatic gateway — this template is the ACP surface. This integration has been ' +
+      'demonstrated in this repository: the installed runtime answered the handshake and ' +
+      'completed a turn through this adapter.',
     config: {
       adapterType: 'acp',
       command: 'hermes',
@@ -600,7 +649,14 @@ const RAW_PRESETS = [
       'The directory Hermes should work in.',
       'A provider and a model configured in Hermes itself — the runtime refuses to open a session until it has one, and the credential stays in Hermes rather than in this panel.',
     ],
-    verified: false,
+    verified: true,
+    evidence: {
+      runtime: 'Hermes',
+      version: '0.21.0',
+      demonstratedOn: '2026-10-23',
+      observed:
+        'The handshake answered and reported that sessions can be restored, and a turn completed with the runtime’s own answer, both through this adapter.',
+    },
   },
   {
     id: 'openclaw-http',

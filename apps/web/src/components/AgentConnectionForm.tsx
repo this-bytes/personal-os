@@ -641,9 +641,23 @@ export function AgentConnectionForm({
                   </div>
                   <p className="text-[11px] leading-snug text-slate-500">
                     {selected.verified
-                      ? 'This template is exercised by this repository’s own tests.'
+                      ? 'This template has been demonstrated in this repository.'
                       : 'A starting template. What the agent actually supports is discovered when the connection is probed.'}
                   </p>
+
+                  {selected.evidence ? (
+                    <div className="rounded-md border border-slate-800 bg-slate-950/40 p-2.5">
+                      <p className="pos-field-label">What the demonstration rests on</p>
+                      <p className="text-[11px] leading-snug text-slate-400">
+                        {selected.evidence.runtime}
+                        {selected.evidence.version ? ` ${selected.evidence.version}` : ''} —{' '}
+                        {selected.evidence.demonstratedOn}
+                      </p>
+                      <p className="mt-1 text-[11px] leading-snug text-slate-500">
+                        {selected.evidence.observed}
+                      </p>
+                    </div>
+                  ) : null}
 
                   {selected.requires.length > 0 ? (
                     <div>

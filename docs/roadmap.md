@@ -57,11 +57,12 @@ in the room as the agent's own message, marked with the adapter that wrote it �
 and a steer into a running turn comes back as the agent's answer to the steer.
 The acceptance demonstration still needs a named runtime to complete a turn —
 the adapter the browser proves is the built-in `echo` one, which is a product
-adapter and not a runtime. **The Hermes ACP surface has answered the
-handshake**: the installed Hermes 0.21.0 answered `initialize` with
-`loadSession: true`, and the product's own adapter reported what it said. The
-turn was refused, because this machine's Hermes has no provider configured —
-and the refusal now says exactly that, instead of "internal error".
+adapter and not a runtime. **The Hermes ACP surface has now answered the
+handshake and completed a turn**: the installed Hermes 0.21.0 answered
+`initialize` with `loadSession: true`, and a turn came back with the runtime's
+own answer, both through the product's own adapter. The `hermes-acp` template
+therefore carries the evidence its `verified: true` rests on. The other four
+approved runtimes are still candidates — they are not installed here.
 
 **R2 has templates, not integrations.** The presets are starting points for the
 five named runtimes. No runtime has been demonstrated in this repository yet, and

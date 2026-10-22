@@ -101,6 +101,19 @@ describe('the preset picker', () => {
     expect(screen.getByLabelText('Role')).toHaveValue('My own role');
   });
 
+  it('shows what a demonstrated template rests on', () => {
+    renderForm();
+
+    chooseType('acp');
+    chooseTemplate('hermes-acp');
+
+    expect(screen.getByText('demonstrated here')).toBeInTheDocument();
+    expect(screen.getByText('What the demonstration rests on')).toBeInTheDocument();
+    // The owner reads which runtime answered, which version, and when.
+    expect(screen.getByText(/Hermes 0\.21\.0/)).toBeInTheDocument();
+    expect(screen.getByText(/2026-10-23/)).toBeInTheDocument();
+  });
+
   it('says that a template nobody has run is not demonstrated', () => {
     renderForm();
 

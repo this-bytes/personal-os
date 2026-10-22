@@ -181,11 +181,14 @@ await adapter.close?.();
 process.stdout.write('\n\n');
 
 if (failed || answered.trim().length === 0) {
-  process.stdout.write('The runtime did not answer the turn.\n');
+  process.stdout.write('The runtime produced no answer.\n');
   process.exit(1);
 }
 
-process.stdout.write('The runtime answered the turn.\n');
+// The runtime produced an answer. **That is not a claim that the answer is
+// good**: a runtime that reports its own failure as the answer has still
+// produced one, and the text above is the only evidence of what happened.
+process.stdout.write('The runtime produced an answer.\n');
 process.exit(0);
 
 /** The command the adapter will run, as the owner would read it. */
