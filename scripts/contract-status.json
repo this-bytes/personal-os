@@ -450,15 +450,20 @@
     {
       "id": "the-widening-is-not-taken-back-wi-146",
       "section": "The waiting list",
-      "note": "The widening route is the contract for WI-146, and the code implements it",
+      "note": "The widening and the owner's change are the contract for WI-146, and the code implements it",
       "claim": "implemented",
       "item": "WI-146",
-      "why": "WI-146's guarantee, on the path it holds: the widening route widens one tool, the union that widens the grant is computed inside the transaction that writes it, and that transaction takes the write lock before it reads, so a widening another process committed is not overwritten by a stale union. The claim is about the route. The grant editor's save writes the list it read and is not covered by it; when that path is fixed, the guarantee is general again and this row binds both.",
+      "why": "WI-146's guarantee, on both paths that write a grant: the widening route widens one tool, the union that widens the grant is computed inside the transaction that writes it, that transaction takes the write lock before it reads, and the owner's change is applied to the grant as it is now, so a widening another writer committed is not taken back by either. The claim is about the route and about the editor's save. Two rules are held by the server's own test and by the published sentence rather than by this row: the change winning over the list, and the editor's not sending the list. The table has no ordering assertion kind, and a claim of `implemented` may only carry present-* checks, so neither can be written here.",
       "expect": [
         {
           "kind": "present-pattern",
           "path": "apps/server/src/api/agents.ts",
           "value": "widenToolGrant: body\\.tool"
+        },
+        {
+          "kind": "present-pattern",
+          "path": "apps/server/src/api/agents.ts",
+          "value": "toolGrantChange"
         },
         {
           "kind": "present-pattern",
@@ -469,6 +474,16 @@
           "kind": "present-pattern",
           "path": "apps/server/src/modules/agents/service.ts",
           "value": "behavior: 'immediate'"
+        },
+        {
+          "kind": "present-pattern",
+          "path": "apps/server/src/modules/agents/service.ts",
+          "value": "toolGrantChange"
+        },
+        {
+          "kind": "present-pattern",
+          "path": "apps/web/src/components/ToolGrantPanel.tsx",
+          "value": "toolGrantChange: grantChange\\("
         }
       ]
     },
