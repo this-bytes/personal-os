@@ -44,13 +44,13 @@ export interface WaitingItem {
   /**
    * The capability the agent was refused, when it is waiting for a grant.
    *
-   * `null` on every other kind: a capability is the only thing on this list
-   * that is named by a tool.
+   * The field is always on the wire: `null` means the kind is not named by a
+   * tool, and a capability is the only kind on this list that is.
    *
-   * The route sends the field on every row, and the contract publishes it as
-   * a field of the item. The declaration types it as optional so that a client
-   * can build a row of its own without naming a tool it does not have: a row
-   * the client builds is not a row the server sent.
+   * A client that builds a row of its own says `toolName: null`; it does not
+   * leave the field out. The route sends the field on every row and the
+   * server builds its rows against this declaration, so a declaration that
+   * could leave the field out would describe a row the server does not send.
    */
-  toolName?: string | null;
+  toolName: string | null;
 }
