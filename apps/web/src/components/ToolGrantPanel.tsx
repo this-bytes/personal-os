@@ -13,6 +13,7 @@ import {
 } from '@personal-os/ui';
 import { mcpToolNames, type McpToolName } from '@personal-os/contracts';
 import { api, errorMessage } from '../lib/api';
+import { grantChange } from '../lib/grantChange';
 import type { AgentConnectionDetail } from '../lib/types';
 
 interface ToolGrantPanelProps {
@@ -34,18 +35,29 @@ export function ToolGrantPanel({
 }: ToolGrantPanelProps): React.JSX.Element {
   const queryClient = useQueryClient();
   const [selected, setSelected] = useState<McpToolName[]>([]);
+  /** The grant the editor was opened with: what the owner is looking at. */
+  const [base, setBase] = useState<McpToolName[]>([]);
   const [error, setError] = useState<string | null>(null);
 
   const agentId = agent?.id ?? '';
 
   // Reset the selection whenever a different connection is opened.
   useEffect(() => {
-    if (open && agent) setSelected([...agent.toolGrants]);
+    if (open && agent) {
+      setBase([...agent.toolGrants]);
+      setSelected([...agent.toolGrants]);
+    }
   }, [open, agent]);
 
   const save = useMutation({
-    mutationFn: async (grants: McpToolName[]) =>
-      api.patch<{ agent: AgentConnectionDetail }>(`/agents/${agentId}`, { toolGrants: grants }),
+    // The request carries what the owner turned, not the whole list. The whole
+    // list is the grant the page read, and a widening another writer committed
+    // after that read is not in it — so sending the list would take that
+    // widening back, and the owner never chose to narrow it.
+    mutationFn: async (change: { base: McpToolName[]; selected: McpToolName[] }) =>
+      api.patch<{ agent: AgentConnectionDetail }>(`/agents/${agentId}`, {
+        toolGrantChange: grantChange(change.base, change.selected),
+      }),
     onSuccess: async () => {
       setError(null);
       await queryClient.invalidateQueries({ queryKey: ['agents'] });
@@ -112,7 +124,7 @@ export function ToolGrantPanel({
             variant="primary"
             size="sm"
             disabled={save.isPending}
-            onClick={() => save.mutate(selected)}
+            onClick={() => save.mutate({ base, selected })}
           >
             Save grants
           </Button>
