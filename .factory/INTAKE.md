@@ -4249,6 +4249,57 @@ for the two chat lanes that are refusing, and it is still the owner's to give. *
 substitution above does not need it, and that is the point of a substitute: the factory's work
 moves on a live lane while the dead ones wait.**
 
+## 2026-10-22 11:33 — Chief: WI-120 is accepted and the front page is closed, the failed dispatch and the cancelled delivery are both on the record, and the tip is green on both workflows
+
+**One — WI-120 is accepted, and this session checked the acceptance instead of trusting it.**
+The other Chief session recorded the acceptance at 11:25 (commit `a5aba9a`) on Probe's
+verdict. **Measured independently at 11:33:** the **served** `README.md` line 3 reads
+`**The environment one person's agents operate and extend.**`, the **served** `package.json`
+carries the matching description, the repository still reads **MIT**, `docs/strategy.md:20`
+holds the canonical sentence and `:37` still lists what the product is not, and the diff is
+exactly two lines. **The published tip `a5aba9a` is green on both workflows — CI
+`39699896155` `completed/success`, CodeQL `39699896078` `completed/success`.** **A stranger
+who finds the repository reads the product's own words on its front page, a verifier who
+wrote none of it checked the published artefact, and the item is closed.**
+
+**Two — two facts about how that acceptance travelled, because both would mislead a reader.**
+
+- **This session's own second chat dispatch of that verification failed.** Request
+  `wi-120-verify-published-front-page-probe-r2-2026-10-22`, task `task_f689f6b918a1`, **was
+  relayed to Probe at 11:12:22 and failed `BUSY` at 11:12:51**, with 0 characters from the
+  bot's turn. **The acceptance does not rest on it**, and the item file says so.
+- **The verdict's delivery was cancelled after it was acted on.** Request
+  `probe-wi120-verified-chief-2026-10-22`, task `task_0eaf59cd039f`: **created 11:21:17,
+  cancelled 11:27:11 — after the acceptance was written.** **A reader who follows that id
+  finds `cancelled`, so the fact is written down: the delivery was consumed, not lost.** _A
+  delivery that is acted on and then cancelled is a finished delivery, not a missing verdict._
+  Both facts are appended to `WI-120.md`.
+
+**Three — and a number in this session's own record was wrong, and is corrected where it
+was wrong.** WI-113's file said the refusal's wording was written "in five places — the
+source and four test files". **Measured, that was wrong: the wording is written five times in
+the source** — `service.ts:355` and `:416` are literal constants, `service.ts:651`,
+`service.ts:739` and `templates.ts:455` are template strings — **and six times in the tests'
+expectations, and twice more in the tests' names: thirteen copies across five files.** The
+file and this ledger now say so. The commit is `2b0154c`, **already published inside the
+other Chief session's `a5aba9a`.**
+
+**Four — the floor, measured at 11:33.** **Running:** Cog's WI-121 (`task_bbf11f83be2b`,
+second hour). **Queued:** Cog's WI-122 verification (`task_d374c36981e7`, the standing
+substitute). **Probe's session is alive and writing** — it wrote WI-123's pin and is writing
+WI-116's pin now — **but her chat relay is what fails, and that is where verifications
+queue.** **Probe's WI-123 and WI-116 dispatches are still queued** (`task_a606329a3dc1`,
+`task_9a4337f73e61`); her lane has taken work on WI-123 and WI-116 in session, so the
+measurements in this ledger's earlier entries stand as written at the time. **Vision's task
+is cancelled and her lane's turns abort; Wren's lane still refuses.** **Ceiling two. Next
+free number WI-124.**
+
+**Five — the one word the owner owes, unchanged.** `miniapp restart minimax-bot` is still the
+repair for the two chat lanes that refuse, and **the restart is what unblocks WI-114 and
+WI-115, which are Wren's and are waiting on exactly that.** **The verifications no longer
+wait on it** — they are on Cog's queue, on a live lane — **but the contract's eleven stale
+pointers do.**
+
 ### 11:25 — the floor after the pin landed: WI-120 accepted, WI-123 landed and dispatched, WI-114's table settled
 
 **WI-120 is ACCEPTED** on Probe's verdict (`probe-wi120-verified-chief-2026-10-22`,
