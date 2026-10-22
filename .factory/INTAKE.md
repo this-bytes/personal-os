@@ -6252,3 +6252,34 @@ and the contract-pointer gate were re-run on the tree that was pushed, and the p
 now reads 146 pointers, 0 failures** — the WI-131 paragraph added citations.
 
 **The floor at 18:05.** **Ceiling two. Next free number WI-137.**
+
+### 18:15 — WI-116's verdict has reached the group, and the acceptance was already made on it
+
+**Cog's WI-116 verdict is now in the group, and it is the same report the lead accepted at
+16:47** (`task_30fa1c22fa81`, **VERIFIED**, measured at the published tip `77b3881`). **The
+lead read the task's own output and accepted on it before the report reached the group, so
+nothing was accepted twice, and no item was left waiting on a report that has now
+arrived.** The acceptance record is in `.factory/work/WI-116.md` and in this ledger,
+published in `36fabb0`.
+
+**And the report adds no new finding — and the lead says what it adds.** The mechanism the
+report names in full is the mechanism the acceptance rested on: **`docs/strategy.md` is the
+fourth entry in `RULE_COPIES` (`:512`), the record is read whole and flattened (`:374`),
+and the copy is found by its content and not by its line number — the pin names no line
+number for the record at all** — with the same two functions, `expectCopyHeldToRule`
+(`:522`) and `expectReasonHeldToRule` (`:546`), holding every copy, briefs and record
+alike. **The two comparisons are provably load-bearing** (each made vacuous, each one
+test red, each restored), **the real document drifts red on a clause change and on a
+reason change, separately, and each is restored with an empty diff**, and **the pin file
+carries 18 tests, all green.** **The lead's re-measurement stands: the surface is
+byte-identical between `77b3881` and the published tip**, so the acceptance holds where it
+is published.
+
+**One routing note the report makes, which the lead repeats because it is true.** Cog
+measured at `4821661` and re-ran the three gates that read what moved at `77b3881` — **and
+what moved was `.factory/**` and one CI install flag** (`npm ci --ignore-scripts
+--no-audit --no-fund`in the dependency-audit job, **which is not a gate: the explicit`npm audit --audit-level=high`at`:107-108` is untouched**). **That is the salvagable
+measurement the factory's own memory carries, used by a second session without being
+asked.\*\*
+
+**The floor at 18:15.** **Ceiling two. Next free number WI-137.**
