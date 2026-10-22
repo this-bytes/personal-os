@@ -1,46 +1,19 @@
 import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
+import type { WaitingItem, WaitingReason } from '@personal-os/contracts';
 import { parseQuery, requireAuth } from './helpers.js';
 
-const waitingQuerySchema = z.object({ workspaceId: z.string() });
-
-/** What kind of thing is waiting on the owner. */
-export type WaitingKind = 'approval' | 'task' | 'turn' | 'capability';
-
 /**
- * Why the item is on the list.
+ * The waiting shape is the contracts package's declaration.
  *
- * `unknown` is its own reason: the work started and the outcome could not be
- * confirmed. It is not a failure to fix and not a decision to make — it is
- * something to check.
+ * The list crosses the server-to-client boundary, so the shape is published
+ * once, in `@personal-os/contracts`, and the server builds its rows against
+ * that declaration rather than against a copy of it. The module publishes the
+ * declaration back out so the server's own importers keep one name for it.
  */
-export type WaitingReason = 'pending' | 'review' | 'blocked' | 'unknown';
+export type { WaitingItem, WaitingKind, WaitingReason } from '@personal-os/contracts';
 
-/** One thing that is waiting on the owner. */
-export interface WaitingItem {
-  /** Unique across kinds, so the client can key the list. */
-  id: string;
-  kind: WaitingKind;
-  /** What the item is. */
-  title: string;
-  /** Why it is waiting on the owner. */
-  detail: string;
-  reason: WaitingReason;
-  workspaceId: string;
-  /** The conversation the item came from, when there is one. */
-  conversationId: string | null;
-  /** The task the item belongs to, when it is about a task. */
-  taskId: string | null;
-  /** The agent that raised it. */
-  agentConnectionId: string | null;
-  /**
-   * The capability the agent was refused, when it is waiting for a grant.
-   *
-   * `null` on every other kind: a capability is the only thing on this list
-   * that is named by a tool.
-   */
-  toolName: string | null;
-}
+const waitingQuerySchema = z.object({ workspaceId: z.string() });
 
 /**
  * What is waiting on the owner.

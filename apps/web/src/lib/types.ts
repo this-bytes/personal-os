@@ -1,6 +1,10 @@
 /**
  * Response shapes that the HTTP API returns but that are not part of the
  * shared contracts package.
+ *
+ * A shape that the contracts package publishes is not repeated here: it is
+ * imported from there and published back out under the same name, so the web
+ * and the server describe the same thing and a copy cannot drift.
  */
 
 import type {
@@ -13,6 +17,7 @@ import type {
   Message,
   Participant,
   Resource,
+  WaitingItem,
   Workspace,
 } from '@personal-os/contracts';
 
@@ -93,25 +98,6 @@ export interface ResourceInspection {
   issues: string[];
 }
 
-/** One thing that is waiting on the owner. */
-export interface WaitingItem {
-  /** Unique across kinds, so the list can be keyed. */
-  id: string;
-  kind: 'approval' | 'task' | 'turn';
-  /** What the item is. */
-  title: string;
-  /** Why it is waiting on the owner. */
-  detail: string;
-  reason: 'pending' | 'review' | 'blocked' | 'unknown';
-  workspaceId: string;
-  /** The conversation the item came from, when there is one. */
-  conversationId: string | null;
-  /** The task the item belongs to, when it is about a task. */
-  taskId: string | null;
-  /** The agent that raised it. */
-  agentConnectionId: string | null;
-}
-
 /** One thing an agent remembers, as the panel shows it. */
 export interface AgentMemory {
   id: string;
@@ -160,5 +146,6 @@ export type {
   Goal,
   Message,
   Resource,
+  WaitingItem,
   Workspace,
 };

@@ -1427,14 +1427,38 @@ interface WaitingItem {
 `task:tsk_1`, `capability:cap_1` — so one list can be keyed without the client
 having to pair the id with the kind.
 
+**The shape above is the contracts package's declaration.** It is published
+once, in `packages/contracts/src/waiting.ts`: the kind union at
+`packages/contracts/src/waiting.ts:16`, the reason union at
+`packages/contracts/src/waiting.ts:25`, and the item at
+`packages/contracts/src/waiting.ts:28`. **The server builds its rows against
+that declaration** (`apps/server/src/api/waiting.ts:3`) **and the panel reads
+the same one** (`apps/web/src/components/WaitingList.tsx:5`), so **there is one
+published shape and the client cannot describe a different one.** The fourth
+kind and the field that names the tool arrive by construction rather than by
+remembering: a client that declares its own copy is describing a list the
+server does not send.
+
+The published waiting shape is the contract for **WI-132**, and the code
+implements it.
+
+**Migration.** The shape moved and nothing is reclassified: the route returns
+the same rows it returned before. **A client that copied the old declaration
+must import the new one** — the kind union, the reason union and the item now
+live in `packages/contracts/src/waiting.ts`, and a copy the client made is a
+copy that does not know about the fourth kind or about the tool. A client that
+imported the server's own declaration from `apps/server/src/api/waiting.ts`
+keeps working: that module publishes the contracts package's declaration back
+out under the same names (`apps/server/src/api/waiting.ts:14`).
+
 **`unknown` is a reason of its own.** An item whose outcome could not be
 confirmed is on this list because there is something to check, not because a
 decision is waiting and not because the work is stuck. The state itself is
 defined in [The unknown outcome](#the-unknown-outcome); this entry publishes the
 list's use of it, and the two are not two definitions. The published type
 carries `pending | review | blocked | unknown`, member for member with
-`apps/server/src/api/waiting.ts:17`, and the route takes the reason straight
-from the task's status (`apps/server/src/api/waiting.ts:104`), so a task that cannot be confirmed
+`packages/contracts/src/waiting.ts:25`, and the route takes the reason straight
+from the task's status (`apps/server/src/api/waiting.ts:77`), so a task that cannot be confirmed
 arrives as `reason: 'unknown'` and the published type cannot drift away from
 what the route returns.
 
@@ -1461,8 +1485,8 @@ is something to check. The `unknown` state itself is defined in
 [The unknown outcome](#the-unknown-outcome); this entry publishes the list's
 use of it, and the two are not two definitions. A turn is not an approval and
 not a task, so it is not spelled as either. The published kind carries
-`approval | task | turn`, member for member with
-`apps/server/src/api/waiting.ts:8`.
+`approval | task | turn | capability`, member for member with
+`packages/contracts/src/waiting.ts:16`.
 
 This entry is the contract for **WI-027**, and the code implements it — as of
 `c9bb0bc`. A turn on the list is an execution whose outcome could not be
@@ -1478,7 +1502,7 @@ the owner: the agent called a tool it was not granted, and it cannot go on until
 the owner widens that grant. It is not an approval and not a task, so it is not
 spelled as either. The published kind carries
 `approval | task | turn | capability`, member for member with
-`apps/server/src/api/waiting.ts:8`.
+`packages/contracts/src/waiting.ts:16`.
 
 **The row carries which agent wanted it and what it needed.** `agentConnectionId`
 names the agent that was refused, and `toolName` names the MCP tool it was
@@ -1495,6 +1519,30 @@ tried.
 `POST /api/agents/:id/grants` with the row's `toolName`. It widens that agent's
 grant to include the one tool and leaves the rest of the grant as it was, so the
 action that unblocks an agent cannot take anything away.
+
+**The panel's row carries that action.** The route above satisfies the API's
+half of it, but a criterion that says "from the list" names the surface where
+the owner finds the row, so the row itself carries the action: the panel's
+capability row holds a button that calls `POST /api/agents/:id/grants` with the
+row's own `toolName` (`apps/web/src/components/WaitingList.tsx:181`), and it
+says which tool it is with the row's own `toolName` as well
+(`apps/web/src/components/WaitingList.tsx:342`). **The row is also named for
+what it is**: a capability row is labelled "Needs a grant"
+(`apps/web/src/components/WaitingList.tsx:485`) and not "Blocked", because a
+capability carries the reason `pending` and a label that went by the reason
+would file it under work that is stuck rather than under a grant the owner can
+widen from the row.
+
+The panel's capability row is the contract for **WI-132**, and the code
+implements it.
+
+**Migration.** Nothing changes for a client that reads the list: the rows are
+the rows, and the fourth kind is the fourth kind. **A client that renders the
+list must now give the capability its own label** — a client that fell through
+to "Blocked" for a kind it did not know showed the owner that work was stuck
+when the owner could widen the grant from the same row. The action the row
+carries is the published one, so a client that already posts to
+`POST /api/agents/:id/grants` sends the same request it sent before.
 
 **The row leaves when the grant is widened.** A capability the agent holds is not
 waiting on the owner any more, so the row leaves the list as soon as the grant
@@ -1515,7 +1563,7 @@ exhaustively on the item's fields has one more field to read.
 
 The blocked capability is the contract for **WI-121**, and the code implements it —
 as of `d229b53`: the refusal is recorded at `apps/server/src/modules/mcp/server.ts:720`, the list
-draws it as its own kind at `apps/server/src/api/waiting.ts:159`, and the owner's
+draws it as its own kind at `apps/server/src/api/waiting.ts:136`, and the owner's
 action is `POST /api/agents/:id/grants`.
 
 **The order of the list is over reasons, not kinds.** A turn carries the reason
@@ -1531,7 +1579,7 @@ with this entry. A row recorded before this change keeps the kind it was
 recorded with: no approval becomes a turn, and no task becomes a turn.
 
 The order is the order of urgency, and it is the order the code assembles the
-list in (`apps/server/src/api/waiting.ts:179`): an agent that cannot
+list in (`apps/server/src/api/waiting.ts:152`): an agent that cannot
 continue comes first, then the work whose outcome could not be confirmed, then
 the work waiting for an acceptance decision, then the work that is stuck.
 

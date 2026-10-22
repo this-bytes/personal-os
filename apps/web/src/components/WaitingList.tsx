@@ -2,14 +2,13 @@ import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Badge, Button, Card, CardContent } from '@personal-os/ui';
-import { resolvePersona, type PersonaSource } from '@personal-os/contracts';
+import { resolvePersona, type PersonaSource, type WaitingItem } from '@personal-os/contracts';
 import { api, errorMessage } from '../lib/api';
 import type {
   AgentConnectionDetail,
   ApprovalDecision,
   ConversationDetail,
   ExecutionResolution,
-  WaitingItem,
 } from '../lib/types';
 import { useWorkspace } from '../state/workspace';
 import { useServerEvents } from '../state/events';
@@ -165,6 +164,39 @@ export function WaitingList({ agents, conversations }: WaitingListProps): React.
     },
   });
 
+  /**
+   * The owner widens the grant from the row.
+   *
+   * The row is where the owner is looking when they see that an agent cannot
+   * go on, so the row is where the grant is widened. The route is the one the
+   * contract publishes: it widens that agent's grant to include the one tool
+   * and leaves the rest of the grant as it was, so the action that unblocks
+   * an agent cannot take anything away.
+   *
+   * The row carries the tool's own name, so the owner does not have to go and
+   * find out which tool the agent wanted before they can let it have it.
+   */
+  const widenGrant = useMutation({
+    mutationFn: async (input: { agentConnectionId: string; toolName: string; title: string }) =>
+      api.post<{ agent: AgentConnectionDetail }>(`/agents/${input.agentConnectionId}/grants`, {
+        tool: input.toolName,
+      }),
+    onSuccess: async (_result, input) => {
+      setDecisionError(null);
+      setDecisionNote({
+        title: input.title,
+        detail: `The grant now includes the "${input.toolName}" tool.`,
+      });
+      // The agent can go on, so the row has stopped waiting and the list says
+      // so without the owner reloading the page.
+      await queryClient.invalidateQueries({ queryKey: [QUERY_KEY] });
+    },
+    onError: (error) => {
+      setDecisionError(errorMessage(error));
+      setDecisionNote(null);
+    },
+  });
+
   const items = waiting.data ?? [];
 
   /**
@@ -234,12 +266,15 @@ export function WaitingList({ agents, conversations }: WaitingListProps): React.
                       item.agentConnectionId ? agentsById.get(item.agentConnectionId) : undefined
                     }
                     persona={personaFor(item)}
-                    busy={decide.isPending || resolveTurn.isPending}
+                    busy={decide.isPending || resolveTurn.isPending || widenGrant.isPending}
                     onDecide={(approvalId, approved) =>
                       decide.mutate({ approvalId, approved, title: item.title })
                     }
                     onResolve={(executionId, outcome) =>
                       resolveTurn.mutate({ executionId, outcome, title: item.title })
+                    }
+                    onWidenGrant={(agentConnectionId, toolName) =>
+                      widenGrant.mutate({ agentConnectionId, toolName, title: item.title })
                     }
                   />
                 </li>
@@ -271,6 +306,7 @@ function WaitingRow({
   busy,
   onDecide,
   onResolve,
+  onWidenGrant,
 }: {
   item: WaitingItem;
   agent?: AgentConnectionDetail;
@@ -278,11 +314,13 @@ function WaitingRow({
   busy: boolean;
   onDecide: (approvalId: string, approved: boolean) => void;
   onResolve: (executionId: string, outcome: 'completed' | 'failed') => void;
+  onWidenGrant: (agentConnectionId: string, toolName: string) => void;
 }): React.JSX.Element {
   // The waiting item is keyed across kinds, so the approval's own id and the
   // turn's execution id are both behind the kind.
   const approvalId = item.id.startsWith('approval:') ? item.id.slice('approval:'.length) : null;
   const executionId = item.id.startsWith('turn:') ? item.id.slice('turn:'.length) : null;
+  const grant = capabilityGrant(item);
 
   return (
     <div className="flex items-start justify-between gap-3 rounded-md border border-slate-800 px-3 py-2.5 transition-colors hover:border-slate-700">
@@ -294,6 +332,18 @@ function WaitingRow({
           {item.title}
         </Link>
         <p className="mt-0.5 text-[11px] leading-snug text-slate-500">{item.detail}</p>
+        {/*
+         * The tool the agent was refused is named by the row itself.
+         *
+         * The row's title carries it too, but the title is the server's
+         * sentence and this is the fact: a tool name is what the owner acts
+         * with, and the row has to be able to show it without being read.
+         */}
+        {item.toolName ? (
+          <p className="mt-1 text-[11px] leading-snug text-slate-400">
+            Tool: <span className="font-mono text-slate-300">{item.toolName}</span>
+          </p>
+        ) : null}
         {item.agentConnectionId ? (
           <p className="mt-1 flex flex-wrap items-center gap-1.5 text-[11px] text-slate-500">
             <span className="text-slate-400">{agent?.name ?? item.agentConnectionId}</span>
@@ -363,9 +413,41 @@ function WaitingRow({
             </Button>
           </>
         ) : null}
+        {grant ? (
+          /* The action the row carries.
+           *
+           * The owner who sees a blocked capability is told what is blocked
+           * and used to be sent elsewhere to find the grant. The row carries
+           * the grant's own tool name and the agent it was refused to, so the
+           * widening happens here, on the row that asked for it.
+           */
+          <Button
+            size="sm"
+            variant="secondary"
+            disabled={busy}
+            onClick={() => onWidenGrant(grant.agentConnectionId, grant.toolName)}
+          >
+            Grant the tool
+          </Button>
+        ) : null}
       </div>
     </div>
   );
+}
+
+/**
+ * The grant this row can widen, when the row is one.
+ *
+ * A capability row names the agent that was refused and the tool it was
+ * refused, and those two are the whole of the action. A row that is not a
+ * capability has no grant to widen: it is a decision, a task or a turn.
+ */
+function capabilityGrant(
+  item: WaitingItem,
+): { agentConnectionId: string; toolName: string } | null {
+  if (item.kind !== 'capability') return null;
+  if (!item.agentConnectionId || !item.toolName) return null;
+  return { agentConnectionId: item.agentConnectionId, toolName: item.toolName };
 }
 
 /**
@@ -374,7 +456,8 @@ function WaitingRow({
  * An approval is a request inside a conversation and a turn happened inside
  * one, so the conversation is where they are read. A task is decided on the
  * factory board, and the link opens the exact card so the decision is one
- * click away.
+ * click away. A capability is acted on from the row itself, so its link goes
+ * to the agents page where the grant lives.
  */
 function targetFor(item: WaitingItem): string {
   if (item.kind === 'task') {
@@ -389,9 +472,17 @@ function targetFor(item: WaitingItem): string {
  * An unknown outcome is not a failure to fix and not a decision to make. It
  * is something to check, and it is labelled that way so the owner does not
  * read it as a task that failed and may simply be repeated.
+ *
+ * A capability has a name of its own because it is not one of the other
+ * three. It carries the reason `pending`, so a label that went by the reason
+ * would call it "Blocked" and send the owner looking for work that is stuck
+ * rather than for a grant they can widen. The kind is named before the
+ * reason is read, so a capability is never filed under somebody else's
+ * name.
  */
 function labelFor(item: WaitingItem): string {
   if (item.kind === 'approval') return 'Approval';
+  if (item.kind === 'capability') return 'Needs a grant';
   if (item.reason === 'review') return 'In review';
   if (item.reason === 'unknown') return 'Check this';
   return 'Blocked';
