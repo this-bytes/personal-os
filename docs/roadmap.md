@@ -46,8 +46,13 @@ references and restart reconciliation — has not been done.
 
 **R1 is partly landed and partly not.** The chat surface, the activity trace and
 the stop control are in. Steering is not: the route carries `delivery: 'steer'`
-and nothing acts on it yet, so a steer is a queued message today. The acceptance
-demonstration still needs a real runtime, not a fixture.
+and nothing acts on it yet, so a steer is a queued message today. **The chat is
+now proved end to end in a browser**: the suite runs the worker, the owner's
+message reaches it, the adapter runs, and the answer lands in the room as the
+agent's own message, marked with the adapter that wrote it. The acceptance
+demonstration still needs one of the five named runtimes — the adapter the
+browser proves is the built-in `echo` one, which is a product adapter and not a
+runtime.
 
 **R2 has templates, not integrations.** The presets are starting points for the
 five named runtimes. No runtime has been demonstrated in this repository yet, and

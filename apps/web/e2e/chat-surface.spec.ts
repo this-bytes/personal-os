@@ -24,14 +24,18 @@ test.afterEach(async ({ page }) => {
   }
 });
 
-async function createAgent(page: import('@playwright/test').Page, name: string): Promise<string> {
+async function createAgent(
+  page: import('@playwright/test').Page,
+  name: string,
+  config: Record<string, unknown> = { reply: 'hi' },
+): Promise<string> {
   const workspaceId = await firstWorkspaceId(page);
   const createdAgent = await page.request.post('/api/agents', {
     data: {
       workspaceId,
       name,
       adapterType: 'echo',
-      config: { reply: 'hi' },
+      config,
     },
   });
   expect(createdAgent.ok()).toBe(true);
@@ -41,10 +45,16 @@ async function createAgent(page: import('@playwright/test').Page, name: string):
 }
 
 test.describe('the chat surface', () => {
-  test('the owner reads Markdown, sees the trace, and stops a queued turn', async ({ page }) => {
+  test('the owner reads Markdown, sees the trace, and stops a running turn', async ({ page }) => {
     await signIn(page);
     const workspaceId = await firstWorkspaceId(page);
-    const agentId = await createAgent(page, 'Echo');
+    // The turn is slow on purpose. **The worker runs in this suite now**, so
+    // the turn starts as soon as the message is posted, and the stop has to
+    // reach a turn that is in flight rather than one that is still in the
+    // queue. The turn that had not started is proved by the server's own
+    // test, `turn-activity.test.ts`, where the queue is under the test's
+    // control.
+    const agentId = await createAgent(page, 'Echo', { reply: 'hi', delayMs: 5_000 });
 
     const createdConversation = await page.request.post('/api/conversations', {
       data: {
@@ -78,10 +88,11 @@ test.describe('the chat surface', () => {
     await expect(page.getByText('steering unavailable')).toBeVisible();
     await expect(page.getByRole('button', { name: /steer now/i })).toBeDisabled();
 
-    // The turn had not started, so stopping it is a cancellation and the
-    // panel says that it will not run.
+    // The turn was running, so it was asked to stop rather than cancelled,
+    // and the panel says what the server said would happen: the runtime may
+    // finish the turn it is in.
     await page.getByRole('button', { name: /stop/i }).click();
-    await expect(page.getByText(/will not run/)).toBeVisible();
+    await expect(page.getByText(/may finish the current turn/)).toBeVisible();
   });
 
   test('the presence list says who is in the room', async ({ page }) => {
