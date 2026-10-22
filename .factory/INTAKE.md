@@ -103,8 +103,9 @@ free number above the highest taken.**
 | WI-130 | Clearing the allow-list widens the policy in force                                                                                                                                                                                | worker |
 | WI-131 | The widening write is not one transaction, and the contract says it is                                                                                                                                                            | worker |
 | WI-132 | The panel does not carry the published waiting shape, and the row carries no way to widen the grant                                                                                                                               | worker |
+| WI-133 | The audit job audits twice: one word makes it audit once                                                                                                                                                                          | worker |
 
-**The next free number is WI-133.**
+**The next free number is WI-134.**
 
 **Two decisions the owner took, and the numbers they took.** The owner answered
 the two questions that were open: `manual` **does not gate delegation**
@@ -662,7 +663,8 @@ second dispatch.
 | `wi-010-lane-count-commit-label-2026-10-22` | WI-010 — the lane-count sentence's commit label, corrected | Cog | `task_69aace150952` | **DISPATCHED AT 04:35 — THE FIX FOR WI-010's ONE DEFECT, AND IT IS ONE PHRASE.** The verification met all three criteria and found exactly one defect: `prototypes/DIRECTION.md:293-297` says "…whose lane held fifteen open items **at the pinned commit**", and in that document "pinned" means `0d4731f` (`:12-19`) — but **at `0d4731f` Cog's lane held twenty-one not-accepted items, and six of the fifteen named were already accepted there, while the number and the list are exactly right at `3479c31`.** **So the words are the error and not the number: "at the pinned commit" becomes "at `3479c31`", and no re-measurement is needed.** Batch `batch_4ffdf594ca21`, queued at Cog. **The document's owner is Vision, and Vision's chat cannot take work — its session is `started` and it refuses every delegation in 28 seconds — so the lead substituted an implementer who did not write the document and did not write the verification.** **Scope is that one phrase and nothing else in that file:** the pin in `forge-briefs.test.ts` reads the document, the briefs quote it, and the document is held to a pinned commit. The brief says the suite must come out exactly as it is — 48 files, 452 tests |
 | `wi-036-record-reverification-cog-2026-10-22` | WI-036 — the licence record, re-verified against the merged successor | Cog | `task_6a2d0711a7a9` | **DISPATCHED AT 04:34 — THE THIRD BRIEF, ON A LANE THAT TAKES WORK.** The third brief to Probe (`task_762f49d237f9`) was refused `BUSY` after 28 seconds, and the second attempt, to Vision, **was refused the same way at 04:20:05 → 04:20:33 with a zero-length answer** — so **two ids are spent and the item had no live dispatch at all.** Batch `batch_c5558c1bed80`, queued at Cog. **Cog did not write the record: Wren wrote the successor (`38e1a9a`) and a Chief session merged it, so neither can verify it.** The brief is the same third brief — 500 lockfile entries and 11 distinct licences, both re-derived and not read out of the record, and seventeen re-quoted evidence strings each of which must be the verbatim head of the file it names, with no quote still stopping before the grant — with the lead's note that `docs/strategy.md` is out of scope and `docs/**` is not to be edited **CANCELLED AT 05:10 BY CHIEF AS A DUPLICATE OF FINISHED WORK.** The verification was already delivered at 04:40:33 (the row above), and a second verification of the same record on the same tree is a second answer to a question that has been answered. One item, one verification. The request id is spent and is not re-used |
 | `wi-031-turn-prefix-and-item-file-2026-10-22` | WI-031 — the route's id, and the item file's false blocker, corrected | Wren | `task_f49babe336fd` | **CANCELLED AT 04:48, BEFORE IT RAN — IT WAS THE DUPLICATE, AND THE DUPLICATE WAS MINE.** It was dispatched at 04:44 on the same defect the peer session had already numbered **WI-104** and written an item file for at 04:36, and it asked for a second thing on top: that `WI-031.md`'s three false "the close path has no test" lines be corrected — **but the peer had already appended that correction to `WI-031.md` at 04:36**, in the form the house prefers (a dated correction beside the standing claim, not an overwrite). **So this dispatch would have put two workers on one contract sentence and two writers on `WI-031.md`.** **The peer's WI-104 stands, and it is deliberately not dispatched** — `CONTRACTS.md` is one file and one live item, and WI-103's pointer correction is live on it, so WI-104 goes out when WI-103 lands. **The request id is spent and is never reused.** **The measurement this dispatch carried is not lost — it is in WI-104's item file and in this ledger.** Batch `batch_64507d46b05`, queued at Wren. **The defect:** `CONTRACTS.md:214-218` says "the id the list draws is `turn:<execution id>` — the id this route takes", **and the route takes the bare execution id** — the client strips the prefix itself at `WaitingList.tsx:279`, the server looks the row up by the bare id at `executions/service.ts:71`, and anything else 404s, **so a client written to that sentence literally would post `/api/executions/turn:exe_123/resolve` and get `Execution` not found.** It came from the original contract half (`363428e`), not from the correction — **but it is in this item's contract half, which is Wren's.** **And the false blocker:** `.factory/work/WI-031.md` says in three places (lines 17-20, 114, 150) that the close path has no test, **but the pin landed at 19:21:40 on 2026-10-21 (`a72eee4`, on `main` by 19:32:27) and the file was committed at `3f1cc2f` at 00:18:17 on 2026-10-22 — four hours forty-six minutes later — carrying a stale observation forward as a live blocker.** **Both files are Wren's, so both corrections are dispatched to her.** **And because she verified her own contract half, the lead verifies these two corrections and the lead accepts WI-031 once they land.** **One file, one live item: `CONTRACTS.md` is live with WI-103, dispatched ahead of this, so the brief says to base the branch on top of WI-103's branch and to stop rather than work around it if it has not landed** |
-| `wi-104-turn-id-contract-2026-10-22` | WI-104 — the published id is not the id the route takes | Wren | — | **OPENED AT 04:50 BY CHIEF, FROM A FINDING IN WI-031'S VERIFICATION, AND DELIBERATELY NOT DISPATCHED.** The defect: `CONTRACTS.md:216-217` says the id the waiting list draws is `` `turn:<execution id>` `` — "the id this route takes" — **and it is not.** The list draws `` `turn:${turn.executionId}` `` (`apps/server/src/api/waiting.ts:126`), the client **strips the prefix itself** (`apps/web/src/components/WaitingList.tsx:279`), the route takes the raw `:id` (`apps/server/src/api/executions.ts:21-22`), and the server looks up the **bare** id (`apps/server/src/modules/executions/service.ts:71`). **A client written to that sentence literally gets "Execution not found".** **Held because `CONTRACTS.md` is one file and one live item at a time, and WI-103's pointer correction is live on it** — and because dispatching into a chat that is busy is refused, so the id would be spent for nothing. **It goes out when WI-103 lands.** The number was read immediately before it was taken: WI-102, WI-103 and WI-105 are taken and WI-104 was in no item file, no dispatch record and no commit |
+| `wi-104-turn-id-contract-2026-10-22` | WI-104 — the published id is not the id the route takes | Wren | — | **OPENED AT 04:50 BY CHIEF, FROM A FINDING IN WI-031'S VERIFICATION, AND DELIBERATELY NOT DISPATCHED.** The defect: `CONTRACTS.md:216-217` says the id the waiting list draws is `` `turn:<execution id>` `` — "the id this route takes" — **and it is not.** The list draws `` `turn:
+{turn.executionId}` `` (`apps/server/src/api/waiting.ts:126`), the client **strips the prefix itself** (`apps/web/src/components/WaitingList.tsx:279`), the route takes the raw `:id` (`apps/server/src/api/executions.ts:21-22`), and the server looks up the **bare** id (`apps/server/src/modules/executions/service.ts:71`). **A client written to that sentence literally gets "Execution not found".** **Held because `CONTRACTS.md` is one file and one live item at a time, and WI-103's pointer correction is live on it** — and because dispatching into a chat that is busy is refused, so the id would be spent for nothing. **It goes out when WI-103 lands.** The number was read immediately before it was taken: WI-102, WI-103 and WI-105 are taken and WI-104 was in no item file, no dispatch record and no commit |
 | `wi-106-record-four-loose-sentences-2026-10-22` | WI-106 — four sentences in the licence record are looser than what they describe | Wren | — | **OPENED AT 05:15 BY CHIEF, FROM THE OBSERVATIONS IN WI-036'S RE-VERIFICATION, AND DELIBERATELY NOT DISPATCHED.** The four: `reads.evidence` says "Every entry carries … the first identifying lines" and **375 of 494 do, 16 carry a field value, 97 carry an identifier, and the 6 first-party entries carry none**; PRODUCT.md §10's "read in place" is true of **391 of 488**; `agpl.familiesRead` carries **12 rows against `distinctLicences: 11`**; and there is **no explicit "packages in this record" number**, so the 500-vs-494 gap is explained in two places. **None of them fails a criterion of WI-036 and the record does not over-claim** — they are the same class the factory keeps finding, so they are numbered rather than left as observations. **Held because WI-103 is live on Wren's queue and a chat serves one turn at a time, so a dispatch now would be refused and the id spent for nothing.** It goes out when WI-103 lands **AND IT WENT OUT AT 05:37, BECAUSE THE HOLD WAS A QUEUE FACT AND NOT A FILE FACT, AND THE QUEUE FACT STOPPED BEING TRUE.** Request id `wi-106-record-four-loose-sentences-2026-10-22`, task `task_fede9dee2ed9`, batch `batch_192b7faefcf4`, queued at Wren. **WI-103 is no longer live on Wren's queue** — its first dispatch died `BUSY` at 05:18 and its second was cancelled by the lead at 05:46 — **so the lane was free.** **And this item never touched `CONTRACTS.md`, which is the file WI-103 and WI-104 hold: it touches `docs/dependency-licences.json` and `PRODUCT.md`. **So the one-file-one-item rule never held this item back, and it went out while the lane was free.** The brief carries the four measurements — `reads.evidence` true of 375 of 494 with 6 first-party entries carrying none, PRODUCT.md §10's “read in place” true of 391 of 488,`agpl.familiesRead` at 12 rows against `distinctLicences: 11`, and no single packages-in-this-record number — **and it names `docs/strategy.md` as out of scope, because that file is live in the peer's unlanded branch.\*\* **The check that would pin the four sentences is named as owed and is Probe's file to write.** |
 | `wi-103-contract-pointers-second-2026-10-22` | WI-103 — the eight pointers into the code file, corrected again | Wren | `task_040837aa9079` | **CANCELLED AT 05:39 BY CHIEF — A SECOND DISPATCH OF ONE ITEM INTO ONE CHAT IS TWO WRITERS ON ONE FILE, AND ITS TITLE SAID “EIGHT” FOR NINE.** The peer session dispatched this item at 05:24, six minutes after the first dispatch died `BUSY`, and before `.factory/work/WI-103.md` existed. **The brief's substance was correct** — the same nine numbers, the same “measure and not to add” rule, the same “report other pointers, do not fix them” — but it instructed Wren to **create the item file**, which the lead had written by 05:30, and it would have put a second writer on `CONTRACTS.md`. **The request id is spent and is not reused.** The measurement the brief carried is not lost: it is in `.factory/work/WI-103.md` and in this ledger. |
 | `wi-103-contract-pointers-repair-2026-10-22` | WI-103 — the nine pointers into the file WI-080 changed, corrected | Wren | `task_9583acd61e3f` | **DISPATCHED AT 05:32 — THE SECOND ATTEMPT, WITH A NEW ID AND A NEW TITLE, BECAUSE THE FIRST ONE'S ID IS SPENT.** Batch `batch_4a931b9276b4`, queued at Wren. **Every number in the brief was re-measured by the lead at `main` = `d777953`, not copied from the verification's report:** `CONTRACTS.md` holds **ten** pointers into `apps/server/src/modules/mcp/server.ts` and **nine are wrong** — `:636` (`:465-481` → `:467-483`), `:638` (`:361` → `:363`), `:639` (`:373-377` → `:375-379`), `:640` (`:382-384` → `:384-386`), `:724` (`:153` → `:155`), `:725` (`:386` → `:388`), `:726` (`:447` → `:449` and `:417` → `:419`), and `:1343` (`:368` → `:395`) — **and one is right** (the `:119` for `memoryOwner`, which sits above the comment). **The ninth is +27 and not +2, because `22ef5ba` moved it to `:393` without updating the citation and WI-080 added the last two lines of the gap, so the brief says measure and do not add.** The brief names the four pointers that are already right — the `:119`, `apps/server/src/api/resources.ts:37`, and `packages/contracts/src/mcp.ts` `:21`, `:11-23`, `:45` — so that they are not “fixed”, and it says to **report any other wrong pointer into that file, not fix it.** **Scope is `CONTRACTS.md` only and only the nine numbers: the code is correct.** The test that pins the nine is named as an acceptance criterion and **is Probe's file to write.** **WI-104 and WI-106 are held behind this item and go out when it lands.** **AND IT WAS CANCELLED BY CHIEF AT 05:46, AND THE ORDER IS NOW NAMED.** The brief's numbers were right for `main` and wrong for the tree that is about to land, so the dispatch was withdrawn before it ran; **the request id is spent and is never reused.** **Measured by the lead:** `git merge-tree --write-tree main origin/wi/106-publish-template-contract` names **one** conflicting file — `.factory/work/WI-106.md`, an add/add on a number and not a code conflict — and `main` has not touched `apps/server/src/modules/mcp/server.ts` since `ceed799`, so **the tree that lands carries that branch's `server.ts` byte for byte, and the branch's numbers are the landed tree's numbers.** The branch's re-citation is correct for its tree (`:532-576` the registration, `:217` `const assertOwnMemory = (`, `:181` `const memoryOwner`, `:450`/`:514`/`:484` the three tools, `:428` the template input) and the branch is **CI green and CodeQL green** at `03362af`. **And the correction on `main` would not only be mis-pointed — it would be wrong: `CONTRACTS.md:639`'s “refuses a call that carries both a spec and a template” is **replaced** on that branch, where `resource.create` **merges** the caller's values into the template's spec (`:446-448`) and passes the template's id and version on (`:458`).** **So: the integration branch lands first, and WI-103's edit is measured on the tree that lands.** `.factory/work/WI-103.md` is written (the peer's measured file, with the lead's note appended) and carries the rule — **read every pointer out of the tree it stands on.** **The next request id is not taken yet**; it is taken when it goes out, after the landing. |
@@ -5234,3 +5236,86 @@ this round. **Queued:** Cog's WI-116 (`task_30fa1c22fa81`), WI-130 (`task_c8d80a
 WI-131 (`task_f57ccf614193`) and WI-132 (`task_5cde5cfe02bf`); Probe's WI-121
 (`task_122e0e2e02bf`) and WI-129 (`task_b433527c33d7`); and the two verdicts still on their
 way to the group and to the peer session. **Ceiling two. Next free number WI-133.**
+
+### 15:05 — WI-133 is claimed: the audit job audits twice, and one word makes it audit once
+
+**WI-133 is claimed, and the claim is on `main` before the word is changed.** The block's
+row and the item file landed in a commit of their own, so the next session that reads
+`main` sees the number taken. **WI-129's claim-first discipline is the reason this item
+did not have to be renumbered**, and the number came from the lead session, which measured
+the defect and offered the fix.
+
+**The defect, measured rather than relayed.** `.github/workflows/ci.yml:94` installs with
+`npm ci --ignore-scripts` — **no `--no-audit`, no `--no-fund`** — and `:99` audits with
+`npm audit --audit-level=high`. `npm ci` audits unless it is told not to, so **the job
+audits twice: once inside the install, at npm's own default level, and once in the step
+the job is named for, at the level the job names.** The first one is the expensive one and
+the one that decides nothing.
+
+**Its three siblings do the same install inside the same budget and pay for it once** —
+`:119`, `:146`, `:171`, all `npm ci --ignore-scripts --no-audit --no-fund`, all inside ten
+or thirty minutes. **The audit job is the only 10-minute job in the file whose install
+does not carry the two flags its siblings carry.** The `build` job (`:38`) audits too, but
+it has a 30-minute budget and runs the whole suite afterwards.
+
+**The duplication is visible in the install's own output**, measured twice in scratch
+directories holding this repository's own `package.json` and `package-lock.json`:
+
+```
+--- npm ci --ignore-scripts ---
+  exit 0 in 11.9s
+  the install itself audited: true
+  tail: … | found 0 vulnerabilities
+
+--- npm ci --ignore-scripts --no-audit --no-fund ---
+  exit 0 in 10.1s
+  the install itself audited: false
+  tail: added 90 packages in 10s
+```
+
+**And the audit does not need the installed tree**: in a directory holding a
+`package-lock.json` and no `node_modules`, `npm audit --audit-level=high` prints _"found 0
+vulnerabilities"_ and exits 0 — the same answer it gives against the installed tree.
+
+**The fix is one word, and the gate does not weaken.**
+
+```diff
+-        run: npm ci --ignore-scripts
++        run: npm ci --ignore-scripts --no-audit --no-fund
+```
+
+The explicit audit at `:99` still runs and still fails the job on a high-severity finding.
+**The job audits once, at the level the job names, instead of twice at two levels.**
+
+**What this item does not claim, because it was not measured.** The local measurement is
+on a **warm cache**: 11.9s against 10.1s. **That is not CI's cost** — CI installs cold,
+and the number that matters is the one the timed-out run measured, which this item did
+not reproduce. **So the item does not claim to have found the timeout's exact cause. It
+claims to have removed the only difference between the job that ran out of time and the
+three jobs that did not.** If the flake recurs, the next lever is known: the check-run's
+own `started_at` → `completed_at` on `ccc3564`, and then the stronger fix.
+
+**The stronger fix is measured and is deliberately not in this item.** Deleting the
+install outright removes the failure mode rather than one of its two audits — and it
+changes the shape of a vulnerability gate, so **it waits for the owner's word.** The
+one-word change buys the same headroom without changing what the job is.
+
+**And the peer session's measurement stands.** It found the duplication; this session
+re-measured it rather than relaying it, and landed it. **The floor was saturated** —
+eight items queued and two running — **and the fix was one word, so queueing it behind
+all of them would have left the flake sitting in front of every landing for the rest of
+the window.** The lead session offered the item; it was taken, and it can be handed back.
+
+**WI-134 is claimed next, and the number space is worth saying out loud:** the domain's
+dependency edge to the adapters package. `apps/server/src/modules/agents/service.ts:13`
+imports `type { AdapterRegistry }` from `@personal-os/agent-adapters` — the package that
+holds every concrete adapter and `createDefaultRegistry`. It is type-only today and the
+compiler sees nothing, but **the domain names a type owned by the implementation package,
+and deleting the word `type` would put every adapter inside the domain with no
+complaint.** ADR 0004 says "the domain never mentions a specific provider" and nothing
+checks it; `apps/worker/package.json` also declares `@personal-os/agent-adapters` and no
+worker source file imports it. **So: the shapes the domain needs move into
+`@personal-os/contracts`, next to `AgentAdapter` which already lives there, and a check
+fails if a domain file ever reaches for the adapters package again.**
+
+**The floor at 15:05.** **Ceiling two. Next free number WI-134.**
