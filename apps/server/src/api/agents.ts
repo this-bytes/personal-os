@@ -51,6 +51,20 @@ const updateSchema = z.object({
   secrets: z.record(z.string()).optional(),
   /** The MCP tools this connection may call. */
   toolGrants: toolGrantListSchema.optional(),
+  /**
+   * The owner's change to the grant.
+   *
+   * `enable` is what the owner turned on and `disable` is what they turned
+   * off. The server applies the change to the grant as it is now, so a
+   * widening another writer committed after the client read the grant is not
+   * turned back by a save that never touched it.
+   */
+  toolGrantChange: z
+    .object({
+      enable: toolGrantListSchema.optional(),
+      disable: toolGrantListSchema.optional(),
+    })
+    .optional(),
   /** The base persona. `null` clears it. */
   persona: personaSchema.nullable().optional(),
 });
