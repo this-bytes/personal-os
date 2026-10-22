@@ -430,9 +430,9 @@ adapter holds nothing to release. No capability flag changed meaning:
 `streaming: false` still means the protocol cannot stream one. The refusal is a
 failure of the _connection_, not of the adapter's abilities.
 
-This entry is the contract for **WI-145**, and the code implements it — the
-lifecycle is `packages/agent-adapters/src/lifecycle.ts`, the refusal is in each
-adapter, and `packages/agent-adapters/src/__tests__/lifecycle.test.ts` drives
+This entry is the contract for **WI-145**, and the code implements it — as of
+`cc3f2c4` — the lifecycle is `packages/agent-adapters/src/lifecycle.ts`, the
+refusal is in each adapter, and `packages/agent-adapters/src/__tests__/lifecycle.test.ts` drives
 the real fixtures: a real MCP server over stdio, a real ACP agent and real child
 processes. The slice's own record is
 [docs/contract-adapter-lifecycle.md](docs/contract-adapter-lifecycle.md).
