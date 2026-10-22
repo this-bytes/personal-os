@@ -1342,6 +1342,116 @@ Execution attempts, external references and status history are separate records.
 This leaves an opening for more advanced factory behaviour without designing a
 comprehensive issue tracker today.
 
+### Goals, dependencies and progress
+
+A goal is the durable unit of intent, and it is now more than a label on a task:
+the owner can open a goal and see the work under it, and see its shape as
+counts.
+
+**A task carries what it waits on.** `factoryTaskSchema` gains one optional
+field, so a task written before the column existed reads back as a task that
+waits on nothing — which is what it recorded.
+
+```ts
+export const factoryTaskSchema = z.object({
+  // ...every existing field, unchanged...
+  /** The tasks this task waits on. A task never waits on itself. */
+  dependsOnTaskIds: z.array(idSchema).optional(),
+});
+```
+
+The direction is the task that waits to the task it waits on. **A task must
+never wait on itself, directly or through a chain**: the work would be waiting
+for work that is waiting for it, and nothing would ever move again. A write that
+would close such a loop is refused with `bad_request` and the graph is left as
+it was.
+
+**The dependency edge** carries what the board needs to name what it is waiting
+for, without a second read.
+
+```ts
+export const taskDependencySchema = z.object({
+  taskId: idSchema; // the task that is waiting
+  dependsOnTaskId: idSchema; // the task it waits on
+  dependsOnTitle: z.string(); // what the waited-on task is called
+  dependsOnStatus: taskStatusSchema; // the status it is in
+  satisfied: z.boolean(); // done or cancelled: out of the way
+});
+```
+
+**The goal rollup is counts, never a ratio.** A counter is a count and never a
+ratio: the band says how many, and a share is only shown when there is something
+to divide by.
+
+```ts
+export const goalRollupSchema = z.object({
+  goalId: idSchema,
+  total: z.number().int().min(0),
+  waitingOnOwner: z.number().int().min(0), // in review, or unknown
+  waitingOnDependency: z.number().int().min(0),
+  byStatus: z.object({
+    open: z.number().int().min(0),
+    active: z.number().int().min(0),
+    blocked: z.number().int().min(0),
+    review: z.number().int().min(0),
+    done: z.number().int().min(0),
+    cancelled: z.number().int().min(0),
+    unknown: z.number().int().min(0),
+  }),
+});
+```
+
+The work waiting on the owner is counted apart from the work merely under way:
+a task in `review` waits for an acceptance decision, and a task whose outcome
+could not be confirmed waits for the owner to say what happened.
+
+**The goal view** is the goal, its rollup, its tasks and its dependencies.
+
+```ts
+export const goalViewSchema = z.object({
+  goal: goalSchema,
+  rollup: goalRollupSchema,
+  tasks: z.array(factoryTaskSchema),
+  dependencies: z.array(taskDependencySchema),
+});
+```
+
+Three reads carry this, all behind the session and all answering with the
+shared error envelope:
+
+| Method | Path                      | Answers                                                    |
+| ------ | ------------------------- | ---------------------------------------------------------- |
+| `GET`  | `/api/goals/overview`     | `{ goals, rollups }` — the goals and the counts under each |
+| `GET`  | `/api/goals/:id/view`     | the goal view: goal, rollup, tasks and dependencies        |
+| `GET`  | `/api/tasks/dependencies` | `{ dependencies }` — what the workspace's tasks wait on    |
+
+`PATCH /api/tasks/:id` accepts `dependsOnTaskIds`, and the list replaces the
+task's dependencies. A dependency on a task that does not exist is refused with
+`not_found`; a dependency that would close a loop is refused with
+`bad_request`. The task's revision moves with the change, so the existing
+`expectedRevision` guard applies to it as it does to every other field.
+
+**The acceptance rule is untouched.** A task moves to `review`, never straight
+to `done`. Only `POST /api/tasks/:id/accept` closes a task, and a rejection
+sends the work back with the reason.
+
+**Migration.** `apps/server/drizzle/0011_nice_leopardon.sql` adds one nullable
+column and drops nothing: `ALTER TABLE tasks ADD depends_on_task_ids text;`. No
+row is rewritten and no data is dropped. The generated snapshot is committed
+with the SQL.
+
+**The limits, stated plainly.** Dependencies are set after the task exists — a
+task is made, and then it is told what it waits on. The wait is a fact about
+the work, not a rule: a task that waits on a task that is not out of the way is
+shown as waiting, and nothing stops an agent from being handed it anyway. The
+counts are of the tasks, not of the effort, and a goal's shape is read at the
+moment it is asked for, so nothing can drift out of date.
+
+This entry is the contract for **WI-143**, and the code implements it — as of
+`4dc105b` — the shapes are in `packages/contracts/src/factory.ts`, the rules are
+pure functions in `apps/server/src/modules/factory/graph.ts`, and the slice's own
+record is [docs/contract-factory-goals.md](docs/contract-factory-goals.md).
+
 ### Autonomy policy
 
 An autonomy policy carries at least execution limits, allowed actions and approval
@@ -2124,8 +2234,11 @@ is not left deleting the database.
 | `POST`             | `/api/resources/:id/execute`                         | Execute a resource.                                                                     |
 | `GET`              | `/api/resources/:id/inspect`                         | Validate without changing.                                                              |
 | `GET/POST`         | `/api/goals`                                         | List and create goals.                                                                  |
+| `GET`              | `/api/goals/overview`                                | The goals and the counts under each.                                                    |
 | `GET`              | `/api/goals/:id`                                     | Read a goal.                                                                            |
+| `GET`              | `/api/goals/:id/view`                                | A goal with its work, its dependencies and its shape.                                   |
 | `GET/POST`         | `/api/tasks`                                         | List and create tasks.                                                                  |
+| `GET`              | `/api/tasks/dependencies`                            | What the workspace's tasks wait on.                                                     |
 | `GET/PATCH`        | `/api/tasks/:id`                                     | Read and update a task. `PATCH` cannot set `done`; it also enforces `expectedRevision`. |
 | `POST`             | `/api/tasks/:id/assign`                              | Assign a task to an agent.                                                              |
 | `POST`             | `/api/tasks/:id/accept`                              | Record an acceptance decision.                                                          |
@@ -2345,7 +2458,7 @@ only.
 
 **Every kind carries an author now.** The `automation` and `task` kinds keep their
 author on the row — `created_by` on both tables
-(`apps/server/src/db/schema.ts:358`, `apps/server/src/db/schema.ts:444`) — and the
+(`apps/server/src/db/schema.ts:360`, `apps/server/src/db/schema.ts:446`) — and the
 projections read it
 (`apps/server/src/modules/resources/service.ts:234`,
 `apps/server/src/modules/resources/service.ts:365`). An agent-created
