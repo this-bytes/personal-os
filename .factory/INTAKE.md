@@ -94,8 +94,10 @@ free number above the highest taken.**
 | WI-121 | The decision surface carries what an agent is blocked on                                                                                                                                                                          | peer   |
 | WI-122 | The contract note's three citations are held by a gate that can see them drift                                                                                                                                                    | lead   |
 | WI-123 | The licence record's four corrected sentences are held by a check that can see them drift                                                                                                                                         | lead   |
+| WI-124 | The mode's meaning is settled — `manual` does not gate delegation                                                                                                                                                                 | worker |
+| WI-125 | Publish `approval.decided`, so a decided approval can leave the waiting list                                                                                                                                                      | worker |
 
-**The next free number is WI-124.**
+**The next free number is WI-126.**
 
 **WI-118 was claimed twice, and this is the record that kept it.** The lead
 opened this session's mode item as WI-113 at 07:50, yielded it when the
@@ -4355,3 +4357,69 @@ lane, and the recommendation is unchanged.**
 **Queued:** Cog's WI-122 verification (`task_d374c36981e7`), Cog's WI-123 verification
 (`task_017a543cd28d`), Probe's WI-116 (`task_9a4337f73e61`). **Ceiling two. Next free
 number WI-124.**
+
+## 2026-10-22 11:55 — Chief: a number was taken twice and the owning session already renumbered it; WI-121 has produced no artefact in two hours; and the owner's `approval.decided` question has an implementation waiting
+
+**One — a number was taken twice, and the collision is measured, not suspected.**
+`origin/wi/122-mode-is-settled` (pushed 10:34) carries a `.factory/work/WI-122.md` whose title
+is **"The mode's meaning is settled: `manual` does not gate delegation"**, and it claims the
+number in its own words: _"WI-122 is the number this item took. It is the next free number in
+the block published in `.factory/INTAKE.md`, and it was read immediately before it was
+taken."_ **Meanwhile `main`'s WI-122 is the note pin** — _"The contract note's three citations
+are held by a gate that can see them drift"_ — taken by the other Chief session at 10:37.
+**Two items, one number, both taken off the same block.** **The owning session found it and
+renumbered before landing: its newer branch `origin/wi/124-mode-is-settled` carries
+`WI-124.md` ("the mode's meaning is settled") and `WI-125.md` ("Publish `approval.decided`"),
+and its block says "The next free number is WI-126."** **So the collision is handled at the
+source, and the one thing left was the index: `main`'s block still said WI-124 was free
+while WI-124 and WI-125 were taken on a published branch. The block now carries both rows and
+says WI-126.** _A block that disagrees with its own ledger is a guess, and the guess is what
+both sessions read before taking a number._
+
+**Two — and the stale branch is a hazard, named.** `origin/wi/122-mode-is-settled` still
+carries the colliding `WI-122.md` **and the code** (the `approval.decided` implementation).
+**Merging it would overwrite `main`'s WI-122.md — the pin's own record — with the mode item's
+file.** The branch is not deleted: **deleting a branch is the owner's word, not the lead's.**
+**The safe landing is the renumbered branch, and the stale one should not be merged.** That
+branch also holds `CONTRACTS.md` and `PRODUCT.md`, so **WI-114's eleven pointers and WI-113's
+contract half both wait for it to land — not merely for Wren's lane.** That is the sharper
+form of the ordering, and it is measured.
+
+**Three — the owner's `approval.decided` question has an implementation, unlanded.** The item
+**`WI-125` — "Publish `approval.decided`, so a decided approval can leave the waiting
+list"** — is on the renumbered branch: `packages/contracts/src/approvals.ts` and
+`packages/contracts/src/events.ts` carry the event, `apps/web/src/lib/events.ts` carries it
+to the client, and `apps/server/src/__tests__/approval-decided-event.test.ts` is a new test
+for it. **The branch is 24 files, +2532/−198.** **On `main` today, `git grep
+'approval\.decided' main -- apps packages` returns two test lines about `approval.decidedBy`
+and nothing else: the event itself is not published.** **So the decision C-16/C-22 asks for
+has been implemented by a session that did not have the answer, and it is waiting — not for
+the owner's word alone, but for its own verification.** **This lead did not land it: the
+branch is the other Chief session's live item, it is being worked on now, and `CONTRACTS.md`
+is on it.**
+
+**Four — WI-121 has produced no artefact in two hours, and that is a stall, not a long turn.**
+Cog's turn began at 09:49:33 and its chat message has been `streaming` since; her session's
+last update was **10:09:33**, ninety minutes ago. **Measured: no worktree for WI-121 exists
+among the forty-nine in `G:\code\personal-os-worktrees`, no branch carries 121, and
+`git status` in the main tree is clean.** **There is no artefact of the work at all — not a
+commit, not an uncommitted file.** **The rule says never to cancel on elapsed time alone, and
+this lead is not cancelling it: five legitimate tasks on 2026-10-21 ran over two hours and
+every one finished.** **But this is not elapsed time alone — there is nothing to be slow
+about.** The watchdog has it, and the restart remains the repair. **The cheapest moment is
+now: that turn has held a slot for two hours, and the slot it holds is the one the
+verification queue needs.**
+
+**Five — the floor at 11:55.** **Running:** Cog's WI-121 (`task_bbf11f83be2b`, streaming, no
+artefact). **Queued:** Cog's WI-122 verification (`task_d374c36981e7`) and **Cog's WI-123
+verification (`task_017a543cd28d`) — which the other Chief session dispatched at 11:25, so
+the gap this session named at 11:22 is closed.** **Probe's session is writing WI-116's pin**
+in `G:\code\personal-os-worktrees\116-strategy-rule-pin`, and her WI-123 dispatch was
+cancelled at 11:23 because that work had already landed. **The other Chief session is working
+WI-124 and WI-117** (branches at 11:31 and 11:32). **Ceiling two. Next free number WI-126.**
+
+**Six — the one word the owner owes, and it is now three things.**
+`miniapp restart minimax-bot` is the repair for the two chat lanes that refuse and for Cog's
+stalled turn; **`approval.decided` (C-16/C-22) has an implementation waiting and needs the
+owner's word, not a session's guess**; and **reversibility (Q4) is still unanswered, with
+WI-035 carrying the work.**
