@@ -186,6 +186,69 @@
           "value": "export const approvalEvidenceSchema"
         }
       ]
+    },
+    {
+      "id": "the-bot-mode-wi-144",
+      "section": "The bot mode",
+      "note": "WI-144, and the code implements it",
+      "claim": "implemented",
+      "why": "WI-144's bot mode: the bot and its scope, the dispatch tool, the delegated task, the delegation tree and the three delegation events.",
+      "expect": [
+        {
+          "kind": "present-pattern",
+          "path": "packages/contracts/src/bot.ts",
+          "value": "export const botSchema"
+        },
+        {
+          "kind": "present-pattern",
+          "path": "packages/contracts/src/bot.ts",
+          "value": "export const delegatedTaskSchema"
+        },
+        {
+          "kind": "present-text",
+          "path": "packages/contracts/src/events.ts",
+          "value": "delegation.consumed"
+        },
+        {
+          "kind": "present-text",
+          "path": "packages/contracts/src/mcp.ts",
+          "value": "'bot.dispatch'"
+        },
+        {
+          "kind": "present-text",
+          "path": "apps/server/src/api/conversations.ts",
+          "value": "/api/conversations/:id/bots"
+        },
+        {
+          "kind": "present-pattern",
+          "path": "apps/server/src/modules/conversations/bots.ts",
+          "value": "export function nextDelegatedStatus"
+        }
+      ]
+    },
+    {
+      "id": "the-routes-and-the-events-wi-055",
+      "section": "The routes and the events",
+      "note": "WI-055, and it is partly implemented",
+      "claim": "partial",
+      "why": "WI-055's route table and its events: the delegation half is built, the turn half is not.",
+      "expect": [
+        {
+          "kind": "present-text",
+          "path": "packages/contracts/src/events.ts",
+          "value": "delegation.started"
+        },
+        {
+          "kind": "absent-text",
+          "path": "packages/contracts/src/events.ts",
+          "value": "turn.committed"
+        },
+        {
+          "kind": "absent-text",
+          "path": "apps/server/src/api/conversations.ts",
+          "value": "/api/conversations/:id/fork"
+        }
+      ]
     }
   ]
 }

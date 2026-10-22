@@ -86,9 +86,9 @@ export const delegatedTaskSchema = z.object({
   /** The reference to the output: the message the worker answered with. */
   outputRef: z.string().optional(),
   /** When the result reached the parent. */
-  deliveredAt: z.string().optional(),
+  deliveredAt: isoDateSchema.optional(),
   /** The consumption candidate, recorded when the parent read the output. */
-  consumedAt: z.string().optional(),
+  consumedAt: isoDateSchema.optional(),
 
   // --- the bot mode's additions ---
 

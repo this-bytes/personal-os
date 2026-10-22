@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { idSchema, isoDateSchema } from './common.js';
+import { delegatedTaskSchema } from './bot.js';
 
 /**
  * The shapes a rich chat client needs.
@@ -66,23 +67,11 @@ export type TurnCapabilityView = z.infer<typeof turnCapabilityViewSchema>;
 /**
  * One piece of delegated work.
  *
- * Delivery is not consumption: `deliveredAt` records that the result reached
- * the parent, and `consumedAt` records that the parent read it and committed
- * the turn that read it.
+ * The shape is published in `./bot.js`, where the bot mode added its own
+ * fields to the shape the contract already had. It is declared once: a turn's
+ * delegation tree and a handoff are the same record, and two spellings of it
+ * would be two truths.
  */
-export const delegatedTaskSchema = z.object({
-  id: idSchema,
-  /** The turn that delegated the work. */
-  parentTurnId: idSchema,
-  agentConnectionId: idSchema,
-  status: z.enum(['queued', 'running', 'stopping', 'succeeded', 'failed', 'cancelled', 'lost']),
-  outputRef: z.string().optional(),
-  /** When the result reached the parent. */
-  deliveredAt: isoDateSchema.optional(),
-  /** The consumption candidate, recorded when the parent read the output. */
-  consumedAt: isoDateSchema.optional(),
-});
-export type DelegatedTask = z.infer<typeof delegatedTaskSchema>;
 
 /** What kind of thing an activity record describes. */
 export const chatActivityKindSchema = z.enum([
@@ -234,6 +223,22 @@ export const turnViewSchema = z.object({
 export type TurnView = z.infer<typeof turnViewSchema>;
 
 /**
+ * The delegation tree of a turn: the work it handed over, and the work that
+ * handed over to it.
+ *
+ * A turn that delegated work carries that work, and a turn that was delegated
+ * work carries the turn that delegated it. There is no second route for the
+ * same turn.
+ */
+export const delegationTreeSchema = z.object({
+  /** The delegation that handed this turn its work, when it was delegated. */
+  parent: delegatedTaskSchema.optional(),
+  /** The delegations this turn handed over. */
+  children: z.array(delegatedTaskSchema),
+});
+export type DelegationTree = z.infer<typeof delegationTreeSchema>;
+
+/**
  * The read model behind a turn: the turn itself, what it did, and what the
  * owner may do about it.
  */
@@ -242,6 +247,30 @@ export const chatActivityReadModelSchema = z.object({
   /** The activity, in the order it happened. */
   activities: z.array(chatActivitySchema),
   run: runControlSchema,
+  /**
+   * The turn's own row.
+   *
+   * The route publishes the turn, and the row is what the turn *is* in the
+   * database. A reader that wants the raw execution has it here rather than
+   * looking for it under another name.
+   */
+  execution: z
+    .object({
+      id: idSchema,
+      workspaceId: idSchema,
+      conversationId: idSchema.nullable(),
+      taskId: idSchema.nullable(),
+      agentConnectionId: idSchema.nullable(),
+      status: z.string(),
+      error: z.string().nullable(),
+      spendUnits: z.number().int().min(0),
+      startedAt: z.string().nullable(),
+      finishedAt: z.string().nullable(),
+      createdAt: z.string(),
+    })
+    .optional(),
+  /** The turn's delegation tree, when it has one. */
+  delegationTree: delegationTreeSchema.nullable().optional(),
 });
 export type ChatActivityReadModel = z.infer<typeof chatActivityReadModelSchema>;
 

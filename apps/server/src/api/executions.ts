@@ -1,6 +1,11 @@
 import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
-import type { ChatActivityReadModel, RunControl, StopTurnResult } from '@personal-os/contracts';
+import type {
+  ChatActivityReadModel,
+  DelegatedTask,
+  RunControl,
+  StopTurnResult,
+} from '@personal-os/contracts';
 import { audit, notFound, parseBody, requireAuth } from './helpers.js';
 import * as activity from '../modules/executions/activity.js';
 
@@ -18,30 +23,6 @@ const resolveSchema = z.object({
  * only for the owner: the worker stopped and could not say how the turn ended.
  */
 export function registerExecutionRoutes(app: FastifyInstance): void {
-  /**
-   * The turn: its status and the work it handed over.
-   *
-   * The delegation tree is part of the turn, not a second thing to look up
-   * under another name: a turn that delegated work carries that work, and a
-   * turn that was delegated work carries the turn that delegated it.
-   *
-   * The capability view and the committed revision are absent rather than
-   * empty. They are published, and they are not implemented yet; an empty
-   * view would say the agent had no tools, which is a different claim.
-   */
-  app.get('/api/executions/:id', { preHandler: requireAuth }, async (request) => {
-    const { id } = request.params as { id: string };
-    const execution = app.services.executions.get(id);
-    const tree = app.services.bots.delegationTree(id);
-
-    return {
-      execution,
-      capabilityView: null,
-      committedRevision: null,
-      delegationTree: tree,
-    };
-  });
-
   app.post('/api/executions/:id/resolve', { preHandler: requireAuth }, async (request) => {
     const { id } = request.params as { id: string };
     const body = parseBody(resolveSchema, request.body);
@@ -96,6 +77,12 @@ export function registerExecutionRoutes(app: FastifyInstance): void {
    * contract publishes: the turn's status, its capability view, its
    * delegation tree and its committed revision, with the activity the turn
    * produced beside them.
+   *
+   * **The delegation tree is part of the turn, not a second thing to look up
+   * under another name**: a turn that delegated work carries that work, and a
+   * turn that was delegated work carries the turn that delegated it. The
+   * capability view and the committed revision are absent rather than empty;
+   * they are published, and they are not implemented yet.
    */
   app.get('/api/executions/:id', { preHandler: requireAuth }, async (request) => {
     const { id } = request.params as { id: string };
@@ -117,6 +104,8 @@ export function registerExecutionRoutes(app: FastifyInstance): void {
       canSteer: false,
     });
 
+    const tree = app.services.bots.delegationTree(id);
+
     const readModel: ChatActivityReadModel = {
       turn: {
         id: turn.id,
@@ -127,15 +116,20 @@ export function registerExecutionRoutes(app: FastifyInstance): void {
         spendUnits: turn.spendUnits,
         startedAt: turn.startedAt,
         finishedAt: turn.finishedAt,
-        // The capability view and the delegation tree are reported as absent
-        // rather than as empty. An empty view would say the agent had no
-        // tools, which is a different claim.
         capabilityView: null,
-        delegatedTasks: null,
+        // The work this turn handed over, and the work that handed over to it.
+        delegatedTasks:
+          tree.parent || tree.children.length > 0
+            ? [tree.parent, ...tree.children].filter(
+                (task): task is DelegatedTask => task !== undefined,
+              )
+            : null,
         committedRevision: null,
       },
       activities,
       run,
+      execution: app.services.executions.get(id),
+      delegationTree: tree,
     };
 
     return readModel;

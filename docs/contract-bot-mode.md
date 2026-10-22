@@ -374,6 +374,13 @@ integration owner re-points them from the right-hand column to the left-hand one
 The numbers are the lines in `CONTRACTS.md` points at **today**, and the lines
 the same code sits on **after** this slice.
 
+> **Read the table as the slice's own branch.** The lines on the right were
+> computed against this slice alone. The integration owner re-pointed the
+> contract against the _merged_ tree, where the chat surface's slice had already
+> moved some of the same lines, so a few of the right-hand numbers here differ
+> from what `CONTRACTS.md` now says. The contract is the truth about where the
+> code is; `npx tsx scripts/verify-contract-pointers.ts` proves it.
+
 | File                                                | Current line | Line after this slice |
 | --------------------------------------------------- | ------------ | --------------------- |
 | `apps/server/src/api/executions.ts`                 | 21           | 45                    |
@@ -427,6 +434,6 @@ The two new mutating routes are `POST /api/conversations/:id/bots` and
 at the route level. The three routes that audit from the service layer are
 unchanged, and so is the claim that **no** mutating route writes none.
 
-The route table in `CONTRACTS.md` also grows two rows (the two `POST` routes
-above; `GET /api/conversations/:id/bots` and `GET /api/executions/:id` are read
-routes and are published separately).
+The route table in `CONTRACTS.md` also grows: the four routes in section 3 that
+are not there yet. Only the two `POST` ones are mutating, and only those two
+move the count above.

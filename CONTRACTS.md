@@ -172,7 +172,7 @@ The product does not know what happened; the owner does, and the route records
 what they said. `note` is optional, and it is the owner's own words.
 
 **The note is capped at 2,000 characters**, and the cap is the code's
-(`apps/server/src/api/executions.ts:9`). **A longer note is refused, not
+(`apps/server/src/api/executions.ts:16`). **A longer note is refused, not
 shortened**: the request fails validation with `validation_failed` and HTTP 422,
 carrying the same error envelope as any other validation failure
 ([Error envelope](#error-envelope)). The execution stays in `unknown` —
@@ -196,7 +196,7 @@ expects the execution's word on the reply's word will be wrong.
 **The reply carries the server's own sentence.** `detail` is the account the server
 produced of how the turn ended, and it travels on the reply: the messages of that
 execution carry it when the execution is settled
-(`apps/server/src/modules/executions/service.ts:108-111`, and
+(`apps/server/src/modules/executions/service.ts:147-150`, and
 `apps/server/src/modules/approvals/resume.ts:197-201` for the turn that is closed
 rather than continued). **A client shows it as it is given**
 (`apps/web/src/components/ChatMessageList.tsx:136`): the account of what happened
@@ -236,14 +236,14 @@ This entry is the contract for **WI-031**, and the code implements it — as of
 `414996c`, which landed twenty-seven minutes after the contract itself
 (`363428e`), and `3dd490b` brought the route to the published shape after it.
 The route is `POST /api/executions/:id/resolve`, at
-`apps/server/src/api/executions.ts:21`, and it is registered at
-`apps/server/src/app.ts:227`. **Only the owner may call it**, under the same
+`apps/server/src/api/executions.ts:26`, and it is registered at
+`apps/server/src/app.ts:248`. **Only the owner may call it**, under the same
 authentication as every other owner-facing route
 (`apps/server/src/api/helpers.ts:14-16`). **The route's own writer is the
 executions service**, which writes the execution's status
-(`apps/server/src/modules/executions/service.ts:93-95`) and the reply's status
-(`apps/server/src/modules/executions/service.ts:108-111`) together; the
-route calls it at `apps/server/src/api/executions.ts:25`. **There are two
+(`apps/server/src/modules/executions/service.ts:132-134`) and the reply's status
+(`apps/server/src/modules/executions/service.ts:147-150`) together; the
+route calls it at `apps/server/src/api/executions.ts:30`. **There are two
 writers of an execution's outcome, not one**: the other is `resolveExecution`
 (`apps/server/src/modules/approvals/service.ts:163`), which the approval
 decision path calls (`apps/server/src/modules/approvals/resume.ts:159`) and
@@ -1011,16 +1011,16 @@ resource came from; the tree carries all of it. `resourceTemplateGuideSchema` is
 `packages/contracts/src/resource.ts:157` and
 `packages/contracts/src/resource.ts:161`. `resource.template.list` and
 `resource.template.get` are both published tool names — they are in `mcpToolNames`
-at `packages/contracts/src/mcp.ts:21-22`, inside the range
-`packages/contracts/src/mcp.ts:10-26`, and in the
-default agent grant list at `packages/contracts/src/mcp.ts:47-48`. The server
+at `packages/contracts/src/mcp.ts:28-29`, inside the range
+`packages/contracts/src/mcp.ts:10-33`, and in the
+default agent grant list at `packages/contracts/src/mcp.ts:54-55`. The server
 registers both tools only where
 the connection is granted them, the way every other tool on that surface is
-(`apps/server/src/modules/mcp/server.ts:533-577`). `resource.create` takes the
-`template` input at `apps/server/src/modules/mcp/server.ts:429`, merges the caller's
+(`apps/server/src/modules/mcp/server.ts:556-624`). `resource.create` takes the
+`template` input at `apps/server/src/modules/mcp/server.ts:509`, merges the caller's
 values into the template's spec at
-`apps/server/src/modules/mcp/server.ts:447-449`, and passes the template's id and
-version on at `apps/server/src/modules/mcp/server.ts:459`. The merge rules
+`apps/server/src/modules/mcp/server.ts:532-534`, and passes the template's id and
+version on at `apps/server/src/modules/mcp/server.ts:544`. The merge rules
 themselves are at `apps/server/src/modules/resources/templates.ts:509-522`, and the
 resource records them at
 `apps/server/src/modules/resources/service.ts:191-192` and
@@ -1148,9 +1148,9 @@ is one call — `assertOwnMemory` at
 `apps/server/src/modules/mcp/server.ts:240`, with `memoryOwner` at
 `apps/server/src/modules/mcp/server.ts:204` — and it
 answers the same way for the three resource tools: `resource.create` at
-`apps/server/src/modules/mcp/server.ts:482`,
-`resource.update` at `apps/server/src/modules/mcp/server.ts:551` and `resource.get`
-at `apps/server/src/modules/mcp/server.ts:516`. A memory's owner is
+`apps/server/src/modules/mcp/server.ts:536`,
+`resource.update` at `apps/server/src/modules/mcp/server.ts:605` and `resource.get`
+at `apps/server/src/modules/mcp/server.ts:570`. A memory's owner is
 `memoryOwner`'s answer, and an agent that is not that owner is refused with
 `forbidden` and the message "An agent may only reach its own memory."
 
@@ -1173,6 +1173,7 @@ external agents can discover and operate them.
 | `workspace.list`         | List the workspaces available to the caller.            |
 | `conversation.read`      | Read a conversation with its participants and messages. |
 | `conversation.post`      | Post a message to a conversation.                       |
+| `bot.dispatch`           | Hand work to another agent, and take its answer back.   |
 | `agent.list`             | List the agent connections in a workspace.              |
 | `task.create`            | Create a factory task.                                  |
 | `task.update`            | Update a factory task.                                  |
@@ -1196,7 +1197,7 @@ granted. **An ungranted tool is not registered at all**, so it does not appear i
 
 **`autonomy.read` is in the default grant list, so every agent connection gets it.**
 A connection with no explicit grants runs on the default set
-(`packages/contracts/src/mcp.ts:37-51`), and that set carries `autonomy.read`: an
+(`packages/contracts/src/mcp.ts:44-59`), and that set carries `autonomy.read`: an
 agent can read the policy that governs it without the owner granting anything else.
 A connection whose grants were narrowed explicitly keeps the list it was given — the
 tool is not added to a stored list. The owner has it too, because the owner's grant
@@ -1218,7 +1219,7 @@ that cannot see why it was refused cannot do anything sensible about it
 
 **`resource.template.get` is in the default grant list, so every agent connection
 gets it.** The same default set carries it beside `resource.template.list`
-(`packages/contracts/src/mcp.ts:47-48`): an agent can read a template's guide — what
+(`packages/contracts/src/mcp.ts:54-55`): an agent can read a template's guide — what
 a good one of that kind is, which fields it must set, and what a reader would get
 wrong — without the owner granting anything else. A connection whose grants were
 narrowed explicitly keeps the list it was given, and the owner has it too, because
@@ -1497,9 +1498,9 @@ be told apart from the stored default. See
 
 **The limits, the allowed actions and the approvals are enforced.** The worker holds
 a turn to the effective policy: the chain's turn count
-(`apps/worker/src/executor.ts:1426`) and its spend
-(`apps/worker/src/executor.ts:1433`), and the workspace's spend for the day
-(`apps/worker/src/executor.ts:1440`), before the turn starts; the policy's duration
+(`apps/worker/src/executor.ts:1565`) and its spend
+(`apps/worker/src/executor.ts:1572`), and the workspace's spend for the day
+(`apps/worker/src/executor.ts:1579`), before the turn starts; the policy's duration
 limit caps the turn while it runs, and every action the agent announces is checked
 against what the policy allows. The MCP surface refuses an action the policy does not
 allow, and one the policy wants the owner to approve until the owner has decided. A
@@ -1508,8 +1509,8 @@ truncated.
 
 **A daily cap is a cap on the workspace.** The workspace's spend for the day is the
 sum of the spend units on the executions of that workspace since 00:00 UTC
-(`apps/worker/src/executor.ts:1481-1491`,
-`apps/worker/src/executor.ts:1482-1488`), and it is the same day for every workspace —
+(`apps/worker/src/executor.ts:1620-1630`,
+`apps/worker/src/executor.ts:1624-1629`), and it is the same day for every workspace —
 the system stores ISO timestamps everywhere and has no per-workspace timezone. A daily
 cap of zero is no cap, as it is for the chain's spend limit. The cap applies across
 the workspace's conversations and goals, and not per chain, which is the whole
@@ -1518,14 +1519,14 @@ difference between a daily cap and `maxSpendUnits`.
 **A cap is only as good as the number it is measured against.** The daily cap is
 measured against the spend units recorded on the executions, and a turn's cost is
 one spend unit — the measure the product already has
-(`apps/server/src/modules/conversations/routing.ts:306`). **The cost is recorded
+(`apps/server/src/modules/conversations/routing.ts:332`). **The cost is recorded
 against the execution when the turn ends**: the worker writes one unit for an
 agent turn and none for a turn that never reached the agent
-(`apps/worker/src/executor.ts:892-899`, `apps/worker/src/executor.ts:1186-1191`).
+(`apps/worker/src/executor.ts:1033`, `apps/worker/src/executor.ts:1330`).
 **The row is created with no spend units**, because the cost is not known until
-the turn has run (`apps/server/src/modules/conversations/dispatch.ts:171`,
-`apps/server/src/modules/factory/service.ts:372`), and the column defaults to zero
-(`apps/server/src/db/schema.ts:259`). **So the workspace's spend for the day is
+the turn has run (`apps/server/src/modules/conversations/dispatch.ts:180`,
+`apps/server/src/modules/factory/service.ts:469`), and the column defaults to zero
+(`apps/server/src/db/schema.ts:261`). **So the workspace's spend for the day is
 the sum of what its turns actually cost, and the cap bites.**
 
 **The mode is resolved, readable, and enforced nowhere.** It is carried through the
@@ -1599,8 +1600,8 @@ supports, and the capability to do it is already modelled and negotiated.
 
 This entry is the contract for **WI-007**, and the code implements it — as of
 `5f019b9`. `resumeSession` is implemented at
-`packages/agent-adapters/src/acp.ts:213` and called at
-`apps/worker/src/executor.ts:429`, and the gate is the capability and the session
+`packages/agent-adapters/src/acp.ts:238` and called at
+`apps/worker/src/executor.ts:438`, and the gate is the capability and the session
 id together: `canResume = capabilities?.persistentSessions === true &&
 Boolean(execution.externalRef)`.
 
@@ -1641,9 +1642,9 @@ not.**
 failure. It is the same word the unknown outcome uses
 ([The unknown outcome](#the-unknown-outcome)), and it is in this vocabulary because
 the product produces it: the worker writes it when a turn's outcome cannot be
-confirmed (`apps/worker/src/executor.ts:112`), and the conversation dispatch writes it
+confirmed (`apps/worker/src/executor.ts:117`), and the conversation dispatch writes it
 when a turn stops for the same reason
-(`apps/server/src/modules/conversations/dispatch.ts:247`). **A vocabulary without
+(`apps/server/src/modules/conversations/dispatch.ts:256`). **A vocabulary without
 `unknown` would leave the unknown outcome unrepresentable in the trail**, and the
 trail is where it is recorded.
 
@@ -1658,7 +1659,7 @@ route writes an entry, and it lists those twelve, one row each, with the action 
 one records. **A route whose action fails writes an
 entry that says `failed`**: today it writes none, because every route-level entry is
 written after the work and a handler that throws never reaches it, and the error
-handler writes nothing (`apps/server/src/app.ts:194`).
+handler writes nothing (`apps/server/src/app.ts:215`).
 
 **The code does not implement this yet.** The vocabulary is published ahead of its
 implementation, because the contract leads and the code follows: the implementation
@@ -1822,7 +1823,7 @@ a client that reads the fields it knows keeps working; a client that switches
 exhaustively on the item's fields has one more field to read.
 
 The blocked capability is the contract for **WI-121**, and the code implements it —
-as of `d229b53`: the refusal is recorded at `apps/server/src/modules/mcp/server.ts:720`, the list
+as of `d229b53`: the refusal is recorded at `apps/server/src/modules/mcp/server.ts:825`, the list
 draws it as its own kind at `apps/server/src/api/waiting.ts:163`, and the owner's
 action is `POST /api/agents/:id/grants`.
 
@@ -1908,10 +1909,10 @@ because a cancellation is a decision and not a fault
 **The spend units are recorded, and today they are zero.** A spend unit is an
 abstract cost counter, not currency (`packages/contracts/src/common.ts:58`). The
 execution is created with `spendUnits: 0`
-(`apps/server/src/modules/conversations/dispatch.ts:171`) and nothing writes the
+(`apps/server/src/modules/conversations/dispatch.ts:180`) and nothing writes the
 column afterwards — the turn count the router uses to enforce a spend limit is
 computed in memory and never stored
-(`apps/server/src/modules/conversations/routing.ts:281`). A client that shows
+(`apps/server/src/modules/conversations/routing.ts:307`). A client that shows
 the cost shows `0`, and that is a true statement about what is recorded rather
 than a measure of what the work was worth.
 
@@ -1937,7 +1938,7 @@ never an agent token, which is MCP-only.
 
 This entry is the contract for **WI-039**, and the code implements it — the route
 is `GET /api/approvals/:id/evidence`, at `apps/server/src/api/approvals.ts:37`,
-and it is registered at `apps/server/src/app.ts:226`. The shape it answers is the
+and it is registered at `apps/server/src/app.ts:247`. The shape it answers is the
 one published above, and it lives at `packages/contracts/src/approvals.ts:91`. The
 drawer that reads it is WI-040's, and it waits for this route.
 
@@ -2216,15 +2217,48 @@ interface DelegatedTask {
   id: string;
   /** The turn that delegated the work. */
   parentTurnId: string;
+  /** The agent connection that does the delegated work. */
   agentConnectionId: string;
   status: 'queued' | 'running' | 'stopping' | 'succeeded' | 'failed' | 'cancelled' | 'lost';
+  /** The reference to the output: the message the worker answered with. */
   outputRef?: string;
   /** When the result reached the parent. */
   deliveredAt?: string;
   /** The consumption candidate, recorded when the parent read the output. */
   consumedAt?: string;
+
+  // --- added by the bot mode ---
+
+  workspaceId: string;
+  /** The room the delegation came from. */
+  conversationId: string;
+  /** The room the delegated work ran in. It is not the parent's room. */
+  childConversationId: string;
+  /** The child turn that did the work. */
+  childTurnId?: string;
+  /** The connection that delegated the work. */
+  parentAgentConnectionId: string;
+  /** The role the delegated work was asked for. */
+  role: 'coordinator' | 'worker' | 'reviewer';
+  /** The factory task the work is tracked as. */
+  taskId?: string;
+  /** What the coordinator asked for. */
+  instruction: string;
+  /** What came back. */
+  result?: string;
+  /** The delivery message that carried the result into the parent's room. */
+  deliveryMessageId?: string;
+  /** The delegation depth of the child turn. */
+  depth: number;
+  createdAt: string;
+  updatedAt: string;
 }
 ```
+
+**The additions are additive.** A reader of the published shape reads the same
+fields it read before and ignores the rest: no published field changes its name
+or its meaning, and nothing is reclassified. The added fields say where the
+work came from, which room it ran in, what was asked for and what came back.
 
 **Delivery is not consumption.** `deliveredAt` records that the result reached
 the parent. A completion notification does not mark the result consumed: the
@@ -2234,14 +2268,138 @@ ends completed and its terminal state is committed. A parent that reads a
 result and then fails leaves the result unconsumed, so the next continuation is
 reminded of it again.
 
+### The bot mode
+
+The bot mode is a room of agents that work as a team. The owner talks to one
+agent in the room — the **coordinator** — and the coordinator hands a bounded
+piece of work to another agent — a **worker** — and gets the worker's actual
+answer back without the owner kicking it off again. A third agent can
+**review** the result.
+
+A bot is **not** a new kind of agent. It is a role and a scope attached to an
+agent connection that is already in the room.
+
+```ts
+type BotRole = 'coordinator' | 'worker' | 'reviewer';
+
+interface BotScope {
+  /** Whether the bot may delegate at all. */
+  mayDispatch: boolean;
+  /**
+   * The agent connections this bot may hand work to. An empty list means
+   * nobody: dispatching is a decision the owner granted, not a side effect of
+   * sharing a room.
+   */
+  dispatchableAgentConnectionIds: string[];
+}
+
+interface Bot {
+  id: string;
+  workspaceId: string;
+  conversationId: string;
+  /** The connection the bot speaks through. */
+  agentConnectionId: string;
+  role: BotRole;
+  displayName: string;
+  scope: BotScope;
+  createdAt: string;
+}
+```
+
+**The role is a name and never a colour, and the scope is an allowlist and never
+a broadcast.** An empty `dispatchableAgentConnectionIds` means _nobody_, so a
+bot that was never given a team cannot wake one by accident.
+
+**The rules that keep it honest.** These are refusals, not warnings, and each
+one is a test.
+
+1. **The scope decides.** A bot that may not delegate hands work to nobody, and
+   a bot may only hand work to the agents its scope names.
+2. **The caller must be a bot of the room.** An agent that was never registered
+   has no scope, so it delegates to nobody.
+3. **The target must be a bot of the room**, and not a coordinator — a
+   coordinator does not take delegated work.
+4. **The connection must exist, be enabled, and be in the workspace.**
+5. **Authority may narrow, never widen.** The delegated work would run on the
+   worker's own connection, so the worker would bring its own tools with it.
+   If the worker's effective MCP grants are not a subset of the coordinator's,
+   the delegation is refused: a coordinator cannot launder a more privileged
+   agent's authority.
+6. **The depth limit holds.** A delegation's depth is the room's own chain depth
+   plus one, and a delegation at or past the depth limit is refused, so the
+   chain terminates on its own.
+7. **The delivery wakes one agent.** The worker's result is delivered into the
+   parent room, attributed to the worker, addressed to the coordinator that
+   asked. It does not wake the room, and it does not create a new delegation
+   chain unless the coordinator explicitly asks for one.
+
+**One routing change, and it is narrow.** A worker's report of a delegated
+result wakes the coordinator that asked, and nobody else. The report is marked,
+and the marker is set by the host that knows the delegation — never by anything
+a message says about itself. Without the marker the existing rule stands
+untouched: a non-coordinator agent message still wakes nobody, and naming the
+coordinator explicitly is still refused. The marker only changes what happens
+to **the coordinator that the delegation names**. Every other routing safeguard
+is unchanged and still tested.
+
+**The outcome of the child turn is the outcome of the delegation.** A child turn
+that completed makes the delegation `succeeded`; one that failed makes it
+`failed`; one that was cancelled makes it `cancelled`; one whose outcome could
+not be confirmed makes it `lost`. **`lost` is settled**: it is never re-run and
+it is not `failed`. A delegation that has settled stays settled.
+
+**The tracked task follows the factory's own rule** — an agent reporting
+completion is not acceptance. A delegation that succeeded moves its task to
+`review`, one that failed moves it to `blocked`, one that was cancelled moves
+it to `cancelled`, and one that was lost moves it to `unknown`. The task is
+never moved to `done` by an agent: only `POST /api/tasks/:id/accept` closes it.
+
+**The dispatch tool is a product tool.** `bot.dispatch` is in `mcpToolNames` and
+is **not** in the default grant set: a connection that may delegate is a
+connection the owner has said may delegate, through
+`POST /api/agents/:id/grants`. A connection that was not granted it does not
+have the tool registered at all, so it does not appear in `tools/list`. The tool
+is the seam: the server records the intent, creates the delegated work, its
+tracked task and its child turn, and enqueues. The worker runs it. The tool is
+callable by an agent connection only; the owner's way in is the route.
+
+**What the bot mode does not do.** The parts that are not built are named here
+rather than left to be inferred.
+
+- **The owner cannot dispatch into a room where the coordinator has never
+  answered.** A delegation hangs from a turn, so a parent turn has to exist. The
+  refusal says so plainly, and the tool path — a coordinator dispatching from
+  its own turn — is unaffected.
+- **The "reminded again" rule is only half there.** An unconsumed result stays
+  in the room's history, so the coordinator sees the delivery again on its next
+  turn, but there is no explicit block in the prompt saying the result is still
+  waiting.
+- **`stopping` is in the vocabulary but nothing enters it.** There is no route to
+  call a delegation off, and no way to stop a child turn from the team room.
+- **`lost` is settled by the mapping, not by a reaper.** Nothing detects that a
+  worker holding a delegation has restarted and settles the delegation as
+  `lost`; today `lost` is reached when a child turn's outcome cannot be
+  confirmed.
+- **Steering is not offered.** The published `delivery: 'steer'` rule and
+  `acceptsSteering` are not used: a delegation always goes through the queue. A
+  coordinator cannot steer a worker mid-task.
+- **The capability view and the committed revision** on `GET /api/executions/:id`
+  are `null`. They are published and belong to WI-055.
+
+This entry is the contract for **WI-144**, and the code implements it — as of
+`3c4db59`.
+
 ### The routes and the events
 
-| Route                             | Method | What it does                                                                           |
-| --------------------------------- | ------ | -------------------------------------------------------------------------------------- |
-| `/api/executions/:id`             | GET    | The turn: its status, its capability view, its delegation tree, its committed revision |
-| `/api/conversations/:id/fork`     | POST   | Fork the conversation at a message                                                     |
-| `/api/conversations/:id/rewind`   | POST   | Continue from an earlier message as a new turn                                         |
-| `/api/conversations/:id/messages` | POST   | Gains `delivery: 'steer' \| 'queue'`, default `queue`                                  |
+| Route                                  | Method | What it does                                                                           |
+| -------------------------------------- | ------ | -------------------------------------------------------------------------------------- |
+| `/api/executions/:id`                  | GET    | The turn: its status, its capability view, its delegation tree, its committed revision |
+| `/api/conversations/:id/fork`          | POST   | Fork the conversation at a message                                                     |
+| `/api/conversations/:id/rewind`        | POST   | Continue from an earlier message as a new turn                                         |
+| `/api/conversations/:id/messages`      | POST   | Gains `delivery: 'steer' \| 'queue'`, default `queue`                                  |
+| `/api/conversations/:id/bots`          | GET    | The team of a room and the work it has handed over                                     |
+| `/api/conversations/:id/bots`          | POST   | Register a bot in a room, or change the one already there                              |
+| `/api/conversations/:id/bots/dispatch` | POST   | Hand work over on the coordinator's behalf                                             |
 
 The events are the existing ones, on the existing spine, with the existing
 monotonic sequence: `turn.admitted`, `turn.committed`, `turn.failed`,
@@ -2256,13 +2414,16 @@ a message it sends is queued, as it always was. A turn recorded before the
 change has no capability view and no delegation tree, and the API reports both
 as absent rather than empty. No record written before the change is rewritten.
 
-This entry is the contract for **WI-055**, and the code does not implement it
-yet. What exists today: a turn is an execution, `unknown` is published for
-messages, executions and tasks, and `origin.depth` records the delegation
-distance. What this entry adds — `committed`, `lost`, the capability view, the
-five-step commit, steering, fork, rewind and the delegation tree — arrives with
-that item. The published shapes above are the contract that item implements
-against, so the model can be reviewed as a whole before any of it is written.
+This entry is the contract for **WI-055**, and it is partly implemented. What
+exists today: a turn is an execution, `unknown` is published for messages,
+executions and tasks, and `origin.depth` records the delegation distance. The
+delegation tree, the delegated task, the three delegation events and the bot
+routes arrive with **WI-144**, and the code implements them — as of `3c4db59`.
+What this entry still adds — `turn.admitted`, `turn.committed`, `turn.failed`,
+`turn.lost`, the capability view, the five-step commit, steering, fork and
+rewind — arrives with WI-055. The published shapes above are the contract that
+item implements against, so the model can be reviewed as a whole before any of
+it is written.
 
 ---
 
@@ -2315,6 +2476,8 @@ is not left deleting the database.
 | `GET/POST`         | `/api/conversations/:id/messages`                    | Read and post messages.                                                                                             |
 | `POST`             | `/api/conversations/:id/participants`                | Add a participant.                                                                                                  |
 | `DELETE`           | `/api/conversations/:id/participants/:participantId` | Remove a participant.                                                                                               |
+| `GET/POST`         | `/api/conversations/:id/bots`                        | The team of a room, and register or change a bot in it.                                                             |
+| `POST`             | `/api/conversations/:id/bots/dispatch`               | Hand work to another agent on the coordinator's behalf.                                                             |
 | `GET/POST`         | `/api/resources`                                     | List and create resources. A resource is never born live.                                                           |
 | `GET/PATCH`        | `/api/resources/:id`                                 | Read and update a resource.                                                                                         |
 | `POST`             | `/api/resources/:id/publish`                         | Publish a resource. The act that makes one live.                                                                    |
@@ -2346,6 +2509,8 @@ is not left deleting the database.
 | `GET`              | `/api/events`                                        | Server-sent event stream.                                                                                           |
 | `GET`              | `/api/agui/events`                                   | The same stream in AG-UI. See [the AG-UI stream](#the-ag-ui-stream).                                                |
 | `POST`             | `/api/agui/runs/:runId/resume`                       | Answer the interrupts of an AG-UI run. See [the AG-UI stream](#the-ag-ui-stream).                                   |
+| `GET`              | `/api/features/bots/team`                            | The bot feature's read model — the same payload as the conversation route, under the feature's own prefix.          |
+| `GET`              | `/api/features/map`                                  | The map feature's read model.                                                                                       |
 | `ANY`              | `/mcp`                                               | MCP streamable HTTP endpoint.                                                                                       |
 
 ### The autonomy-policy route
@@ -2547,14 +2712,14 @@ only.
 
 **Every kind carries an author now.** The `automation` and `task` kinds keep their
 author on the row — `created_by` on both tables
-(`apps/server/src/db/schema.ts:360`, `apps/server/src/db/schema.ts:446`) — and the
+(`apps/server/src/db/schema.ts:450`, `apps/server/src/db/schema.ts:536`) — and the
 projections read it
 (`apps/server/src/modules/resources/service.ts:234`,
 `apps/server/src/modules/resources/service.ts:365`). An agent-created
 automation or task is recorded as authored by the agent that made it.
 
-**Every mutating route writes an audit entry.** Of the 38 mutating routes in
-`apps/server/src/api/`, 35 write an audit entry at the route level, and three more
+**Every mutating route writes an audit entry.** Of the 40 mutating routes in
+`apps/server/src/api/`, 37 write an audit entry at the route level, and three more
 write one from the service layer — `POST /api/approvals/:id/decide` and `POST
 /api/agui/runs/:runId/resume`, both at
 `apps/server/src/modules/approvals/resume.ts:55`, and `PATCH /api/tasks/:id` at
@@ -2601,8 +2766,8 @@ audit entry — there is no audit call anywhere in
 `apps/server/src/modules/mcp/server.ts`, and none in the capabilities service its
 tools call, which reach the resources service directly rather than through the
 auditing route. The only writer of the trail that is not an owner HTTP route is
-the worker — its `unknown` record (`apps/worker/src/executor.ts:105`) and the
-policy refusals it writes (`apps/worker/src/executor.ts:1568-1575`). So every audited
+the worker — its `unknown` record (`apps/worker/src/executor.ts:110-119`) and the
+policy refusals it writes (`apps/worker/src/executor.ts:1660-1672`). So every audited
 operation is an owner operation, except the worker's own entries, which carry
 `actorType: 'agent'`. **The second measure does not count the work an agent does
 through MCP**: an agent can create, update and publish resources all day and the
@@ -2617,9 +2782,9 @@ but the route helper hardcodes `success`
 (`apps/server/src/modules/audit/service.ts:79`). The two values a writer does
 produce come from the worker: the `unknown` of
 [The unknown outcome](#the-unknown-outcome)
-(`apps/worker/src/executor.ts:112`), and the `failure` it writes when the
+(`apps/worker/src/executor.ts:117`), and the `failure` it writes when the
 autonomy policy refuses a turn or an action
-(`apps/worker/src/executor.ts:1528`). **An operation that failed at the route is
+(`apps/worker/src/executor.ts:1667`). **An operation that failed at the route is
 counted here as an operation that completed.**
 
 **The route exists.** It answers with the shape above, member for member: the
