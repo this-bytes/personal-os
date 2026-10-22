@@ -1834,11 +1834,11 @@ carries is the published one, so a client that already posts to
 **The row leaves when the grant is widened.** A capability the agent holds is not
 waiting on the owner any more, so the row leaves the list as soon as the grant
 includes it. Whichever route widened the grant, the row leaves: both go through
-the one write that changes a grant (`apps/server/src/modules/agents/service.ts:326`).
+the one write that changes a grant (`apps/server/src/modules/agents/service.ts:371`).
 A list that keeps the row is a list that lies about what is waiting.
 
 **The row leaves and the grant is written in one transaction (WI-131).** The two writes are
-one change and are made together (`apps/server/src/modules/agents/service.ts:287`):
+one change and are made together (`apps/server/src/modules/agents/service.ts:320`):
 the row that says what the agent is waiting on leaves the list, and the grant that
 says what the agent may call is written. **So the guarantee is kept in both
 directions. The row leaves exactly when the grant includes the capability** — and
@@ -1846,6 +1846,24 @@ directions. The row leaves exactly when the grant includes the capability** — 
 configuration that is gone, a constraint the owner cannot meet — leaves both as they
 were: the row is still on the list, and the grant was not widened. A list that drops
 the row while the agent is still blocked is a list that lies the other way.
+
+**A widening is not taken back (WI-146).** The union that widens the grant is
+computed **inside** the transaction that writes it, from a read taken inside the
+same transaction (`apps/server/src/modules/agents/service.ts:338`), and the
+transaction takes the write lock before it reads
+(`apps/server/src/modules/agents/service.ts:320`). **So a widening that another
+process committed while this one was waiting is not taken back: the grant ends
+up holding both capabilities.** A read taken outside the transaction could be
+stale by the time the write landed, and a union computed from a stale grant
+narrows the grant back to what it was — the owner's other action is lost, and
+the list goes on showing the capability as waiting. The lock is taken first
+because a deferred transaction that reads and then writes cannot wait: once
+another process has committed, SQLite refuses to turn its read lock into a
+write lock and answers `SQLITE_BUSY` at once rather than waiting, so the write
+is lost instead of delayed.
+
+The widening is the contract for **WI-146**, and the code implements it — as of
+`4934add`.
 
 A transaction is also what holds across processes. The worker is a second process on
 the same database, and the refusal it records there is written in a transaction of its
