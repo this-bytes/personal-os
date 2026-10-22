@@ -110,6 +110,17 @@ async function save(agentId: string, body: Record<string, unknown>): Promise<num
   return response.statusCode;
 }
 
+/** The revision of the connection's capability set, as the owner reads it. */
+async function revision(agentId: string): Promise<number> {
+  const detail = await app.inject({
+    method: 'GET',
+    url: `/api/agents/${agentId}`,
+    headers: { cookie: sessionCookie },
+  });
+  expect(detail.statusCode).toBe(200);
+  return detail.json().agent.capabilitiesRevision as number;
+}
+
 describe('the precedence of the grant fields', () => {
   it('applies the change and does not write the list when a body carries both', async () => {
     const id = await createAgent('Both', ['conversation.read', 'task.get']);
@@ -166,5 +177,30 @@ describe('the precedence of the grant fields', () => {
 
     expect(status).toBe(200);
     expect(await grants(id)).toEqual(['conversation.read']);
+  });
+
+  it('moves the capabilities revision when the change moves the grant', async () => {
+    const id = await createAgent('Revision', ['conversation.read']);
+    const before = await revision(id);
+
+    const status = await save(id, { toolGrantChange: { enable: ['task.create'] } });
+
+    expect(status).toBe(200);
+    // The revision counts the times the capability set moved. The editor's save
+    // moves the grant, so it moves the revision with it -- a save that changed
+    // the grant while the revision stayed where it was would admit a later
+    // turn against a set nobody had observed.
+    expect(await revision(id)).toBeGreaterThan(before);
+  });
+
+  it('does not move the capabilities revision when the change moves nothing', async () => {
+    const id = await createAgent('Unchanged', ['conversation.read']);
+    const before = await revision(id);
+
+    const status = await save(id, { toolGrantChange: { enable: [], disable: [] } });
+
+    expect(status).toBe(200);
+    // The revision counts the changes, not the writes.
+    expect(await revision(id)).toBe(before);
   });
 });
