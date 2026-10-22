@@ -197,7 +197,7 @@ expects the execution's word on the reply's word will be wrong.
 produced of how the turn ended, and it travels on the reply: the messages of that
 execution carry it when the execution is settled
 (`apps/server/src/modules/executions/service.ts:108-111`, and
-`apps/server/src/modules/approvals/resume.ts:189-193` for the turn that is closed
+`apps/server/src/modules/approvals/resume.ts:197-201` for the turn that is closed
 rather than continued). **A client shows it as it is given**
 (`apps/web/src/components/ChatMessageList.tsx:136`): the account of what happened
 is the server's, and rewording it in the client would be the client telling the
@@ -209,7 +209,7 @@ say.
 **The note is recorded with the transition.** The audit entry carries it, and on
 an execution that failed it is the execution's `error`, because that column
 carries a reason only where there is an error
-(`apps/server/src/modules/approvals/service.ts:182`).
+(`apps/server/src/modules/approvals/service.ts:170`).
 
 **The route is for the run the list draws as a turn.** A turn on the waiting
 list is an execution whose outcome could not be confirmed and that belongs to no
@@ -245,8 +245,8 @@ executions service**, which writes the execution's status
 (`apps/server/src/modules/executions/service.ts:108-111`) together; the
 route calls it at `apps/server/src/api/executions.ts:25`. **There are two
 writers of an execution's outcome, not one**: the other is `resolveExecution`
-(`apps/server/src/modules/approvals/service.ts:175`), which the approval
-decision path calls (`apps/server/src/modules/approvals/resume.ts:151`) and
+(`apps/server/src/modules/approvals/service.ts:163`), which the approval
+decision path calls (`apps/server/src/modules/approvals/resume.ts:159`) and
 this route does not.
 
 **Migration.** Nothing is reclassified, and no execution is closed by this
@@ -1145,10 +1145,11 @@ the sum of what its turns actually cost, and the cap bites.**
 
 **The mode is resolved, readable, and enforced nowhere.** It is carried through the
 resolver and it is readable wherever the policy is, but no enforcement point reads
-it: the only reads of a resolved mode are in the resolver's own tests. What
-`autonomous` is to mean — the mode that permits work to begin on an agent's own
-initiative, or only the mode that describes work that has already been authorised —
-is the owner's decision, and it is not settled.
+it: the only reads of a resolved mode are in the resolver's own tests. **`manual`
+does not gate delegation** — an agent may hand work to another agent under
+`manual` exactly as it may under `autonomous`, because the mode is consulted by
+nothing. The mode is a description and not a control: it records the posture the
+owner has set, and it does not decide what runs.
 
 **The mode the owner sets is the mode that is in force.** A workspace carries the
 mode twice — the column the panel shows and the policy the resolver reads — and a
@@ -1156,8 +1157,7 @@ setting that lands in one of them and not the other tells the owner something
 false: a panel that says "autonomous" while the policy in force says "manual".
 **So the two are written together and cannot disagree, whichever way round the
 change arrives.** **That is about the setting being honest, not about the mode
-being in force** — the mode is still enforced nowhere, and what it is to mean is
-still the owner's decision.
+being in force** — the mode is still enforced nowhere.
 
 **The effective policy is readable** over `GET /api/autonomy-policy` and through the
 `autonomy.read` MCP tool. Its shape is published in
@@ -1445,7 +1445,7 @@ the resource it made, when it was given either.
 status, published in [Adapter events](#adapter-events). `error` carries the
 reason the execution stopped, and only then: a cancellation carries `null`,
 because a cancellation is a decision and not a fault
-(`apps/server/src/modules/approvals/service.ts:182`).
+(`apps/server/src/modules/approvals/service.ts:170`).
 
 **The spend units are recorded, and today they are zero.** A spend unit is an
 abstract cost counter, not currency (`packages/contracts/src/common.ts:58`). The
@@ -1459,7 +1459,7 @@ than a measure of what the work was worth.
 
 **The evidence is the execution and the execution's events.** An approval points
 at the execution that raised it (`approval.executionId`,
-`apps/server/src/modules/approvals/service.ts:14`), and the tool calls and the
+`packages/contracts/src/approvals.ts:29`), and the tool calls and the
 artifacts are that execution's events, read from the event log. **No new storage
 is introduced** — the approval, the execution and its events all exist already.
 This is the execution's record. The factory's task evidence — results,
@@ -1467,8 +1467,8 @@ artifacts, tests and observations, recorded against a task — is a different
 record, and this read does not carry it.
 
 **An approval with no execution shows no execution.** `executionId` can be null
-(`apps/server/src/modules/approvals/resume.ts:63`), and the execution it names can be
-gone (`apps/server/src/modules/approvals/resume.ts:78`). Both show
+(`apps/server/src/modules/approvals/resume.ts:71`), and the execution it names can be
+gone (`apps/server/src/modules/approvals/resume.ts:86`). Both show
 `execution: null`, and with it no tool calls, no artifacts and no cost: there
 was nothing to show, not an empty run. The decide route already answers the
 same way, and its `detail` says which of the two it was.
@@ -1480,7 +1480,7 @@ never an agent token, which is MCP-only.
 This entry is the contract for **WI-039**, and the code implements it — the route
 is `GET /api/approvals/:id/evidence`, at `apps/server/src/api/approvals.ts:37`,
 and it is registered at `apps/server/src/app.ts:225`. The shape it answers is the
-one published above, and it lives at `packages/contracts/src/approvals.ts:55`. The
+one published above, and it lives at `packages/contracts/src/approvals.ts:91`. The
 drawer that reads it is WI-040's, and it waits for this route.
 
 **Migration.** There was nothing before this read, so there is nothing to
@@ -1803,7 +1803,7 @@ is not left deleting the database.
 | `GET`              | `/api/approvals`                                     | List approval requests.                                                                 |
 | `GET`              | `/api/approvals/:id`                                 | Read an approval request.                                                               |
 | `GET`              | `/api/approvals/:id/evidence`                        | The evidence a decision is taken against. See [the entry](#the-approval-evidence).      |
-| `POST`             | `/api/approvals/:id/decide`                          | Approve or reject a sensitive operation.                                                |
+| `POST`             | `/api/approvals/:id/decide`                          | Approve or reject a sensitive operation. Publishes `approval.decided`.                  |
 | `GET`              | `/api/waiting`                                       | Everything waiting on the owner, in one list. See below.                                |
 | `GET`              | `/api/audit`                                         | Read the audit trail. See [the entry](#the-audit-outcome).                              |
 | `GET`              | `/api/measures`                                      | The product's two measures of itself. See below.                                        |
@@ -1885,7 +1885,7 @@ policy bounded that value and the shipped default was used.
 **A goal or a conversation belonging to another workspace has no say.** The loader
 checks the workspace each belongs to, so a caller cannot reach across workspaces to
 loosen a policy or to tighten one either
-(`apps/server/src/modules/autonomy/service.ts:66-72`).
+(`apps/server/src/modules/autonomy/service.ts:72-76`).
 
 **The rules the policy is resolved by are published** in
 [the autonomy policy](#autonomy-policy).
@@ -1959,7 +1959,7 @@ automation or task is recorded as authored by the agent that made it.
 `apps/server/src/api/`, 33 write an audit entry at the route level, and three more
 write one from the service layer — `POST /api/approvals/:id/decide` and `POST
 /api/agui/runs/:runId/resume`, both at
-`apps/server/src/modules/approvals/resume.ts:53`, and `PATCH /api/tasks/:id` at
+`apps/server/src/modules/approvals/resume.ts:55`, and `PATCH /api/tasks/:id` at
 `apps/server/src/modules/factory/service.ts:317`, and that one only when the task
 leaves `unknown`. **No mutating route writes none.**
 
@@ -2092,10 +2092,27 @@ name and a JSON `data` payload.
 | `resource.updated` | `{ resource }`                                      |
 | `agent.status`     | `{ connectionId, status, capabilities, lastError }` |
 | `automation.run`   | `{ run }`                                           |
+| `approval.decided` | `{ approval }`                                      |
 | `heartbeat`        | `{ at }`                                            |
 
 On connect the server replays the fifty most recent events, so a reconnecting client
 converges on the current state.
+
+**A decided approval is published.** `POST /api/approvals/:id/decide` records the
+decision and publishes `approval.decided`, carrying the approval. **The waiting
+list has a way out of it**: a client that watches the stream learns that the answer
+has arrived and can take the approval off its list, instead of polling for an
+approval that has already been answered. The event is published once, whatever the
+turn does next — whether it continues or closes does not change the fact that the
+owner decided.
+
+**Migration.** The event vocabulary grows by one member and nothing is
+reclassified. **A client that does not know `approval.decided` needs no change**:
+the event is additive, and the approval it carries is the same approval the decide
+route already returns. A client that switches exhaustively on the event name must
+now have a case for it. **The panel's own list already follows it**, so a decision
+taken outside the panel — in another tab, or by another surface — leaves the list
+at once rather than at the next slow refresh. No stored record is rewritten.
 
 ### The AG-UI stream
 
@@ -2107,9 +2124,10 @@ appears in `packages/contracts`. The projection is
 `apps/server/src/api/agui-protocol.ts`, and it is a pure function of the panel's
 event and the state it is handed — no I/O, no clock, nothing to undo.
 
-**`GET /api/events` does not move.** Its eight event names, its priming behaviour
-and its framing are what they were. The AG-UI route is additive: a new route
-beside it, for a consumer that speaks a published protocol rather than ours.
+**`GET /api/events` does not move.** Its nine event names, its priming behaviour
+and its framing are what they were, except for the one name this section adds.
+The AG-UI route is additive: a new route beside it, for a consumer that speaks a
+published protocol rather than ours.
 
 The stream is Server-Sent Events, framed as the AG-UI HTTP+SSE binding frames it:
 each frame's `data` is exactly one AG-UI event as a JSON object, and the
@@ -2144,6 +2162,7 @@ rather than left out.
 | `resource.updated`                          | `CUSTOM` named `resource.updated`                                                                                             |
 | `agent.status`                              | `CUSTOM` named `agent.status`                                                                                                 |
 | `automation.run`                            | `CUSTOM` named `automation.run`                                                                                               |
+| `approval.decided`                          | `CUSTOM` named `approval.decided`                                                                                             |
 | `heartbeat`                                 | None. A heartbeat is the transport's keep-alive, and the AG-UI binding carries that as an SSE comment.                        |
 
 | Agent event                              | AG-UI                                                                                                                                                                                                                                             |

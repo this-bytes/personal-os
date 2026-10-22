@@ -1,29 +1,17 @@
 import { and, desc, eq } from 'drizzle-orm';
-import type { ApprovalEvidence } from '@personal-os/contracts';
+import type { Approval, ApprovalEvidence, ApprovalStatus } from '@personal-os/contracts';
 import type { Database } from '../../db/client.js';
 import { approvals, executions } from '../../db/schema.js';
 import { errors } from '../../lib/errors.js';
 import { newId } from '../../lib/ids.js';
 import { readApprovalEvidence } from './evidence.js';
 
-export type ApprovalStatus = 'pending' | 'approved' | 'rejected';
-
-export interface Approval {
-  id: string;
-  workspaceId: string;
-  executionId: string | null;
-  conversationId: string | null;
-  taskId: string | null;
-  agentConnectionId: string | null;
-  summary: string;
-  details: unknown;
-  status: ApprovalStatus;
-  reason: string | null;
-  requestedBy: string | null;
-  decidedBy: string | null;
-  createdAt: string;
-  decidedAt: string | null;
-}
+/**
+ * The shape of an approval is published, because an approval crosses the
+ * server-to-client boundary when it is decided. The types here are the
+ * published ones, not copies of them, so the two cannot drift.
+ */
+export type { Approval, ApprovalStatus };
 
 export interface ApprovalsService {
   list(workspaceId: string, status?: ApprovalStatus): Approval[];

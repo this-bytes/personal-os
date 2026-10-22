@@ -9777,3 +9777,117 @@ not write the work.**
 **The owner's word is the only thing that clears a lane.** `miniapp restart minimax-bot` is
 the only remedy, and the price is one live turn. **Cog's WI-121 turn is streaming now**, so
 the cheapest moment is after it lands. **Recommendation: restart then, and not before.**
+
+## 2026-10-22 11:25 — the pin landed and was published, WI-120 was accepted, and WI-114's table was settled against the peer's measurement
+
+**WI-123's pin is on `main`** — merge `e38d62c`, one file, 438 insertions — and the nine
+gates were green on the tree that was pushed: **64 files, 642 tests, 0 failures**, "Every
+gate passed. The tree is green." The published tip is `42af80d`. **The verification went to
+Cog**, because Vision's queue has not drained since 09:22 and the peer had already
+re-routed WI-122's the same way.
+
+**WI-120 is accepted** on Probe's verdict, measured on published `db6a29b`: the front
+page's identity sentence byte-identical, the diff exactly two lines, CI and CodeQL both
+`completed/success`. **A stranger who finds the repository now reads the product's own
+words on the front page.**
+
+**And WI-114's table was settled against the peer session's measurement, which was handed
+over at 11:15.** Twelve of the peer's thirteen targets hold. The thirteenth does not: it
+verified what WI-114's own table said, and the table was wrong about the subject — the
+automation provider's `execute` is not what the guide's row claims; the guide names
+`templateGet`, and `templateGet` is at `service.ts:640-656`. **And the sweep of that row
+found a citation neither measurement had checked: `templates.ts:176-190`, which held
+`assertTemplatesValid` exactly when the guide was written (`949885c`) and was moved by
+`8b1fd01`, a different landing — which is why the eleven were thought to be the whole set.**
+The row is corrected as a whole, both of its citations, and the two causes are kept apart
+because a pointer's cause is what tells the next reader whether it will move again.
+
+**Two of the lead's own published numbers were wrong, and both are the same mistake.** The
+change set was published as `+939/−59`: the merge against its first parent is `+940/−59`
+and the branch tip against the merge is `+939/−31`, so the published pair mixed two
+comparisons. And "73 commits behind" was wrong at every tip — **278** at Probe's
+`7ffa4e4`, **296** at the tip published now. **A diffstat must name its comparison, and a
+count of commits must name its tree.**
+
+**And the peer corrected the lead on a repair the lead said did not exist.** This lead said
+the restart was the only way to clear a dead lane. **Two dead sessions were archived, and
+un-archiving them is a second repair** — and Vision's verification had been queued onto a
+session that could not answer it, which no amount of waiting would have started. **The
+peer's correction is taken. The refusal itself is still there, so the restart still stands
+for Wren's lane, and the recommendation is unchanged: after Cog's WI-121 turn lands.**
+
+## 2026-10-22 11:45 — the repository's own description still carries the old tagline, and nothing holds the front page
+
+**Probe's WI-120 report carried two findings. The lead measured both before recording
+either.**
+
+**A correction to this lead's own published acceptance:** the CodeQL run id cited for the
+merge `ce51521` was `39689241897`. Measured unauthenticated on the GitHub API,
+**`39689241897` → 404 Not Found**, and **`39687241897` → `CodeQL`, head `main`, sha
+`ce51521`, `completed/success`.** A transposition, from this lead's brief. **A run id
+that 404s cannot be a run** — a published acceptance that cites one cites something that
+was never measured.
+
+**And a finding from an acceptance, so it is numbered: WI-126.** The repository's
+**published description** still reads _"An agent-native control panel and personal software
+factory: talk to agents, run group conversations, and let agents build the things you
+need."_ — **three of the product's own exclusions, live, on the public repository.**
+WI-120 fixed the files because the description is a setting and not a commit, so it was
+outside WI-120's scope; **and it is the first field a stranger meets, because GitHub
+renders it into the page's meta description and the social card.** The fix is one field
+and one sentence — `package.json`'s `description`, byte for byte. **It is an externally
+visible change, so it waits on the owner's word and spends no request id.**
+
+**And the sweep behind it found WI-127.** **Nothing holds the front page.** The identity
+sentence is in `README.md`'s third line and in `package.json`'s `description`, and **no
+gate, test or script in the repository reads either** — WI-122's defect class, one layer
+out. The precedent for the check is already in the tree: `ownerPasswordExposure.test.ts:341`
+reads `README.md` from the repository root, and `forge-briefs.test.ts:73` resolves
+`repoRoot`. **So it is one file and one owner** — a test in the server's suite, **no
+wiring and no new gate** — and it must say nothing about the four places WI-120
+deliberately left alone.
+
+**And the number space moved under this lead while it worked.** The peer took WI-124 and
+WI-125 between 11:20 and 11:30, **both with block rows and no item file yet** — so this
+lead's "the next free number is WI-126" would have collided with the peer's WI-126 had it
+not been read immediately before the number was taken. **The block reads WI-128 next
+free.**
+
+## 2026-10-22 12:02 — the peer changed the repository's description under the owner's word, and the lead's own caution was corrected
+
+**WI-126 is changed.** The repository's published description is now
+`Personal OS — the environment one person's agents operate and extend.` — taken from
+`package.json`'s `description` and not retyped, through the credential the pushes already
+use. **The lead fetched the public page anonymously and read the served HTML: the
+`<title>`, the meta description, the `og:description`, the `twitter:description` and the
+About panel all carry the identity sentence, and the old tagline appears nowhere in the
+page.** Still public, still MIT.
+
+**And the lead's own reading of the owner's word was wrong in the cautious direction.**
+This lead wrote into the item that the change needed a fresh word. **It did not: "Yes to
+both, in that order" — a public MIT repository with the front page corrected in the world,
+not on a branch — already covers the front page's own title, meta description and social
+card.** WI-120's claim that those were derived from `README.md` was wrong, and WI-126 is
+the correction of that claim. **The peer's reading was the right one.** The verification is
+with Probe (`task_74ee53b2ab2d`).
+
+**WI-127 is open: nothing holds the front page.** One file,
+`apps/server/src/__tests__/frontPage.test.ts`, Probe's, no wiring and no new gate,
+following the precedent already in the tree at `ownerPasswordExposure.test.ts:341` and
+`forge-briefs.test.ts:73`. **It must assert nothing about the four places WI-120
+deliberately left alone.** Dispatched to Probe (`task_e33a476f252f`).
+
+**And the two branches merged.** The peer's published tip carried the peer's WI-124 and
+WI-125 — source this lead did not write — so the lead measured the merged tree with the
+nine gates rather than trusting it. **The merge moved a line that WI-086's note cites**:
+`approvalEvidenceSchema` went from `:55` to `:91`, **and the contract moved with it.**
+Re-measured: route `:37`, registration `:225`, schema `:91` — **all three still named by
+the contract, so WI-086's acceptance stands** and only the line in the acceptance record is
+stale, with the correction appended beside it.
+
+**And WI-122's pin had to be re-based by that same landing** — its drift case hardcoded
+`:55`, so the replace found nothing, no drift was injected, and the case failed **for a
+reason that had nothing to do with what it guards**. The peer fixed it in the peer's own
+file: the drift cases now **locate their citation by reading it out of the note**. **A
+verification measures the tree the work stands in**, so the verification measures the
+re-based pin.

@@ -3,6 +3,7 @@ import type { Database } from '../../db/client.js';
 import { agentConnections, executions, messages } from '../../db/schema.js';
 import type { Queue } from '../../queue/client.js';
 import type { AuditService } from '../audit/service.js';
+import type { EventsService } from '../events/service.js';
 import type { Approval, ApprovalsService } from './service.js';
 
 /**
@@ -34,6 +35,7 @@ export function decideApproval(input: {
   db: Database;
   queue: Queue;
   audit: AuditService;
+  events: EventsService;
   approvals: ApprovalsService;
   approvalId: string;
   approved: boolean;
@@ -41,7 +43,7 @@ export function decideApproval(input: {
   decidedBy: string;
   actorType: 'human' | 'agent';
 }): ApprovalDecision {
-  const { db, queue, audit, approvals } = input;
+  const { db, queue, audit, events, approvals } = input;
 
   // 1. The decision is recorded.
   const approval = approvals.decide(input.approvalId, {
@@ -59,6 +61,12 @@ export function decideApproval(input: {
     targetId: approval.id,
     metadata: { executionId: approval.executionId, reason: input.reason },
   });
+
+  // 2. The decision is published, so a client watching the stream learns that
+  //    the answer has arrived and can take the approval off its waiting list.
+  //    It is published here, once, whatever the turn does next: whether it
+  //    continues or closes does not change the fact that the owner decided.
+  events.publish({ type: 'approval.decided', approval }, { workspaceId: approval.workspaceId });
 
   if (!approval.executionId) {
     return {

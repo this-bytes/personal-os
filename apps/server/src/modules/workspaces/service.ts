@@ -91,9 +91,9 @@ export function createWorkspaceService(db: Database): WorkspaceService {
       // says "manual". So the two are written together and cannot disagree.
       //
       // This says nothing about what the mode *means*. The mode is still
-      // enforced nowhere, and what it is to mean is still the owner's
-      // decision; this is about the setting being honest rather than about
-      // the mode being in force.
+      // enforced nowhere — `manual` does not gate delegation, because the mode
+      // is consulted by nothing. This is about the setting being honest rather
+      // than about the mode being in force.
       const policy =
         patch.autonomyPolicy !== undefined
           ? patch.autonomyPolicy

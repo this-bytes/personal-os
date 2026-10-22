@@ -18,6 +18,7 @@ const EVENT_TYPES: ServerEventType[] = [
   'resource.updated',
   'agent.status',
   'automation.run',
+  'approval.decided',
   'heartbeat',
 ];
 

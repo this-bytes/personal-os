@@ -91,14 +91,63 @@ const DEFAULT_MAX_TURNS = DEFAULT_POLICY.maxTurns;
 const DEFAULT_MAX_DURATION_SECONDS = DEFAULT_POLICY.maxDurationSeconds;
 
 /**
- * The bounds a policy carries, read defensively.
+ * A stored policy row, as the resolver reads it.
  *
  * A stored policy is written through a validated contract, so its fields are
- * present and in range. A value that is not — because a row was edited by
- * hand, say — is ignored rather than obeyed, so a broken policy cannot widen
- * the limits the others set.
+ * present and in range — but the row that reaches the resolver is a database
+ * column, not a validated value, and a row can be edited by hand or lose a
+ * field. So every field the resolver reads is optional here and is read on
+ * its own guard: a field that is missing or mistyped is no opinion rather
+ * than an answer, and the fields beside it are still read.
  */
-function boundsOf(policy: AutonomyPolicy | null | undefined): {
+export type AutonomyPolicySource =
+  | Partial<Record<keyof AutonomyPolicy, unknown>>
+  | null
+  | undefined;
+
+/** The fields a policy row carries. */
+const POLICY_FIELDS = [
+  'mode',
+  'allowedActions',
+  'approvalRequired',
+  'maxTurns',
+  'maxDurationSeconds',
+  'maxSpendUnits',
+  'dailySpendUnits',
+] as const satisfies readonly (keyof AutonomyPolicy)[];
+
+/** A row that is an object, whatever it carries. */
+const policyRowSchema = z.record(z.unknown());
+
+/**
+ * Read a stored policy row.
+ *
+ * This is where a stored row stops being a database column and becomes
+ * something the resolver can read. A row that is not an object at all is no
+ * policy: it is dropped here, so a row that cannot be a policy never reaches
+ * a decision. A row that is an object is handed on as it is — the resolver
+ * reads its fields one by one, each on its own guard, so a field that is
+ * broken costs that field alone and not the row.
+ */
+export function readAutonomyPolicy(row: unknown): AutonomyPolicySource {
+  const parsed = policyRowSchema.safeParse(row);
+  if (!parsed.success) return null;
+  const source: Partial<Record<keyof AutonomyPolicy, unknown>> = {};
+  for (const field of POLICY_FIELDS) {
+    const value = parsed.data[field];
+    if (value !== undefined) source[field] = value;
+  }
+  return source;
+}
+
+/**
+ * The bounds a policy carries, read defensively.
+ *
+ * A value that is not a number in range — because a row was edited by hand,
+ * say — is ignored rather than obeyed, so a broken policy cannot widen the
+ * limits the others set.
+ */
+function boundsOf(policy: AutonomyPolicySource): {
   maxTurns?: number;
   maxDurationSeconds?: number;
   maxSpendUnits?: number;
@@ -111,17 +160,59 @@ function boundsOf(policy: AutonomyPolicy | null | undefined): {
     maxSpendUnits?: number;
     dailySpendUnits?: number;
   } = {};
-  if (Number.isInteger(policy.maxTurns) && policy.maxTurns >= 1) bounds.maxTurns = policy.maxTurns;
-  if (Number.isInteger(policy.maxDurationSeconds) && policy.maxDurationSeconds >= 1) {
-    bounds.maxDurationSeconds = policy.maxDurationSeconds;
+  const maxTurns = policy.maxTurns;
+  if (typeof maxTurns === 'number' && Number.isInteger(maxTurns) && maxTurns >= 1) {
+    bounds.maxTurns = maxTurns;
   }
-  if (Number.isInteger(policy.maxSpendUnits) && policy.maxSpendUnits >= 0) {
-    bounds.maxSpendUnits = policy.maxSpendUnits;
+  const maxDurationSeconds = policy.maxDurationSeconds;
+  if (
+    typeof maxDurationSeconds === 'number' &&
+    Number.isInteger(maxDurationSeconds) &&
+    maxDurationSeconds >= 1
+  ) {
+    bounds.maxDurationSeconds = maxDurationSeconds;
   }
-  if (Number.isInteger(policy.dailySpendUnits) && policy.dailySpendUnits >= 0) {
-    bounds.dailySpendUnits = policy.dailySpendUnits;
+  const maxSpendUnits = policy.maxSpendUnits;
+  if (typeof maxSpendUnits === 'number' && Number.isInteger(maxSpendUnits) && maxSpendUnits >= 0) {
+    bounds.maxSpendUnits = maxSpendUnits;
+  }
+  const dailySpendUnits = policy.dailySpendUnits;
+  if (
+    typeof dailySpendUnits === 'number' &&
+    Number.isInteger(dailySpendUnits) &&
+    dailySpendUnits >= 0
+  ) {
+    bounds.dailySpendUnits = dailySpendUnits;
   }
   return bounds;
+}
+
+/**
+ * The names in a list, or none if it is not a list of names.
+ *
+ * A list that is missing, or that carries something that is not a name, is
+ * no opinion: the policy names nothing, and the other policies decide.
+ */
+function stringListOf(value: unknown): string[] {
+  if (!Array.isArray(value)) return [];
+  const entries: unknown[] = value;
+  return entries.filter((entry): entry is string => typeof entry === 'string');
+}
+
+/** The actions a policy names. A broken list names none. */
+function actionsOf(policy: AutonomyPolicySource): string[] {
+  return stringListOf(policy?.allowedActions);
+}
+
+/** The approvals a policy asks for. A broken list asks for none. */
+function approvalsOf(policy: AutonomyPolicySource): string[] {
+  return stringListOf(policy?.approvalRequired);
+}
+
+/** The mode a policy names, or none if it names one that is not a mode. */
+function modeOf(policy: AutonomyPolicySource): AutonomyMode | undefined {
+  const parsed = autonomyModeSchema.safeParse(policy?.mode);
+  return parsed.success ? parsed.data : undefined;
 }
 
 /**
@@ -169,10 +260,14 @@ function strictestBound(
  * set is then every action in the vocabulary, which is what the stored
  * defaults mean. A policy that names actions the vocabulary does not know
  * allows nothing — an unknown action is a refusal, not a pass.
+ *
+ * A stored row is read defensively: a field that is missing or mistyped is no
+ * opinion rather than an answer, so a broken row cannot widen the limits the
+ * others set, and it cannot stop the resolver either.
  */
 export function resolveAutonomyPolicy(input: {
-  workspace?: AutonomyPolicy | null;
-  goal?: AutonomyPolicy | null;
+  workspace?: AutonomyPolicySource;
+  goal?: AutonomyPolicySource;
   conversation?: ConversationSafeguards | null;
 }): EffectiveAutonomyPolicy {
   const workspace = input.workspace ?? null;
@@ -186,8 +281,10 @@ export function resolveAutonomyPolicy(input: {
   // The mode: the least autonomous of the policies that carry one. A
   // conversation has no mode of its own.
   const modes: Array<{ level: AutonomyPolicyLevel; mode: AutonomyMode }> = [];
-  if (workspace) modes.push({ level: 'workspace', mode: workspace.mode });
-  if (goal) modes.push({ level: 'goal', mode: goal.mode });
+  const workspaceMode = modeOf(workspace);
+  if (workspaceMode) modes.push({ level: 'workspace', mode: workspaceMode });
+  const goalMode = modeOf(goal);
+  if (goalMode) modes.push({ level: 'goal', mode: goalMode });
   let mode: AutonomyMode = 'manual';
   let modeLevel: AutonomyPolicyLevel = 'default';
   for (const candidate of modes) {
@@ -257,13 +354,17 @@ export function resolveAutonomyPolicy(input: {
     0,
   );
 
-  // The allowed actions: the intersection of the policies that name any.
+  // The allowed actions: the intersection of the policies that name any. A
+  // policy whose list is broken names none, so it has no opinion and the
+  // others decide.
   const naming: Array<{ level: AutonomyPolicyLevel; actions: string[] }> = [];
-  if (workspace && workspace.allowedActions.length > 0) {
-    naming.push({ level: 'workspace', actions: workspace.allowedActions });
+  const workspaceActions = actionsOf(workspace);
+  const goalActions = actionsOf(goal);
+  if (workspaceActions.length > 0) {
+    naming.push({ level: 'workspace', actions: workspaceActions });
   }
-  if (goal && goal.allowedActions.length > 0) {
-    naming.push({ level: 'goal', actions: goal.allowedActions });
+  if (goalActions.length > 0) {
+    naming.push({ level: 'goal', actions: goalActions });
   }
 
   let allowedActions: AutonomyAction[];
@@ -285,20 +386,16 @@ export function resolveAutonomyPolicy(input: {
   }
 
   // The approvals: the union, so an approval asked for by any level is asked
-  // for.
+  // for. A policy whose list is broken asks for none.
   const approvals = new Set<AutonomyAction>();
-  for (const policy of [workspace, goal]) {
-    for (const action of policy?.approvalRequired ?? []) {
-      if (isKnownAction(action)) approvals.add(action);
-    }
+  const workspaceApprovals = approvalsOf(workspace);
+  const goalApprovals = approvalsOf(goal);
+  for (const action of [...workspaceApprovals, ...goalApprovals]) {
+    if (isKnownAction(action)) approvals.add(action);
   }
   const approvalRequired = [...approvals];
   const approvalRequiredLevel: AutonomyPolicyLevel =
-    workspace && workspace.approvalRequired.length > 0
-      ? 'workspace'
-      : goal && goal.approvalRequired.length > 0
-        ? 'goal'
-        : 'default';
+    workspaceApprovals.length > 0 ? 'workspace' : goalApprovals.length > 0 ? 'goal' : 'default';
 
   return {
     mode,
