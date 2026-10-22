@@ -39,10 +39,45 @@ export const participantSchema = z.object({
 });
 export type Participant = z.infer<typeof participantSchema>;
 
+/**
+ * One piece of a message.
+ *
+ * The union grew additively: a message may now carry an attachment — a
+ * reference to a resource, with the name and the kind of thing it is — and,
+ * where the data supports it, an image. A message written before this grew
+ * still parses: the three older shapes are unchanged and nothing was
+ * reinterpreted.
+ */
 export const contentPartSchema = z.discriminatedUnion('type', [
   z.object({ type: z.literal('text'), text: z.string() }),
   z.object({ type: z.literal('artifact'), resourceId: idSchema }),
   z.object({ type: z.literal('file'), resourceId: idSchema }),
+  z.object({
+    type: z.literal('attachment'),
+    /** The resource the attachment points at. */
+    resourceId: idSchema,
+    /** What the owner called it. */
+    displayName: z.string().min(1).max(300),
+    /** What kind of thing it is, when the system knows. */
+    mimeType: z.string().min(1).max(200).optional(),
+  }),
+  z.object({
+    type: z.literal('image'),
+    /** The resource the image belongs to. */
+    resourceId: idSchema,
+    /** What the owner called it. */
+    displayName: z.string().min(1).max(300),
+    /** The kind of image it is, when the system knows. */
+    mimeType: z.string().min(1).max(200),
+    /**
+     * Where the bytes are, when the resource publishes a location.
+     *
+     * The client renders the image from this. It is a reference and never the
+     * bytes themselves: a message row stays small, and the resource stays the
+     * one place the picture lives.
+     */
+    url: z.string().min(1).max(2_000).optional(),
+  }),
 ]);
 export type ContentPart = z.infer<typeof contentPartSchema>;
 
@@ -105,6 +140,16 @@ export const postMessageInputSchema = z.object({
   replyToId: idSchema.optional(),
   /** Explicit targets. When omitted the routing engine decides. */
   targetParticipantIds: z.array(idSchema).optional(),
+  /**
+   * How the message reaches an agent.
+   *
+   * `queue` is the default and is what happens today: the message waits for
+   * the next turn. `steer` delivers it into the turn that is running, and
+   * only to that turn's agent. A steer can only be delivered by a runtime
+   * that accepts input mid-turn; where it cannot, the degradation has to be
+   * reported rather than silent.
+   */
+  delivery: z.enum(['steer', 'queue']).default('queue'),
 });
 export type PostMessageInput = z.infer<typeof postMessageInputSchema>;
 
