@@ -71,6 +71,13 @@
       "when": 1792599967777,
       "tag": "0009_kind_lilith",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "6",
+      "when": 1792631582019,
+      "tag": "0010_blocked_capabilities",
+      "breakpoints": true
     }
   ]
 }

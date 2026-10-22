@@ -102,6 +102,34 @@ export const agentConnections = sqliteTable(
   (table) => [index('agent_connections_workspace_idx').on(table.workspaceId)],
 );
 
+/**
+ * A capability an agent was refused and may still be waiting on.
+ *
+ * One row per agent and capability: a refusal repeated is the same thing
+ * waiting, not another thing, so the list does not fill up with the noise of
+ * an agent trying again.
+ */
+export const blockedCapabilities = sqliteTable(
+  'blocked_capabilities',
+  {
+    id: text('id').primaryKey(),
+    workspaceId: text('workspace_id').notNull(),
+    agentConnectionId: text('agent_connection_id')
+      .notNull()
+      .references(() => agentConnections.id, { onDelete: 'cascade' }),
+    /** The MCP tool the agent called and was not granted. */
+    toolName: text('tool_name').$type<McpToolName>().notNull(),
+    firstRefusedAt: text('first_refused_at').notNull(),
+    lastRefusedAt: text('last_refused_at').notNull(),
+    /** How many times the refusal was repeated. */
+    refusalCount: integer('refusal_count').notNull().default(1),
+  },
+  (table) => [
+    uniqueIndex('blocked_capabilities_agent_tool_idx').on(table.agentConnectionId, table.toolName),
+    index('blocked_capabilities_workspace_idx').on(table.workspaceId),
+  ],
+);
+
 export const approvals = sqliteTable(
   'approvals',
   {

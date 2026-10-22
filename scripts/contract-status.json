@@ -126,6 +126,30 @@
       ]
     },
     {
+      "id": "the-blocked-capability-wi-121",
+      "section": "The waiting list",
+      "note": "WI-121, and the code implements it",
+      "claim": "implemented",
+      "why": "WI-121's blocked capability: the refusal is recorded, the list draws it as its own kind, and the owner can widen the grant from the list.",
+      "expect": [
+        {
+          "kind": "present-pattern",
+          "path": "apps/server/src/modules/mcp/server.ts",
+          "value": "recordBlockedCapability"
+        },
+        {
+          "kind": "present-text",
+          "path": "apps/server/src/api/waiting.ts",
+          "value": "'capability'"
+        },
+        {
+          "kind": "present-text",
+          "path": "apps/server/src/api/agents.ts",
+          "value": "/api/agents/:id/grants"
+        }
+      ]
+    },
+    {
       "id": "the-audit-outcome-wi-033",
       "section": "The audit outcome",
       "note": "The code does not implement this yet",
