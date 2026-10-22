@@ -4919,3 +4919,41 @@ read from the task result instead.**
 
 **The number space, re-read at 13:33:** WI-129 is the peer's, claimed at 13:10 and published
 with its item file, and the lead's block now carries its row and reads **WI-130**.
+
+### 13:47 — the citation re-point lands, and the lead read the two lines by hand
+
+**Cog's branch carried one commit the WI-121 landing did not take — `2a088e4` — and it is
+right.** The contract's note said "the refusal is recorded at
+`apps/server/src/modules/mcp/server.ts:711`", and `:711` is `function noteUngrantedCall(` —
+**the hook's declaration, not the act of recording.** The recording is nine lines below, at
+`:720`, `options.capabilities.recordBlockedCapability({`.
+
+**The lead read both lines by hand before landing it:**
+
+```
+  711: function noteUngrantedCall(
+  720:   options.capabilities.recordBlockedCapability({
+```
+
+**This is WI-086's lesson applied to WI-121's own note:** the pointer gate proves that a
+cited line holds code, and both `:711` and `:720` hold code, **so the gate was green either
+way.** A citation has to name the line that carries the claim. The note now names `:720`,
+and the pointer gate still checks **135 pointers, 0 failures** — **the count does not move
+when a citation moves from one line to another, which is the point: the gate could not have
+told the two apart.**
+
+**Landed as `b27ce3f`.** The merge was clean (`git merge-tree` wrote `ded327cd` with no
+conflict) and it kept both writers' sections in `WI-121.md` — Cog's citation list and the
+lead's dispatch record. **The nine gates on the merged tree `ded327cd`, the tree hash the
+same before the run and after it:** typecheck 27711ms, test 88298ms, build 19340ms, format
+12997ms, contract-status 758ms, contract-pointers 1353ms, smoke 11729ms, compiled-build
+2600ms, bundle-size 658ms — **"Every gate passed. The tree is green."**, 68 files, 702 tests,
+0 failures (server 45/475, web 9/84, worker 7/92, adapters 3/23, contracts 4/28).
+
+**And the verification Probe is about to run measures the same implementation:** no code
+changed — only the contract's citation and the item file — and `task_122e0e2e02bf` was
+still queued when this landed, **so it reads the new tip.**
+
+**The commit also brings the item file's own record of the eight citations this item adds,
+each read by hand on the tree that was pushed** — so Probe has something to re-read, and
+not only a gate to satisfy.
