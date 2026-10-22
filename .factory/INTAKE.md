@@ -104,8 +104,9 @@ free number above the highest taken.**
 | WI-131 | The widening write is not one transaction, and the contract says it is                                                                                                                                                            | worker |
 | WI-132 | The panel does not carry the published waiting shape, and the row carries no way to widen the grant                                                                                                                               | worker |
 | WI-133 | The audit job audits twice: one word makes it audit once                                                                                                                                                                          | worker |
+| WI-134 | The domain does not depend on the adapters package                                                                                                                                                                                | worker |
 
-**The next free number is WI-134.**
+**The next free number is WI-135.**
 
 **Two decisions the owner took, and the numbers they took.** The owner answered
 the two questions that were open: `manual` **does not gate delegation**
@@ -5507,3 +5508,72 @@ with its own measurements. **They are recorded for whoever takes it, exactly as 
 | `resources/templates.ts:21-124`            | `dashboard.metrics` and part of `document.brief`             | the registry runs to `templates.ts:394`                                     |
 
 **The floor at 15:45.** **Ceiling two. Next free number WI-134.**
+
+### 16:05 — WI-134 is claimed: the domain must not depend on the adapters package
+
+**WI-134 is claimed, and the claim is on `main` before the work is done.** The block's row
+and the item file land in a commit of their own. **That is the claim-first discipline used
+three times now — WI-129, WI-133 and this — and it has not collided once.**
+
+**The rule is written in two places and enforced in neither.** `AGENTS.md` rule 3 says the
+domain must not know that Hermes, Codex or OpenClaw exist. `docs/decisions/0004-adapter-registry.md:39`
+says the domain never mentions a specific provider. **Both are true of the tree today.
+What is missing is the thing that keeps them true.**
+
+**The domain has exactly one dependency edge on the adapters package, and it is the wrong
+kind of edge:**
+
+```ts
+// apps/server/src/modules/agents/service.ts:13
+import type { AdapterRegistry } from '@personal-os/agent-adapters';
+```
+
+**It is type-only, so it compiles to nothing — but the type it names is the class from the
+package that holds every concrete adapter** (`packages/agent-adapters/src/index.ts:15-21`
+exports the ACP, A2A, CLI, echo, HTTP, MCP and model adapters, and `:27` exports
+`createDefaultRegistry`). **The whole barrel is one import away, and the compiler does not
+distinguish "I want the class" from "I want its type".** Deleting the word `type` would put
+every adapter inside the domain and nothing would complain. **A word is not a boundary.**
+
+**And the other end of the same coupling is a dead dependency.** `apps/worker/package.json:16`
+declares `@personal-os/agent-adapters`, and **no file under `apps/worker/src` imports
+it.** The worker reaches adapters through the server's runtime —
+`apps/worker/src/executor.ts:412`, `:842`, `:1073` — and `apps/server/src/runtime.ts:16`
+types that field as `AdapterRegistry`, the class the package owns. **So the worker's
+dependency is not merely unused: it is what makes the package's types resolvable in a
+clean install.** Removing it is the proof that the edge is gone, not a tidy-up.
+
+**What is not broken, and is part of the record.** The domain does not name a provider —
+the only occurrences of "Hermes", "Codex" or "OpenClaw" under `apps/server/src/modules`
+are display names in `conversations/__tests__/routing.test.ts`, **which is configuration,
+not code, exactly as ADR 0004 allows.** And adding a new adapter type does not touch the
+domain: it means the type schema and its labels, a config schema, a new file in the
+adapters package and one line in `createDefaultRegistry`. **The rule holds. What is
+missing is the thing that keeps it holding.**
+
+**The fix: the shapes the domain needs move into the package the domain already owns.**
+`packages/contracts/src/agent.ts` already holds `AgentAdapter` (`:244`) — the adapter
+interface itself. `AdapterLogger` (`agent-adapters/src/types.ts:3-7`) and `AdapterContext`
+(`types.ts:13-16`) are the rest of the boundary vocabulary, and they belong beside it, with
+a name for the registry's **shape** — `AdapterProvider` — so the domain depends on a
+capability rather than on a class. **The adapters package keeps the class and implements
+the shape; the domain imports the shape from `@personal-os/contracts`; and the worker's
+dependency becomes removable, because `Runtime.registry` names the shape rather than the
+class.** The name follows the repository's own vocabulary: the resources module already has
+a `ResourceProvider`, the same idea on the other side of the boundary.
+
+**And a check, because a rule nothing checks is a wish.** The repository has already turned
+three such wishes into checks — the contract-status gate, the contract-pointer gate and
+the licence record's pin — **and this is the fourth.** The check walks the source tree the
+way `apps/worker/src/__tests__/autonomy-policy-attack.test.ts:421-463` already does, and
+asserts that the list of offenders is empty: no domain file imports the adapters package,
+the worker does not declare it, and the only importer left is the composition root.
+
+**Two limits, stated rather than papered over.** The check proves the **edge**, not the
+absence of a provider's _name_ in prose — a domain module that branched on a name would
+not be seen by it; what it does prove is that the domain cannot reach an adapter without
+going through the boundary. And **the check is a test file, and the repository gives test
+files to Probe** — this session wrote it because the item could not land without it, it is
+a new file with a new name, and nothing of Probe's is touched. **Probe may take it over.**
+
+**The floor at 16:05.** **Ceiling two. Next free number WI-135.**
