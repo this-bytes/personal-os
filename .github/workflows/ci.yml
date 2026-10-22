@@ -90,8 +90,17 @@ jobs:
           node-version-file: .nvmrc
           cache: npm
 
+      # The audit below is this job's gate, so the install must not audit as
+      # well. `npm ci` runs its own post-install audit against the registry
+      # unless `--no-audit` is passed, and this job was the only one in the
+      # pipeline that let it: it paid for the registry round-trip twice, and
+      # when the registry stalled it spent seven minutes on the install's
+      # audit and was still waiting on the second one when its ten-minute
+      # budget ran out. Its siblings took no audit in their install and were
+      # unaffected. The explicit audit below is the one that decides whether
+      # this job passes.
       - name: Install dependencies
-        run: npm ci --ignore-scripts
+        run: npm ci --ignore-scripts --no-audit --no-fund
 
       # A release that introduces a known vulnerability should not be able to
       # reach main quietly.
