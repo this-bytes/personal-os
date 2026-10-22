@@ -20,7 +20,7 @@
  *
  * The drifted citations are located by reading them out of the note, not by
  * writing the line numbers here. A test that hardcodes the line it is
- * protecting goes stale the moment the file it names moves — WI-123 published
+ * protecting goes stale the moment the file it names moves — WI-125 published
  * the approval's shape and moved `approvalEvidenceSchema` from line 55 to
  * line 91 — and a stale test fails for a reason that has nothing to do with
  * what it guards. The drift the two cases inject is the same drift either
