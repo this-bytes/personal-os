@@ -21,6 +21,28 @@ export type AutonomyAction = z.infer<typeof autonomyActionSchema>;
 export const autonomyActions: AutonomyAction[] = ['message.send', 'tool.call', 'artifact.create'];
 
 /**
+ * A change to the policy a workspace carries.
+ *
+ * Every field is optional, because a change says what changes: the owner sets
+ * the turn limit and the action list they set earlier stays. An absent list is
+ * left alone and an empty one clears it, so clearing is still deliberate.
+ *
+ * The action lists are constrained to the published vocabulary. A policy that
+ * names an action the system does not understand allows nothing, and it says
+ * so only by silence; a write that is refused says it out loud.
+ */
+export const autonomyPolicyPatchSchema = z.object({
+  mode: autonomyModeSchema.optional(),
+  allowedActions: z.array(autonomyActionSchema).optional(),
+  approvalRequired: z.array(autonomyActionSchema).optional(),
+  maxTurns: z.number().int().min(1).max(1000).optional(),
+  maxDurationSeconds: z.number().int().min(1).max(86_400).optional(),
+  maxSpendUnits: z.number().int().min(0).optional(),
+  dailySpendUnits: z.number().int().min(0).optional(),
+});
+export type AutonomyPolicyPatch = z.infer<typeof autonomyPolicyPatchSchema>;
+
+/**
  * The safeguards a conversation carries on its own.
  *
  * A conversation is not a policy — it cannot allow an action or require an
