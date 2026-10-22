@@ -1,4 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
+import type { WaitingItem } from '@personal-os/contracts';
 import { firstWorkspaceId, signIn } from './support/owner';
 
 /**
@@ -30,8 +31,13 @@ const NOTICE_WITHIN_MS = 5_000;
  * owner never does — so a row that only the worker can produce is put in
  * front of the client the way the server would send it. The shape is the one
  * CONTRACTS.md publishes.
+ *
+ * The rows are typed as `WaitingItem` — the declaration the server builds
+ * them against and the client reads them with — so a row that drifts from the
+ * published shape fails the typecheck here, where the drift is, instead of
+ * passing a suite that cannot tell the difference.
  */
-async function serveWaitingList(page: Page, items: unknown[]): Promise<void> {
+async function serveWaitingList(page: Page, items: WaitingItem[]): Promise<void> {
   await page.route(
     (url) => url.pathname === '/api/waiting',
     (route) =>
@@ -43,8 +49,14 @@ async function serveWaitingList(page: Page, items: unknown[]): Promise<void> {
   );
 }
 
-/** One approval, in the shape CONTRACTS.md publishes. */
-function approvalItem(workspaceId: string) {
+/**
+ * One approval, in the shape CONTRACTS.md publishes.
+ *
+ * The approval is not named by a tool, so it says so with `toolName: null`.
+ * The field is on every row the route sends, and an absent field would be a
+ * third wire shape the server never sends.
+ */
+function approvalItem(workspaceId: string): WaitingItem {
   return {
     id: 'approval:apr_waiting',
     kind: 'approval',
@@ -55,6 +67,7 @@ function approvalItem(workspaceId: string) {
     conversationId: 'cnv_waiting',
     taskId: null,
     agentConnectionId: 'agt_waiting',
+    toolName: null,
   };
 }
 
@@ -64,7 +77,7 @@ function approvalItem(workspaceId: string) {
  * The row names the agent that was refused and the tool it was refused, so
  * the owner can widen the grant from the row itself.
  */
-function capabilityItem(workspaceId: string) {
+function capabilityItem(workspaceId: string): WaitingItem {
   return {
     id: 'capability:cap_waiting',
     kind: 'capability',
@@ -407,6 +420,7 @@ test.describe('what is waiting on the owner', () => {
         conversationId: null,
         taskId: 'tsk_waiting',
         agentConnectionId: agentId,
+        toolName: null,
       },
     ]);
 
@@ -442,6 +456,7 @@ test.describe('what is waiting on the owner', () => {
         conversationId: null,
         taskId: 'tsk_unknown',
         agentConnectionId: 'agt_unknown',
+        toolName: null,
       },
     ]);
 
@@ -478,6 +493,7 @@ test.describe('what is waiting on the owner', () => {
         conversationId: 'cnv_waiting',
         taskId: null,
         agentConnectionId: 'agt_waiting',
+        toolName: null,
       },
     ]);
 
