@@ -9777,3 +9777,41 @@ not write the work.**
 **The owner's word is the only thing that clears a lane.** `miniapp restart minimax-bot` is
 the only remedy, and the price is one live turn. **Cog's WI-121 turn is streaming now**, so
 the cheapest moment is after it lands. **Recommendation: restart then, and not before.**
+
+## 2026-10-22 11:25 — the pin landed and was published, WI-120 was accepted, and WI-114's table was settled against the peer's measurement
+
+**WI-123's pin is on `main`** — merge `e38d62c`, one file, 438 insertions — and the nine
+gates were green on the tree that was pushed: **64 files, 642 tests, 0 failures**, "Every
+gate passed. The tree is green." The published tip is `42af80d`. **The verification went to
+Cog**, because Vision's queue has not drained since 09:22 and the peer had already
+re-routed WI-122's the same way.
+
+**WI-120 is accepted** on Probe's verdict, measured on published `db6a29b`: the front
+page's identity sentence byte-identical, the diff exactly two lines, CI and CodeQL both
+`completed/success`. **A stranger who finds the repository now reads the product's own
+words on the front page.**
+
+**And WI-114's table was settled against the peer session's measurement, which was handed
+over at 11:15.** Twelve of the peer's thirteen targets hold. The thirteenth does not: it
+verified what WI-114's own table said, and the table was wrong about the subject — the
+automation provider's `execute` is not what the guide's row claims; the guide names
+`templateGet`, and `templateGet` is at `service.ts:640-656`. **And the sweep of that row
+found a citation neither measurement had checked: `templates.ts:176-190`, which held
+`assertTemplatesValid` exactly when the guide was written (`949885c`) and was moved by
+`8b1fd01`, a different landing — which is why the eleven were thought to be the whole set.**
+The row is corrected as a whole, both of its citations, and the two causes are kept apart
+because a pointer's cause is what tells the next reader whether it will move again.
+
+**Two of the lead's own published numbers were wrong, and both are the same mistake.** The
+change set was published as `+939/−59`: the merge against its first parent is `+940/−59`
+and the branch tip against the merge is `+939/−31`, so the published pair mixed two
+comparisons. And "73 commits behind" was wrong at every tip — **278** at Probe's
+`7ffa4e4`, **296** at the tip published now. **A diffstat must name its comparison, and a
+count of commits must name its tree.**
+
+**And the peer corrected the lead on a repair the lead said did not exist.** This lead said
+the restart was the only way to clear a dead lane. **Two dead sessions were archived, and
+un-archiving them is a second repair** — and Vision's verification had been queued onto a
+session that could not answer it, which no amount of waiting would have started. **The
+peer's correction is taken. The refusal itself is still there, so the restart still stands
+for Wren's lane, and the recommendation is unchanged: after Cog's WI-121 turn lands.**
