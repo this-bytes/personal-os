@@ -4043,3 +4043,68 @@ again once this round finishes."_ **The refused request id, recorded: `chief-flo
 it, and the peer's WI-086 landing note is running. **The group is behind, not idle.** The
 rule this lead keeps is unchanged: **post to the group or dispatch directly, never both for
 the same item** — and when the channel is busy, **the channel's reply is the post.**
+
+### 11:04 — the 09:45 post landed at last, and it is superseded by the two replies that went out after it
+
+**The group's backlog delivered the oldest news last.** This lead's 09:45 report
+(`task_061f5814202a`, request `chief-floor-wi086-landed-4047fef-2026-10-22`) reached the
+channel at 11:0x — **after** this lead's 10:45 and 11:05 replies had already gone out.
+**A post that waits in the group's queue lands after the replies that came after it, so a
+queued post must carry its own supersession or it lands as a correction to itself.**
+
+**What in it no longer holds, each measured:**
+
+- **"`origin/main` is `4047fef`."** It is now **`e856a53`**, read with
+  `git ls-remote origin refs/heads/main` at 11:04.
+- **"This is the landing, not the acceptance. The verification is with Probe."** WI-086 is
+  **accepted** — written 10:37 in `da8e126`, on Probe's `VERIFIED` verdict at
+  `task_4b2fc4b5eb9f`, measured on published main `7ffa4e4`.
+- **"WI-114 and WI-115 both stay HELD."** **WI-115 is accepted** (10:37, the same commit) —
+  the lead standing as the item's own named verifier, on a reading, not a measurement.
+  **Only WI-114 stays HELD**, and the hold is on Wren's lane, not on the file.
+- **The number block.** It reads **WI-124 next free**. WI-122 (the note's pin), WI-123 (the
+  licence record's pin) and WI-116 (the strategy record's copy) are all filed.
+
+**The published tip, re-measured at 11:03.** `git diff --stat da8e126 e856a53` over
+`apps/**`, `packages/**`, `scripts/**` and every source extension is **empty** — the source
+the nine gates read at `da8e126` is byte-identical to the published tip. **`format:check`
+exit 0**, and **the pointer gate 126 checked, 0 failures — "every one of the 126 pointers
+points at code"** — both re-run on `e856a53` itself. The gates that read the source did not
+need to run again because the source did not move; the two that read what did move were run.
+
+**Two stale copies of verdicts this lead already holds are cancelled.** `task_89225a50e57d`
+(Probe's WI-086 verdict, third copy, to Chief) and `task_e76426ae3d78` (Probe's WI-106
+round-two verdict, third copy, to Chief). Both report on items already acted on — WI-086
+accepted at 10:37, WI-106 accepted at 09:10 (`4458ad1`). **A verdict delivered three times
+is still one verdict, and the extra copies are queue slots, not evidence.** They sat ahead
+of WI-122's, WI-123's and WI-116's verifications on a floor whose ceiling is two.
+**Their request ids are spent and are not reused.** One of Probe's group posts of the WI-086
+verdict (`task_dff3951ec65b`) is still queued and is **left alone**: it is the verifier's own
+words in the channel, it contradicts nothing, and killing another bot's delivery to the
+record is a heavier act than holding one slot.
+
+**Two lanes have gone quiet, and the second one is new.** **Wren's last word was at
+04:06:42**; every delegation since has died with **0 characters** — five in a row (WI-103,
+WI-106, WI-098, WI-111, WI-106 round two), **11 error turns in her chat in total, five of
+them today**. **Vision's last completed turn was 07:44:45**, and the two attempts since
+(09:52, 09:58) ended **`status=aborted`** — the first because a stale task record was
+cancelled under it. **So three pins, one verifier, and that verifier is stalling.** Both pin
+items therefore name a standing substitute — **Cog, who wrote none of either pin** — Vision
+first, Cog if her queue has not drained when the pin lands. **A substituted verifier stands
+where the substitute did not write the work**, the rule WI-098, WI-010, WI-112 and WI-106
+were settled on. Appended to both item files, dated.
+
+**WI-114 stays HELD.** The hold is on the lane, not on the file: five corrections measured
+and written, and **the lead does not spend a request id into a lane that is refusing.**
+
+**The floor at 11:04.** **Running:** Cog's WI-121 (`task_bbf11f83be2b`), streaming.
+**Queued:** Probe's WI-120 verification, second attempt (`task_f689f6b918a1`); Probe's
+WI-086 group report (`task_dff3951ec65b`); Vision's WI-122 (`task_ae9f26b09fd3`); Probe's
+WI-123 (`task_a606329a3dc1`); Probe's WI-116 (`task_9a4337f73e61`). **Ceiling two. Next free
+number WI-124.**
+
+**The one word the owner owes.** Two lanes are quiet — Wren for seven hours, Vision for three
+and a half with two aborted attempts — and **`miniapp restart minimax-bot` is the only thing
+that clears them.** The price is one live turn, and **Cog's WI-121 turn is streaming now**,
+so the cheapest moment is **after it lands**. **Recommendation: restart then, and not
+before.**

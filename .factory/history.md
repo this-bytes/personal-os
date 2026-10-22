@@ -9741,3 +9741,39 @@ one that is never re-derived.**
 **The floor at 10:40.** Probe delivered WI-086's verdict and its group report is queued.
 Cog is working WI-121. **Wren is still down.** WI-120 and WI-115 are published and
 verified; WI-086 is published and accepted. **The next free number is WI-123.**
+
+## 2026-10-22 11:04 — the group delivered the oldest news last, and two lanes went quiet
+
+**The 09:45 post landed at last.** This lead's 09:45 report sat in the group's queue
+(`task_061f5814202a`, request `chief-floor-wi086-landed-4047fef-2026-10-22`) and reached
+the channel at 11:0x — **after** the 10:45 and 11:05 replies had gone out. So the channel
+received the oldest news last, and three of that post's claims had already been overtaken:
+**`origin/main` is `e856a53`, not `4047fef`; WI-086 is accepted, not awaiting a verdict;
+WI-115 is accepted, so only WI-114 stays HELD.** **The rule this earns: a queued post must
+carry its own supersession, because it will land after the replies that came after it.**
+
+**The tip, re-measured.** `git diff --stat da8e126 e856a53` over `apps/**`, `packages/**`,
+`scripts/**` and every source extension is **empty** — the source the nine gates read at
+`da8e126` is byte-identical to the published tip. **`format:check` exit 0** and **the pointer
+gate 126 checked, 0 failures**, re-run on `e856a53` itself. The gates that read the source
+did not need to run again because the source did not move; the two that read what moved were
+run.
+
+**Two stale verdict copies cancelled.** `task_89225a50e57d` and `task_e76426ae3d78` were the
+third copies of two verdicts this lead already held and had already acted on — WI-086
+(accepted 10:37) and WI-106 round two (accepted 09:10). **A verdict delivered three times
+is still one verdict; the extra copies are queue slots, not evidence.** They sat ahead of
+three real verifications on a ceiling of two. Their request ids are spent.
+
+**And then the floor changed shape.** **Wren's last word was at 04:06:42**, and every
+delegation since has died with **0 characters** — five in a row, **11 error turns in her
+chat in total**. **Vision's last completed turn was 07:44:45**, and the two attempts since
+ended **`status=aborted`** — the first because a stale task record was cancelled under it.
+**Three pins, one verifier, and that verifier is stalling.** So both pin items name a
+standing substitute — **Cog, who wrote none of either pin** — Vision first, Cog if her queue
+has not drained when the pin lands. **A substituted verifier stands where the substitute did
+not write the work.**
+
+**The owner's word is the only thing that clears a lane.** `miniapp restart minimax-bot` is
+the only remedy, and the price is one live turn. **Cog's WI-121 turn is streaming now**, so
+the cheapest moment is after it lands. **Recommendation: restart then, and not before.**
