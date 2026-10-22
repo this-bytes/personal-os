@@ -53,6 +53,7 @@ function agent(persona?: { role?: string; instructions?: string }): AgentConnect
     ...(persona ? { persona } : {}),
     toolGrants: [],
     capabilities: null,
+    capabilitiesRevision: 1,
     status: 'unknown',
     lastError: null,
     lastConnectedAt: null,

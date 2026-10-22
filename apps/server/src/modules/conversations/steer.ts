@@ -1,4 +1,5 @@
 import { resolveMentions } from '@personal-os/contracts';
+import type { TurnCapabilityView } from '@personal-os/contracts';
 import type { RoutingParticipant } from './routing.js';
 
 /**
@@ -18,6 +19,14 @@ import type { RoutingParticipant } from './routing.js';
 export interface SteerTurn {
   executionId: string;
   agentConnectionId: string;
+  /**
+   * What the turn was admitted with, when it was admitted with a view.
+   *
+   * The steer goes into a turn, and the turn runs against the set it was
+   * admitted with: a capability that changed after the turn started does not
+   * change the turn.
+   */
+  capabilityView: TurnCapabilityView | null;
 }
 
 export interface SteerPlanInput {
@@ -28,8 +37,8 @@ export interface SteerPlanInput {
   explicitTargets?: string[];
   /** The turns that are running right now. */
   runningTurns: SteerTurn[];
-  /** Whether a connection can take input while its turn is running. */
-  acceptsSteering: (agentConnectionId: string) => boolean;
+  /** Whether the turn can take input while it runs. */
+  acceptsSteering: (turn: SteerTurn) => boolean;
 }
 
 export interface SteerPlan {
@@ -105,7 +114,7 @@ export function planSteer(input: SteerPlanInput): SteerPlan {
     target = only;
   }
 
-  if (!input.acceptsSteering(target.agentConnectionId)) {
+  if (!input.acceptsSteering(target)) {
     return {
       deliverable: false,
       reason:

@@ -1,7 +1,6 @@
 import { and, desc, eq, isNull } from 'drizzle-orm';
 import {
   contentToText,
-  type AgentCapabilities,
   type ContentPart,
   type Conversation,
   type Message,
@@ -9,17 +8,13 @@ import {
   type Participant,
   type Persona,
   type RoutingMode,
+  type TurnCapabilityView,
 } from '@personal-os/contracts';
 import type { Database } from '../../db/client.js';
-import {
-  agentConnections,
-  conversations,
-  executions,
-  messages,
-  participants,
-} from '../../db/schema.js';
+import { conversations, executions, messages, participants } from '../../db/schema.js';
 import { errors } from '../../lib/errors.js';
 import { newId } from '../../lib/ids.js';
+import { turnAcceptsSteering } from '../capabilities/capability-view.js';
 import type { EventsService } from '../events/service.js';
 import type { Queue } from '../../queue/client.js';
 import type { AuditService } from '../audit/service.js';
@@ -237,32 +232,39 @@ export function createConversationsService(
   /** The turns that are running in a conversation right now. */
   function runningTurns(conversationId: string): SteerTurn[] {
     return db
-      .select({ id: executions.id, agentConnectionId: executions.agentConnectionId })
+      .select({
+        id: executions.id,
+        agentConnectionId: executions.agentConnectionId,
+        capabilityView: executions.capabilityView,
+      })
       .from(executions)
       .where(and(eq(executions.conversationId, conversationId), eq(executions.status, 'running')))
       .all()
       .filter(
-        (row): row is { id: string; agentConnectionId: string } =>
-          typeof row.agentConnectionId === 'string',
+        (
+          row,
+        ): row is {
+          id: string;
+          agentConnectionId: string;
+          capabilityView: TurnCapabilityView | null;
+        } => typeof row.agentConnectionId === 'string',
       )
-      .map((row) => ({ executionId: row.id, agentConnectionId: row.agentConnectionId }));
+      .map((row) => ({
+        executionId: row.id,
+        agentConnectionId: row.agentConnectionId,
+        capabilityView: row.capabilityView,
+      }));
   }
 
   /**
-   * Whether a connection can take input while its turn is running.
+   * Whether a turn can take input while it runs.
    *
-   * The capabilities are the ones the adapter reported when the worker
-   * connected it, and the worker is what writes them. A connection that has
-   * never run a turn reports none, and a connection that reports none cannot
-   * be steered: absent means absent.
+   * A turn runs against the capability set it was admitted with, so the
+   * turn's own view is the answer. A turn recorded before the view existed has
+   * none, and the connection answers for it.
    */
-  function acceptsSteering(agentConnectionId: string): boolean {
-    const row = db
-      .select({ capabilities: agentConnections.capabilities })
-      .from(agentConnections)
-      .where(eq(agentConnections.id, agentConnectionId))
-      .get();
-    return (row?.capabilities as AgentCapabilities | null | undefined)?.acceptsSteering === true;
+  function acceptsSteering(turn: SteerTurn): boolean {
+    return turnAcceptsSteering(db, turn);
   }
 
   function listMessageRows(conversationId: string, limit: number, before?: string) {
@@ -570,7 +572,7 @@ export function createConversationsService(
           text,
           explicitTargets,
           runningTurns: runningTurns(conversationId),
-          acceptsSteering: (agentConnectionId) => acceptsSteering(agentConnectionId),
+          acceptsSteering: (turn) => acceptsSteering(turn),
         });
 
         if (plan.deliverable && plan.agentConnectionId && plan.participantId) {

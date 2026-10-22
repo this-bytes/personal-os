@@ -23,7 +23,7 @@ import {
   recordRefusal,
   type BlockedCapability,
 } from './blocked.js';
-import { effectiveToolGrants } from './grants.js';
+import { effectiveToolGrants, sameToolGrants } from './grants.js';
 
 export interface SecretSummary {
   id: string;
@@ -104,6 +104,29 @@ export interface AgentServiceOptions {
 const SECRET_CONFIG_KEYS = ['apiKey', 'authToken'];
 
 /**
+ * Whether two capability sets are the same set.
+ *
+ * The revision of a connection's capability set is the number of times the
+ * set changed, so a probe that says the same thing does not move it.
+ */
+export function sameCapabilities(
+  left: AgentCapabilities | null,
+  right: AgentCapabilities | null,
+): boolean {
+  if (!left || !right) return left === right;
+  return (
+    left.chat === right.chat &&
+    left.streaming === right.streaming &&
+    left.persistentSessions === right.persistentSessions &&
+    left.backgroundTasks === right.backgroundTasks &&
+    left.cancel === right.cancel &&
+    left.approvals === right.approvals &&
+    left.artifacts === right.artifacts &&
+    (left.acceptsSteering ?? false) === (right.acceptsSteering ?? false)
+  );
+}
+
+/**
  * Agent connections are the extensibility boundary. A connection points at
  * a server-held configuration record; credentials are stored separately and
  * are never sent to a browser client.
@@ -121,6 +144,7 @@ export function createAgentService(options: AgentServiceOptions): AgentService {
     workspaceId: row.workspaceId,
     toolGrants: effectiveToolGrants(row.toolGrants),
     capabilities: row.capabilities,
+    capabilitiesRevision: row.capabilitiesRevision,
     status: row.status as AgentConnectionStatus,
     lastError: row.lastError,
     lastConnectedAt: row.lastConnectedAt,
@@ -321,6 +345,20 @@ export function createAgentService(options: AgentServiceOptions): AgentService {
         (tx) => {
           const updates: Partial<typeof agentConnections.$inferInsert> = { updatedAt: now };
 
+          // The row as it stands, read inside the transaction.
+          //
+          // The lock is already held, so this read sees what another process
+          // committed, and the revision is moved from what is really there
+          // rather than from what was there when the request arrived.
+          const before = tx
+            .select({
+              toolGrants: agentConnections.toolGrants,
+              capabilitiesRevision: agentConnections.capabilitiesRevision,
+            })
+            .from(agentConnections)
+            .where(eq(agentConnections.id, id))
+            .get();
+
           if (patch.name !== undefined) updates.name = patch.name.trim();
           if (patch.enabled !== undefined) updates.enabled = patch.enabled;
           if (patch.toolGrants !== undefined) {
@@ -344,6 +382,24 @@ export function createAgentService(options: AgentServiceOptions): AgentService {
           }
           if (patch.persona !== undefined) updates.persona = patch.persona;
 
+          // The revision moves when the capability set moves, and there is one
+          // rule for it: the grant as it stands and the grant this patch
+          // writes are compared, and the revision moves when they differ.
+          //
+          // The rule is here rather than in the branches above because a branch
+          // that forgets to move the revision is a turn admitted later with a
+          // view whose revision says the set never changed. Comparing the two
+          // grants cannot be forgotten: whatever wrote the grant, the
+          // comparison sees it.
+          const beforeGrants = effectiveToolGrants(before?.toolGrants);
+          const afterGrants =
+            'toolGrants' in updates
+              ? effectiveToolGrants(updates.toolGrants)
+              : effectiveToolGrants(before?.toolGrants);
+          if (!sameToolGrants(beforeGrants, afterGrants)) {
+            updates.capabilitiesRevision = (before?.capabilitiesRevision ?? 1) + 1;
+          }
+
           if (patch.config !== undefined || patch.secrets !== undefined) {
             const existing = readConfigPayload(tx, current.configRef);
             // Merge rather than replace: a configuration edit must not silently
@@ -366,6 +422,9 @@ export function createAgentService(options: AgentServiceOptions): AgentService {
             tx.delete(secretConfigs).where(eq(secretConfigs.id, current.configRef)).run();
             updates.status = 'unknown';
             updates.capabilities = null;
+            // The capabilities are unknown again, so the set moved: the next
+            // turn is admitted against a set nobody has observed yet.
+            updates.capabilitiesRevision = (before?.capabilitiesRevision ?? 1) + 1;
           }
 
           tx.update(agentConnections).set(updates).where(eq(agentConnections.id, id)).run();
@@ -409,6 +468,12 @@ export function createAgentService(options: AgentServiceOptions): AgentService {
         db.update(agentConnections)
           .set({
             capabilities,
+            // The set moves when what the agent reports moves. A probe that
+            // says the same thing does not move it: the revision is the
+            // number of times the set changed, not the number of probes.
+            ...(sameCapabilities(current.capabilities, capabilities)
+              ? {}
+              : { capabilitiesRevision: current.capabilitiesRevision + 1 }),
             status: capabilities.chat ? 'connected' : 'degraded',
             lastError: capabilities.chat
               ? null

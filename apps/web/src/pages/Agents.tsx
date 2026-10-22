@@ -302,6 +302,12 @@ export function Agents(): React.JSX.Element {
                   ) : (
                     <Badge variant="outline">capabilities unknown</Badge>
                   )}
+                  {/* The revision is what a turn pins. The owner changes a
+                      grant, the revision moves, and the next turn is admitted
+                      against the new set. */}
+                  <span className="font-mono text-[10px] text-slate-500">
+                    set revision {agent.capabilitiesRevision}
+                  </span>
                 </div>
 
                 {agent.lastError ? (

@@ -98,13 +98,11 @@ export function registerExecutionRoutes(app: FastifyInstance): void {
     const run = activity.runControlFor({
       status: activity.turnStatusOf(turn.status),
       stopRequested: stopWasRequested(turn.workspaceId, id),
-      // A turn can be steered when the connection behind it can take input
-      // while it runs. The connection says so only when the adapter reported
-      // it, and a connection that has never run reports nothing: absent means
-      // absent.
-      canSteer: turn.agentConnectionId
-        ? activity.connectionAcceptsSteering(db, turn.agentConnectionId)
-        : false,
+      // A turn can be steered when the capability set it was admitted with
+      // can take input while it runs. The set is pinned at admission, so a
+      // capability that changed after the turn started does not change the
+      // turn: it takes effect on the next one.
+      canSteer: activity.turnAcceptsSteering(db, turn),
     });
 
     const tree = app.services.bots.delegationTree(id);
@@ -119,7 +117,10 @@ export function registerExecutionRoutes(app: FastifyInstance): void {
         spendUnits: turn.spendUnits,
         startedAt: turn.startedAt,
         finishedAt: turn.finishedAt,
-        capabilityView: null,
+        // What the turn was admitted with. Absent rather than empty: a turn
+        // recorded before the view existed has none, and an empty view would
+        // say the agent had no tools.
+        capabilityView: turn.capabilityView,
         // The work this turn handed over, and the work that handed over to it.
         delegatedTasks:
           tree.parent || tree.children.length > 0

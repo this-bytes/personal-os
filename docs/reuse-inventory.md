@@ -240,14 +240,16 @@ design system.
 This is the code that belongs to Personal OS and that no candidate can supply.
 It is listed because it is the half of the answer that is not "reused".
 
-| File                                                | What it owns                                                                                                                                                   |
-| --------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `packages/contracts/src/chat.ts`                    | the activity record, the run control, the stop outcome, the delegation tree. The published vocabulary every surface is drawn from.                             |
-| `apps/web/src/lib/chat.ts`                          | the pure rules: an activity's tone, its trace status, its label, its duration, the grouping by turn, the count of turns. No DOM, so it is testable on its own. |
-| `apps/web/src/components/chat/ActivityTimeline.tsx` | what a trace row _means_ — the dot's tone, the sentence, the caution and failure markers, the run's cost at the end.                                           |
-| `apps/web/src/components/chat/Markdown.tsx`         | markdown drawn as text, and the mention that wears its agent's hue.                                                                                            |
-| `packages/ui/src/forge.tsx`                         | the Forge visual language: the room, the counters, the panels.                                                                                                 |
-| `apps/server/src/modules/executions/activity.ts`    | the read model the trace is drawn from.                                                                                                                        |
+| File                                                      | What it owns                                                                                                                                                                                      |
+| --------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `packages/contracts/src/chat.ts`                          | the activity record, the run control, the stop outcome, the delegation tree. The published vocabulary every surface is drawn from.                                                                |
+| `apps/web/src/lib/chat.ts`                                | the pure rules: an activity's tone, its trace status, its label, its duration, the grouping by turn, the count of turns. No DOM, so it is testable on its own.                                    |
+| `apps/web/src/components/chat/ActivityTimeline.tsx`       | what a trace row _means_ — the dot's tone, the sentence, the caution and failure markers, the run's cost at the end.                                                                              |
+| `apps/web/src/components/chat/Markdown.tsx`               | markdown drawn as text, and the mention that wears its agent's hue.                                                                                                                               |
+| `packages/ui/src/forge.tsx`                               | the Forge visual language: the room, the counters, the panels.                                                                                                                                    |
+| `apps/server/src/modules/executions/activity.ts`          | the read model the trace is drawn from.                                                                                                                                                           |
+| `apps/server/src/modules/capabilities/capability-view.ts` | the rule that a turn runs against the capability set it was admitted with: the view is pinned at admission, and whether a turn can be steered is asked of the turn rather than of the connection. |
+| `apps/web/src/components/chat/TurnCapabilityPanel.tsx`    | what the turn was admitted with — the agent, the revision, the capabilities, the tools — and the limit the view does not reach.                                                                   |
 
 ---
 

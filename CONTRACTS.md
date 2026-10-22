@@ -90,7 +90,7 @@ turn derived from one human request together. `origin` records who spoke and how
 the delegation chain has travelled — the basis of the echo-loop guard. `executionId`
 names the execution the message belongs to — the execution is the run itself, and
 the message it produced is that run's own record
-(`apps/server/src/modules/conversations/service.ts:72-77`). **`detail` is the
+(`apps/server/src/modules/conversations/service.ts:67-72`). **`detail` is the
 server's own sentence about how the message ended** — a message that did not finish
 says why, in the server's words
 (`packages/contracts/src/conversation.ts:90`), and the client shows it as it is
@@ -1591,9 +1591,9 @@ against the execution when the turn ends**: the worker writes one unit for an
 agent turn and none for a turn that never reached the agent
 (`apps/worker/src/executor.ts:1092`, `apps/worker/src/executor.ts:1389`).
 **The row is created with no spend units**, because the cost is not known until
-the turn has run (`apps/server/src/modules/conversations/dispatch.ts:180`,
-`apps/server/src/modules/factory/service.ts:469`), and the column defaults to zero
-(`apps/server/src/db/schema.ts:261`). **So the workspace's spend for the day is
+the turn has run (`apps/server/src/modules/conversations/dispatch.ts:184`,
+`apps/server/src/modules/factory/service.ts:473`), and the column defaults to zero
+(`apps/server/src/db/schema.ts:295`). **So the workspace's spend for the day is
 the sum of what its turns actually cost, and the cap bites.**
 
 **The mode is resolved, readable, and enforced nowhere.** It is carried through the
@@ -1711,7 +1711,7 @@ failure. It is the same word the unknown outcome uses
 the product produces it: the worker writes it when a turn's outcome cannot be
 confirmed (`apps/worker/src/executor.ts:118`), and the conversation dispatch writes it
 when a turn stops for the same reason
-(`apps/server/src/modules/conversations/dispatch.ts:256`). **A vocabulary without
+(`apps/server/src/modules/conversations/dispatch.ts:260`). **A vocabulary without
 `unknown` would leave the unknown outcome unrepresentable in the trail**, and the
 trail is where it is recorded.
 
@@ -1901,11 +1901,11 @@ carries is the published one, so a client that already posts to
 **The row leaves when the grant is widened.** A capability the agent holds is not
 waiting on the owner any more, so the row leaves the list as soon as the grant
 includes it. Whichever route widened the grant, the row leaves: both go through
-the one write that changes a grant (`apps/server/src/modules/agents/service.ts:371`).
+the one write that changes a grant (`apps/server/src/modules/agents/service.ts:412`).
 A list that keeps the row is a list that lies about what is waiting.
 
 **The row leaves and the grant is written in one transaction (WI-131).** The two writes are
-one change and are made together (`apps/server/src/modules/agents/service.ts:320`):
+one change and are made together (`apps/server/src/modules/agents/service.ts:355`):
 the row that says what the agent is waiting on leaves the list, and the grant that
 says what the agent may call is written. **So the guarantee is kept in both
 directions. The row leaves exactly when the grant includes the capability** — and
@@ -1916,9 +1916,9 @@ the row while the agent is still blocked is a list that lies the other way.
 
 **A widening is not taken back (WI-146).** The union that widens the grant is
 computed **inside** the transaction that writes it, from a read taken inside the
-same transaction (`apps/server/src/modules/agents/service.ts:338`), and the
+same transaction (`apps/server/src/modules/agents/service.ts:376`), and the
 transaction takes the write lock before it reads
-(`apps/server/src/modules/agents/service.ts:320`). **So a widening that another
+(`apps/server/src/modules/agents/service.ts:355`). **So a widening that another
 process committed while this one was waiting is not taken back: the grant ends
 up holding both capabilities.** A read taken outside the transaction could be
 stale by the time the write landed, and a union computed from a stale grant
@@ -2042,7 +2042,7 @@ because a cancellation is a decision and not a fault
 **The spend units are recorded, and today they are zero.** A spend unit is an
 abstract cost counter, not currency (`packages/contracts/src/common.ts:58`). The
 execution is created with `spendUnits: 0`
-(`apps/server/src/modules/conversations/dispatch.ts:180`) and nothing writes the
+(`apps/server/src/modules/conversations/dispatch.ts:184`) and nothing writes the
 column afterwards — the turn count the router uses to enforce a spend limit is
 computed in memory and never stored
 (`apps/server/src/modules/conversations/routing.ts:307`). A client that shows
@@ -2182,6 +2182,13 @@ interface TurnCapabilityView {
   agentConnectionId: string;
   /** The revision of the connection's capability set at admission. */
   capabilitiesRevision: number;
+  /**
+   * What the agent was reported to be able to do, at admission.
+   *
+   * Null when the connection had never been probed: the turn was admitted
+   * against an agent whose capabilities nobody had observed yet.
+   */
+  capabilities: AgentCapabilities | null;
   toolGrants: string[];
   pinnedAt: string;
 }
@@ -2190,6 +2197,40 @@ interface TurnCapabilityView {
 A turn recorded before this change has no view, and the API reports it as
 absent rather than as empty. An empty view would say the agent had no tools,
 which is a different claim.
+
+**The view is pinned when the turn is admitted.** Every place that admits a
+turn pins the same view, because there is one rule for it and it lives with
+the capability API, which is the one module that reads across every domain
+(`apps/server/src/modules/capabilities/capability-view.ts:29`). A conversation
+turn and a factory turn are pinned the same way
+(`apps/server/src/modules/conversations/dispatch.ts:181`,
+`apps/server/src/modules/factory/service.ts:470`).
+
+**The turn's own view answers what the turn may do.** Whether a turn can be
+steered is asked of the view the turn was admitted with, and not of the
+connection it runs on
+(`apps/server/src/modules/capabilities/capability-view.ts:62`). A capability
+that changed after the turn started does not change the turn, and takes effect
+on the next one. A turn whose view says the capabilities were never observed
+cannot be steered: nothing was observed. A turn recorded before the view
+existed has none, so the connection answers for it — the same answer it gave
+before the view was captured.
+
+**The revision counts the times the set moved.** A connection's capability set
+has a revision, and it moves when the set moves: the tool grants change, a
+probe reports different capabilities, or the configuration is replaced and the
+capabilities become unknown again
+(`apps/server/src/modules/agents/service.ts:438`). The rule is one comparison
+of the grant before the write and the grant after it
+(`apps/server/src/modules/agents/service.ts:410`), so a grant saved unchanged
+does not move the revision: the revision counts the changes, not the writes.
+
+**The view does not re-scope the MCP token.** The token an agent holds names
+its connection, so a grant the owner widens reaches the agent's next tool call
+as well as its next turn. The view pins the grants for the turn's own
+decisions — whether it can be steered, and what the panel says it may do — and
+it is not a per-turn enforcement of the tool surface. A client that shows the
+view is showing what the turn was admitted with, not a sandbox around it.
 
 ### Canonical history
 
@@ -2962,7 +3003,7 @@ automation or task is recorded as authored by the agent that made it.
 write one from the service layer — `POST /api/approvals/:id/decide` and `POST
 /api/agui/runs/:runId/resume`, both at
 `apps/server/src/modules/approvals/resume.ts:55`, and `PATCH /api/tasks/:id` at
-`apps/server/src/modules/factory/service.ts:317`, and that one only when the task
+`apps/server/src/modules/factory/service.ts:415`, and that one only when the task
 leaves `unknown`. **No mutating route writes none.**
 
 The twelve that used to write none write one each, at the route:
