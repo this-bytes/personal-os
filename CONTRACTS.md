@@ -858,7 +858,7 @@ version on at `apps/server/src/modules/mcp/server.ts:459`. The merge rules
 themselves are at `apps/server/src/modules/resources/templates.ts:509-522`, and the
 resource records them at
 `apps/server/src/modules/resources/service.ts:191-192` and
-`apps/server/src/modules/resources/service.ts:399-400`.
+`apps/server/src/modules/resources/service.ts:401-402`.
 
 **The six templates that ship are one for each kind**, authored in the repository
 at `apps/server/src/modules/resources/templates.ts:21`:
@@ -2198,7 +2198,7 @@ author on the row — `created_by` on both tables
 (`apps/server/src/db/schema.ts:330`, `apps/server/src/db/schema.ts:416`) — and the
 projections read it
 (`apps/server/src/modules/resources/service.ts:234`,
-`apps/server/src/modules/resources/service.ts:363`). An agent-created
+`apps/server/src/modules/resources/service.ts:365`). An agent-created
 automation or task is recorded as authored by the agent that made it.
 
 **Every mutating route writes an audit entry.** Of the 37 mutating routes in
