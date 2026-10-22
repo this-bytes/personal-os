@@ -402,6 +402,40 @@
       ]
     },
     {
+      "id": "the-hermes-preset-wi-153",
+      "section": "The adapter presets",
+      "note": "This entry is the contract for WI-153, and the code implements it",
+      "claim": "implemented",
+      "why": "WI-153's Hermes preset and the proof of a runtime: the catalogue carries the surface the installed Hermes publishes, the script proves a runtime through the product's own adapter, and the ACP adapter opens a session the way the protocol asks.",
+      "expect": [
+        {
+          "kind": "present-pattern",
+          "path": "packages/contracts/src/adapter-presets.ts",
+          "value": "id: 'hermes-acp'"
+        },
+        {
+          "kind": "present-pattern",
+          "path": "packages/agent-adapters/src/acp.ts",
+          "value": "'session/new',"
+        },
+        {
+          "kind": "present-text",
+          "path": "packages/agent-adapters/src/acp.ts",
+          "value": "mcpServers: []"
+        },
+        {
+          "kind": "present-pattern",
+          "path": "packages/agent-adapters/src/jsonrpc.ts",
+          "value": "function describeErrorData"
+        },
+        {
+          "kind": "present-text",
+          "path": "scripts/verify-runtime.ts",
+          "value": "createDefaultRegistry"
+        }
+      ]
+    },
+    {
       "id": "the-widening-is-not-taken-back-wi-146",
       "section": "The waiting list",
       "note": "The widening is the contract for WI-146, and the code implements it",

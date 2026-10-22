@@ -757,6 +757,13 @@ route is `GET /api/agent-presets`, and the panel's connection form carries the
 template picker. The slice's own record is
 [docs/contract-adapter-presets.md](docs/contract-adapter-presets.md).
 
+This entry is the contract for **WI-153**, and the code implements it — as of
+`f34bc5b`. The catalogue is `packages/contracts/src/adapter-presets.ts`, the
+proof is `scripts/verify-runtime.ts`, the session the protocol asks for is
+`packages/agent-adapters/src/acp.ts`, and the reason a refusal carries is
+`packages/agent-adapters/src/jsonrpc.ts`. The slice's own record is
+`.factory/work/WI-153.md`.
+
 ### Important design rules
 
 **Preserve native capabilities.** Do not reduce sophisticated agents to basic
