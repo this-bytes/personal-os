@@ -1,6 +1,6 @@
 {
   "contract": "CONTRACTS.md",
-  "about": "The claims the contract status gate checks. Each claim names the contract section the note lives in, the fragment of that note which carries the claim, the claim itself, and what the tree must contain for the claim to be true. A note whose claim changes has to change this file in the same commit: the gate fails when a note is false, when the note and this table disagree, and when the note this table describes is no longer in the contract. A note this file says nothing about is reported as unchecked and never fails the gate. A note that names the commit which carries the claim is checked at that commit as well as in the working tree, so an assertion that only says a name is present will not do: it has to say the shape the contract publishes.",
+  "about": "The claims the contract status gate checks. Each claim names the contract section the note lives in, the fragment of that note which carries the claim, the claim itself, and what the tree must contain for the claim to be true. A note whose claim changes has to change this file in the same commit: the gate fails when a note is false, when the note and this table disagree, and when the note this table describes is no longer in the contract. A note this file says nothing about is reported as unchecked and never fails the gate. A note that names the commit which carries the claim is checked at that commit as well as in the working tree, so an assertion that only says a name is present will not do: it has to say the shape the contract publishes. Two claims about one item name the item, and the gate fails when they name two commits: each claim is checked on its own, and a witness can carry one of an item's shapes without carrying the other.",
   "claims": [
     {
       "id": "the-unknown-outcome",
@@ -154,6 +154,7 @@
       "section": "The waiting list",
       "note": "The published waiting shape is the contract for WI-132, and the code implements it",
       "claim": "implemented",
+      "item": "WI-132",
       "why": "WI-132's one declaration: the kind union, the reason union and the item live in the contracts package, and the server and the panel both read them there.",
       "expect": [
         {
@@ -203,6 +204,7 @@
       "section": "The waiting list",
       "note": "The panel's capability row is the contract for WI-132, and the code implements it",
       "claim": "implemented",
+      "item": "WI-132",
       "why": "WI-132's row action: the panel's capability row says which tool the agent wanted and widens the grant from the row, through the published route.",
       "expect": [
         {
@@ -448,9 +450,10 @@
     {
       "id": "the-widening-is-not-taken-back-wi-146",
       "section": "The waiting list",
-      "note": "The widening is the contract for WI-146, and the code implements it",
+      "note": "The widening route is the contract for WI-146, and the code implements it",
       "claim": "implemented",
-      "why": "WI-146's guarantee: the union that widens the grant is computed inside the transaction that writes it, and that transaction takes the write lock before it reads, so a widening another process committed is not overwritten by a stale union.",
+      "item": "WI-146",
+      "why": "WI-146's guarantee, on the path it holds: the widening route widens one tool, the union that widens the grant is computed inside the transaction that writes it, and that transaction takes the write lock before it reads, so a widening another process committed is not overwritten by a stale union. The claim is about the route. The grant editor's save writes the list it read and is not covered by it; when that path is fixed, the guarantee is general again and this row binds both.",
       "expect": [
         {
           "kind": "present-pattern",

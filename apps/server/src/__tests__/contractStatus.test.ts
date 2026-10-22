@@ -674,6 +674,290 @@ describe('a note that names a commit', () => {
   }, 60_000);
 });
 
+describe('two claims about one item', () => {
+  // WI-132 has two claims: the shape it publishes and the panel's row. Each
+  // was checked at the commit it named, and each passed on its own — the
+  // panel's expectations held at the commit that published the loose
+  // declaration, so the panel claim stayed green there while the item's shape
+  // had already moved. A claim about the tree says nothing about the commit
+  // beside it, and two claims about one item have to name one commit.
+  it('fails when they name two commits', async () => {
+    const root = scratch('contract-status-item-commit-');
+    initRepository(root);
+    const first = commit(root, {
+      'src/shape.ts': "export const shape = 'loose';\n",
+      'src/panel.ts': 'export const panel = 1;\n',
+    });
+    const second = commit(root, {
+      'src/shape.ts': "export const shape = 'tight';\n",
+      'src/panel.ts': 'export const panel = 1;\n',
+    });
+
+    write(
+      root,
+      'CONTRACTS.md',
+      [
+        '# Contracts',
+        '',
+        '## Contract 1 — The shape',
+        '',
+        `**The shape is the contract, and the code implements it — as of \`${second}\`.**`,
+        '',
+        '## Contract 2 — The panel',
+        '',
+        `**The panel is the contract, and the code implements it — as of \`${first}\`.**`,
+        '',
+      ].join('\n'),
+    );
+    write(
+      root,
+      'table.json',
+      JSON.stringify(
+        {
+          contract: 'CONTRACTS.md',
+          claims: [
+            {
+              id: 'the-shape',
+              section: 'Contract 1 — The shape',
+              note: 'The shape is the contract, and the code implements it',
+              claim: 'implemented',
+              item: 'WI-132',
+              expect: [{ kind: 'present-text', path: 'src/shape.ts', value: "shape = 'tight'" }],
+            },
+            {
+              id: 'the-panel',
+              section: 'Contract 2 — The panel',
+              note: 'The panel is the contract, and the code implements it',
+              claim: 'implemented',
+              item: 'WI-132',
+              expect: [{ kind: 'present-text', path: 'src/panel.ts', value: 'panel = 1' }],
+            },
+          ],
+        },
+        null,
+        2,
+      ),
+    );
+
+    const result = await runGate([
+      '--root',
+      root,
+      '--contract',
+      'CONTRACTS.md',
+      '--table',
+      'table.json',
+    ]);
+
+    // Each claim holds where it stands: the shape at the tight commit, the
+    // panel at the first one. What does not hold is the item, whose two
+    // claims point at two different trees.
+    expect(result.status).toBe(1);
+    expect(result.stdout).toContain('the claims about WI-132 name 2 commits');
+    expect(result.stdout).toContain(first.slice(0, 7));
+    expect(result.stdout).toContain(second.slice(0, 7));
+    expect(result.stdout).toContain('Two claims about one item must name one commit.');
+  }, 60_000);
+
+  it('passes when they name the same commit', async () => {
+    const root = scratch('contract-status-item-one-commit-');
+    initRepository(root);
+    const only = commit(root, {
+      'src/shape.ts': "export const shape = 'tight';\n",
+      'src/panel.ts': 'export const panel = 1;\n',
+    });
+
+    write(
+      root,
+      'CONTRACTS.md',
+      [
+        '# Contracts',
+        '',
+        '## Contract 1 — The shape',
+        '',
+        `**The shape is the contract, and the code implements it — as of \`${only}\`.**`,
+        '',
+        '## Contract 2 — The panel',
+        '',
+        `**The panel is the contract, and the code implements it — as of \`${only}\`.**`,
+        '',
+      ].join('\n'),
+    );
+    write(
+      root,
+      'table.json',
+      JSON.stringify(
+        {
+          contract: 'CONTRACTS.md',
+          claims: [
+            {
+              id: 'the-shape',
+              section: 'Contract 1 — The shape',
+              note: 'The shape is the contract, and the code implements it',
+              claim: 'implemented',
+              item: 'WI-132',
+              expect: [{ kind: 'present-text', path: 'src/shape.ts', value: "shape = 'tight'" }],
+            },
+            {
+              id: 'the-panel',
+              section: 'Contract 2 — The panel',
+              note: 'The panel is the contract, and the code implements it',
+              claim: 'implemented',
+              item: 'WI-132',
+              expect: [{ kind: 'present-text', path: 'src/panel.ts', value: 'panel = 1' }],
+            },
+          ],
+        },
+        null,
+        2,
+      ),
+    );
+
+    const result = await runGate([
+      '--root',
+      root,
+      '--contract',
+      'CONTRACTS.md',
+      '--table',
+      'table.json',
+    ]);
+
+    expect(result.status).toBe(0);
+    expect(result.stdout).toContain('Every claim in the table matches the tree.');
+  }, 60_000);
+
+  it('passes when two claims in one section are about different items', async () => {
+    // The rule reads the item, not the section. Two claims in one section can
+    // be about different items — WI-142's catalogue and WI-153's evidence are
+    // both in "The adapter presets" — and naming different commits is then
+    // right, not a disagreement.
+    const root = scratch('contract-status-two-items-');
+    initRepository(root);
+    const first = commit(root, {
+      'src/one.ts': 'export const one = 1;\n',
+      'src/two.ts': 'export const two = 2;\n',
+    });
+    const second = commit(root, {
+      'src/one.ts': 'export const one = 1;\n',
+      'src/two.ts': 'export const two = 3;\n',
+    });
+
+    write(
+      root,
+      'CONTRACTS.md',
+      [
+        '# Contracts',
+        '',
+        '## Contract 1 — Two things',
+        '',
+        `**The first thing is the contract, and the code implements it — as of \`${first}\`.**`,
+        '',
+        `**The second thing is the contract, and the code implements it — as of \`${second}\`.**`,
+        '',
+      ].join('\n'),
+    );
+    write(
+      root,
+      'table.json',
+      JSON.stringify(
+        {
+          contract: 'CONTRACTS.md',
+          claims: [
+            {
+              id: 'the-first',
+              section: 'Contract 1 — Two things',
+              note: 'The first thing is the contract, and the code implements it',
+              claim: 'implemented',
+              item: 'WI-142',
+              expect: [{ kind: 'present-text', path: 'src/one.ts', value: 'one = 1' }],
+            },
+            {
+              id: 'the-second',
+              section: 'Contract 1 — Two things',
+              note: 'The second thing is the contract, and the code implements it',
+              claim: 'implemented',
+              item: 'WI-153',
+              expect: [{ kind: 'present-text', path: 'src/two.ts', value: 'two = 3' }],
+            },
+          ],
+        },
+        null,
+        2,
+      ),
+    );
+
+    const result = await runGate([
+      '--root',
+      root,
+      '--contract',
+      'CONTRACTS.md',
+      '--table',
+      'table.json',
+    ]);
+
+    expect(result.status).toBe(0);
+    expect(result.stdout).toContain('Every claim in the table matches the tree.');
+  }, 60_000);
+});
+
+describe('a field the gate does not read', () => {
+  // A claim is rebuilt field by field when the table is read, so a field the
+  // gate does not know about is a field that is silently dropped. The table
+  // then says something the gate cannot read, and the table looks checked:
+  // the rule it names is not being applied to anything. This is what happened
+  // when the item field was added — the rule was written, the field was
+  // named, and the gate ignored both.
+  it('is refused rather than dropped', async () => {
+    const root = scratch('contract-status-unknown-field-');
+    initRepository(root);
+    commit(root, { 'src/thing.ts': 'export const theThing = 1;\n' });
+
+    write(
+      root,
+      'CONTRACTS.md',
+      ['# Contracts', '', '## Contract 1 — A thing', '', '**The code implements it.**', ''].join(
+        '\n',
+      ),
+    );
+    write(
+      root,
+      'table.json',
+      JSON.stringify(
+        {
+          contract: 'CONTRACTS.md',
+          claims: [
+            {
+              id: 'a-thing',
+              section: 'Contract 1 — A thing',
+              note: 'The code implements it',
+              claim: 'implemented',
+              // A field the gate does not read: it would be dropped, and the
+              // claim would be checked without it.
+              itemm: 'WI-132',
+              expect: [{ kind: 'present-text', path: 'src/thing.ts', value: 'theThing = 1' }],
+            },
+          ],
+        },
+        null,
+        2,
+      ),
+    );
+
+    const result = await runGate([
+      '--root',
+      root,
+      '--contract',
+      'CONTRACTS.md',
+      '--table',
+      'table.json',
+    ]);
+
+    expect(result.status).toBe(2);
+    expect(result.stdout).toContain('could not run');
+    expect(result.stdout).toContain('"itemm"');
+    expect(result.stdout).toContain('the gate does not read');
+  }, 60_000);
+});
+
 describe('the tree as it stands', () => {
   it('passes, with every claim in the table checked', async () => {
     const result = await runGate([]);

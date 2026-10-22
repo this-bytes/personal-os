@@ -16,6 +16,11 @@
  * itself, and what the tree must contain for the claim to be true. It checks
  * exactly those, and it checks nothing else.
  *
+ * A claim is rebuilt field by field when the table is read, so a field the
+ * gate does not know about would be silently dropped: the table says
+ * something the gate cannot read, and the claim looks checked while the rule
+ * it names is applied to nothing. A field the gate does not read is refused.
+ *
  * A note that names the commit which carries the claim — "the code implements
  * it — as of `<commit>`" — is checked at that commit as well as in the working
  * tree. The tree moves on, and a shape can be tightened after the note was
@@ -24,6 +29,14 @@
  * carries. WI-132's note named a commit that held the loose declaration of a
  * field the contract publishes as required, and nothing noticed, because a
  * claim about the working tree says nothing about the commit it names.
+ *
+ * Two claims about one item must name one commit. A commit can carry one of an
+ * item's shapes without carrying the other: WI-132's shape claim is red at the
+ * commit that published the loose declaration, while its panel claim is green
+ * there, because the panel's own expectations held there. Each claim passes on
+ * its own, and neither of them says what the item's shape is. A claim that
+ * names an item is therefore checked against the other claims about that item,
+ * and the table says which claims are about the same thing.
  *
  *   npx tsx scripts/verify-contract-status.ts
  *
@@ -70,6 +83,19 @@ export interface ClaimEntry {
   claim: Claim;
   /** Why this claim is worth checking, in one sentence. */
   why?: string;
+  /**
+   * The work item this claim is about, when it is one of several claims about
+   * the same item.
+   *
+   * Two claims about one item must name one commit. A claim is checked at the
+   * commit it names, and a commit can carry one of an item's shapes without
+   * carrying the other: WI-132's shape claim is red at the commit that
+   * published the loose declaration, while its panel claim is green there,
+   * because the panel's own expectations held. Each claim passes on its own,
+   * and the item's shape is not what either of them says. Naming the item
+   * lets the gate see that the two disagree.
+   */
+  item?: string;
   expect: Assertion[];
 }
 
@@ -306,6 +332,20 @@ function readTable(raw: string, tablePath: string): ClaimTable {
     }
     const claim = raw as Partial<ClaimEntry>;
 
+    // A claim is rebuilt field by field below, so a field the gate does not
+    // know about is a field that is silently dropped: the table says
+    // something the gate cannot read, and the table looks checked. A field
+    // nobody reads is a mistake worth saying out loud.
+    const known = new Set(['id', 'section', 'note', 'claim', 'why', 'item', 'expect']);
+    for (const field of Object.keys(claim)) {
+      if (!known.has(field)) {
+        throw new GateError(
+          `${tablePath}: claim ${index} carries a "${field}" the gate does not read. ` +
+            'A field the gate does not read is a field it cannot check.',
+        );
+      }
+    }
+
     for (const field of ['id', 'section', 'note', 'claim'] as const) {
       if (typeof claim[field] !== 'string' || (claim[field] as string).length === 0) {
         throw new GateError(`${tablePath}: claim ${index} must carry a "${field}".`);
@@ -380,6 +420,12 @@ function readTable(raw: string, tablePath: string): ClaimTable {
       expect,
     };
     if (typeof claim.why === 'string') entry.why = claim.why;
+    if (claim.item !== undefined) {
+      if (typeof claim.item !== 'string' || claim.item.length === 0) {
+        throw new GateError(`${tablePath}: claim "${id}" carries an "item" that is not a name.`);
+      }
+      entry.item = claim.item;
+    }
     return entry;
   });
 
@@ -642,6 +688,8 @@ function checkTheTree(options: GateOptions): GateResult {
   const unchecked: UncheckedNote[] = [];
   const coveredParagraphs = new Set<number>();
   const skippedCommits = new Set<string>();
+  /** The commit each claim about a named item points at. */
+  const witnesses: Array<{ item: string; commit: string; id: string; line: number }> = [];
 
   for (const entry of table.claims) {
     const matching = sections.filter((section) => section.title === entry.section);
@@ -817,6 +865,43 @@ function checkTheTree(options: GateOptions): GateResult {
       said: saidClaim,
       why: entry.why,
       paths: entry.expect.map((assertion) => assertion.path),
+    });
+
+    if (entry.item && commit) {
+      witnesses.push({ item: entry.item, commit, id: entry.id, line: hit.line });
+    }
+  }
+
+  // Two claims about one item must name one commit.
+  //
+  // A claim is checked at the commit it names, and a commit can carry one of an
+  // item's shapes without carrying the other: WI-132's shape claim is red at
+  // the commit that published the loose declaration, while its panel claim is
+  // green there, because the panel's own expectations held there. Each claim
+  // passes on its own, and neither of them says what the item's shape is.
+  //
+  // So the gate reads the item, not the section: two claims in one section can
+  // be about different items, and two claims about one item can sit in
+  // different sections.
+  const byItem = new Map<string, typeof witnesses>();
+  for (const witness of witnesses) {
+    const group = byItem.get(witness.item);
+    if (group) group.push(witness);
+    else byItem.set(witness.item, [witness]);
+  }
+  for (const [item, group] of byItem) {
+    const commits = [...new Set(group.map((witness) => witness.commit))];
+    if (commits.length < 2) continue;
+    const first = group[0];
+    if (!first) continue;
+    failures.push({
+      id: first.id,
+      line: first.line,
+      kind: 'disagreement',
+      message:
+        `the claims about ${item} name ${commits.length} commits (${commits.join(', ')}), ` +
+        'so one of them points at a tree that does not carry what the item publishes. ' +
+        'Two claims about one item must name one commit.',
     });
   }
 
