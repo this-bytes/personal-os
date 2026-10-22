@@ -495,8 +495,12 @@ package.
 
 **The limit, stated plainly: this is about the dependency, not about the words.** The
 domain may name a provider in a fixture — that is configuration, and
-`docs/decisions/0004-adapter-registry.md` allows it. **What the check holds is that the
-domain cannot reach an adapter.**
+`docs/decisions/0004-adapter-registry.md` allows it. **What the check holds is the
+named import edge:** it fails when a domain module, the worker, or any shipped file
+outside the composition root names `@personal-os/agent-adapters`. What it does not
+hold is an import that reaches the package by a relative path — such an import
+carries no package specifier, so the check stays green and `tsc` is what catches it,
+with TS2307.
 
 **Migration.** The shapes move from `@personal-os/agent-adapters` to
 `@personal-os/contracts`, and the adapters package re-exports them, so an existing import
@@ -1249,7 +1253,7 @@ agent turn and none for a turn that never reached the agent
 **The row is created with no spend units**, because the cost is not known until
 the turn has run (`apps/server/src/modules/conversations/dispatch.ts:171`,
 `apps/server/src/modules/factory/service.ts:372`), and the column defaults to zero
-(`apps/server/src/db/schema.ts:231`). **So the workspace's spend for the day is
+(`apps/server/src/db/schema.ts:259`). **So the workspace's spend for the day is
 the sum of what its turns actually cost, and the cap bites.**
 
 **The mode is resolved, readable, and enforced nowhere.** It is carried through the
@@ -2195,7 +2199,7 @@ only.
 
 **Every kind carries an author now.** The `automation` and `task` kinds keep their
 author on the row — `created_by` on both tables
-(`apps/server/src/db/schema.ts:330`, `apps/server/src/db/schema.ts:416`) — and the
+(`apps/server/src/db/schema.ts:358`, `apps/server/src/db/schema.ts:444`) — and the
 projections read it
 (`apps/server/src/modules/resources/service.ts:234`,
 `apps/server/src/modules/resources/service.ts:365`). An agent-created
