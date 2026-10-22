@@ -14,7 +14,7 @@ import {
   type AutonomyAction,
   type McpToolName,
 } from '@personal-os/contracts';
-import type { CapabilitiesService, Actor } from '../capabilities/service.js';
+import type { CapabilitiesService, Actor, ScopedObjectKind } from '../capabilities/service.js';
 import { AppError } from '../../lib/errors.js';
 
 /**
@@ -172,6 +172,28 @@ export async function createMcpServer(options: McpServerOptions): Promise<McpSer
   };
 
   /**
+   * An agent may only reach an object inside a workspace it has been granted.
+   *
+   * A tool that names an id names an object, not a workspace, so the caller's
+   * scope and the object's scope have to be brought together before the object
+   * is read: the workspaces the caller was granted, and the workspace the
+   * object actually lives in.
+   *
+   * The comparison is made on the object's own workspace — read out of the
+   * object's row, never out of the shape of the id and never out of a claim
+   * the caller makes about where it is. A refusal is a refusal: the object is
+   * never read, so no part of it comes back, not a summary, not a count, not
+   * a title.
+   *
+   * The owner acts in every workspace, so there is nothing to refuse and
+   * nothing to look up.
+   */
+  const assertObjectScope = async (kind: ScopedObjectKind, id: string): Promise<void> => {
+    if (actor.kind !== 'agent') return;
+    await assertWorkspace(options.capabilities.workspaceOf({ kind, id }));
+  };
+
+  /**
    * Whose agent-scoped memory is this?
    *
    * A memory scoped to an agent belongs to the agent it names. Anything else —
@@ -258,6 +280,7 @@ export async function createMcpServer(options: McpServerOptions): Promise<McpSer
       async ({ conversationId }) => {
         try {
           await guard('conversation.read');
+          await assertObjectScope('conversation', conversationId);
           return jsonResult(options.capabilities.conversationRead(conversationId));
         } catch (error) {
           return errorResult(error);
@@ -282,6 +305,7 @@ export async function createMcpServer(options: McpServerOptions): Promise<McpSer
       async ({ conversationId, text, replyToId, targetParticipantIds }) => {
         try {
           await guard('conversation.post');
+          await assertObjectScope('conversation', conversationId);
           const result = await options.capabilities.conversationPost(
             conversationId,
             {
@@ -381,6 +405,7 @@ export async function createMcpServer(options: McpServerOptions): Promise<McpSer
       async (args) => {
         try {
           await guard('task.update');
+          await assertObjectScope('task', args.taskId);
           return jsonResult(
             options.capabilities.taskUpdate(args.taskId, {
               title: args.title,
@@ -407,6 +432,7 @@ export async function createMcpServer(options: McpServerOptions): Promise<McpSer
       async ({ taskId }) => {
         try {
           await guard('task.get');
+          await assertObjectScope('task', taskId);
           return jsonResult(options.capabilities.taskGet(taskId));
         } catch (error) {
           return errorResult(error);
@@ -437,6 +463,11 @@ export async function createMcpServer(options: McpServerOptions): Promise<McpSer
 
           // The template is resolved first, so that the memory rule below is
           // judged on the data the resource will actually carry.
+          //
+          // The template is not scoped to a workspace either: it is the
+          // registry's published example of a kind, and the resource it
+          // becomes lands in the workspace checked above. Nothing from
+          // another workspace reaches the caller through it.
           const template = args.template
             ? options.capabilities.resourceTemplateGet(args.template)
             : undefined;
@@ -483,6 +514,11 @@ export async function createMcpServer(options: McpServerOptions): Promise<McpSer
           // anyway, so the owner is known before anything is handed back.
           const resource = options.capabilities.resourceGet(resourceId);
           assertOwnMemory({ type: resource.type, data: resource.data }, undefined);
+          // The workspace rule is a second rule about the same object, and it
+          // is asked of the resource's own workspace. The memory rule is the
+          // more specific of the two and is asked first; the workspace rule is
+          // asked whatever it says, and neither replaces the other.
+          await assertWorkspace(resource.workspaceId);
           return jsonResult(resource);
         } catch (error) {
           return errorResult(error);
@@ -516,6 +552,10 @@ export async function createMcpServer(options: McpServerOptions): Promise<McpSer
             { type: current.type, data: current.data },
             args.data === undefined ? undefined : { type: current.type, data: args.data },
           );
+          // The workspace rule is asked of the resource's own workspace, as
+          // it is on the way in through `resource.get`: two rules, both
+          // applied, neither replacing the other.
+          await assertWorkspace(current.workspaceId);
           return jsonResult(
             options.capabilities.resourceUpdate(args.resourceId, {
               expectedRevision: args.expectedRevision,
@@ -541,6 +581,12 @@ export async function createMcpServer(options: McpServerOptions): Promise<McpSer
       async ({ type }) => {
         try {
           await guard('resource.template.list');
+          // A template is not scoped to a workspace. The registry is the same
+          // one for every workspace — it is authored in the repository and
+          // reviewed like code — so it holds no workspace's data and cannot
+          // carry another workspace's contents. There is no object here whose
+          // workspace could be out of the caller's reach, and so nothing to
+          // refuse.
           return jsonResult(options.capabilities.resourceTemplateList(type));
         } catch (error) {
           return errorResult(error);
@@ -563,6 +609,10 @@ export async function createMcpServer(options: McpServerOptions): Promise<McpSer
       async (args) => {
         try {
           await guard('resource.template.get');
+          // A template is not scoped to a workspace, for the same reason
+          // `resource.template.list` is not: the registry holds no
+          // workspace's data, so there is nothing here that could be out of
+          // the caller's reach.
           return jsonResult(
             options.capabilities.resourceTemplateGet({
               id: args.id,
@@ -633,6 +683,7 @@ export async function createMcpServer(options: McpServerOptions): Promise<McpSer
       async ({ automationId }) => {
         try {
           await guard('automation.inspect');
+          await assertObjectScope('automation', automationId);
           return jsonResult(options.capabilities.automationInspect(automationId));
         } catch (error) {
           return errorResult(error);
