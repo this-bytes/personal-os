@@ -1863,7 +1863,7 @@ write lock and answers `SQLITE_BUSY` at once rather than waiting, so the write
 is lost instead of delayed.
 
 The widening is the contract for **WI-146**, and the code implements it — as of
-`4934add`.
+`3154819`.
 
 A transaction is also what holds across processes. The worker is a second process on
 the same database, and the refusal it records there is written in a transaction of its
