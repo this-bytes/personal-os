@@ -56,8 +56,23 @@ export const factoryTaskSchema = z.object({
   revision: z.number().int().min(1),
   /** The external orchestrator's own task identifier, when it owns the work. */
   externalRef: z.string().optional(),
+  /** The template this task was made from, and the version of it. */
+  templateId: idSchema.optional(),
+  templateVersion: z.number().int().min(1).optional(),
 });
 export type FactoryTask = z.infer<typeof factoryTaskSchema>;
+
+/**
+ * The task contract, as a resource spec.
+ *
+ * A task resource's data is either the fields a caller writes — what a
+ * template carries and what a create call overrides — or the whole task the
+ * factory holds, which is what an inspection reads back. Both are the task
+ * contract, so both are judged by the same schema: the contract with the
+ * fields a caller does not write left out, and nothing else allowed in.
+ */
+export const taskSpecSchema = factoryTaskSchema.partial().strict();
+export type TaskSpec = z.infer<typeof taskSpecSchema>;
 
 export const executionSchema = z.object({
   id: idSchema,
@@ -125,5 +140,13 @@ export const createTaskInputSchema = z.object({
   assigneeId: idSchema.optional(),
   executionOwner: executionOwnerSchema.default('personal-os'),
   acceptanceCriteria: z.array(z.string()).default([]),
+  /**
+   * The external orchestrator's own task identifier, when it owns the work.
+   *
+   * This is the link that lets the repository record a code work item and the
+   * instance record the task that carries it without either being a copy of
+   * the other.
+   */
+  externalRef: z.string().optional(),
 });
 export type CreateTaskInput = z.infer<typeof createTaskInputSchema>;

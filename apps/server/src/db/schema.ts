@@ -102,6 +102,34 @@ export const agentConnections = sqliteTable(
   (table) => [index('agent_connections_workspace_idx').on(table.workspaceId)],
 );
 
+/**
+ * A capability an agent was refused and may still be waiting on.
+ *
+ * One row per agent and capability: a refusal repeated is the same thing
+ * waiting, not another thing, so the list does not fill up with the noise of
+ * an agent trying again.
+ */
+export const blockedCapabilities = sqliteTable(
+  'blocked_capabilities',
+  {
+    id: text('id').primaryKey(),
+    workspaceId: text('workspace_id').notNull(),
+    agentConnectionId: text('agent_connection_id')
+      .notNull()
+      .references(() => agentConnections.id, { onDelete: 'cascade' }),
+    /** The MCP tool the agent called and was not granted. */
+    toolName: text('tool_name').$type<McpToolName>().notNull(),
+    firstRefusedAt: text('first_refused_at').notNull(),
+    lastRefusedAt: text('last_refused_at').notNull(),
+    /** How many times the refusal was repeated. */
+    refusalCount: integer('refusal_count').notNull().default(1),
+  },
+  (table) => [
+    uniqueIndex('blocked_capabilities_agent_tool_idx').on(table.agentConnectionId, table.toolName),
+    index('blocked_capabilities_workspace_idx').on(table.workspaceId),
+  ],
+);
+
 export const approvals = sqliteTable(
   'approvals',
   {
@@ -322,6 +350,15 @@ export const tasks = sqliteTable(
       .notNull(),
     /** External task identifier when the work is delegated to an orchestrator. */
     externalRef: text('external_ref'),
+    /**
+     * Who created the task, in the closed set the measure counts: an agent
+     * connection's id, the owner's user id, or the literal `owner`. The
+     * default is what the rows that predate the column recorded.
+     */
+    createdBy: text('created_by').notNull().default('system'),
+    /** The template this task was made from, and the version of it. */
+    templateId: text('template_id'),
+    templateVersion: integer('template_version'),
     createdAt: text('created_at').notNull(),
     updatedAt: text('updated_at').notNull(),
   },
@@ -360,6 +397,9 @@ export const resources = sqliteTable(
     title: text('title').notNull(),
     data: text('data', { mode: 'json' }).notNull(),
     createdBy: text('created_by').notNull(),
+    /** The template this resource was made from, and the version of it. */
+    templateId: text('template_id'),
+    templateVersion: integer('template_version'),
     createdAt: text('created_at').notNull(),
     updatedAt: text('updated_at').notNull(),
   },
@@ -396,6 +436,15 @@ export const automations = sqliteTable(
     enabled: integer('enabled', { mode: 'boolean' }).notNull().default(false),
     lastRunAt: text('last_run_at'),
     nextRunAt: text('next_run_at'),
+    /**
+     * Who created the automation, in the closed set the measure counts: an
+     * agent connection's id, the owner's user id, or the literal `owner`. The
+     * default is what the rows that predate the column recorded.
+     */
+    createdBy: text('created_by').notNull().default('system'),
+    /** The template this automation was made from, and the version of it. */
+    templateId: text('template_id'),
+    templateVersion: integer('template_version'),
     createdAt: text('created_at').notNull(),
     updatedAt: text('updated_at').notNull(),
   },

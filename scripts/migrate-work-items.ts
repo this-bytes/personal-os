@@ -13,7 +13,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { execFileSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
-import { serialiseHeader, writeItem, type WorkItemHeader } from './work-item.js';
+import { parseItem, serialiseHeader, writeItem, type WorkItemHeader } from './work-item.js';
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const workDir = path.join(repoRoot, '.factory', 'work');
@@ -228,6 +228,32 @@ function migrate(id: string): Migration | null {
   const lines = original.split('\n');
   const notes: string[] = [];
 
+  // A file that already carries a header is already migrated. The script has to
+  // survive that: the tree is migrated a few files at a time, and a migration
+  // that cannot be run over its own output can only ever be run once. Reading
+  // the header back is also the only way to keep the state a file was given
+  // after it was migrated — the prose state line is gone by then, so there is
+  // nothing else to read it from.
+  const parsed = parseItem(original);
+  if (parsed.header) {
+    const header = parsed.header;
+    notes.push('already migrated');
+    return {
+      id,
+      file,
+      title: header.title,
+      oldState: header.state,
+      newState: header.state,
+      oldOwner: header.owner ?? '',
+      newOwner: header.owner,
+      oldVerifier: header.verifier ?? '',
+      newVerifier: header.verifier,
+      header,
+      body: parsed.body,
+      notes,
+    };
+  }
+
   const heading = /^(#{1,2})\s+(WI-\d+)\s+—\s+(.+)$/m.exec(original);
   if (!heading) {
     notes.push('no heading');
@@ -413,6 +439,7 @@ const ids = fs
 
 const results: Migration[] = [];
 const held: string[] = [];
+const unreadable: string[] = [];
 
 for (const id of ids) {
   if (HELD.has(id)) {
@@ -421,14 +448,26 @@ for (const id of ids) {
   }
   const migration = migrate(id);
   if (!migration) {
-    process.stderr.write(`${id} could not be read\n`);
-    process.exit(1);
+    // A file the migration cannot read is reported, not fatal. The tree is
+    // migrated a few files at a time and the newer item files do not all
+    // carry the prose lines this script reads, so stopping at the first one
+    // would hide every file after it — and a migration that reports only the
+    // first thing it could not do is a worse record than one that lists them
+    // all.
+    unreadable.push(id);
+    continue;
   }
   results.push(migration);
 }
 
 process.stdout.write(`Converted: ${results.length}. Held by an open dispatch: ${held.length}.\n`);
 process.stdout.write(`Held: ${held.join(', ')}\n\n`);
+
+if (unreadable.length > 0) {
+  process.stdout.write(
+    `Not read (${unreadable.length}): ${unreadable.join(', ')} — these files carry no prose state line, so the state has to come from somewhere else.\n\n`,
+  );
+}
 
 process.stdout.write(
   '| item | old state | new state | old owner | new owner | old verifier | new verifier |\n',

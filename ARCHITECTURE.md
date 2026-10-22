@@ -56,22 +56,22 @@ no message bus and no second datastore.
 
 ## 2. Technology baseline
 
-| Component            | Decision                                     |
-| -------------------- | -------------------------------------------- |
-| Runtime              | Node.js LTS                                  |
-| Language             | TypeScript                                   |
-| Backend              | Fastify                                      |
-| Frontend             | React + Vite                                 |
-| UI                   | Tailwind + shadcn-style components           |
-| Database             | SQLite, WAL enabled                          |
-| Database access      | Drizzle ORM                                  |
-| Real-time            | SSE for server-to-client updates             |
-| Local storage        | Filesystem with database metadata            |
-| Background execution | SQLite-backed queue and worker               |
-| Authentication       | Single-owner local authentication            |
-| Agent runtime        | Adapter registry and supervised subprocesses |
-| Deployment           | Docker Compose                               |
-| Testing              | Vitest + Playwright                          |
+| Component            | Decision                                          |
+| -------------------- | ------------------------------------------------- |
+| Runtime              | Node.js LTS                                       |
+| Language             | TypeScript                                        |
+| Backend              | Fastify                                           |
+| Frontend             | React + Vite                                      |
+| UI                   | Tailwind + shadcn-style components                |
+| Database             | SQLite, WAL enabled                               |
+| Database access      | Drizzle ORM                                       |
+| Real-time            | SSE for server-to-client updates                  |
+| Local storage        | Filesystem with database metadata                 |
+| Background execution | SQLite-backed queue and worker                    |
+| Authentication       | Single-owner local authentication                 |
+| Agent runtime        | Adapter registry and supervised subprocesses      |
+| Deployment           | Docker Compose, with a source-run iteration stack |
+| Testing              | Vitest + Playwright                               |
 
 These are implementation defaults. They can change if a proof of concept identifies a
 concrete limitation.
@@ -93,6 +93,15 @@ Modules are separated by concern inside one process — `conversations`, `agents
 `resources`, `factory`, `automations`, `capabilities`, `events`, `mcp` — but none of
 them is a service in the microservice sense. They are plain modules over one
 database handle.
+
+**The modules belong to five domains, and the map is checked.** Interaction
+(conversations, executions), Work (factory, approvals), Resources (resources,
+automations), Runtime (agents, mcp) and Substrate (auth, workspaces, events,
+audit, capabilities). A domain owns its tables, its contracts and its tests; a
+domain may use Substrate; the shared capability API is the one place that reads
+across. The map is in [docs/domains.md](docs/domains.md), the machine-readable
+truth is `apps/server/src/domains.ts`, and a test fails the build when a module
+reaches into another domain without a declared crossing. It is ADR 0008.
 
 ### The worker (`apps/worker`)
 
@@ -128,6 +137,31 @@ Two guards stop an automation chain from running forever:
 A React single-page application. It talks to the API over HTTP and subscribes to
 `/api/events` for live updates. It never holds a credential for an external agent and
 never talks to a database directly.
+
+### The iteration stack
+
+The processes above are the ones that ship: the Compose stack in `deploy/` runs the
+compiled code. There is a second way to run them, for the times when the code is still
+moving — an agent is writing a new adapter, or a contract is being changed, and the
+change has to be exercised rather than described.
+
+`npm run dev:stack` runs the same three processes from source. The shared packages
+resolve to their TypeScript instead of to their compiled output
+(`tsconfig.dev.json`), so a change to a contract or to an adapter reaches the running
+instance rather than waiting for a rebuild. A change restarts only what it affects: the
+web client reloads in place, and the server and the worker restart.
+
+**A restart never runs an agent turn twice.** The queue releases a job whose lease has
+expired, so a worker killed in the middle of a turn leaves work that is run again. The
+worker is therefore asked to stop and finishes the turn it is running, and on a system
+where a child cannot be asked politely it is stopped only while it is idle.
+
+The instance follows the checkout it runs from, and an agent's work is written in a
+worktree beside the repository. An unfinished branch therefore cannot reach the running
+instance — the change has to land first.
+
+This is a development tool. The deployment is the Compose stack, and the gate that
+proves it is the Compose job in CI.
 
 ## 4. Data flow of a chat turn
 
@@ -279,8 +313,8 @@ Four layers, each answering a different question:
 
 | Layer                | Command                      | What it proves                                                                                                                                                                             |
 | -------------------- | ---------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| Unit and integration | `npm run test`               | 130 tests across contracts, adapters, server and worker: routing safeguards, queue leases, resource revisions, the acceptance boundary, guards, MCP grants.                                |
-| End-to-end           | `npx tsx scripts/smoke.ts`   | 42 checks against a real server and worker on a throwaway database: setup, a chat turn, concurrency, acceptance, audit, approvals, MCP, and an event-triggered automation actually firing. |
+| Unit and integration | `npm run test`               | 369 tests across contracts, adapters, server and worker — 437 with the web client: routing safeguards, queue leases, resource revisions, the acceptance boundary, guards, MCP grants.      |
+| End-to-end           | `npx tsx scripts/smoke.ts`   | 56 checks against a real server and worker on a throwaway database: setup, a chat turn, concurrency, acceptance, audit, approvals, MCP, and an event-triggered automation actually firing. |
 | Browser              | `npm run test:e2e`           | Playwright drives the built client in headless Chromium: the owner creates the account, narrows an agent's MCP tool grants, and builds an event-triggered automation.                      |
 | Deployment           | `scripts/verify-compose.ps1` | The Compose stack starts, the server becomes healthy, the worker runs, and the client is served.                                                                                           |
 
@@ -298,22 +332,27 @@ These are real, and deliberately not hidden:
   not scale to many clients.
 - **Only the OpenAI-compatible model API shape is implemented.** Other providers need
   an adapter.
-- **ACP sessions are not resumed.** The adapter creates a session per turn. Native
-  `session/load` is supported by the protocol but not used yet. The published
-  contract has already moved: `CONTRACTS.md` says a turn re-enters the same session
-  when the adapter reports `persistentSessions` (WI-007). The code has not caught
-  up.
+- **ACP sessions are resumed, and only where the adapter can.** The adapter creates
+  a session per turn, and a turn suspended on an approval re-enters the session it
+  was in: the ACP adapter asks the agent to load that session with the native
+  `session/load` (`packages/agent-adapters/src/acp.ts:213`), and the worker restores
+  it before the turn continues (`apps/worker/src/executor.ts:375`). An adapter that
+  reports `persistentSessions` and has a session to restore gets the turn back; one
+  that does not has its execution closed with the reason on the reply. The published
+  contract and the code agree (WI-007).
 - **Data sources are read-only and table-scoped.** SQLite data sources accept a
   single `SELECT` over an allowlist of tables. Credentials, sessions and audit
   records are deliberately not readable.
-- **An approval closes its execution; it does not resume it.** When an agent asks
-  for approval, the execution is marked `blocked` and the request is recorded.
-  Deciding the approval finishes the execution with the decision's outcome — it
-  does not re-enter the adapter and continue the interrupted turn. Resuming a
-  blocked adapter turn needs a protocol-level resume that not every adapter
-  supports. `CONTRACTS.md` now publishes the opposite as the contract — a decision
-  resumes the turn when the adapter reports `persistentSessions` (WI-007) — and the
-  code still closes the execution.
+- **An approval resumes its execution where the adapter can, and closes it where
+  it cannot.** When an agent asks for approval, the execution is marked `blocked`
+  and the request is recorded. Deciding the approval then takes one of two paths:
+  if the adapter reports `persistentSessions` and the execution carries a session
+  to re-enter, the decision is recorded and the turn is queued to continue in
+  that session (`apps/server/src/modules/approvals/resume.ts:102-124`); if it does
+  not, the execution is finished with the decision's outcome and the reason
+  written on the reply (`apps/server/src/modules/approvals/resume.ts:144-169`).
+  Resuming a blocked adapter turn needs a protocol-level resume that not every
+  adapter supports, so closing is the fallback and not the rule.
 - **A single owner.** No teams, no sharing, no permissions beyond "this workspace".
 - **There is no email delivery, so there is no reset link.** The owner account is
   created at first run and there are no default credentials. A forgotten password is

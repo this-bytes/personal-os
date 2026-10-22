@@ -3,7 +3,7 @@ import type { Database } from '../../db/client.js';
 import { workspaces } from '../../db/schema.js';
 import { errors } from '../../lib/errors.js';
 import { newId, slugify } from '../../lib/ids.js';
-import type { Workspace } from '@personal-os/contracts';
+import type { AutonomyPolicyPatch, Workspace } from '@personal-os/contracts';
 
 export interface WorkspaceService {
   list(): Workspace[];
@@ -11,7 +11,11 @@ export interface WorkspaceService {
   get(id: string): Workspace;
   update(
     id: string,
-    patch: Partial<Pick<Workspace, 'name' | 'description' | 'autonomyMode' | 'autonomyPolicy'>>,
+    patch: Partial<
+      Pick<Workspace, 'name' | 'description' | 'autonomyMode'> & {
+        autonomyPolicy?: AutonomyPolicyPatch;
+      }
+    >,
   ): Workspace;
   ensureDefault(): Workspace;
 }
@@ -81,12 +85,39 @@ export function createWorkspaceService(db: Database): WorkspaceService {
     update(id, patch): Workspace {
       const current = this.get(id);
       const now = new Date().toISOString();
+
+      // The mode the owner sets is the mode that is in force.
+      //
+      // A workspace carries the mode twice: the column the panel shows, and
+      // the policy the resolver reads. A setting that lands in one of them and
+      // not the other tells the owner something false about what the agent is
+      // permitted to do — the panel says "autonomous" and the policy in force
+      // says "manual". So the two are written together and cannot disagree.
+      //
+      // This says nothing about what the mode *means*. The mode is still
+      // enforced nowhere — `manual` does not gate delegation, because the mode
+      // is consulted by nothing. This is about the setting being honest rather
+      // than about the mode being in force.
+      //
+      // A policy change says what changes. The owner sets the turn limit and
+      // the action list they set earlier stays, so a patch is merged into the
+      // policy the workspace already carries rather than written over it. An
+      // absent field is left alone; an explicit empty list clears that list, so
+      // clearing is still deliberate.
+      const policy =
+        patch.autonomyPolicy !== undefined
+          ? { ...current.autonomyPolicy, ...patch.autonomyPolicy }
+          : patch.autonomyMode !== undefined
+            ? { ...current.autonomyPolicy, mode: patch.autonomyMode }
+            : undefined;
+      const mode = policy?.mode ?? patch.autonomyMode;
+
       db.update(workspaces)
         .set({
           ...(patch.name !== undefined ? { name: patch.name.trim() } : {}),
           ...(patch.description !== undefined ? { description: patch.description.trim() } : {}),
-          ...(patch.autonomyMode !== undefined ? { autonomyMode: patch.autonomyMode } : {}),
-          ...(patch.autonomyPolicy !== undefined ? { autonomyPolicy: patch.autonomyPolicy } : {}),
+          ...(mode !== undefined ? { autonomyMode: mode } : {}),
+          ...(policy !== undefined ? { autonomyPolicy: policy } : {}),
           updatedAt: now,
         })
         .where(eq(workspaces.id, current.id))

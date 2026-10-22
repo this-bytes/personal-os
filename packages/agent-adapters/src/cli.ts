@@ -12,6 +12,7 @@ import {
   type AdapterConfig,
 } from '@personal-os/contracts';
 import type { AdapterContext } from './types.js';
+import { buildSanitizedEnv } from './util.js';
 
 /**
  * Local command-line agents.
@@ -227,30 +228,6 @@ export function createCliAdapter(
  * Build a minimal environment for the child process. Server secrets are
  * never inherited; only an explicit allow-list plus the configured values.
  */
-function buildSanitizedEnv(extra: Record<string, string>): NodeJS.ProcessEnv {
-  const keep = [
-    'PATH',
-    'HOME',
-    'USERPROFILE',
-    'TMPDIR',
-    'TEMP',
-    'TMP',
-    'LANG',
-    'LC_ALL',
-    'SystemRoot',
-    'ComSpec',
-    'PATHEXT',
-  ];
-  const env: NodeJS.ProcessEnv = {};
-  for (const key of keep) {
-    const value = process.env[key];
-    if (value !== undefined) env[key] = value;
-  }
-  for (const [key, value] of Object.entries(extra)) {
-    env[key] = value;
-  }
-  return env;
-}
 
 /** Locate an executable on PATH without spawning it. */
 async function resolveExecutable(command: string): Promise<string | null> {

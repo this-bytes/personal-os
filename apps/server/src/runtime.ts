@@ -1,4 +1,5 @@
-import { createDefaultRegistry, type AdapterRegistry } from '@personal-os/agent-adapters';
+import { createDefaultRegistry } from '@personal-os/agent-adapters';
+import type { AdapterProvider } from '@personal-os/contracts';
 import { eq } from 'drizzle-orm';
 import { createDatabase, type Database, type DatabaseHandle } from './db/client.js';
 import { runMigrations } from './db/migrate.js';
@@ -13,7 +14,7 @@ export interface Runtime {
   config: AppConfig;
   db: Database;
   sqlite: DatabaseHandle['sqlite'];
-  registry: AdapterRegistry;
+  registry: AdapterProvider;
   events: EventsService;
   queue: Queue;
   /**
@@ -35,6 +36,8 @@ export { createAuthService } from './modules/auth/service.js';
 export type { AuthenticatedUser } from './modules/auth/service.js';
 export { planAndDispatch } from './modules/conversations/dispatch.js';
 export { planRouting, deriveChainState } from './modules/conversations/routing.js';
+export { loadEffectiveAutonomyPolicy } from './modules/autonomy/service.js';
+export type { EffectivePolicyScope } from './modules/autonomy/service.js';
 export { listAgentMemories } from './modules/resources/agent-memory.js';
 export type { AgentMemoryRecord } from './modules/resources/agent-memory.js';
 export {

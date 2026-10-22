@@ -9,6 +9,14 @@
 **Every number in this document is measured at `3479c31`, not at the working tree**, and
 the commands that reproduce them name the commit. A re-measure on the working tree
 gives a different answer, and naming the commit is what makes the two comparable.
+**The code pointers are pinned at `0d4731f` (2026-10-22).** Every `file:line` in
+this document was read at that commit, not at `3479c31` and not at the working
+tree. A pointer is the one kind of claim here that goes stale without anything in
+the document changing, so the commit it was read at is named next to it: a reader
+checking against a later tree should re-measure the pointers rather than trust
+them. **A claim about what the tree does or does not contain is pinned the same
+way.** The evidence read is named as missing **at `0d4731f`**, because the route
+that answers it is being written on another branch and will change that.
 **Owner decision, 2026-10-21: D — Forge.** The recommendation had been B (Desk).
 The owner chose D. This document names the direction the owner chose, settles the
 boundary Forge left open, states what adopting it costs today, and records what was
@@ -44,8 +52,9 @@ here is the rule and the answers.
 
 **The rule.** _If it is a picture of the system, it is in the orientation room.
 If it is a place where work is inspected or decided, it is in the execution
-room — with one declared exception, the Needs-you rail, which carries decisions
-in the orientation room because a decision is taken where the list is._
+room — with two declared exceptions, the Needs-you rail and the constellation,
+which carry decisions in the orientation room because a decision is taken where
+the list is._
 
 | Surface                     | Room        | Why                                                                                                                                                      |
 | --------------------------- | ----------- | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -55,20 +64,34 @@ in the orientation room because a decision is taken where the list is._
 | The automation runs         | Execution   | Same. They are live instrumentation, not a picture of the system.                                                                                        |
 | The dashboards              | Orientation | They are bound to data sources the owner configured.                                                                                                     |
 
-**The one deliberate crossing, and why it exists.** The Map's **Needs you**
-rail is the only place that crosses from orientation into work on purpose:
-**it carries the decision controls.** WI-004 was returned to `implement` on
-2026-10-21 for exactly this reason — the panel could list an approval and
-could not decide one, because the criterion says an approval is approved or
-rejected _where the list is_. A Forge panel that links out to the conversation
-for a decision would re-create that defect inside a bigger frame. So the rail
-is not a summary that links away; it is the decision surface, and Work is where
-you go when the rail's summary is not enough.
+**The two deliberate crossings, and why they exist.** Two surfaces cross out of
+the orientation room to carry a decision, and they are the only two.
+
+1. **The Map's Needs-you rail carries the approvals' decision controls.** WI-004
+   was returned to `implement` on 2026-10-21 for exactly this reason — the panel
+   could list an approval and could not decide one, because the criterion says
+   an approval is approved or rejected _where the list is_. A Forge panel that
+   links out to the conversation for a decision would re-create that defect
+   inside a bigger frame. So the rail is not a summary that links away; it is
+   the decision surface, and Work is where you go when the rail's summary is
+   not enough.
+2. **The constellation carries the connect decision.** The owner's answer on Q2
+   makes connecting an agent a trust decision, and the orientation room is a
+   room where, as a rule, nothing is decided — so a map that could list an
+   agent and not connect one would fail the criterion WI-004 was returned for.
+   The constellation **is** the agent list, spatialised, so the connect
+   decision stays with it rather than with a roster somewhere else.
+
+**The reason is one reason, given once.** A decision is taken where the list
+is. The rail is the list of what is waiting on the owner; the constellation is
+the list of the agents. Each carries the decision that belongs to its own list,
+and neither sends the owner to another room to take it.
 
 **What the rail can actually do, stated to the line.** The rail carries
 **Approve and Reject** for approvals — WI-004's control, already built at
-`a2aadb4`, on the row at `apps/web/src/components/WaitingList.tsx:274-284`,
-posting to the existing `POST /api/approvals/:id/decide` at `:112`.
+`a2aadb4`, on the row at `apps/web/src/components/WaitingList.tsx:307-322`
+(Approve at `:313`, Reject at `:321`), posting to the existing
+`POST /api/approvals/:id/decide` at `:113`.
 **It does not carry acceptance.** A task's acceptance is decided on the factory
 board, on the card, at `apps/web/src/components/TaskBoard.tsx:315-318`, reached
 from the rail by a link that opens the exact card. That is the product's own
@@ -76,7 +99,7 @@ shape, stated in the list's own comment: _"An approval is a request inside a
 conversation and a turn happened inside one, so the conversation is where they
 are read. A task is decided on the factory board, and the link opens the exact
 card so the decision is one click away."_
-(`apps/web/src/components/WaitingList.tsx:293-300`) No open item owns putting an
+(`apps/web/src/components/WaitingList.tsx:353-360`) No open item owns putting an
 acceptance control on the rail, and building one is a separate item that needs
 the owner.
 
@@ -92,11 +115,13 @@ but it is the direction that passes with the most to carry, so the reasoning is
 recorded honestly rather than generously.
 
 1. **Q2 — the human decides, and the panel surfaces only what needs the
-   owner's authority.** Forge's Needs-you rail is that surface. The rule above
-   governs where content lives; the rail is its one declared exception, because
-   the decision and the list have to be in the same place. The orientation room
-   is the one place the panel is allowed to show the system _for its own sake_,
-   which is why the rule is about pictures and not about numbers.
+   owner's authority.** Forge's Needs-you rail is that surface, and the
+   constellation's connect control is the other. The rule above governs where
+   content lives; the rail and the constellation are its two declared
+   exceptions, because the decision and the list have to be in the same place.
+   The orientation room is the one place the panel is allowed to show the
+   system _for its own sake_, which is why the rule is about pictures and not
+   about numbers.
 2. **W-1 — everything waiting on me in one place.** One rail, on the landing
    screen, carrying the count and the approve and reject controls. The risk is
    real and is stated below.
@@ -205,9 +230,15 @@ item has to split them.
 4. **The execution trace is now in scope.** It was out of scope under the Desk
    recommendation and it is now part of the direction: the conversation's
    companion, carrying `tool.started`, `tool.completed`, `artifact.created`
-   and `execution.status`, with spend as an abstract counter (`spendUnits`).
-   All of it is already in the contracts, so this is a surface over existing
-   data — which is also what makes it worth having.
+   and `execution.status`. Those four event types are in the contracts
+   (`packages/contracts/src/agent.ts:179-208`), and **none of them carries
+   spend**. Spend is not on the events: the abstract counter (`spendUnits`,
+   `packages/contracts/src/common.ts:58`) is held on the execution's own row
+   (`apps/server/src/db/schema.ts:231`), and it is published by the
+   approval-evidence read — `GET /api/approvals/:id/evidence` — whose contract
+   is published (`CONTRACTS.md:1047-1145`) and whose code is **WI-086** — **not
+   in the tree at `0d4731f`**. So the trace is a surface over existing data for
+   the events, and a surface over a read that does not exist yet for the cost.
 5. **Agents get an identity hue.** Forge's theme carries one `--agent-*` token
    per agent, so each agent connection has a colour in the panel. The current
    app has no equivalent concept. It lines up with the persona work: an agent
@@ -259,11 +290,12 @@ three. The honest form of the promise is the one WI-024 now carries: the rail
 acceptance is reached by a link that opens the exact card. Putting an
 acceptance control on the rail is a separate item, and it needs the owner.
 
-**Forge is a large build for one implementer who already has fifteen items
-open** (WI-003, WI-007, WI-008, WI-017, WI-018, WI-020, WI-021, WI-024,
-WI-027, WI-028, WI-031, WI-032, WI-033, WI-035, WI-040). That is the honest
-cost of this direction and it belongs in the build item's sizing, not in a
-footnote.
+**Forge is a large build for one implementer whose lane held fifteen open
+items at `3479c31`** (WI-003, WI-007, WI-008, WI-017, WI-018, WI-020,
+WI-021, WI-024, WI-027, WI-028, WI-031, WI-032, WI-033, WI-035, WI-040). The
+live count moves as the factory moves, so this is a count at a commit and not a
+standing total. That is the honest cost of this direction and it belongs in the
+build item's sizing, not in a footnote.
 
 ## Sequencing
 
@@ -334,11 +366,16 @@ in order to decide on the landing screen. The rail's mitigation only holds if
 the evidence is on the rail too. So the trace item must carry two scopes — the
 conversation's companion in the Work room, **and** the decision's context
 where the control is: what the agent did, what it produced, what it cost, in
-the drawer the control opens. The data is already in the contracts
-(`tool.started`, `tool.completed`, `artifact.created`, `execution.status`, and
-spend as an abstract counter), so both scopes are surfaces over what the
-product already records. **This is now WI-039** (the contract half, landed at
-`6406291`) and **WI-040** (the control shows the evidence it decides on).
+the drawer the control opens. The events are already in the contracts
+(`tool.started`, `tool.completed`, `artifact.created`, `execution.status` —
+`packages/contracts/src/agent.ts:179-208`), so those are a surface over what
+the product already records. **The cost is not one of them.** The execution's
+spend units are held on its own row (`apps/server/src/db/schema.ts:231`) and
+published by the approval-evidence read, `GET /api/approvals/:id/evidence`,
+whose contract is published and whose code is **WI-086**. **This is now
+WI-039** (the contract half, landed at `6406291`), **WI-086** (the read that
+answers it, not in the tree at `0d4731f`) and **WI-040** (the control shows the
+evidence it decides on).
 
 **The waiting list has a way in and no way out.** The published vocabulary
 carries `approval.requested` and `task.updated`; it carries no

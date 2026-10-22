@@ -57,6 +57,27 @@
       "when": 1792541293275,
       "tag": "0007_message_detail",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "6",
+      "when": 1792591574721,
+      "tag": "0008_resource_author",
+      "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "6",
+      "when": 1792599967777,
+      "tag": "0009_kind_lilith",
+      "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "6",
+      "when": 1792631582019,
+      "tag": "0010_blocked_capabilities",
+      "breakpoints": true
     }
   ]
 }

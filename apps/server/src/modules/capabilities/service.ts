@@ -4,9 +4,11 @@ import {
   type AutomationRun,
   type ContentPart,
   type Conversation,
+  type EffectiveAutonomyPolicy,
   type Evidence,
   type FactoryTask,
   type Goal,
+  type McpToolName,
   type Message,
   type Participant,
   type Resource,
@@ -16,13 +18,17 @@ import {
   type Workspace,
 } from '@personal-os/contracts';
 import { errors } from '../../lib/errors.js';
+import type { Database } from '../../db/client.js';
+import type { Author } from '../../lib/author.js';
 import type { AuthenticatedUser } from '../auth/service.js';
 import type { ConversationsService, PostMessageResult } from '../conversations/service.js';
 import type { AgentService } from '../agents/service.js';
 import type { FactoryService } from '../factory/service.js';
 import type { ResourceService } from '../resources/service.js';
 import type { AutomationsService } from '../automations/service.js';
+import type { ApprovalsService } from '../approvals/service.js';
 import type { WorkspaceService } from '../workspaces/service.js';
+import { loadEffectiveAutonomyPolicy } from '../autonomy/service.js';
 
 /**
  * The shared capability API.
@@ -36,6 +42,18 @@ export interface Actor {
   kind: 'owner' | 'agent';
   user?: AuthenticatedUser;
   agentConnectionId?: string;
+}
+
+/**
+ * The author an actor stands for.
+ *
+ * The actor is the authenticated identity of the request, so the id that
+ * ends up on the row is the actor's own and not one the request supplied.
+ */
+function authorFor(actor: Actor): Author {
+  return actor.kind === 'agent'
+    ? { kind: 'agent', agentConnectionId: actor.agentConnectionId }
+    : { kind: 'owner', userId: actor.user?.id };
 }
 
 export interface ConversationSnapshot {
@@ -58,14 +76,18 @@ export interface CapabilitiesService {
 
   agentList(workspaceId: string): AgentConnectionDetail[];
 
-  taskCreate(input: {
-    workspaceId: string;
-    goalId?: string;
-    title: string;
-    description?: string;
-    assigneeId?: string;
-    acceptanceCriteria?: string[];
-  }): FactoryTask;
+  taskCreate(
+    input: {
+      workspaceId: string;
+      goalId?: string;
+      title: string;
+      description?: string;
+      assigneeId?: string;
+      acceptanceCriteria?: string[];
+    },
+    /** Who asked for the task. Recorded as the task's author. */
+    actor: Actor,
+  ): FactoryTask;
   taskUpdate(
     id: string,
     patch: {
@@ -80,47 +102,109 @@ export interface CapabilitiesService {
   ): FactoryTask;
   taskGet(id: string): { task: FactoryTask; evidence: Evidence[] };
 
-  resourceCreate(input: {
-    workspaceId: string;
-    type: ResourceType;
-    title: string;
-    data: unknown;
-    createdBy?: string;
-  }): Resource;
+  resourceCreate(
+    input: {
+      workspaceId: string;
+      type: ResourceType;
+      title: string;
+      data: unknown;
+      /**
+       * The template this resource was made from.
+       *
+       * The template's spec is already merged into `data`: the merge belongs to
+       * the provider, and the resource records where it came from.
+       */
+      template?: { id: string; version: number };
+    },
+    /** Who asked for the resource. Recorded as the resource's author. */
+    actor: Actor,
+  ): Resource;
   resourceGet(id: string): Resource;
   resourceUpdate(
     id: string,
     patch: { expectedRevision: number; title?: string; data?: unknown },
   ): Resource;
-  /** The templates published for one resource kind. */
-  resourceTemplateList(type: ResourceType): ResourceTemplate[];
-  /** One template, by reference, for the kind the caller is creating. */
-  resourceTemplateGet(ref: ResourceTemplateRef, type: ResourceType): ResourceTemplate;
+  /** The templates published for one resource kind — or for every kind. */
+  resourceTemplateList(type?: ResourceType): ResourceTemplate[];
+  /** One template, by reference. The template names its own kind. */
+  resourceTemplateGet(ref: ResourceTemplateRef): ResourceTemplate;
+  /**
+   * The template's spec with the caller's values merged into it.
+   *
+   * A template of another kind is refused.
+   */
+  resourceTemplateMerge(template: ResourceTemplate, type: ResourceType, override: unknown): unknown;
 
-  automationCreate(input: {
-    workspaceId: string;
-    title: string;
-    trigger: Automation['trigger'];
-    action: Automation['action'];
-  }): Automation;
+  automationCreate(
+    input: {
+      workspaceId: string;
+      title: string;
+      trigger: Automation['trigger'];
+      action: Automation['action'];
+    },
+    /** Who asked for the automation. Recorded as the automation's author. */
+    actor: Actor,
+  ): Automation;
   automationInspect(id: string): { automation: Automation; runs: AutomationRun[] };
 
   goalList(workspaceId: string): Goal[];
+
+  /**
+   * The policy in force for a scope.
+   *
+   * The strictest of the workspace's policy, the goal's policy and the
+   * conversation's own safeguards. Every enforcement point consumes this one
+   * result rather than reading a policy row itself.
+   */
+  effectiveAutonomyPolicy(scope: {
+    workspaceId: string;
+    goalId?: string;
+    conversationId?: string;
+  }): EffectiveAutonomyPolicy;
+
+  /**
+   * The owner's decision on an action, and a request for one when there is
+   * none.
+   *
+   * An action the policy wants the owner to approve may not be taken until
+   * the owner has decided. The request is raised in the same shape as the one
+   * an agent raises for itself, so the owner decides it the same way.
+   */
+  requestActionApproval(input: {
+    workspaceId: string;
+    agentConnectionId: string;
+    action: string;
+    summary: string;
+    details: unknown;
+  }): { state: 'granted' | 'refused' | 'pending'; approvalId: string | null };
+
+  /**
+   * An agent called a tool it was not granted.
+   *
+   * The refusal the agent sees is the end of its road: it cannot appeal it
+   * and it cannot see the owner. This is where the refusal is recorded, so
+   * the owner finds the agent on the waiting list and can widen the one
+   * grant that is in the way.
+   */
+  recordBlockedCapability(input: { agentConnectionId: string; toolName: McpToolName }): void;
 }
 
 export interface CapabilitiesServiceOptions {
+  db: Database;
   workspaces: WorkspaceService;
   conversations: ConversationsService;
   agents: AgentService;
   factory: FactoryService;
   resources: ResourceService;
   automations: AutomationsService;
+  approvals: ApprovalsService;
 }
 
 export function createCapabilitiesService(
   options: CapabilitiesServiceOptions,
 ): CapabilitiesService {
-  const { workspaces, conversations, agents, factory, resources, automations } = options;
+  const { db, workspaces, conversations, agents, factory, resources, automations, approvals } =
+    options;
 
   return {
     workspaceList(): Workspace[] {
@@ -169,7 +253,7 @@ export function createCapabilitiesService(
       return agents.list(workspaceId);
     },
 
-    taskCreate(input): FactoryTask {
+    taskCreate(input, actor): FactoryTask {
       return factory.createTask({
         workspaceId: input.workspaceId,
         goalId: input.goalId,
@@ -177,6 +261,7 @@ export function createCapabilitiesService(
         description: input.description ?? '',
         assigneeId: input.assigneeId,
         acceptanceCriteria: input.acceptanceCriteria ?? [],
+        author: authorFor(actor),
       });
     },
 
@@ -188,7 +273,7 @@ export function createCapabilitiesService(
       return { task: factory.getTask(id), evidence: factory.listEvidence(id) };
     },
 
-    resourceCreate(input): Resource {
+    resourceCreate(input, actor): Resource {
       // Fail fast when the workspace does not exist.
       workspaces.get(input.workspaceId);
       return resources.create({
@@ -196,7 +281,8 @@ export function createCapabilitiesService(
         type: input.type,
         title: input.title,
         data: input.data,
-        createdBy: input.createdBy ?? 'system',
+        author: authorFor(actor),
+        ...(input.template ? { template: input.template } : {}),
       });
     },
 
@@ -212,12 +298,16 @@ export function createCapabilitiesService(
       return resources.templateList(type);
     },
 
-    resourceTemplateGet(ref, type): ResourceTemplate {
-      return resources.templateGet(ref, type);
+    resourceTemplateGet(ref): ResourceTemplate {
+      return resources.templateGet(ref);
     },
 
-    automationCreate(input): Automation {
-      return automations.create(input);
+    resourceTemplateMerge(template, type, override): unknown {
+      return resources.templateMerge(template, type, override);
+    },
+
+    automationCreate(input, actor): Automation {
+      return automations.create({ ...input, author: authorFor(actor) });
     },
 
     automationInspect(id): { automation: Automation; runs: AutomationRun[] } {
@@ -227,6 +317,47 @@ export function createCapabilitiesService(
 
     goalList(workspaceId): Goal[] {
       return factory.listGoals(workspaceId);
+    },
+
+    effectiveAutonomyPolicy(scope): EffectiveAutonomyPolicy {
+      return loadEffectiveAutonomyPolicy(db, scope);
+    },
+
+    requestActionApproval(input): {
+      state: 'granted' | 'refused' | 'pending';
+      approvalId: string | null;
+    } {
+      // The approvals for this action. An approval that carries no action is
+      // not about this one, so it does not decide it.
+      const forAction = approvals.list(input.workspaceId).filter((approval) => {
+        if (approval.agentConnectionId !== input.agentConnectionId) return false;
+        const details = approval.details as { action?: string } | null;
+        return details?.action === input.action;
+      });
+
+      const decided = forAction.find((approval) => approval.status !== 'pending');
+      if (decided) {
+        return {
+          state: decided.status === 'approved' ? 'granted' : 'refused',
+          approvalId: decided.id,
+        };
+      }
+
+      const pending = forAction.find((approval) => approval.status === 'pending');
+      if (pending) return { state: 'pending', approvalId: pending.id };
+
+      const requested = approvals.request({
+        workspaceId: input.workspaceId,
+        agentConnectionId: input.agentConnectionId,
+        summary: input.summary,
+        details: input.details,
+        requestedBy: input.agentConnectionId,
+      });
+      return { state: 'pending', approvalId: requested.id };
+    },
+
+    recordBlockedCapability(input): void {
+      agents.recordBlockedCapability(input.agentConnectionId, input.toolName);
     },
   };
 }

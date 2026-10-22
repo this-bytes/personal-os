@@ -23,6 +23,7 @@ import { useWorkspace } from '../state/workspace';
 import { ConversationList } from '../components/ConversationList';
 import { EmptyState, ErrorState, LoadingState } from '../components/ErrorState';
 import { Field } from '../components/Field';
+import { MeasuresBand } from '../components/MeasuresBand';
 import { RoutingModeSelector } from '../components/RoutingModeSelector';
 import { WaitingList } from '../components/WaitingList';
 
@@ -116,6 +117,13 @@ export function Conversations(): React.JSX.Element {
         on them, and the answer belongs above everything else.
       */}
       <WaitingList agents={agents.data ?? []} conversations={conversations.data ?? []} />
+
+      {/*
+        The measures come after it. The product's report on itself is worth
+        having, and it is worth less than the answer to the question the owner
+        opened the panel with.
+      */}
+      <MeasuresBand />
 
       {conversations.isError ? (
         <ErrorState

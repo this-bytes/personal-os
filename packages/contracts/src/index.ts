@@ -6,6 +6,7 @@
  * of truth. Domain modules must not redefine these shapes.
  */
 export * from './common.js';
+export * from './autonomy.js';
 export * from './conversation.js';
 export * from './agent.js';
 export * from './adapter-config.js';
@@ -15,3 +16,5 @@ export * from './automation.js';
 export * from './workspace.js';
 export * from './events.js';
 export * from './mcp.js';
+export * from './measures.js';
+export * from './approvals.js';

@@ -14,5 +14,11 @@ import { defineConfig } from 'vitest/config';
 export default defineConfig({
   test: {
     include: ['scripts/**/*.test.ts'],
+    // The queue index reads every ref that could carry an item file, and a ref
+    // scan is a git subprocess per ref. The tests that build the index are
+    // therefore legitimately slower than vitest's five-second default, and a
+    // timeout here would report a slow tool as a broken one.
+    testTimeout: 60_000,
+    hookTimeout: 60_000,
   },
 });

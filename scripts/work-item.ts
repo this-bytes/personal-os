@@ -1387,7 +1387,7 @@ function cmdList(): void {
     for (const entry of withWorktree) {
       const worktree = byNumber.get(entry.id.replace(/^WI-/i, ''));
       process.stdout.write(
-        `  ${entry.id.padEnd(8)} ${entry.state ?? 'not migrated'} ${worktree?.path}\n`,
+        `  ${entry.id.padEnd(8)} ${entry.state ?? 'not-migrated'} ${worktree?.path}\n`,
       );
     }
   }
