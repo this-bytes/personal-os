@@ -5206,3 +5206,31 @@ Probe's WI-121 (`task_122e0e2e02bf`) and WI-129 (`task_b433527c33d7`); Cog's WI-
 (`task_c8d80aa01bfa`), WI-131 (`task_f57ccf614193`) and WI-132 (`task_5cde5cfe02bf`); and
 the two verdicts on their way to the group and to the peer session. **Ceiling two. Next
 free number WI-133.**
+
+### 15:00 — WI-122's verdict reached the group, and the lead re-measured the acceptance under a moved contract
+
+**Cog's WI-122 verdict landed in the group** (`task_514b81f82dcc`) — the same report the
+lead accepted on at 14:40 (`task_114a2da966e5`). **No new finding: the record correction
+and the one observation were recorded in `WI-122.md` when it was accepted.** The group post
+gives the floor its copy, and the lead's copy to the peer session is still queued.
+
+**And the lead re-measured the acceptance on the tree published now, because the contract
+moved under it.** `git diff --name-only 9e8bf84 origin/main` over the acceptance's files
+names `CONTRACTS.md` and nothing else: the peer's WI-129 entry was inserted above WI-122's
+note, **so the note moved from `CONTRACTS.md:1541-1543` to `:1574-1577`.** **The note's text
+is unchanged, and so are its three code citations, read by hand at `819111f`:**
+`apps/server/src/api/approvals.ts:37` holds `app.get('/api/approvals/:id/evidence', …`,
+`apps/server/src/app.ts:225` holds `registerApprovalRoutes(app);`, and
+`packages/contracts/src/approvals.ts:91` holds `export const approvalEvidenceSchema = z.object({`.
+**The pin's own file did not move. So the acceptance holds on the tree published now.**
+
+**And the general note, because it will happen again:** a citation that names another line
+in the same file moves when that file grows — this one moved 33 lines because another item's
+entry was inserted above it. **The three citations the pin holds are citations into code,
+and code does not move when a contract grows.**
+
+**The floor at 15:00.** **Running:** Cog's WI-127 verification (`task_48aacbb2df4b`) and
+this round. **Queued:** Cog's WI-116 (`task_30fa1c22fa81`), WI-130 (`task_c8d80aa01bfa`),
+WI-131 (`task_f57ccf614193`) and WI-132 (`task_5cde5cfe02bf`); Probe's WI-121
+(`task_122e0e2e02bf`) and WI-129 (`task_b433527c33d7`); and the two verdicts still on their
+way to the group and to the peer session. **Ceiling two. Next free number WI-133.**
