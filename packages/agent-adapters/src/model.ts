@@ -15,6 +15,11 @@ import { getByPath, parseSseData, readSseEvents } from './util.js';
  * Only the OpenAI-compatible chat-completions shape is implemented in v1.
  * Streaming is used when the provider advertises it, otherwise a single
  * non-streaming response is returned.
+ *
+ * The lifecycle is explicit. `connect()` reports what the provider can do;
+ * `send()` makes the completion request; `close()` releases what the adapter
+ * holds — which, for a provider that is called one request at a time, is
+ * nothing.
  */
 export class ModelAdapter implements AgentAdapter {
   readonly type = 'model' as const;
@@ -37,6 +42,11 @@ export class ModelAdapter implements AgentAdapter {
       approvals: false,
       artifacts: false,
     };
+  }
+
+  /** Release what the adapter holds. A model API keeps no connection open. */
+  close(): void {
+    // Nothing to release: the request is made and answered within the turn.
   }
 
   async *send(input: AgentTurnInput): AsyncIterable<AgentEvent> {

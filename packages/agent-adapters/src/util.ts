@@ -1,5 +1,50 @@
 /** Small shared helpers used by the built-in adapters. */
 
+import type { ChildProcess } from 'node:child_process';
+
+/**
+ * Stop a child process and wait until it is really gone.
+ *
+ * The wait is the point. A kill that is not waited for is a request, and a
+ * caller that returns before the child has exited leaves a process behind —
+ * which is how a finished turn ends up owning a stray agent. A process that
+ * ignores the first signal is killed outright, and even that is waited for.
+ */
+export async function terminateChild(child: ChildProcess, graceMs = 2_000): Promise<void> {
+  if (child.exitCode !== null || child.signalCode !== null) return;
+
+  let settle: () => void = () => undefined;
+  const exited = new Promise<void>((resolve) => {
+    settle = resolve;
+  });
+  const onExit = () => settle();
+  child.once('close', onExit);
+  child.once('error', onExit);
+
+  try {
+    child.kill('SIGTERM');
+    const escalation = setTimeout(() => {
+      try {
+        child.kill('SIGKILL');
+      } catch {
+        // The process is already gone; nothing left to kill.
+      }
+    }, graceMs);
+    escalation.unref?.();
+
+    // A child that cannot be killed must not hang the caller either.
+    const guard = setTimeout(() => settle(), graceMs + 5_000);
+    guard.unref?.();
+
+    await exited;
+    clearTimeout(escalation);
+    clearTimeout(guard);
+  } finally {
+    child.off('close', onExit);
+    child.off('error', onExit);
+  }
+}
+
 /**
  * Build a minimal environment for a supervised child process.
  *

@@ -7,6 +7,7 @@ import {
   type AdapterConfig,
 } from '@personal-os/contracts';
 import { JsonRpcStdioClient } from './jsonrpc.js';
+import { AdapterLifecycle, notConnectedEvent } from './lifecycle.js';
 import type { AdapterContext } from './types.js';
 import { buildSanitizedEnv, interpolate, parseSseData, readSseEvents } from './util.js';
 
@@ -23,6 +24,14 @@ import { buildSanitizedEnv, interpolate, parseSseData, readSseEvents } from './u
  * is claimed: an MCP tool call cannot be interrupted, cannot be steered, and
  * returns its result in one piece, so the adapter reports `cancel: false`,
  * `streaming: false` and `acceptsSteering: false` rather than pretending.
+ *
+ * The lifecycle is explicit. `connect()` starts the server and completes the
+ * handshake — `initialize`, `notifications/initialized`, `tools/list` — and
+ * only then is the instance usable; `send()` calls the tool; `close()`
+ * releases the server. A turn on an instance that was never connected is
+ * refused with a message that says so, because the failure it used to
+ * report ("the server was never reached") described a symptom and left the
+ * owner with nothing to act on.
  */
 
 interface McpTool {
@@ -33,7 +42,7 @@ interface McpTool {
 interface McpTransport {
   request(method: string, params: unknown, timeoutMs: number): Promise<unknown>;
   notify(method: string, params: unknown): void;
-  close(): void;
+  close(): void | Promise<void>;
 }
 
 interface JsonRpcResponse {
@@ -58,8 +67,8 @@ class McpStdioTransport implements McpTransport {
     this.client.notify(method, params);
   }
 
-  close(): void {
-    this.client.close();
+  close(): Promise<void> {
+    return this.client.close();
   }
 }
 
@@ -151,6 +160,7 @@ export class McpAdapter implements AgentAdapter {
 
   private readonly config: Extract<AdapterConfig, { adapterType: 'mcp' }>;
   private readonly ctx: AdapterContext;
+  private readonly lifecycle = new AdapterLifecycle('MCP');
   private transport: McpTransport | null = null;
   private tools: McpTool[] = [];
 
@@ -163,9 +173,9 @@ export class McpAdapter implements AgentAdapter {
     try {
       this.transport = await this.start();
     } catch (error) {
-      this.ctx.logger.warn('The MCP server could not be reached.', {
-        error: error instanceof Error ? error.message : String(error),
-      });
+      const reason = error instanceof Error ? error.message : String(error);
+      this.ctx.logger.warn('The MCP server could not be reached.', { error: reason });
+      this.lifecycle.markFailed(reason);
       return this.capabilities(false);
     }
 
@@ -185,11 +195,14 @@ export class McpAdapter implements AgentAdapter {
         tools?: McpTool[];
       };
       this.tools = Array.isArray(listed.tools) ? listed.tools : [];
+      this.lifecycle.markConnected();
     } catch (error) {
-      this.ctx.logger.warn('The MCP server did not complete the handshake.', {
-        error: error instanceof Error ? error.message : String(error),
-      });
-      this.close();
+      const reason = error instanceof Error ? error.message : String(error);
+      this.ctx.logger.warn('The MCP server did not complete the handshake.', { error: reason });
+      this.lifecycle.markFailed(reason);
+      // A handshake that failed leaves a server process behind unless it is
+      // released here: nothing else will close it.
+      await this.release();
       return this.capabilities(false);
     }
 
@@ -215,6 +228,14 @@ export class McpAdapter implements AgentAdapter {
   async *send(input: AgentTurnInput): AsyncIterable<AgentEvent> {
     const { executionId } = input;
     yield { type: 'execution.status', executionId, status: 'running' };
+
+    if (!this.lifecycle.isConnected) {
+      // The instance was never connected, so the server was never started.
+      // Say so, and say what to do about it.
+      yield notConnectedEvent(executionId, this.lifecycle.message());
+      yield { type: 'execution.status', executionId, status: 'failed' };
+      return;
+    }
 
     const transport = this.transport;
     if (!transport) {
@@ -297,6 +318,18 @@ export class McpAdapter implements AgentAdapter {
     // The adapter reports `cancel: false`, so the worker knows not to ask.
   }
 
+  /**
+   * Release the MCP server this adapter started.
+   *
+   * The server is a child process; closing the adapter stops it and waits
+   * for it to be gone. It is safe to call more than once, and safe to call
+   * on an instance that was never connected.
+   */
+  async close(): Promise<void> {
+    await this.release();
+    this.lifecycle.markClosed();
+  }
+
   private async start(): Promise<McpTransport> {
     if (this.config.transport === 'http') {
       if (!this.config.url) {
@@ -338,9 +371,10 @@ export class McpAdapter implements AgentAdapter {
     return this.config.timeoutSeconds * 1_000;
   }
 
-  private close(): void {
-    this.transport?.close();
+  private async release(): Promise<void> {
+    const transport = this.transport;
     this.transport = null;
+    if (transport) await transport.close();
   }
 }
 

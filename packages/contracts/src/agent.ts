@@ -238,14 +238,40 @@ export interface AgentTurnInput {
 }
 
 /**
+ * The code an adapter reports when a turn is asked to run on an instance
+ * whose runtime was never established.
+ *
+ * It is stable, because the owner reads it: the message beside it says what
+ * is wrong and what to do about it.
+ */
+export const ADAPTER_NOT_CONNECTED_CODE = 'adapter_not_connected';
+
+/**
  * The minimum common adapter surface. The production implementation adds
  * versioning, structured errors, deadlines, auth references and optional
  * protocol-specific methods (see `AgentAdapterExtras`).
+ *
+ * The lifecycle is `connect` → `send` → `close`. `connect` establishes the
+ * runtime and reports the capabilities that are actually true; `send` runs a
+ * turn on that runtime; `close` releases everything the adapter holds. The
+ * order matters: a capability probe on one instance says nothing about a
+ * later instance, so an instance that has not been connected cannot be
+ * assumed to be ready.
  */
 export interface AgentAdapter {
   readonly type: AdapterType;
   connect(connection: AgentConnection): Promise<AgentCapabilities>;
   send(input: AgentTurnInput): AsyncIterable<AgentEvent>;
+  /**
+   * Release everything this adapter holds — a supervised child process, a
+   * transport, a socket.
+   *
+   * It is optional, so an adapter that holds nothing does not have to say
+   * so, and it is safe to call more than once and at any point in the
+   * lifecycle. A turn that ends, fails or is abandoned must not leave a child
+   * process behind: the caller closes the adapter when the turn is over.
+   */
+  close?(): void | Promise<void>;
   getStatus?(executionId: string): Promise<AgentExecutionStatus>;
   cancel?(executionId: string): Promise<void>;
 }

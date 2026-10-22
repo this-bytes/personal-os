@@ -1,4 +1,5 @@
 import { spawn, type ChildProcessWithoutNullStreams } from 'node:child_process';
+import { terminateChild } from './util.js';
 
 interface JsonRpcMessage {
   jsonrpc?: string;
@@ -115,10 +116,15 @@ export class JsonRpcStdioClient {
     );
   }
 
-  close(): void {
+  /**
+   * Stop the child and wait until it is gone.
+   *
+   * The wait is the point: a transport that is closed but whose child is
+   * still running has not released anything.
+   */
+  async close(): Promise<void> {
     this.closed = true;
-    this.child.kill('SIGTERM');
-    setTimeout(() => this.child.kill('SIGKILL'), 1_500).unref?.();
+    await terminateChild(this.child);
   }
 
   private consume(chunk: string): void {

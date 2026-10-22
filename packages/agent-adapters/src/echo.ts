@@ -23,6 +23,11 @@ const CAPABILITIES: AgentCapabilities = {
 /**
  * A deterministic local agent. It exists so the product is usable (and
  * testable) before any external agent is configured.
+ *
+ * The lifecycle is explicit. `connect()` reports what the echo agent can do;
+ * `send()` answers; `close()` releases what the adapter holds — which, for
+ * an agent that holds nothing, is nothing. It has no runtime to be missing,
+ * so a turn does not need a connection first.
  */
 export class EchoAdapter implements AgentAdapter {
   readonly type = 'echo' as const;
@@ -34,6 +39,11 @@ export class EchoAdapter implements AgentAdapter {
 
   async connect(_connection: AgentConnection): Promise<AgentCapabilities> {
     return { ...CAPABILITIES };
+  }
+
+  /** Release what the adapter holds. The echo agent holds nothing. */
+  close(): void {
+    // Nothing to release.
   }
 
   async *send(input: AgentTurnInput): AsyncIterable<AgentEvent> {
