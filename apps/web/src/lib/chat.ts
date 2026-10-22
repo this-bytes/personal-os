@@ -1,6 +1,7 @@
 import type {
   ChatActivity,
   ChatActivityReadModel,
+  MessageDelivery,
   RunControl,
   RunControlOperation,
   RunControlOption,
@@ -9,6 +10,32 @@ import type {
   TurnView,
 } from '@personal-os/contracts';
 import type { TraceStatus } from '@personal-os/ui';
+
+/**
+ * The request the composer sends.
+ *
+ * **The delivery mode travels with the message.** A steer that quietly became
+ * a queued message is a lie the owner did not agree to, and the server can
+ * only say so if the mode reaches it.
+ *
+ * An attachment is a reference to a resource that already exists. There is no
+ * upload path through the resource API, so the message points at the resource
+ * rather than carrying its bytes.
+ */
+export function messageRequest(
+  text: string,
+  options: {
+    delivery: MessageDelivery;
+    attachments: Array<{ resourceId: string }>;
+  },
+): { content: Array<Record<string, unknown>>; delivery: MessageDelivery } {
+  const content: Array<Record<string, unknown>> = [];
+  if (text.length > 0) content.push({ type: 'text', text });
+  for (const attachment of options.attachments) {
+    content.push({ type: 'file', resourceId: attachment.resourceId });
+  }
+  return { content, delivery: options.delivery };
+}
 
 /**
  * The chat surface's own types.

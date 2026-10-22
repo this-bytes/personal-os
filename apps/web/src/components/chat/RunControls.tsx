@@ -91,7 +91,13 @@ export function RunControls({
 
   return (
     <div className={cn('flex flex-wrap items-center gap-2', className)}>
-      <span className={cn('inline-flex items-center gap-1.5 text-[11px]', STATE_TONE[state])}>
+      {/* The state of the turn is worth announcing: it changes while the owner
+          is reading the room, and the trace says the same word for a
+          different thing. */}
+      <span
+        role="status"
+        className={cn('inline-flex items-center gap-1.5 text-[11px]', STATE_TONE[state])}
+      >
         {state === 'running' || state === 'stopping' ? (
           <Radio className="h-3 w-3" />
         ) : (

@@ -65,7 +65,7 @@ type ContentPart =
 
 ### Additive extensions
 
-The implementation adds five fields, all optional and all required by production
+The implementation adds six fields, all optional and all required by production
 behaviour:
 
 ```ts
@@ -81,6 +81,7 @@ interface Message {
   };
   executionId?: ID;
   detail?: string;
+  delivery?: 'steer' | 'queue';
 }
 ```
 
@@ -89,12 +90,15 @@ turn derived from one human request together. `origin` records who spoke and how
 the delegation chain has travelled — the basis of the echo-loop guard. `executionId`
 names the execution the message belongs to — the execution is the run itself, and
 the message it produced is that run's own record
-(`apps/server/src/modules/conversations/service.ts:56-57`). **`detail` is the
+(`apps/server/src/modules/conversations/service.ts:72-77`). **`detail` is the
 server's own sentence about how the message ended** — a message that did not finish
 says why, in the server's words
 (`packages/contracts/src/conversation.ts:90`), and the client shows it as it is
 given rather than rewording it
-(`apps/web/src/components/ChatMessageList.tsx:136`).
+(`apps/web/src/components/ChatMessageList.tsx:136`). **`delivery` says how the
+message was sent** — a steer went into the turn that was running, and a queue
+message waits for the next one. Absent means `queue`: a message written before
+this existed is a queued message, exactly as it was.
 
 **Migration.** Nothing is reclassified. The fields are additive and no existing
 record is rewritten: a message that carries none of them is still a message, and a
@@ -1498,9 +1502,9 @@ be told apart from the stored default. See
 
 **The limits, the allowed actions and the approvals are enforced.** The worker holds
 a turn to the effective policy: the chain's turn count
-(`apps/worker/src/executor.ts:1565`) and its spend
-(`apps/worker/src/executor.ts:1572`), and the workspace's spend for the day
-(`apps/worker/src/executor.ts:1579`), before the turn starts; the policy's duration
+(`apps/worker/src/executor.ts:1624`) and its spend
+(`apps/worker/src/executor.ts:1631`), and the workspace's spend for the day
+(`apps/worker/src/executor.ts:1638`), before the turn starts; the policy's duration
 limit caps the turn while it runs, and every action the agent announces is checked
 against what the policy allows. The MCP surface refuses an action the policy does not
 allow, and one the policy wants the owner to approve until the owner has decided. A
@@ -1509,8 +1513,8 @@ truncated.
 
 **A daily cap is a cap on the workspace.** The workspace's spend for the day is the
 sum of the spend units on the executions of that workspace since 00:00 UTC
-(`apps/worker/src/executor.ts:1620-1630`,
-`apps/worker/src/executor.ts:1624-1629`), and it is the same day for every workspace —
+(`apps/worker/src/executor.ts:1679-1689`,
+`apps/worker/src/executor.ts:1683-1688`), and it is the same day for every workspace —
 the system stores ISO timestamps everywhere and has no per-workspace timezone. A daily
 cap of zero is no cap, as it is for the chain's spend limit. The cap applies across
 the workspace's conversations and goals, and not per chain, which is the whole
@@ -1522,7 +1526,7 @@ one spend unit — the measure the product already has
 (`apps/server/src/modules/conversations/routing.ts:332`). **The cost is recorded
 against the execution when the turn ends**: the worker writes one unit for an
 agent turn and none for a turn that never reached the agent
-(`apps/worker/src/executor.ts:1033`, `apps/worker/src/executor.ts:1330`).
+(`apps/worker/src/executor.ts:1092`, `apps/worker/src/executor.ts:1389`).
 **The row is created with no spend units**, because the cost is not known until
 the turn has run (`apps/server/src/modules/conversations/dispatch.ts:180`,
 `apps/server/src/modules/factory/service.ts:469`), and the column defaults to zero
@@ -1601,7 +1605,7 @@ supports, and the capability to do it is already modelled and negotiated.
 This entry is the contract for **WI-007**, and the code implements it — as of
 `5f019b9`. `resumeSession` is implemented at
 `packages/agent-adapters/src/acp.ts:238` and called at
-`apps/worker/src/executor.ts:438`, and the gate is the capability and the session
+`apps/worker/src/executor.ts:448`, and the gate is the capability and the session
 id together: `canResume = capabilities?.persistentSessions === true &&
 Boolean(execution.externalRef)`.
 
@@ -1642,7 +1646,7 @@ not.**
 failure. It is the same word the unknown outcome uses
 ([The unknown outcome](#the-unknown-outcome)), and it is in this vocabulary because
 the product produces it: the worker writes it when a turn's outcome cannot be
-confirmed (`apps/worker/src/executor.ts:117`), and the conversation dispatch writes it
+confirmed (`apps/worker/src/executor.ts:118`), and the conversation dispatch writes it
 when a turn stops for the same reason
 (`apps/server/src/modules/conversations/dispatch.ts:256`). **A vocabulary without
 `unknown` would leave the unknown outcome unrepresentable in the trail**, and the
@@ -2149,14 +2153,26 @@ means _started, outcome unconfirmed_.
 
 ### Steer and queue
 
-A message carries a delivery mode.
+A message is sent with a delivery mode.
 
 ```ts
 type MessageDelivery = 'steer' | 'queue';
 ```
 
-`queue` is the default, and it is what happens today: the message waits for the
-next turn. `steer` delivers the message into the turn that is running.
+`queue` is the default: the message waits for the next turn. `steer` goes into
+the turn that is running.
+
+**The route reads the mode, and says what it did with it.** A steer that can be
+delivered is delivered into the turn that is running; a steer that cannot is a
+queued message, and the answer says why. The mode is on the message itself, so
+a client that reads the room later can see which it was.
+
+```ts
+interface Message {
+  // ...
+  delivery?: MessageDelivery;
+}
+```
 
 **Steering is a capability, not a hope.** A connection whose adapter cannot
 take input mid-turn cannot be steered. For such a connection a `steer` is
@@ -2173,13 +2189,25 @@ interface AgentCapabilities {
 
 A connection that does not report `acceptsSteering` cannot be steered. Absent
 means absent: a connection written before this existed is an agent that cannot
-be steered.
+be steered. **Only a connection that reported the capability is given a
+channel to read steers from**, and the turn that runs on it is the one that
+takes them.
+
+```ts
+interface AgentTurnInput {
+  // ...
+  steer?: AsyncIterable<string>;
+}
+```
 
 **A steer targets one agent.** A message with `delivery: 'steer'` is delivered
 to the running turn's agent alone. It does not wake other participants, and it
 does not count as a new turn for the duplicate check. This extends
 [Routing behaviour](#routing-behaviour); it weakens none of the
 [Mandatory routing safeguards](#mandatory-routing-safeguards).
+
+**A steer starts no turn of its own.** The turn that is running is the one that
+takes it, and the message waits in the room until that turn takes it.
 
 **An unconsumed steer is not dropped.** A steer the running turn never
 consumed is delivered to the next turn, and is recorded as having been
@@ -2242,12 +2270,13 @@ rendered as elements; raw HTML in a message is shown as the characters the
 agent wrote and never becomes markup, and a link or an image is checked before
 its URL is used. A message cannot run code in the panel that shows it.
 
-**The limits, stated plainly.** Steering does not work yet: the route accepts
-`delivery: 'steer'` and the mode is carried, but nothing acts on it — a steer
-is a queued message today. A file the owner attaches is carried by reference to
-a resource, not uploaded by the composer, and the composer offers the reference
-rather than a picker. The trace shows the events the log holds; it is not a
-complete account of what an adapter did inside its own runtime.
+**The limits, stated plainly.** Steering works, and only for a connection that
+reports `acceptsSteering`: a steer for a connection that cannot take input
+mid-turn is a queued message, and the panel says so in the server's words. A
+file the owner attaches is carried by reference to a resource, not uploaded by
+the composer, and the composer offers the reference rather than a picker. The
+trace shows the events the log holds; it is not a complete account of what an
+adapter did inside its own runtime.
 
 This entry is the contract for **WI-141**, and the code implements it — as of
 `dad1801` — the shapes are in `packages/contracts/src/chat.ts`, the activity
@@ -2485,11 +2514,12 @@ exists today: a turn is an execution, `unknown` is published for messages,
 executions and tasks, and `origin.depth` records the delegation distance. The
 delegation tree, the delegated task, the three delegation events and the bot
 routes arrive with **WI-144**, and the code implements them — as of `3c4db59`.
-What this entry still adds — `turn.admitted`, `turn.committed`, `turn.failed`,
-`turn.lost`, the capability view, the five-step commit, steering, fork and
-rewind — arrives with WI-055. The published shapes above are the contract that
-item implements against, so the model can be reviewed as a whole before any of
-it is written.
+**Steering has an entry of its own: WI-152, "Steer and queue", above.** What
+this entry still adds — `turn.admitted`, `turn.committed`, `turn.failed`,
+`turn.lost`, the capability view, the five-step commit, fork and rewind —
+arrives with WI-055. The published shapes above are the contract that item
+implements against, so the model can be reviewed as a whole before any of it
+is written.
 
 ---
 
@@ -2832,8 +2862,8 @@ audit entry — there is no audit call anywhere in
 `apps/server/src/modules/mcp/server.ts`, and none in the capabilities service its
 tools call, which reach the resources service directly rather than through the
 auditing route. The only writer of the trail that is not an owner HTTP route is
-the worker — its `unknown` record (`apps/worker/src/executor.ts:110-119`) and the
-policy refusals it writes (`apps/worker/src/executor.ts:1660-1672`). So every audited
+the worker — its `unknown` record (`apps/worker/src/executor.ts:111-120`) and the
+policy refusals it writes (`apps/worker/src/executor.ts:1719-1731`). So every audited
 operation is an owner operation, except the worker's own entries, which carry
 `actorType: 'agent'`. **The second measure does not count the work an agent does
 through MCP**: an agent can create, update and publish resources all day and the
@@ -2848,9 +2878,9 @@ but the route helper hardcodes `success`
 (`apps/server/src/modules/audit/service.ts:79`). The two values a writer does
 produce come from the worker: the `unknown` of
 [The unknown outcome](#the-unknown-outcome)
-(`apps/worker/src/executor.ts:117`), and the `failure` it writes when the
+(`apps/worker/src/executor.ts:118`), and the `failure` it writes when the
 autonomy policy refuses a turn or an action
-(`apps/worker/src/executor.ts:1667`). **An operation that failed at the route is
+(`apps/worker/src/executor.ts:1726`). **An operation that failed at the route is
 counted here as an operation that completed.**
 
 **The route exists.** It answers with the shape above, member for member: the

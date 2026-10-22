@@ -97,6 +97,15 @@ export type MessageOrigin = z.infer<typeof messageOriginSchema>;
 export const messageStatusSchema = z.enum(['streaming', 'complete', 'failed', 'unknown']);
 export type MessageStatus = z.infer<typeof messageStatusSchema>;
 
+/**
+ * How a message reaches an agent.
+ *
+ * `queue` is the default: the message waits for the next turn. `steer`
+ * delivers it into the turn that is running, and only to that turn's agent.
+ */
+export const messageDeliverySchema = z.enum(['steer', 'queue']);
+export type MessageDelivery = z.infer<typeof messageDeliverySchema>;
+
 export const messageKindSchema = z.enum(['text', 'system', 'artifact', 'activity']);
 export type MessageKind = z.infer<typeof messageKindSchema>;
 
@@ -114,6 +123,14 @@ export const messageSchema = z.object({
   correlationId: idSchema.optional(),
   origin: messageOriginSchema.optional(),
   executionId: idSchema.optional(),
+  /**
+   * How this message was sent.
+   *
+   * `queue` is the default and waits for the next turn; `steer` goes into the
+   * turn that is running. Absent means `queue`: a message written before this
+   * existed is a queued message, exactly as it was.
+   */
+  delivery: messageDeliverySchema.optional(),
   /**
    * The sentence the server produced about how this message ended.
    *

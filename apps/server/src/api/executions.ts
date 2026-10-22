@@ -98,10 +98,13 @@ export function registerExecutionRoutes(app: FastifyInstance): void {
     const run = activity.runControlFor({
       status: activity.turnStatusOf(turn.status),
       stopRequested: stopWasRequested(turn.workspaceId, id),
-      // A turn recorded before the capability view existed has none, and a
-      // turn without a view is a turn that cannot be steered: absent means
+      // A turn can be steered when the connection behind it can take input
+      // while it runs. The connection says so only when the adapter reported
+      // it, and a connection that has never run reports nothing: absent means
       // absent.
-      canSteer: false,
+      canSteer: turn.agentConnectionId
+        ? activity.connectionAcceptsSteering(db, turn.agentConnectionId)
+        : false,
     });
 
     const tree = app.services.bots.delegationTree(id);

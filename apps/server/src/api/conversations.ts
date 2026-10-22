@@ -1,6 +1,11 @@
 import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
-import { personaSchema, routingModeSchema, botRoleSchema } from '@personal-os/contracts';
+import {
+  personaSchema,
+  routingModeSchema,
+  botRoleSchema,
+  messageDeliverySchema,
+} from '@personal-os/contracts';
 import { audit, parseBody, parseQuery, requireAuth } from './helpers.js';
 
 const listQuerySchema = z.object({
@@ -52,6 +57,13 @@ const postMessageSchema = z.object({
     .min(1),
   replyToId: z.string().optional(),
   targetParticipantIds: z.array(z.string()).optional(),
+  /**
+   * How the message reaches an agent.
+   *
+   * `queue` is the default. `steer` asks for the turn that is running, and
+   * the answer says what happened to it.
+   */
+  delivery: messageDeliverySchema.optional(),
 });
 
 const registerBotSchema = z.object({
@@ -156,6 +168,7 @@ export function registerConversationRoutes(app: FastifyInstance): void {
         content: body.content,
         replyToId: body.replyToId,
         targetParticipantIds: body.targetParticipantIds,
+        delivery: body.delivery,
         humanDisplayName: request.user?.displayName ?? 'Owner',
       });
       audit(
@@ -165,6 +178,7 @@ export function registerConversationRoutes(app: FastifyInstance): void {
         {
           dispatches: result.dispatches.map((dispatch) => dispatch.agentConnectionId),
           routing: result.routing.reason,
+          ...(result.steer ? { steer: result.steer.delivered } : {}),
         },
       );
       return reply.code(201).send(result);

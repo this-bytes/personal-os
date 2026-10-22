@@ -18,7 +18,18 @@ const CAPABILITIES: AgentCapabilities = {
   cancel: true,
   approvals: false,
   artifacts: false,
+  /**
+   * The echo agent takes input while a turn is running.
+   *
+   * It has nothing of its own to add, so a steer replaces the rest of its
+   * answer with what the owner said — which is the most an echo agent can
+   * honestly do.
+   */
+  acceptsSteering: true,
 };
+
+/** How long the echo agent waits between two chunks of its answer. */
+const CHUNK_PAUSE_MS = 25;
 
 /**
  * A deterministic local agent. It exists so the product is usable (and
@@ -55,13 +66,48 @@ export class EchoAdapter implements AgentAdapter {
       `Echo agent received ${input.message.length} characters of context. ` +
         `This connection works end to end without an external agent.`;
 
+    // The turn says it is running before it works. The panel shows that, and
+    // the owner may steer a turn they can see running — so the delay that
+    // follows is the work taking its time, not the turn failing to start.
+    yield { type: 'execution.status', executionId: input.executionId, status: 'running' };
+
     if (this.config.delayMs > 0) {
       await new Promise((resolve) => setTimeout(resolve, this.config.delayMs));
     }
 
-    yield { type: 'execution.status', executionId: input.executionId, status: 'running' };
+    // The owner's steers, read between the chunks of the answer.
+    //
+    // The read never gives up: a steer that has not arrived yet leaves the
+    // read waiting, so the next chunk waits with it and a steer that arrives
+    // in between is not lost.
+    const steers = input.steer?.[Symbol.asyncIterator]();
+    let pending: Promise<IteratorResult<string> | null> | null = null;
+
+    const takeSteer = async (): Promise<string | null> => {
+      if (!steers) return null;
+      pending ??= steers.next();
+      const settled = await Promise.race([
+        pending,
+        new Promise<null>((resolve) => setTimeout(() => resolve(null), 0)),
+      ]);
+      if (settled === null) return null;
+      pending = null;
+      return settled.done ? null : settled.value;
+    };
+
+    let answer = reply;
+    let steered = false;
 
     for (const chunk of reply.match(/.{1,64}/gs) ?? []) {
+      const said = await takeSteer();
+      if (said !== null) {
+        // The owner said something else, and the echo agent answers the last
+        // thing it was told. What it had already said stays said: the answer
+        // is the part that was streamed and then what the owner said.
+        answer = said;
+        steered = true;
+        break;
+      }
       if (input.signal?.aborted) {
         yield {
           type: 'execution.error',
@@ -72,9 +118,26 @@ export class EchoAdapter implements AgentAdapter {
         return;
       }
       yield { type: 'message.delta', executionId: input.executionId, text: chunk };
+      await new Promise((resolve) => setTimeout(resolve, CHUNK_PAUSE_MS));
     }
 
-    yield { type: 'message.completed', executionId: input.executionId, text: reply };
+    // The rest of the answer is what the owner last said.
+    if (steered) {
+      for (const chunk of answer.match(/.{1,64}/gs) ?? []) {
+        if (input.signal?.aborted) {
+          yield {
+            type: 'execution.error',
+            executionId: input.executionId,
+            code: 'cancelled',
+            message: 'Execution cancelled.',
+          };
+          return;
+        }
+        yield { type: 'message.delta', executionId: input.executionId, text: chunk };
+      }
+    }
+
+    yield { type: 'message.completed', executionId: input.executionId, text: answer };
     yield { type: 'execution.status', executionId: input.executionId, status: 'completed' };
   }
 }

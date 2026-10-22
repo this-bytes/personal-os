@@ -1,15 +1,23 @@
 import { and, desc, eq, isNull } from 'drizzle-orm';
 import {
   contentToText,
+  type AgentCapabilities,
   type ContentPart,
   type Conversation,
   type Message,
+  type MessageDelivery,
   type Participant,
   type Persona,
   type RoutingMode,
 } from '@personal-os/contracts';
 import type { Database } from '../../db/client.js';
-import { conversations, executions, messages, participants } from '../../db/schema.js';
+import {
+  agentConnections,
+  conversations,
+  executions,
+  messages,
+  participants,
+} from '../../db/schema.js';
 import { errors } from '../../lib/errors.js';
 import { newId } from '../../lib/ids.js';
 import type { EventsService } from '../events/service.js';
@@ -22,6 +30,7 @@ import {
   type RoutingBlockReason,
   type RoutingDecision,
 } from './routing.js';
+import { planSteer, type SteerTurn } from './steer.js';
 
 export interface ConversationDetail extends Conversation {
   paused: boolean;
@@ -35,6 +44,13 @@ export interface PostMessageInput {
   content: ContentPart[];
   replyToId?: string;
   targetParticipantIds?: string[];
+  /**
+   * How the message reaches an agent.
+   *
+   * `queue` is the default. `steer` asks for the turn that is running, and
+   * says so when it cannot have it.
+   */
+  delivery?: MessageDelivery;
   /** When the caller is an agent, the message is attributed to it. */
   sender?: { kind: 'agent'; agentConnectionId: string; actorId: string };
   /** Human sender display name, used when creating the participant. */
@@ -60,10 +76,28 @@ export interface UnknownTurn {
   agentConnectionId: string | null;
 }
 
+/**
+ * What happened to a steer.
+ *
+ * Absent when the message was not a steer. A steer that could not be
+ * delivered into a running turn is a queued message, and this says so in the
+ * server's words rather than letting the owner believe it was delivered.
+ */
+export interface SteerOutcome {
+  /** Whether the message went into the turn that was running. */
+  delivered: boolean;
+  /** The agent it went into, when it went into one. */
+  agentConnectionId?: string;
+  /** Why, in words the owner can act on. */
+  reason: string;
+}
+
 export interface PostMessageResult {
   message: Message;
   dispatches: Dispatch[];
   routing: RoutingDecision;
+  /** What happened to a steer, when the message was one. */
+  steer?: SteerOutcome;
 }
 
 export interface ConversationsService {
@@ -194,9 +228,41 @@ export function createConversationsService(
       correlationId: row.correlationId ?? undefined,
       origin: row.origin ?? undefined,
       executionId: row.executionId ?? undefined,
+      delivery: row.delivery,
       detail: row.detail ?? undefined,
       createdAt: row.createdAt,
     };
+  }
+
+  /** The turns that are running in a conversation right now. */
+  function runningTurns(conversationId: string): SteerTurn[] {
+    return db
+      .select({ id: executions.id, agentConnectionId: executions.agentConnectionId })
+      .from(executions)
+      .where(and(eq(executions.conversationId, conversationId), eq(executions.status, 'running')))
+      .all()
+      .filter(
+        (row): row is { id: string; agentConnectionId: string } =>
+          typeof row.agentConnectionId === 'string',
+      )
+      .map((row) => ({ executionId: row.id, agentConnectionId: row.agentConnectionId }));
+  }
+
+  /**
+   * Whether a connection can take input while its turn is running.
+   *
+   * The capabilities are the ones the adapter reported when the worker
+   * connected it, and the worker is what writes them. A connection that has
+   * never run a turn reports none, and a connection that reports none cannot
+   * be steered: absent means absent.
+   */
+  function acceptsSteering(agentConnectionId: string): boolean {
+    const row = db
+      .select({ capabilities: agentConnections.capabilities })
+      .from(agentConnections)
+      .where(eq(agentConnections.id, agentConnectionId))
+      .get();
+    return (row?.capabilities as AgentCapabilities | null | undefined)?.acceptsSteering === true;
   }
 
   function listMessageRows(conversationId: string, limit: number, before?: string) {
@@ -412,6 +478,28 @@ export function createConversationsService(
       const senderParticipant = resolveSender(conversationId, people, input);
       const text = contentToText(input.content);
 
+      // The published API names a target by its participant id, and the
+      // routing engine names an agent by its connection id. The two are
+      // translated here, at the boundary where the published shape enters, so
+      // a target that is named is a target that is reached — and so the
+      // coordinator rule is asked about the delegation rather than answered
+      // by a target that was dropped before the rule saw it.
+      //
+      // An id that matches no participant is carried through as it was given.
+      // Dropping it here is what left a delegation that named nobody with a
+      // refusal that named nobody either, and the engine cannot say that the
+      // id matched nobody if the id never reaches it.
+      const explicitTargets = (input.targetParticipantIds ?? [])
+        .map((participantId) => {
+          const person = people.find((p) => p.id === participantId);
+          if (person) return person.agentConnectionId;
+          // A connection id is not a participant id, and the published shape
+          // asks for a participant id, so it is dropped as it always was.
+          if (people.some((p) => p.agentConnectionId === participantId)) return undefined;
+          return participantId;
+        })
+        .filter((id): id is string => typeof id === 'string');
+
       const parent = input.replyToId
         ? db.select().from(messages).where(eq(messages.id, input.replyToId)).get()
         : undefined;
@@ -467,6 +555,55 @@ export function createConversationsService(
         };
       }
 
+      // A steer goes into the turn that is running, and into that turn alone.
+      //
+      // It starts no turn of its own: the turn that is running is the one that
+      // takes it, and the message waits in the room until that turn takes it.
+      // A steer that cannot be delivered is a queued message, and the reason
+      // it could not be delivered rides back with the result — a steer that
+      // quietly became a queue is a lie the owner did not agree to.
+      let steer: SteerOutcome | undefined;
+
+      if (input.delivery === 'steer') {
+        const plan = planSteer({
+          participants: people,
+          text,
+          explicitTargets,
+          runningTurns: runningTurns(conversationId),
+          acceptsSteering: (agentConnectionId) => acceptsSteering(agentConnectionId),
+        });
+
+        if (plan.deliverable && plan.agentConnectionId && plan.participantId) {
+          db.update(messages)
+            .set({ delivery: 'steer', targetParticipantIds: [plan.participantId] })
+            .where(eq(messages.id, messageId))
+            .run();
+
+          const steered = toMessage(
+            db.select().from(messages).where(eq(messages.id, messageId)).get()!,
+          );
+          events.publish(
+            { type: 'message.updated', message: steered },
+            { workspaceId: conversation.workspaceId, conversationId },
+          );
+
+          steer = {
+            delivered: true,
+            agentConnectionId: plan.agentConnectionId,
+            reason: plan.reason,
+          };
+
+          return {
+            message: steered,
+            dispatches: [],
+            routing: { targets: [plan.agentConnectionId], reason: plan.reason },
+            steer,
+          };
+        }
+
+        steer = { delivered: false, reason: plan.reason };
+      }
+
       // The published API names a target by its participant id, and the
       // routing engine names an agent by its connection id. The two are
       // translated here, at the boundary where the published shape enters, so
@@ -478,17 +615,6 @@ export function createConversationsService(
       // Dropping it here is what left a delegation that named nobody with a
       // refusal that named nobody either, and the engine cannot say that the
       // id matched nobody if the id never reaches it.
-      const explicitTargets = (input.targetParticipantIds ?? [])
-        .map((participantId) => {
-          const person = people.find((p) => p.id === participantId);
-          if (person) return person.agentConnectionId;
-          // A connection id is not a participant id, and the published shape
-          // asks for a participant id, so it is dropped as it always was.
-          if (people.some((p) => p.agentConnectionId === participantId)) return undefined;
-          return participantId;
-        })
-        .filter((id): id is string => typeof id === 'string');
-
       const { dispatches, routing } = planAndDispatch({
         db,
         events,
@@ -502,7 +628,7 @@ export function createConversationsService(
         ...(explicitTargets.length > 0 ? { explicitTargets } : {}),
       });
 
-      return { message, dispatches, routing };
+      return { message, dispatches, routing, ...(steer ? { steer } : {}) };
     },
 
     buildContext(conversationId, limit = 30): string {

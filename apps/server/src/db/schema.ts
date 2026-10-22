@@ -9,6 +9,7 @@ import type {
   DelegatedTaskStatus,
   ExecutionStatus,
   McpToolName,
+  MessageDelivery,
   MessageOrigin,
   Persona,
 } from '@personal-os/contracts';
@@ -235,6 +236,20 @@ export const messages = sqliteTable(
     correlationId: text('correlation_id'),
     origin: text('origin', { mode: 'json' }).$type<MessageOrigin | null>(),
     executionId: text('execution_id'),
+    /**
+     * How the message reaches an agent.
+     *
+     * `queue` waits for the next turn. `steer` is for the turn that is
+     * running, and the turn that takes it says when it took it.
+     */
+    delivery: text('delivery').$type<MessageDelivery>().notNull().default('queue'),
+    /**
+     * When the turn that was running took this steer.
+     *
+     * Absent means nobody has taken it yet: the message is still waiting, and
+     * the next turn takes it and records that it was delivered late.
+     */
+    consumedAt: text('consumed_at'),
     /** The sentence the server produced about how this message ended. */
     detail: text('detail'),
     createdAt: text('created_at').notNull(),

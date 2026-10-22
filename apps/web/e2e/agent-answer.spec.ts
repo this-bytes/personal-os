@@ -77,4 +77,52 @@ test.describe('the agent answers', () => {
     await expect(page.getByText('streaming', { exact: true })).toHaveCount(0);
     await expect(page.getByText('message.completed')).toBeVisible();
   });
+
+  test("the owner's steer goes into the turn that is running", async ({ page }) => {
+    await signIn(page);
+    const workspaceId = await firstWorkspaceId(page);
+
+    // The agent takes its time, so there is a turn to steer.
+    const createdAgent = await page.request.post('/api/agents', {
+      data: {
+        workspaceId,
+        name: 'Wren',
+        adapterType: 'echo',
+        config: { reply: 'The first answer.', delayMs: 6_000 },
+      },
+    });
+    expect(createdAgent.ok()).toBe(true);
+    const agentId = (await createdAgent.json()).agent.id as string;
+    created.push(agentId);
+
+    const createdConversation = await page.request.post('/api/conversations', {
+      data: {
+        workspaceId,
+        title: 'The steer',
+        routingMode: 'mentions',
+        participantAgentConnectionIds: [agentId],
+      },
+    });
+    expect(createdConversation.ok()).toBe(true);
+    const conversationId = (await createdConversation.json()).conversation.id as string;
+
+    await page.goto(`/conversations/${conversationId}`);
+
+    await page.getByPlaceholder(/Write a message/).fill('@Wren start');
+    await page.getByRole('button', { name: 'Send message' }).click();
+
+    // The turn is running, and the owner may steer it.
+    const steer = page.getByRole('button', { name: 'steer now' });
+    await expect(steer).toBeEnabled({ timeout: 15_000 });
+    await steer.click();
+
+    await page.getByPlaceholder(/Write a message/).fill('@Wren actually, do this instead');
+    await page.getByRole('button', { name: 'Send into the running turn' }).click();
+
+    // The answer is the owner's steer, not the answer the turn began with.
+    await expect(page.getByText('actually, do this instead').first()).toBeVisible({
+      timeout: 20_000,
+    });
+    await expect(page.getByText('The first answer.')).toHaveCount(0);
+  });
 });

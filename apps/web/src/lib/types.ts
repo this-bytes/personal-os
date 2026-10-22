@@ -69,10 +69,24 @@ export interface Dispatch {
   correlationId: string;
 }
 
+/**
+ * What happened to a steer.
+ *
+ * The server says so in its own words, because a steer that quietly became a
+ * queued message is a lie the owner did not agree to.
+ */
+export interface SteerOutcome {
+  delivered: boolean;
+  agentConnectionId?: string;
+  reason: string;
+}
+
 export interface PostMessageResult {
   message: Message;
   dispatches: Dispatch[];
   routing: RoutingDecision;
+  /** What happened to a steer, when the message was one. */
+  steer?: SteerOutcome;
 }
 
 export interface AgentTokenSummary {

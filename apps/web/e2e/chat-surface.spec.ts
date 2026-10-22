@@ -84,9 +84,11 @@ test.describe('the chat surface', () => {
     // vocabulary.
     await expect(page.getByText('turn.admitted')).toBeVisible();
 
-    // Steering is refused, and the refusal is explained.
-    await expect(page.getByText('steering unavailable')).toBeVisible();
-    await expect(page.getByRole('button', { name: /steer now/i })).toBeDisabled();
+    // The turn is running, and the panel says so. The stop is asked of a turn
+    // that is in flight, which is what the server answers about. The panel's
+    // state is a live region of its own, because the trace says "running"
+    // about something else.
+    await expect(page.getByRole('status')).toHaveText('running');
 
     // The turn was running, so it was asked to stop rather than cancelled,
     // and the panel says what the server said would happen: the runtime may

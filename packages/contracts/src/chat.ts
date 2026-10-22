@@ -44,9 +44,11 @@ export type TurnStatus = z.infer<typeof turnStatusSchema>;
  *
  * `queue` is the default: the message waits for the next turn. `steer`
  * delivers it into the turn that is running, and only to that turn's agent.
+ *
+ * It is declared in `./conversation.js`, where the message is, and re-exported
+ * here because the chat surface is where a client reads it.
  */
-export const messageDeliverySchema = z.enum(['steer', 'queue']);
-export type MessageDelivery = z.infer<typeof messageDeliverySchema>;
+export { messageDeliverySchema, type MessageDelivery } from './conversation.js';
 
 /**
  * The capability view a turn captured when it was admitted.

@@ -33,6 +33,7 @@ its own worktree, and each was merged into `main` with its contract published in
 | **WI-143** — the factory's goals   | A goal has a rollup and a task has dependencies, with cycle rejection, as pure functions over the existing service. The migration adds a column and drops nothing.                                |
 | **WI-141** — the rich chat surface | Markdown and code, a turn activity trace, artifact previews and a stop control that says what it did — in the Forge visual language.                                                              |
 | **WI-144** — the team room         | A coordinator dispatches to a worker, the worker runs, the result returns, and the handoff is visible. See the slice's own record for what is partial.                                            |
+| **WI-152** — the steer             | A steer goes into the turn that is running, for a connection that reported it can take input mid-turn, and a steer that cannot be delivered waits for the next turn and says why.                 |
 
 **R0's first slice is landed.** The adapter lifecycle gives every adapter an
 explicit `connect` → `send` → `close`, the worker connects the instance the
@@ -45,14 +46,16 @@ execution ownership across the three callers, authorised dispatch, session
 references and restart reconciliation — has not been done.
 
 **R1 is partly landed and partly not.** The chat surface, the activity trace and
-the stop control are in. Steering is not: the route carries `delivery: 'steer'`
-and nothing acts on it yet, so a steer is a queued message today. **The chat is
-now proved end to end in a browser**: the suite runs the worker, the owner's
-message reaches it, the adapter runs, and the answer lands in the room as the
-agent's own message, marked with the adapter that wrote it. The acceptance
-demonstration still needs one of the five named runtimes — the adapter the
-browser proves is the built-in `echo` one, which is a product adapter and not a
-runtime.
+the stop control are in. **Steering is in now**: a steer goes into the turn that
+is running, for a connection whose adapter reported that it can take input
+mid-turn, and a steer that cannot be delivered waits for the next turn and says
+why. **The chat is now proved end to end in a browser**: the suite runs the
+worker, the owner's message reaches it, the adapter runs, and the answer lands
+in the room as the agent's own message, marked with the adapter that wrote it —
+and a steer into a running turn comes back as the agent's answer to the steer.
+The acceptance demonstration still needs one of the five named runtimes — the
+adapter the browser proves is the built-in `echo` one, which is a product
+adapter and not a runtime.
 
 **R2 has templates, not integrations.** The presets are starting points for the
 five named runtimes. No runtime has been demonstrated in this repository yet, and

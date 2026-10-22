@@ -22,7 +22,7 @@ import type {
   PostMessageResult,
   RoutingDecision,
 } from '../lib/types';
-import { countTurns, operationState } from '../lib/chat';
+import { countTurns, messageRequest, operationState } from '../lib/chat';
 import { useServerEvents } from '../state/events';
 import { useWorkspace } from '../state/workspace';
 import { ChatMessageList, type StreamingEntry } from '../components/ChatMessageList';
@@ -62,6 +62,8 @@ export function ConversationDetail(): React.JSX.Element {
   const [delivery, setDelivery] = useState<MessageDelivery>('queue');
   /** What the stop request actually did. */
   const [stopNotice, setStopNotice] = useState<StopTurnResult | null>(null);
+  /** The server's sentence about a steer that could not be delivered. */
+  const [steerNotice, setSteerNotice] = useState<string | null>(null);
 
   const conversation = useQuery<ConversationDetail>({
     queryKey: ['conversation', conversationId],
@@ -194,22 +196,11 @@ export function ConversationDetail(): React.JSX.Element {
   }, [queryClient, conversationId]);
 
   const postMessage = useMutation({
-    mutationFn: async (input: { text: string; options: ComposerSendOptions }) => {
-      const content: Array<Record<string, unknown>> = [];
-      if (input.text.length > 0) content.push({ type: 'text', text: input.text });
-      for (const attachment of input.options.attachments) {
-        // An attachment is a reference to a resource that already exists.
-        // There is no upload path through the resource API, so the message
-        // points at the resource rather than carrying its bytes.
-        content.push({
-          type: 'file',
-          resourceId: attachment.resourceId,
-        });
-      }
-      return api.post<PostMessageResult>(`/conversations/${conversationId}/messages`, {
-        content,
-      });
-    },
+    mutationFn: async (input: { text: string; options: ComposerSendOptions }) =>
+      api.post<PostMessageResult>(
+        `/conversations/${conversationId}/messages`,
+        messageRequest(input.text, input.options),
+      ),
     onSuccess: async (result) => {
       setExecutionNames((current) => {
         const next = { ...current };
@@ -224,6 +215,10 @@ export function ConversationDetail(): React.JSX.Element {
         routing: result.routing,
         dispatches: result.dispatches,
       });
+      // A steer that could not be delivered is a queued message, and the
+      // server says why. The panel shows its sentence rather than one of its
+      // own, because the owner has to know that the steer did not happen.
+      setSteerNotice(result.steer && !result.steer.delivered ? result.steer.reason : null);
       await invalidate();
     },
   });
@@ -490,6 +485,15 @@ export function ConversationDetail(): React.JSX.Element {
                 <div className="flex items-start gap-2">
                   <Info className="mt-0.5 h-3 w-3 shrink-0 text-caution" />
                   <p>{stopNotice.detail}</p>
+                </div>
+              </div>
+            ) : null}
+
+            {steerNotice ? (
+              <div className="rounded-md border border-slate-700 bg-slate-950/60 px-3 py-2 text-[11px] text-slate-300">
+                <div className="flex items-start gap-2">
+                  <Info className="mt-0.5 h-3 w-3 shrink-0 text-caution" />
+                  <p>{steerNotice}</p>
                 </div>
               </div>
             ) : null}

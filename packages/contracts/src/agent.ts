@@ -235,6 +235,19 @@ export interface AgentTurnInput {
   context: string;
   executionId: string;
   signal?: AbortSignal;
+  /**
+   * The owner's messages that arrive while this turn is running.
+   *
+   * A steer is delivered into the turn that is running, and this channel is
+   * how it arrives: one message at a time, in the order the owner sent them.
+   * The channel ends when the turn ends, and a message that arrives after it
+   * has ended is not this turn's business.
+   *
+   * **It is present only when the connection reports `acceptsSteering`.** A
+   * connection that does not report it is never sent one, so an adapter that
+   * reads from the channel is an adapter that has been told it may.
+   */
+  steer?: AsyncIterable<string>;
 }
 
 /**

@@ -1,5 +1,6 @@
 import { and, asc, eq, sql } from 'drizzle-orm';
 import type {
+  AgentCapabilities,
   AgentEvent,
   ChatActivity,
   RunControl,
@@ -10,7 +11,7 @@ import type {
   TurnStatus,
 } from '@personal-os/contracts';
 import type { Database } from '../../db/client.js';
-import { executionEvents, executions, queueJobs } from '../../db/schema.js';
+import { agentConnections, executionEvents, executions, queueJobs } from '../../db/schema.js';
 import { errors } from '../../lib/errors.js';
 
 /**
@@ -418,9 +419,8 @@ export function runControlFor(input: {
     }
     return {
       operation: 'steer',
-      available: false,
-      reason:
-        'This server does not deliver messages into a running turn yet, so a steer would be queued instead. The degradation is reported rather than silent.',
+      available: true,
+      reason: 'The message will be delivered into the turn that is running.',
     };
   })();
 
@@ -431,6 +431,23 @@ export function runControlFor(input: {
   };
 
   return { state, options: [stop, steer, queue] };
+}
+
+/**
+ * Whether a connection can take input while its turn is running.
+ *
+ * The capabilities are the ones the adapter reported when the worker
+ * connected it, and the worker is what writes them. A connection that has
+ * never run a turn reports none, and a connection that reports none cannot
+ * be steered: absent means absent.
+ */
+export function connectionAcceptsSteering(db: Database, agentConnectionId: string): boolean {
+  const row = db
+    .select({ capabilities: agentConnections.capabilities })
+    .from(agentConnections)
+    .where(eq(agentConnections.id, agentConnectionId))
+    .get();
+  return (row?.capabilities as AgentCapabilities | null | undefined)?.acceptsSteering === true;
 }
 
 /** The turn's own row, as the client reads it. */

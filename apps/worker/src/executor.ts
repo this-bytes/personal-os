@@ -53,6 +53,7 @@ import {
   type QueueJob,
   type Runtime,
 } from '@personal-os/server/runtime';
+import { createSteerChannel, feedSteers, recordLateSteers } from './steer.js';
 
 /**
  * Job execution.
@@ -380,6 +381,15 @@ async function executeChatTurn(context: ExecutorContext, job: QueueJob): Promise
     .where(eq(executions.id, payload.executionId))
     .run();
 
+  // When this turn started. A steer the owner sent before that belongs to
+  // another turn, not to this one.
+  const turnStartedAt =
+    db
+      .select({ startedAt: executions.startedAt })
+      .from(executions)
+      .where(eq(executions.id, payload.executionId))
+      .get()?.startedAt ?? now;
+
   // The decision is the next input of the resumed turn, and the session is
   // the one the suspended turn was in.
   const turnMessage = payload.resume?.decision ?? parentText;
@@ -449,6 +459,27 @@ async function executeChatTurn(context: ExecutorContext, job: QueueJob): Promise
       if (restored) externalSessionId = restored;
     }
 
+    // A steer the owner sent while this turn was running comes in on this
+    // channel.
+    //
+    // **The connection says whether it can take one.** A connection that
+    // reports nothing is never sent one, and a steer for it waits for the
+    // next turn instead of being taken by one that cannot use it.
+    const steerChannel = createSteerChannel();
+    const steerable = connection.capabilities?.acceptsSteering === true;
+    const feederController = new AbortController();
+
+    if (steerable && participant) {
+      // A steer that arrived before this turn was never taken by the turn
+      // that was running, and it waits for this one.
+      recordLateSteers({
+        db,
+        conversationId: payload.conversationId,
+        participantId: participant.id,
+        since: turnStartedAt,
+      });
+    }
+
     const turn: AgentTurnInput = {
       conversationId: payload.conversationId,
       message: turnMessage,
@@ -456,37 +487,65 @@ async function executeChatTurn(context: ExecutorContext, job: QueueJob): Promise
       executionId: payload.executionId,
       signal: controller.signal,
       ...(externalSessionId ? { externalSessionId } : {}),
+      ...(steerable ? { steer: steerChannel.messages } : {}),
     };
 
-    for await (const event of adapter.send(turn)) {
-      const handled = await handleAgentEvent(context, event, {
-        messageId,
-        conversationId: payload.conversationId,
-        workspaceId: conversation.workspaceId,
-        executionId: payload.executionId,
-        agentConnectionId: payload.agentConnectionId,
-        policy,
-        onText: (text) => {
-          accumulated += text;
-        },
-        onRefusal: (reason) => {
-          refusal = reason;
-        },
-        onFailure: (reason) => {
-          failure = failure ?? reason;
-        },
-      });
-      // The agent is waiting for the owner. The turn stops here and continues
-      // in a new turn when the decision arrives.
-      if (handled === 'suspended') {
-        suspended = true;
-        break;
+    // The owner's steers, taken while this turn runs.
+    //
+    // The connection says whether it can take one: a connection that reports
+    // nothing is never sent one, and a steer for it waits for the next turn
+    // instead.
+    const feeder =
+      steerable && participant
+        ? feedSteers({
+            db,
+            events,
+            workspaceId: conversation.workspaceId,
+            conversationId: payload.conversationId,
+            participantId: participant.id,
+            since: turnStartedAt,
+            channel: steerChannel,
+            signal: feederController.signal,
+          })
+        : null;
+
+    try {
+      for await (const event of adapter.send(turn)) {
+        const handled = await handleAgentEvent(context, event, {
+          messageId,
+          conversationId: payload.conversationId,
+          workspaceId: conversation.workspaceId,
+          executionId: payload.executionId,
+          agentConnectionId: payload.agentConnectionId,
+          policy,
+          onText: (text) => {
+            accumulated += text;
+          },
+          onRefusal: (reason) => {
+            refusal = reason;
+          },
+          onFailure: (reason) => {
+            failure = failure ?? reason;
+          },
+        });
+        // The agent is waiting for the owner. The turn stops here and continues
+        // in a new turn when the decision arrives.
+        if (handled === 'suspended') {
+          suspended = true;
+          break;
+        }
+        // The policy refused the action. The turn stops here too, and the
+        // refusal is recorded rather than the agent simply going quiet.
+        if (handled === 'refused') {
+          break;
+        }
       }
-      // The policy refused the action. The turn stops here too, and the
-      // refusal is recorded rather than the agent simply going quiet.
-      if (handled === 'refused') {
-        break;
-      }
+    } finally {
+      // The turn is over: nothing more arrives for it, and the owner who
+      // steers now is steering the next turn.
+      steerChannel.close();
+      feederController.abort();
+      await feeder;
     }
 
     // An external orchestrator keeps its own task identifier, and a session
