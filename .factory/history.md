@@ -9689,3 +9689,91 @@ one at 09:05, both measured adversarially — and holds WI-086's verification. *
 mid-turn** on the WI-086 report, streaming, and is reported and not cancelled. **Wren is
 down**, five refusals running. **The ceiling stays at two.** **The next free number is
 WI-122, and no number was taken today.**
+
+## 2026-10-22 2026-10-22 10:36 — two acceptances, one new item, and a lesson about what a pointer is for
+
+**WI-086 is accepted on Probe's verdict.** Probe measured the landing on published main in a
+detached worktree with the packages linked to that worktree, so no peer commit could move the
+tree under the measurement, and reproduced the mutation proof rather than reading it: three
+mutations, exactly the four named cases red, baseline 13/13 again. **The old branch
+`d4926f0` was not measured** — it is not an ancestor of main and is 279 commits behind the
+tip. **A decision's evidence can be read in code.**
+
+**And the verifier found the thing the two contract gates cannot see.** **The note's three
+citations could drift with both gates green.** Probe pushed one line of ordinary code above
+the route: the route moved to `:38`, the contract still said `:37`, and the pointer gate
+exited 0 — 126 checked, 0 failures — because it proves a cited line holds _code_, not that it
+holds _this claim_. The status gate exited 0 too, because it asks whether a note is somewhere
+in a file. **So the note had stopped naming the route and nothing noticed.**
+
+**Probe wrote the pin that was missing, and it is its own item — WI-122.** Not because the
+pin is a different kind of work, but because **Probe is WI-086's verifier**, and a verifier
+who writes the gate that judges the work is no longer independent of it. WI-086's acceptance
+rests on Probe judging Cog's landing, which Probe did not write; **the pin is judged by
+Vision, who wrote none of it.** The pin holds itself to failing — two of its three tests
+point the check at copies of the tree whose citations have drifted.
+
+**WI-115 is accepted, by the lead, as the item's own verifier.** The work was the peer
+session's; the lead wrote the item and the measurements and none of the work. Every cited
+line was re-read on the published tree and every path swept: 27 named, every real path
+exists, no placeholder left, and **the half that is still true is still true** — `mcp/server.ts`
+holds zero occurrences of `audit`, so the agent path still writes no audit entry, and the
+guide says so.
+
+**And the lead's own item file was wrong about which item closed the defect.** It said WI-020.
+Measured: `832fae2` added the author substrate and is **WI-090**; `c2853ac` added the measure
+and is **WI-020**. **The landed guide says WI-090, and the guide is right.** The lead copied
+the number out of a report instead of measuring which item carried the commit. **That is the
+second time this week the lead has copied a number that was a claim rather than a
+measurement, and it is the reason the rule is "measure, do not add".**
+
+**WI-114 has been measured three times, and the third time the item's own subject was
+wrong.** WI-115's landing grew the guide, so the guide's line numbers moved — `:355` is now
+`:360` — and **the sweep found a fifth correction**: the same stale range, cited again at
+`:97`, in the sentence that names `templateGet` outright. **And the range the `:32` row
+should carry is `service.ts:640-656`** — where `templateGet` has the owning provider judge
+the template's spec and refuses it — **not any of the three candidates this lead offered
+earlier today, all of which were about resources.** WI-114's own table said the range held
+"the automation provider's `execute`"; it never held anything of the claim. **A pointer is
+true of a tree, and so is the claim a pointer is meant to carry — and the second one is the
+one that is never re-derived.**
+
+**The floor at 10:40.** Probe delivered WI-086's verdict and its group report is queued.
+Cog is working WI-121. **Wren is still down.** WI-120 and WI-115 are published and
+verified; WI-086 is published and accepted. **The next free number is WI-123.**
+
+## 2026-10-22 11:04 — the group delivered the oldest news last, and two lanes went quiet
+
+**The 09:45 post landed at last.** This lead's 09:45 report sat in the group's queue
+(`task_061f5814202a`, request `chief-floor-wi086-landed-4047fef-2026-10-22`) and reached
+the channel at 11:0x — **after** the 10:45 and 11:05 replies had gone out. So the channel
+received the oldest news last, and three of that post's claims had already been overtaken:
+**`origin/main` is `e856a53`, not `4047fef`; WI-086 is accepted, not awaiting a verdict;
+WI-115 is accepted, so only WI-114 stays HELD.** **The rule this earns: a queued post must
+carry its own supersession, because it will land after the replies that came after it.**
+
+**The tip, re-measured.** `git diff --stat da8e126 e856a53` over `apps/**`, `packages/**`,
+`scripts/**` and every source extension is **empty** — the source the nine gates read at
+`da8e126` is byte-identical to the published tip. **`format:check` exit 0** and **the pointer
+gate 126 checked, 0 failures**, re-run on `e856a53` itself. The gates that read the source
+did not need to run again because the source did not move; the two that read what moved were
+run.
+
+**Two stale verdict copies cancelled.** `task_89225a50e57d` and `task_e76426ae3d78` were the
+third copies of two verdicts this lead already held and had already acted on — WI-086
+(accepted 10:37) and WI-106 round two (accepted 09:10). **A verdict delivered three times
+is still one verdict; the extra copies are queue slots, not evidence.** They sat ahead of
+three real verifications on a ceiling of two. Their request ids are spent.
+
+**And then the floor changed shape.** **Wren's last word was at 04:06:42**, and every
+delegation since has died with **0 characters** — five in a row, **11 error turns in her
+chat in total**. **Vision's last completed turn was 07:44:45**, and the two attempts since
+ended **`status=aborted`** — the first because a stale task record was cancelled under it.
+**Three pins, one verifier, and that verifier is stalling.** So both pin items name a
+standing substitute — **Cog, who wrote none of either pin** — Vision first, Cog if her queue
+has not drained when the pin lands. **A substituted verifier stands where the substitute did
+not write the work.**
+
+**The owner's word is the only thing that clears a lane.** `miniapp restart minimax-bot` is
+the only remedy, and the price is one live turn. **Cog's WI-121 turn is streaming now**, so
+the cheapest moment is after it lands. **Recommendation: restart then, and not before.**

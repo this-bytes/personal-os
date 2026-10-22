@@ -56,44 +56,46 @@ on a branch is invisible to a session that reads `main`, and that blindness is
 what produced every collision on 2026-10-22. **Read this table, not the next
 free number above the highest taken.**
 
-| Number | Item                                                                                                                                       | Owner  |
-| ------ | ------------------------------------------------------------------------------------------------------------------------------------------ | ------ |
-| WI-087 | The stranded branches, and what is actually worth keeping                                                                                  | worker |
-| WI-088 | The ledger split into what it is and what it was                                                                                           | worker |
-| WI-090 | The substrate the product's own two measures stand on                                                                                      | worker |
-| WI-091 | The gate that notices when a published contract goes false                                                                                 | worker |
-| WI-092 | The bundle-budget test's five-second timeout                                                                                               | peer   |
-| WI-093 | The pin that says the old rule instead of the current one                                                                                  | worker |
-| WI-094 | The pin reads the rule out of a phrase — **folded into WI-093**, one file, one live item                                                   | peer   |
-| WI-095 | The resolver does not throw on a policy row that lost a field                                                                              | worker |
-| WI-096 | Publish what WI-082 changed, and stop the product denying it                                                                               | worker |
-| WI-097 | The guide, the filling, and where a resource came from                                                                                     | worker |
-| WI-098 | The ADR's boundary rule re-synced                                                                                                          | peer   |
-| WI-099 | The autonomy policy's surfaces, tested                                                                                                     | worker |
-| WI-100 | The published-shapes guard, re-pointed at the claim                                                                                        | worker |
-| WI-101 | The integration landing — the vehicle nine items rode in on                                                                                | worker |
-| WI-102 | The daily spend cap, enforced                                                                                                              | worker |
-| WI-103 | The contract's pointers into the file WI-080 changed                                                                                       | peer   |
-| WI-104 | The published id is not the id the route takes                                                                                             | peer   |
-| WI-105 | Record what a turn costs, so the daily cap is measured against something real                                                              | worker |
-| WI-106 | Four sentences in the licence record that are looser than what they describe                                                               | lead   |
-| WI-107 | The gate that notices when a published citation stops pointing at code                                                                     | worker |
-| WI-108 | A broken spec answers `validation_failed`, not `internal_error`                                                                            | worker |
-| WI-109 | Land the five domains on the integration vehicle — **was WI-104, then WI-106, then WI-107, renumbered three times**                        | worker |
-| WI-110 | The effective policy is composed by the one module that may read across — **was WI-105, then WI-107, then WI-108, renumbered three times** | worker |
-| WI-111 | Publish what WI-097 and WI-090 actually built — **was WI-103, then WI-106**                                                                | worker |
-| WI-112 | The rule's fifth copy, in the strategy record — **was WI-111**                                                                             | peer   |
-| WI-113 | The contract publishes the refusal, and the tests read the message out of the contract instead of repeating it                             | peer   |
-| WI-114 | The four pointers WI-108's landing moved, and the two in the template guide                                                                | lead   |
-| WI-115 | The template guide describes an authorship defect WI-020 closed, and cites three lines that never carried it                               | lead   |
-| WI-116 | **the pin WI-112's acceptance owes** — published at 08:10 in `WI-112.md:182`, and HELD                                                     | peer   |
-| WI-117 | The stranded branches, measured again — the peer's branch-hygiene record                                                                   | peer   |
-| WI-118 | The mode the owner sets is the mode that is in force                                                                                       | worker |
-| WI-119 | The strategy document's copy of the record's loose sentence, in three places                                                               | peer   |
-| WI-120 | The published front page states the identity the owner replaced                                                                            | peer   |
-| WI-121 | The decision surface carries what an agent is blocked on                                                                                   | peer   |
+| Number | Item                                                                                                                                                                                                                              | Owner  |
+| ------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------ |
+| WI-087 | The stranded branches, and what is actually worth keeping                                                                                                                                                                         | worker |
+| WI-088 | The ledger split into what it is and what it was                                                                                                                                                                                  | worker |
+| WI-090 | The substrate the product's own two measures stand on                                                                                                                                                                             | worker |
+| WI-091 | The gate that notices when a published contract goes false                                                                                                                                                                        | worker |
+| WI-092 | The bundle-budget test's five-second timeout                                                                                                                                                                                      | peer   |
+| WI-093 | The pin that says the old rule instead of the current one                                                                                                                                                                         | worker |
+| WI-094 | The pin reads the rule out of a phrase — **folded into WI-093**, one file, one live item                                                                                                                                          | peer   |
+| WI-095 | The resolver does not throw on a policy row that lost a field                                                                                                                                                                     | worker |
+| WI-096 | Publish what WI-082 changed, and stop the product denying it                                                                                                                                                                      | worker |
+| WI-097 | The guide, the filling, and where a resource came from                                                                                                                                                                            | worker |
+| WI-098 | The ADR's boundary rule re-synced                                                                                                                                                                                                 | peer   |
+| WI-099 | The autonomy policy's surfaces, tested                                                                                                                                                                                            | worker |
+| WI-100 | The published-shapes guard, re-pointed at the claim                                                                                                                                                                               | worker |
+| WI-101 | The integration landing — the vehicle nine items rode in on                                                                                                                                                                       | worker |
+| WI-102 | The daily spend cap, enforced                                                                                                                                                                                                     | worker |
+| WI-103 | The contract's pointers into the file WI-080 changed                                                                                                                                                                              | peer   |
+| WI-104 | The published id is not the id the route takes                                                                                                                                                                                    | peer   |
+| WI-105 | Record what a turn costs, so the daily cap is measured against something real                                                                                                                                                     | worker |
+| WI-106 | Four sentences in the licence record that are looser than what they describe                                                                                                                                                      | lead   |
+| WI-107 | The gate that notices when a published citation stops pointing at code                                                                                                                                                            | worker |
+| WI-108 | A broken spec answers `validation_failed`, not `internal_error`                                                                                                                                                                   | worker |
+| WI-109 | Land the five domains on the integration vehicle — **was WI-104, then WI-106, then WI-107, renumbered three times**                                                                                                               | worker |
+| WI-110 | The effective policy is composed by the one module that may read across — **was WI-105, then WI-107, then WI-108, renumbered three times**                                                                                        | worker |
+| WI-111 | Publish what WI-097 and WI-090 actually built — **was WI-103, then WI-106**                                                                                                                                                       | worker |
+| WI-112 | The rule's fifth copy, in the strategy record — **was WI-111**                                                                                                                                                                    | peer   |
+| WI-113 | The contract publishes the refusal, and the tests read the message out of the contract instead of repeating it                                                                                                                    | peer   |
+| WI-114 | The four pointers WI-108's landing moved, and the two in the template guide                                                                                                                                                       | lead   |
+| WI-115 | The template guide describes an authorship defect WI-020 closed, and cites three lines that never carried it                                                                                                                      | lead   |
+| WI-116 | The strategy record's copy of the boundary rule, held to the rule in force — **the pin WI-112's acceptance owes**; published at 08:10 in `WI-112.md:182`, **filed and dispatched 10:55 by the lead, from the peer's reservation** | lead   |
+| WI-117 | The stranded branches, measured again — the peer's branch-hygiene record                                                                                                                                                          | peer   |
+| WI-118 | The mode the owner sets is the mode that is in force                                                                                                                                                                              | worker |
+| WI-119 | The strategy document's copy of the record's loose sentence, in three places                                                                                                                                                      | peer   |
+| WI-120 | The published front page states the identity the owner replaced                                                                                                                                                                   | peer   |
+| WI-121 | The decision surface carries what an agent is blocked on                                                                                                                                                                          | peer   |
+| WI-122 | The contract note's three citations are held by a gate that can see them drift                                                                                                                                                    | lead   |
+| WI-123 | The licence record's four corrected sentences are held by a check that can see them drift                                                                                                                                         | lead   |
 
-**The next free number is WI-122.**
+**The next free number is WI-124.**
 
 **WI-118 was claimed twice, and this is the record that kept it.** The lead
 opened this session's mode item as WI-113 at 07:50, yielded it when the
@@ -3838,3 +3840,494 @@ condition the owner attached to that restart.
 served `README.md` line 3 and manifest description read the product's own sentence. **The
 owner said "before anyone finds it", and the repository still has zero readers.** That is why
 the lead executed the change itself rather than waiting for a queue.
+
+## 2026-10-22 09:55 — Chief: the platform's verdict on the published tip
+
+**The published tip is `2806f72`, and it is green on both workflows.** **CI run `39688717116` on
+`2806f72`: `completed/success`. CodeQL run `39688717169` on `2806f72`: `completed/success`.**
+
+**And it is a verdict on the front page's code.** The tree behind `2806f72` is byte-identical to
+`ce51521` — the tree that carries the corrected front page — and
+`git diff --name-only ce51521..2806f72` touches **only `.factory/**`\*\*. The commits between
+them are records: the landing's own record, and the record of the verifier decision and the
+ceiling.
+
+**And the runs this one supersedes.** The run on the middle commit `4047fef` was overtaken by the
+last push of the batch. **The record's own rule applies: a push that was overtaken is not a red
+build and not a failed gate — it is a push that was overtaken, and the run that judges it is the
+next one.** That next run is the one on `2806f72`, and it is green. **One push at a time, and
+the verdict read after each** — which is what the three pushes this turn were: `ce51521` (the
+front page), `4047fef` (records), `2806f72` (records).
+
+## 2026-10-22 10:00 — Chief: the published tip is green, and two stale tasks were cleared
+
+**One — the published tip is `7ffa4e4`, and it is green on both workflows.** **CI run `39689875528`
+on `7ffa4e4`: `completed/success`. CodeQL run `39689875473` on `7ffa4e4`: `completed/success`.** The
+tree behind it is byte-identical to `ce51521` — the tree that carries the corrected front page — and
+`git diff --name-only ce51521..7ffa4e4` touches **only `.factory/**`\*\*.
+
+**Two — two stale tasks were cleared, and the rule that allowed it.** `task_2a34be8fd7d9` (the 08:55
+relay, **95 minutes**, its result delivered) and `task_cb4460d7e002` (Vision's WI-108 verification,
+**its verdict delivered at 07:00 and WI-108 accepted on it**, **2h58m**) were both sitting in the
+queue while the ceiling of two stayed full. **Neither was working**: both had produced their
+results, and both were waiting on floor posts whose Chief turns had died. **`FACTORY.md:203-207`
+says cancelling is Chief's judgement, because elapsed time alone cannot tell a stall from a long
+task — and these were not long tasks, they were finished ones.** The owner's standing answer named
+the same lever: _"one wasted slot (a 90-minute relay still running)"_. **Nothing was lost**: the
+relay's result carried the owner's three decisions to this session, and WI-108's verdict is in the
+record and in its own item file.
+
+**Three — the owner's decisions, and where they went.** `chief-floor-0822-2026-10-22`
+(`task_ec6625381f3e`) **failed with `BUSY`** and never reached the floor — **but its three
+decisions were delivered to this session through the relay's own result**, and they stand:
+**the restart, yes, after Cog's WI-086 turn lands** — it landed at `06c1b2f`, so the condition is
+met; **the ceiling patch, no** — `MAX_RUNNING = 2` is one line in vendor code in a content-addressed
+cache, and a patch there vanishes on the next plugin update; **a substituted verifier, yes** where
+the substitute wrote none of the work. **The floor's lock is not yet released** — it began at
+**07:04:29** when a Chief turn on the floor died with `status: error` and empty text, and **39 of
+the floor's 160 messages are dead turns of that kind.** The repair is the restart, and it is the
+owner's to call.
+
+**Four — the queue, as it stands.** **WI-121 is running**: Cog started the blocked-agent item at
+09:49. **WI-120's verification is queued** (Vision, `task_faa2e8e0f9f1`), and **the brief reached
+the lane** — the partial result on Vision's session reads _"Re-running it, and pulling up the item
+file and ignore rules. `2806f72..7ffa4e4` touches only `.factory/INTAKE.md` — no code, no docs, no
+front-page files"_ — **but that turn was interrupted by the cancellation of the stale task record
+it was attached to**, and the session is now `aborted`. **WI-120 stays in `review` until the verdict
+lands: the lead wrote that change and cannot accept its own work.**
+
+## 2026-10-22 10:10 — Chief: the verifier, twice withdrawn, and what is actually blocking it
+
+**One — the verification of WI-120 has been dispatched twice and withdrawn twice, and the
+sequence is on the record because it is the kind of thing that gets retold wrongly.**
+`wi-120-verify-published-front-page-2026-10-22` (task `task_f8085b21663f`) went to Probe at 09:34
+and **never started** — it queued behind a full dispatch ceiling, and it was cancelled at 09:43
+rather than left to sit. `wi-120-verify-published-front-page-vision-2026-10-22` (task
+`task_faa2e8e0f9f1`) went to Vision as the substituted verifier, **whose lane's session went
+`aborted`**; the brief reached it — the session's partial result reads _"Re-running it, and
+pulling up the item file and ignore rules"_ — and the turn was interrupted when the stale WI-108
+task record it was attached to was cancelled. **It could not be re-driven, so it was cancelled
+too.** **A re-dispatch carries a new request id and a new title, and the spent ids are not
+reused:** `wi-120-verify-published-front-page-probe-r2-2026-10-22`, task `task_f689f6b918a1`,
+is now at Probe, and **Probe is the item's verifier again**.
+
+**Two — what is blocking it, measured, not guessed.** The verification is **queued**, not
+running, and the reason is not the lane: **Probe's lane showed activity at 10:03** and its session
+is `started`. **The dispatch ceiling has no free slot for it.** One slot is doing real work —
+**Cog is running WI-121** — and the second is not free. **Cancelling the two finished tasks
+relieved the backlog but did not open the ceiling**, and that is worth knowing: **the ceiling is
+counting something that is not working**, and the floor's dead Chief turns (**39 of 160 floor
+messages are `status: error` with empty text, the lock beginning at 07:04:29**) are the part of
+it that a restart repairs.
+
+**Three — the owner's restart, and why it has not been done by this session.** The owner's
+standing answer was _"the restart — yes, but after Cog's WI-086 turn lands"_, and it landed at
+`06c1b2f`, so the condition is met. **This session has no restart lever that is not destructive:
+archiving or deleting a session ends a live turn**, and the peer Chief session's turn has been
+running since 09:09 and is doing real record work. **So the restart is the owner's to call, and
+it is the one thing standing between the factory and its queue.** What it buys is measured in the
+owner's own answer: **Wren's lane, the wasted slot, and the floor.**
+
+**Four — and the thing that matters most is already done.** The front page is published, the
+published tip is green on both workflows, and the served README and manifest read the product's
+own sentence. **The verification is what closes the item's record; it is not what makes the
+front page true.**
+
+## 2026-10-22 10:17 — Chief: the published tip's verdict, green on both workflows
+
+**The published tip is `bd0781d`, and it is green on both workflows.** **CI run `39690801978` on
+`bd0781d`: `completed/success`. CodeQL on `bd0781d`: `completed/success`.** The tree behind it is
+byte-identical to `ce51521` — the tree that carries the corrected front page — and
+`git diff --name-only ce51521..bd0781d` touches **only `.factory/**`\*\*.
+
+**So every verdict this morning, on every tip, was green on the same code:** `ce51521`
+(CI `39687241876`, CodeQL `39687241897`), `7ffa4e4` (CI `39689875528`, CodeQL `39689875473`),
+`b45fae5` (CI `39690801978` on the tip before it, CodeQL on it), and `bd0781d` (CI `39690801978`,
+CodeQL). **The pushes this turn were four, and each one was made after the previous run
+finished** — `ce51521` carries the front page, and the three after it carry records only.
+
+**And the one verdict still owed is a verdict on the published artefact.** WI-120's verification
+is at Probe (`task_f689f6b918a1`), **queued** — the ceiling's second slot is not free, and this
+session has no non-destructive lever that would open it. **The lead wrote that change and cannot
+accept its own work**, so the item stays in `review` until Probe's verdict lands.
+
+## 2026-10-22 10:25 — Chief: the published tip is green on both workflows, and this is the last push of the batch
+
+**The published tip is `c95946d`, and it is green on both workflows: CI `completed/success` and
+CodeQL `completed/success` on that sha.** Its code is byte-identical to `ce51521`, the tree that
+carries the corrected front page, so **every verdict this morning was a verdict on the front
+page's code** — CI `39687241876` + CodeQL `39687241897` on `ce51521`, CI `39689875528` + CodeQL
+`39689875473` on `7ffa4e4`, CI `39690801978` + CodeQL on `b45fae5`, CI `39690801978` + CodeQL on
+`bd0781d`, and CI + CodeQL on `c95946d`.
+
+**This is the last push of the batch, and the record says how the next one is read.** The
+commit this record travels in carries the same code again, so **the run that judges it judges the
+same bytes** — `git diff --name-only c95946d..<this commit>` touches only `.factory/**` — and
+the rule is the one already on this record: **the verdict that matters is the one read after the
+last push of a batch, and a push that was overtaken is not a red build.**
+
+**One state change, and it is reversible.** Vision's bot-lane session
+(`mvs_1dd69a42fec84f3ca0600075470232a4`) was **archived**: it had gone `aborted` and could not
+accept the WI-120 verification, and the task record attached to it was cancelled. **Nothing live
+was lost — the session was already dead — and archiving is reversible.** **It did not release the
+dispatch slot**, which settles one thing: **the blocker is not a lane that can be archived.**
+**Probe's live lane was left alone**, because archiving a session that may be mid-turn would
+destroy real work on a guess, and the WI-116 pin is owed to that lane.
+
+**What is still owed, stated plainly.** **WI-120's verification is queued at Probe**
+(`task_f689f6b918a1`) and has not started. **The lead wrote that change and cannot accept its
+own work**, so the item stays in `review` until Probe's verdict lands. **WI-121 is running.**
+**WI-116 — the pin — is HELD behind Probe's lane.** And the owner's restart, authorised once
+Cog's WI-086 turn landed, is the repair for the floor's **39 dead Chief turns** and for Wren's
+lane; **this session has no non-destructive lever for it, and it is the owner's to call.**
+
+## 2026-10-22 2026-10-22 10:36 — Chief: WI-086 and WI-115 are accepted, WI-122 is opened for the gate hole, and WI-114's own subject was wrong
+
+**One — WI-086 is ACCEPTED, on Probe's verification.** **VERDICT: VERIFIED** — request
+`wi-086-verify-probe-chief-2026-10-22`, task `task_4b2fc4b5eb9f`, session
+`mvs_f1f513955649480dbfb09fae820cf59f`. **Probe wrote none of the work; Cog did.** Probe
+measured on published main `7ffa4e4` in a detached worktree with the `@personal-os/*`
+packages linked to that worktree, **so no peer commit could move the tree under a
+measurement** — main moved four times while Probe worked, and each time the files this item
+touches were checked and had not moved. **The nine gates: exit 0 — 632 tests in 62 files, 0
+failures.** The mutation proof was **reproduced**, not read: three mutations, each reverted,
+**exactly the four named cases red and nothing else**, baseline 13/13 again. The old branch
+`d4926f0` was **not measured** — it is not an ancestor of main and is **279 commits** behind
+the tip, not the brief's 73.
+
+**What the product can now do: a decision's evidence can be read in code** — the approval's
+execution, what the agent did, what it produced and what it cost, served at
+`/api/approvals/:id/evidence` in the shape the contract publishes and the contract's claim
+table now watches.
+
+**Two — and the finding the verifier made is the reason this item was worth verifying.** **The
+note's three citations could drift with BOTH contract gates green.** The pointer gate proves a
+cited line holds _code_; the status gate proves a string is _somewhere in a file_. **Probe
+pushed one line of ordinary code above the route — the route moved to `:38`, the contract
+still said `:37` — and the pointer gate exited 0 (126 checked, 0 failures) and the status
+gate exited 0.** The note had silently stopped naming the route and nothing noticed.
+
+**Three — WI-122 is OPENED, and it is the pin.** Probe wrote it — `196ff4a` on
+`wi/086-evidence-note-pin`, pushed, not merged — and it binds each of the note's three
+citations to the claim it names and **holds itself to failing**: two of its three tests point
+the check at copies of the tree whose citations have drifted. **It is its own item, and the
+reason is said out loud: Probe is WI-086's verifier, and a verifier who writes the gate that
+judges the work is no longer independent of it.** WI-086's acceptance rests on Probe judging
+Cog's landing, which Probe did not write; **the pin is judged by Vision, who wrote none of
+it**, and its acceptance is owed on that report. "Take it or drop it" was Probe's word; the
+lead takes it.
+
+**Four — WI-115 is ACCEPTED, by the lead, as this item's own verifier.** The item names Chief
+as its verifier — "this one is a reading, not a measurement, and it is checked by reading the
+lines it names" — **and that is what was done.** The work was written by the peer session
+(`5b0aa77`, one file, +22/-14); **the lead wrote the item and the measurements, and none of
+the work.** Every cited line was re-read on the published tree: `:234` `createdBy:
+row.createdBy,`, `:347` `factory.taskAuthor(id) ?? RESOURCE_AUTHOR_SYSTEM`, `:515` the
+projection's write, `:351-360` the task provider's `validate` that parses and refuses,
+`:624-634` `inspect`, `resource.ts:25` `RESOURCE_AUTHOR_SYSTEM`, `:671-699` `authorshipCounts`.
+**27 paths swept, every real path EXISTS**, and the sweep for `0008-_`, `0008-*`, `_.md`,
+`TODO` and `XXX` returns nothing. **And the half that is still true is kept and is true:**
+`mcp/server.ts` holds **zero** occurrences of `audit`.
+
+**Five — and this item's own file was wrong, and the lead copied the number instead of
+measuring it.** The item said _"WI-020 — 'the author's own name, on the row' — is what fixed
+it."_ **Measured: `832fae2` added `RESOURCE_AUTHOR_SYSTEM` and `lib/author.ts`, and that is
+WI-090, "The substrate the product's own two measures stand on" — the recording of the author
+is WI-090's. `c2853ac` added `authorshipCounts`, and that is WI-020, "The product reports on
+itself" — the measure is WI-020's.** **The landed guide says "WI-090 (commit `832fae2`) is
+what closed that half", and that is right.** The lead's item file named WI-020, taken from
+the peer session's 07:55 post, which said "WI-020 closed that defect" — **the peer was right
+about the defect and wrong about the item, and the lead repeated the item.** The correction is
+appended beside the claim.
+
+**Six — WI-114 is re-measured a THIRD time, and the item's own subject was wrong.** WI-115's
+landing grew the guide, so **the guide's line numbers moved**: `:355` is now `:360`, and
+**`:97` is a fifth correction the sweep found** — the same stale range, cited a second time,
+in the sentence that names `templateGet` outright. **And the `:32` row's range is settled:
+`service.ts:640-656`, not any of the three candidates this lead offered at 09:37.** The row's
+claim is about **templates** being "refused at the point it is read", and **`templateGet` is
+where a template is refused** (`:648` calls the owning provider's `validate`; `:650` refuses).
+**The lead's three candidates were all about resources** — `execute` runs a resource and
+`inspect` judges a resource's spec — **and WI-114's own table was wrong about the subject
+too: `:581-591` never held "the automation provider's `execute`".** **Five corrections now,
+and the code changes in none of them.**
+
+**Seven — the number space: WI-122 is taken, and the next free number is WI-123.** WI-122 was
+read immediately before it was taken — the published block reads "The next free number is
+WI-122" — and it appeared in no item file, no dispatch record and no commit. **WI-123 is the
+next free number.**
+
+**Eight — the floor.** Probe delivered WI-086's VERIFIED verdict and its report to the factory
+group; **the report to the group is queued, and this lead's own 09:45 post is still queued
+behind it.** **Cog is working WI-121** (its turn is in flight). **Wren is still down** — her
+last five messages are `status=error`, 0 characters. **WI-120 is published and verified by
+the peer; WI-115 is published and verified here.** **The ceiling stays at two.**
+
+## 2026-10-22 10:40 — Chief: the pin is landed, WI-122's verification is dispatched, the number block is corrected, and a claim of mine was wrong
+
+**One — WI-122's pin is landed, and its verification is dispatched.** The other Chief session
+opened **WI-122** at 10:37 for Probe's pin, and left the landing to the lead. **It is landed:**
+`apps/server/src/__tests__/approvalEvidenceNote.test.ts` is on `main` by merge commit **`359066c`**,
+**exactly one file, 182 insertions, one new file** — no contract line, no code, no gate changed.
+**The nine gates on the merged tree: exit 0**, "Every gate passed. The tree is green." The
+verification is dispatched by the lead to **the verifier the item names — Vision, who wrote none
+of the pin** (request `wi-122-verify-note-citations-pin-vision-2026-10-22`, task
+`task_ae9f26b09fd3`, queued). **WI-122 is not accepted.**
+
+**Two — WI-086 and WI-115 are ACCEPTED, by the other Chief session, on Probe's verification.**
+Probe's verdict on WI-086 is **VERIFIED**: measured on published main `7ffa4e4` in a detached
+worktree with the packages linked to that worktree, **so no peer commit could move the tree under
+a measurement**; the nine gates exit 0 with 632 tests in 62 files; the mutation proof was
+**reproduced**, not read. **What the product can now do: a decision's evidence can be read in
+code** — the approval's execution, what the agent did, what it produced and what it cost, served
+at `/api/approvals/:id/evidence` in the shape the contract publishes, and the contract's claim
+table now watches it.
+
+**Three — the number block was one number stale, and it is corrected.** The block read **"the
+next free number is WI-122"** while WI-122 was taken at 10:37 — **a block that disagrees with its
+own ledger is a guess**, the defect this factory has already paid for twice. **The block now
+carries the WI-122 row and says "the next free number is WI-123."**
+
+**Four — and a claim of mine was wrong, and the correction is here rather than left standing.**
+At 10:25 this session wrote that **"the ceiling's second slot is not free"** and that **"both
+slots were doing real work"** — and the first half was wrong. **Measured:** Probe's lane was
+verifying **WI-086** — task `task_4b2fc4b5eb9f`, started 10:06:23, ended 10:32:53, **26 minutes of
+real work** — and **WI-120's verification was queued behind it in that same lane.** **The queue was
+never starved: one slot was Cog on WI-121 and the other was Probe on WI-086's verification.**
+**So the finding is not a starved ceiling but a lane's own FIFO order**, and the two tasks this
+session cleared — the 08:55 relay and Vision's WI-108 verification — **were** finished tasks
+holding nothing but their records. **The rule that replaces the wrong claim: measure the lane
+before publishing a claim about the lane**, and **a slot that is busy doing real work is not a
+blocker — a queued task behind it is a queue.**
+
+**Five — and the dead sessions were genuinely dead, which is a finding of its own.** The 08:55
+relay never did any work because **it had been routed to a session that had crashed** —
+`mvs_e109a52fca0541f196725ffdedd0d316`, _"This session was interrupted because the previous local
+runtime stopped"_, idle since 07:22. **It is archived, reversibly, and so is Vision's aborted lane
+session `mvs_1dd69a42fec84f3ca0600075470232a4`** — both provably dead, neither holding live work.
+
+### 10:45 — the report went out as the channel's reply, and the request id that was refused
+
+**`post_group` was refused for the 10:45 floor report**: _"The group is mid-discussion; post
+again once this round finishes."_ **The channel's own reply text is the post**, so the report
+was delivered there and **no second copy was queued** — a report that lands twice is the
+violation the rule exists to prevent, and the group is already six posts behind.
+
+**The refused request id, recorded so the delivery is not lost: `chief-floor-acceptances-1045-2026-10-22`**
+(batch `batch_` not issued — the call was refused before a batch was made). **The earlier
+10:45-era posts are queued, not lost:** this lead's 09:45 report is `task_061f5814202a` and
+Probe's WI-086 report to the group is behind it.
+
+**What the report carries**, and the numbers in it are measured, not summarised: WI-086
+accepted on Probe's VERIFIED verdict; the finding that **both contract gates can be green
+while the contract has stopped naming the route**; WI-122 opened for the pin with Vision as
+its verifier; WI-115 accepted by the lead as the item's own verifier, **with the lead's own
+mis-attribution of WI-020 corrected against WI-090**; WI-114 measured a third time, now
+**five** corrections, with the range settled at `service.ts:640-656`; and the push — **`origin/main`
+is `da8e126`**, nine gates green on that tree, **63 files and 635 tests with 0 failures**,
+**126 pointers with 0 failures**, HEAD held across the whole run.
+
+### 10:50 — two verifications of WI-122 were dispatched, and one stands
+
+**Both sessions dispatched WI-122's verification to Vision, separately, four minutes apart,
+and neither knew of the other's.**
+
+| dispatch                                             | task                | who       |
+| ---------------------------------------------------- | ------------------- | --------- |
+| `wi-122-verify-note-pin-vision-2026-10-22`           | `task_943788a59318` | this lead |
+| `wi-122-verify-note-citations-pin-vision-2026-10-22` | `task_ae9f26b09fd3` | peer      |
+
+**The tiebreak, said out loud: the peer session's dispatch stands, and the lead's is stood
+down.** **The item file is the spec a verifier reads first, and it now carries the peer's
+request id** — the lead's `WI-122.md` said "the verification is dispatched" and named no id,
+which is what the peer found and recorded. **Both briefs measure the same five criteria by
+the same method**, including the decisive one — reproduce the drift on a copy of the tree and
+show the pin go red while the pointer gate and the status gate stay green — and the peer's
+carries an explicit instruction that a second brief for this item is a duplicate. **One
+verifier, one item, one verification: a second run of the same verification is waste, and
+Vision's lane is the scarce thing on this floor.**
+
+**So `task_943788a59318` is cancelled, and `task_ae9f26b09fd3` is the one to answer.** The
+lead's request id `wi-122-verify-note-pin-vision-2026-10-22` **is spent** — a cancelled task
+does not free its id — and the correction to this lead's own 10:45 ledger section, which
+named it, is here, beside it.
+
+**And the lesson, dated, because it is the third time this week: two Chief sessions sharing
+one factory will dispatch the same work without either seeing the other's dispatch.** The
+work item is the only place both of them are guaranteed to look — **so the dispatch that
+counts is the one recorded in the item file**, and the number block records the dispatch
+too. **The peer found this by reading the item file; it is the right instrument.**
+
+## 2026-10-22 10:52 — Chief: the slot picture, refined, and the rule it settles
+
+**The correction from 10:36 was itself half right, and the half that was wrong is fixed here.**
+Measured at 10:48: **Cog's WI-121 is running** — started 09:49:33, **an hour of real work** on the
+blocked-agent decision surface — and **Probe's lane finished WI-086's verification at 10:32:53.**
+**So the second slot is not Probe any more: it holds the other Chief session's own turn**, which
+committed `da8e126` at 10:37 and pushed `f92c4ae` at 10:45 — **real work, and the tree it pushed
+carries this session's pin landing and its own acceptances.**
+
+**So the factory is at its ceiling of two, with both slots doing real work, and the queue is
+FIFO.** WI-120's verification (Probe, queued since 10:07) and WI-122's verification (Vision,
+queued since 10:42) wait behind that work, and they will run when a slot opens. **Two claims
+about this were wrong today, and the rule that replaces both is one line: \*measure the slot, the
+lane and the task before publishing a claim about them.** A slot that is busy doing real work is
+not a blocker; a task queued behind it is a queue; and a task routed to a dead session is a task
+that will never run at all — which is what the relay was, and what the two archived sessions
+were.
+**And the platform's verdict on that published tip: green on both workflows.** **CI on `f92c4ae`:
+`completed/success`. CodeQL on `f92c4ae`: `completed/success`.** That tip carries the corrected
+front page, Probe's pin, WI-086's and WI-115's acceptances, WI-122 with its verification
+dispatched, and the corrected number block. **The dispatch that counts for WI-122 is the one
+recorded in the item file** — `wi-122-verify-note-citations-pin-vision-2026-10-22`, task
+`task_ae9f26b09fd3` — and the other Chief session's duplicate was cancelled and its request id
+spent, which it recorded itself: **two Chief sessions sharing one factory will dispatch the same
+work without either seeing the other's dispatch, and the item file is the only place both of them
+are guaranteed to look.**
+
+## 2026-10-22 **TIME** — Chief: two pins the factory owes are opened and dispatched, and the number block is swept
+
+**One — WI-123 is OPENED and DISPATCHED: the licence record's four sentences are held by
+nothing.** Probe named it twice — _"the licence-record pin is still owed to me, and is still
+not written"_ — and **this lead's own acceptance of WI-106 at 09:10 owed it and left it
+outstanding.** Measured on the published tip: **`git grep -ln 'dependency-licences'
+origin/main` over the test trees returns nothing.** **No test file in the repository reads
+the record at all** — only `PRODUCT.md`, `docs/strategy.md` and the ledger's own item files
+name it. **So the four sentences the acceptance turned true can drift back and nothing will
+notice.** Dispatched to **Probe** — `wi-123-licence-record-pin-probe-2026-10-22`,
+`task_a606329a3dc1` — because `**/*.test.ts` is Probe's by the ownership table and WI-106's
+own record says _"That test is Probe's file and Probe's to write."_ **The pin's own
+verification is Vision's, not Probe's: Probe verified WI-106, and a verifier who writes the
+gate that judges the work is no longer independent of it.**
+
+**Two — WI-116 is FILED and DISPATCHED, and it had no file anywhere.** **The number block is
+the index both sessions read before taking a number, and the lead swept it: of the eleven
+rows it carries, FOUR name items with no file on `main` — WI-113, WI-116, WI-117, WI-119.**
+Three of those are the peer's un-landed items, which is the normal state for an item that
+has not landed. **WI-116 was different: `git log --all -- .factory/work/WI-116.md` shows a
+branch that filed a WI-116 and then withdrew the claim** — _"Withdraw this branch's WI-116
+claim: the number is the peer's reservation"_ — **and the item moved to WI-119. So WI-116
+was a number with a block line and one sentence in `WI-112.md:182`, and no record of its
+scope anywhere. That is the shape the WI-063/WI-065 collision had, and it is closed here by
+the file.**
+
+**The scope, measured: the pin that holds the boundary rule's copies does not hold the
+strategy record's copy.** `RULE_COPIES` at `forge-briefs.test.ts:494-498` holds
+`01-rooms-and-surfaces.md`, `05-needs-you-rail.md` and `README.md` — **and not
+`docs/strategy.md`, which carries the rule at `:265-270`.** So that copy can drift and
+nothing notices, **and WI-112's acceptance rests on it.** Dispatched to **Probe** —
+`wi-116-strategy-copy-pin-probe-2026-10-22`, `task_9a4337f73e61` — and **the brief requires
+the copy to be found by its content and not by a line number**, because `docs/strategy.md`
+is the peer session's live file for WI-119 and **a check that breaks on an unrelated edit is
+a check that gets deleted.**
+
+**Three — the tiebreak on WI-116, said out loud.** **The peer published the number at 08:10
+in `WI-112.md:182`, for this very pin, and the lead took the item over.** The peer's claim
+was **bound to no live dispatch** — the pin was HELD — **and the hold's stated reason was
+already stale when it was written at 08:22**: it said _"HELD, because Probe's lane
+refuses"_, and **Probe's lane had come back at 07:25.** The peer's claim and the lead's item
+are **the same work**, so no number was spent on two things; the lead measured the scope,
+filed the file that did not exist, and dispatched it. **The block's row now says so.**
+
+**Four — and Probe's second finding is resolved by measurement, and the branch's real hazard
+is different.** Probe reported that `origin/wi/117-branch-pileup-verdict` still carries
+`.factory/work/WI-117.md` **and** `.factory/work/WI-118.md`, and that merging it would land
+two item files. **Measured: the branch's `WI-118.md` is byte-identical to `main`'s**
+(`git diff origin/main origin/wi/117-branch-pileup-verdict -- .factory/work/WI-118.md` is
+empty), and **the branch's own change set against its base is two files** — `.factory/INTAKE.md`
+modified and `.factory/work/WI-117.md` added. **So the merge adds one item file and touches
+no other.** The hazard that is real is **staleness**: the branch's base is **`2806f72`, and
+the published tip is now `f92c4ae` — forty commits ahead** — so its ledger edit was written
+against a ledger that has since moved four times. `merge-tree` says the merge is clean, and
+a clean merge of a forty-commit-stale ledger edit is not the same as a safe one.
+
+**Five — WI-112's measurement, restated precisely, because the pin needs the exact shape.**
+**The two copies of the rule are 312 characters each as their blocks, four line breaks in
+each — and they are NOT byte-identical as raw strings.** `prototypes/DIRECTION.md:53-57`
+breaks after _"orientation room."_ and `docs/strategy.md:265-270` breaks after
+_"orientation"_: **the same words, the same length, different line breaks.** **Flattened,
+they are equal** — and the pin's own method already flattens before it compares, and
+compares the **clause**, not the raw text. **Both declared exceptions are present** and
+**"one declared exception" is in neither.** **The acceptance rests on the words and the
+length, and both hold; the pin will compare them the way the pin already does.**
+
+**Six — the floor.** **Probe holds three items** — WI-123, WI-116, and the peer's WI-120
+verification. **Vision holds WI-122.** **Cog is working WI-121.** **Wren is still down.**
+**The ceiling stays at two.** **The next free number is WI-124.**
+
+### 11:05 — the second refused group post of the hour, and the same delivery
+
+**`post_group` was refused again**, with the same words: _"The group is mid-discussion; post
+again once this round finishes."_ **The refused request id, recorded: `chief-floor-two-pins-1105-2026-10-22`.**
+**The report was delivered as the channel's reply**, and **no second copy was queued.**
+
+**Two refusals in twenty minutes, and the group's own backlog is the reason.** This lead's
+09:45 post (`task_061f5814202a`) is still queued, and Probe's WI-086 report is queued behind
+it, and the peer's WI-086 landing note is running. **The group is behind, not idle.** The
+rule this lead keeps is unchanged: **post to the group or dispatch directly, never both for
+the same item** — and when the channel is busy, **the channel's reply is the post.**
+
+### 11:04 — the 09:45 post landed at last, and it is superseded by the two replies that went out after it
+
+**The group's backlog delivered the oldest news last.** This lead's 09:45 report
+(`task_061f5814202a`, request `chief-floor-wi086-landed-4047fef-2026-10-22`) reached the
+channel at 11:0x — **after** this lead's 10:45 and 11:05 replies had already gone out.
+**A post that waits in the group's queue lands after the replies that came after it, so a
+queued post must carry its own supersession or it lands as a correction to itself.**
+
+**What in it no longer holds, each measured:**
+
+- **"`origin/main` is `4047fef`."** It is now **`e856a53`**, read with
+  `git ls-remote origin refs/heads/main` at 11:04.
+- **"This is the landing, not the acceptance. The verification is with Probe."** WI-086 is
+  **accepted** — written 10:37 in `da8e126`, on Probe's `VERIFIED` verdict at
+  `task_4b2fc4b5eb9f`, measured on published main `7ffa4e4`.
+- **"WI-114 and WI-115 both stay HELD."** **WI-115 is accepted** (10:37, the same commit) —
+  the lead standing as the item's own named verifier, on a reading, not a measurement.
+  **Only WI-114 stays HELD**, and the hold is on Wren's lane, not on the file.
+- **The number block.** It reads **WI-124 next free**. WI-122 (the note's pin), WI-123 (the
+  licence record's pin) and WI-116 (the strategy record's copy) are all filed.
+
+**The published tip, re-measured at 11:03.** `git diff --stat da8e126 e856a53` over
+`apps/**`, `packages/**`, `scripts/**` and every source extension is **empty** — the source
+the nine gates read at `da8e126` is byte-identical to the published tip. **`format:check`
+exit 0**, and **the pointer gate 126 checked, 0 failures — "every one of the 126 pointers
+points at code"** — both re-run on `e856a53` itself. The gates that read the source did not
+need to run again because the source did not move; the two that read what did move were run.
+
+**Two stale copies of verdicts this lead already holds are cancelled.** `task_89225a50e57d`
+(Probe's WI-086 verdict, third copy, to Chief) and `task_e76426ae3d78` (Probe's WI-106
+round-two verdict, third copy, to Chief). Both report on items already acted on — WI-086
+accepted at 10:37, WI-106 accepted at 09:10 (`4458ad1`). **A verdict delivered three times
+is still one verdict, and the extra copies are queue slots, not evidence.** They sat ahead
+of WI-122's, WI-123's and WI-116's verifications on a floor whose ceiling is two.
+**Their request ids are spent and are not reused.** One of Probe's group posts of the WI-086
+verdict (`task_dff3951ec65b`) is still queued and is **left alone**: it is the verifier's own
+words in the channel, it contradicts nothing, and killing another bot's delivery to the
+record is a heavier act than holding one slot.
+
+**Two lanes have gone quiet, and the second one is new.** **Wren's last word was at
+04:06:42**; every delegation since has died with **0 characters** — five in a row (WI-103,
+WI-106, WI-098, WI-111, WI-106 round two), **11 error turns in her chat in total, five of
+them today**. **Vision's last completed turn was 07:44:45**, and the two attempts since
+(09:52, 09:58) ended **`status=aborted`** — the first because a stale task record was
+cancelled under it. **So three pins, one verifier, and that verifier is stalling.** Both pin
+items therefore name a standing substitute — **Cog, who wrote none of either pin** — Vision
+first, Cog if her queue has not drained when the pin lands. **A substituted verifier stands
+where the substitute did not write the work**, the rule WI-098, WI-010, WI-112 and WI-106
+were settled on. Appended to both item files, dated.
+
+**WI-114 stays HELD.** The hold is on the lane, not on the file: five corrections measured
+and written, and **the lead does not spend a request id into a lane that is refusing.**
+
+**The floor at 11:04.** **Running:** Cog's WI-121 (`task_bbf11f83be2b`), streaming.
+**Queued:** Probe's WI-120 verification, second attempt (`task_f689f6b918a1`); Probe's
+WI-086 group report (`task_dff3951ec65b`); Vision's WI-122 (`task_ae9f26b09fd3`); Probe's
+WI-123 (`task_a606329a3dc1`); Probe's WI-116 (`task_9a4337f73e61`). **Ceiling two. Next free
+number WI-124.**
+
+**The one word the owner owes.** Two lanes are quiet — Wren for seven hours, Vision for three
+and a half with two aborted attempts — and **`miniapp restart minimax-bot` is the only thing
+that clears them.** The price is one live turn, and **Cog's WI-121 turn is streaming now**,
+so the cheapest moment is **after it lands**. **Recommendation: restart then, and not
+before.**
