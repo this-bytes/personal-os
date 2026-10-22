@@ -228,11 +228,12 @@ personal-os/
 │   ├── agent-adapters/   # ACP, A2A, CLI, HTTP, model adapters
 │   └── ui/               # Reusable components
 ├── docs/
-│   ├── strategy.md       # What this is, where each idea came from, where it goes
+│   ├── roadmap.md        # Current delivery sequence
+│   ├── feature-guide.md  # How to implement a complete slice
 │   └── decisions/        # Architecture decision records
 ├── deploy/
 │   └── compose.yaml
-├── .factory/             # The software factory: role briefs and the work item format
+├── .factory/             # Current work item and compact contract-status evidence
 ├── PRODUCT.md            # What this is and what it is not
 ├── ARCHITECTURE.md       # How the pieces fit together
 ├── CONTRACTS.md          # The published contracts
@@ -242,7 +243,8 @@ personal-os/
 
 ## Documentation
 
-- [docs/strategy.md](docs/strategy.md) — what this is, where each idea came from, and where it goes
+- [docs/roadmap.md](docs/roadmap.md) — the active delivery sequence
+- [docs/adapters.md](docs/adapters.md) — runtime integration research
 - [PRODUCT.md](PRODUCT.md) — product ownership boundaries and scope
 - [ARCHITECTURE.md](ARCHITECTURE.md) — components, data flow and design decisions
 - [CONTRACTS.md](CONTRACTS.md) — the conversation, connection, resource and factory contracts

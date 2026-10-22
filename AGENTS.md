@@ -208,7 +208,7 @@ git push origin main
 
 If `origin/main` has moved, you are integrating with another agent's work.
 Stop and report the overlap. That merge belongs to the designated integration
-owner (historically Chief), and the resolution is recorded explicitly.
+owner, and the resolution is recorded explicitly.
 
 **Never force-push.** The pre-push hook refuses any push that is not a
 fast-forward, because a rewrite takes every commit that landed since with

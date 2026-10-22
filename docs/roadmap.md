@@ -149,11 +149,12 @@ The out-of-band build/release path still functions with the instance stopped.
 
 ## Existing backlog and scope control
 
-The historical work items remain evidence, not this roadmap's priority order.
-Before selecting one, inspect source and branches, identify what is already landed,
-and map the remaining work to a stage. Preserve valuable fixes and data; do not
-bulk-accept items or rewrite their histories. Security/data-loss defects may be
-fixed immediately with a named reason and tests.
+Historical work-item narratives are available in Git at 507708b. Compact evidence
+records retained for contract checks are not an active backlog. Inspect source and
+branches before selecting old work, identify what is already landed, and map any
+remaining gap to a stage. Preserve valuable fixes and data; do not bulk-accept
+removed items. Security/data-loss defects may be fixed immediately with a named
+reason and tests.
 
 Source-line citation repair, identity wording tests, counts, maps and new queue
 machinery do not displace a stage's user outcome. Documentation accompanying a

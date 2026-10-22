@@ -34,10 +34,9 @@ tests, migrations and documentation needed to deliver that slice. Use an
 independent reviewer for meaningful behavior and architectural changes. Reviewers
 may add adversarial tests; implementers write their own regression tests too.
 
-Chief, Cog, Probe and Wren are optional names for responsibilities. No agent needs
-to dispatch to one of those names to make progress. The old exclusive test-file and
-documentation ownership rules are retired. Existing briefs using those names are
-historical context, not an authority to block an authorized implementation.
+The slice owner may edit its code, tests and documentation. Independent review
+checks the result. Historical exclusive file-role gates are retired; an existing
+brief does not block an authorized implementation.
 
 ## Deliver and review
 
@@ -65,10 +64,11 @@ work. An optional future link may connect their identifiers, but neither record 
 reconstructed from the other, and the development record is not copied into the
 product as a second scheduler.
 
-Preserve existing work-item files and branches. Reassess them against the roadmap
-when selected: keep useful work, identify duplicates and inspect unmerged changes.
-Do not bulk-delete or relabel old work as accepted. Build queue tooling only when a
-specific delivery problem justifies it; it is not the first recovery milestone.
+Preserve code, data and branches. Reassess prior work against the roadmap when
+selected: inspect source and unmerged changes, keep useful fixes and identify
+duplicates. Historical work-item narratives are available in Git, not a second
+active backlog. Never relabel removed records as accepted. Build queue tooling
+only for a demonstrated delivery problem.
 
 Evidence names the tested revision, commands, results, limitations and concrete
 output. Tests of prose or source-line locations do not establish product behavior.
@@ -84,8 +84,10 @@ and restart behavior before describing recovery as guaranteed. An agent inside t
 product may propose a change, while the external development and release path
 implements and applies it under the owner's authority.
 
-## Historical record
+## Historical evidence
 
-The [previous factory doctrine](docs/history/factory-before-chat-recovery.md)
-retains the original procedures and observations. It is not an active workflow.
-The owner's recovered direction takes precedence over its role gates and priorities.
+Retired plans, bot role briefs and process narratives are removed from the active
+tree. Git preserves the original files at 507708b. Read historical evidence only to
+resolve a concrete implementation question; current work follows the roadmap.
+Compact work-item records remain only where contract-status checks require them.
+Their historical states are not active assignments and do not determine priority.

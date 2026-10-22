@@ -11,19 +11,17 @@ answers questions and inspects results there. Team coordination and the factory
 use that foundation. The out-of-band development workflow builds the product
 independently of the product's own factory feature.
 
-This decision supersedes conflicting priorities in strategy.md, streams.md,
-free-period-plan.md and the earlier roadmap; the map-first layout in the Forge
-prototype; and fixed-role handoff requirements in the former FACTORY.md. Retain
-Forge's visual language. Existing resource features, data and published interfaces
-remain supported. The broader product remains an agent-operated environment;
-chat-first is the delivery order and working surface, not a reduction to text chat.
+The retired strategy, time-window plans, bot role briefs, map-first prototypes and
+factory narratives have been removed from the active tree at the owner's request.
+Git retains their complete provenance at 507708b. Forge's visual language remains;
+existing resource features, data and published interfaces remain supported.
+Chat-first is the delivery order and working surface, not a reduction to text chat.
 
 Published schemas and routes remain governed by CONTRACTS.md and
 packages/contracts. This plan does not silently change their wire behavior.
 Proposed lifecycle and capability additions require implementation, compatibility
-handling and a contract update in the slice that introduces them. Older ADRs remain
-historical evidence; this decision supersedes their conflicting UX emphasis and
-build-process rules, not their unchanged safety and protocol boundaries.
+handling and a contract update in the slice that introduces them. ADRs retain concise current decisions and their trade-offs. Retired UX and process
+instructions are recovered from Git only when needed, not repeated in active docs.
 
 ## Owner decisions
 
@@ -68,7 +66,7 @@ acceptance; Vitest, Playwright and smoke infrastructure. Retain them.
 | Rich chat is partial.                                                                                           | ConversationDetail, Composer and ChatMessageList support basic messaging; complete normalized activity, attachments/previews and lifecycle controls need vertical slices.                                                                                                                                                                  |
 | Interaction Contract 7 describes unimplemented behaviors.                                                       | CONTRACTS.md marks its additions as not yet implemented. Plan each behavior against actual source; do not call it implemented because it is published in prose.                                                                                                                                                                            |
 | Smoke covers lifecycle using an echo agent.                                                                     | scripts/smoke.ts. Retain it as a plumbing check, add real-harness acceptance demonstrations.                                                                                                                                                                                                                                               |
-| Queue labels and dispatch status can drift.                                                                     | WI-072 and scripts/work-item.ts. Resolve existing items as selected; queue reform is not a prerequisite for product delivery.                                                                                                                                                                                                              |
+| Queue labels and dispatch status can drift.                                                                     | Historical WI-072 at 507708b and scripts/work-item.ts. Inspect actual execution evidence; queue reform is not a prerequisite for delivery.                                                                                                                                                                                                 |
 
 The MCP reproduction used Node's TypeScript transform on the unmodified adapter
 sources and the repository's MCP fixture; it was not a full worker integration test.
