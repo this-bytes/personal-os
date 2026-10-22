@@ -20,6 +20,33 @@ Protocol fixtures remain useful deterministic tests. Record both, and name the
 limits of each. A stage is delivered only when its user demonstration and the
 applicable repository gates pass on the delivered revision.
 
+## What has landed
+
+The first delivery round ran five slices in parallel, each on its own branch in
+its own worktree, and each was merged into `main` with its contract published in
+`CONTRACTS.md` and its own record in `docs/contract-*.md`.
+
+| Slice                              | Outcome                                                                                                                                                                                           |
+| ---------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **WI-145** — the adapter lifecycle | Every adapter has `connect` → `send` → `close`. A turn on an unconnected instance is refused with a message that says what to do. The capability probe closes what it opened.                     |
+| **WI-142** — the adapter presets   | A preset per adapter type and per approved runtime: a default configuration validated against the real schema, a leader persona, and the honest notes. Every runtime preset is marked unverified. |
+| **WI-143** — the factory's goals   | A goal has a rollup and a task has dependencies, with cycle rejection, as pure functions over the existing service. The migration adds a column and drops nothing.                                |
+| **WI-141** — the rich chat surface | Markdown and code, a turn activity trace, artifact previews and a stop control that says what it did — in the Forge visual language.                                                              |
+| **WI-144** — the team room         | A coordinator dispatches to a worker, the worker runs, the result returns, and the handoff is visible. See the slice's own record for what is partial.                                            |
+
+**R0 is not closed.** The adapter half of the first slice has landed; the worker
+still has to connect the executing adapter before it sends, and that change is
+made after the merge rather than inside it.
+
+**R1 is partly landed and partly not.** The chat surface, the activity trace and
+the stop control are in. Steering is not: the route carries `delivery: 'steer'`
+and nothing acts on it yet, so a steer is a queued message today. The acceptance
+demonstration still needs a real runtime, not a fixture.
+
+**R2 has templates, not integrations.** The presets are starting points for the
+five named runtimes. No runtime has been demonstrated in this repository yet, and
+the presets say so in the copy the owner reads.
+
 ## R0 — establish the execution foundation
 
 **First slice to implement: repair MCP initialization through the worker.**
