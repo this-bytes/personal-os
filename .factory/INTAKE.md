@@ -107,8 +107,9 @@ free number above the highest taken.**
 | WI-134 | The domain does not depend on the adapters package                                                                                                                                                                                | worker |
 | WI-135 | The published documents name things that have moved                                                                                                                                                                               | worker |
 | WI-136 | A new type cannot be named without an implementation                                                                                                                                                                              | worker |
+| WI-137 | The contract says one gate holds the adapter boundary; two hold it                                                                                                                                                                | worker |
 
-**The next free number is WI-137.**
+**The next free number is WI-138.**
 
 **Two decisions the owner took, and the numbers they took.** The owner answered
 the two questions that were open: `manual` **does not gate delegation**
@@ -698,6 +699,8 @@ second dispatch.
 | `wi-134-verify-adapter-boundary-probe-2026-10-22` | WI-134 — the domain's edge to the adapters package, verified | Probe | `task_33fe48307f92` | **DISPATCHED AT 17:15 BY CHIEF, AT THE PUBLISHED TIP `d60f3c5`, REPORT TO THE GROUP.** WI-134 landed on `main` in the peer's commits (`f932208`, merged at `d60f3c5`) **with no independent verdict anywhere** — **the peer wrote the work and the check, and the peer's own report is not a verification.** **A landed item with no verdict is inventory, and the lead dispatches the verification even for the other session's item.** Probe wrote none of it. **The brief asks for the seven answers, and the sharpest of them is the hole the check found in itself**: the walk collected `.ts` files while the browser client is `.tsx`, so the client was never inspected and putting the adapters package into `apps/web/src/main.tsx` turned nothing red. **The lead's own measurement of the landing:** `apps/server/src/modules/agents/service.ts:13` now ends the `@personal-os/contracts` import with the adapters import gone, `apps/worker/package.json` no longer names the package, `packages/contracts/src/agent.ts` carries `AdapterLogger` at `:286`, `AdapterContext` at `:296` and `AdapterProvider` at `:308`, and the lockfile's `apps/worker` entry no longer declares the dependency — **the lockfile changed by that and nothing else** |
 | `wi-131-verify-one-transaction-probe-2026-10-22` | WI-131 — the widening write is one transaction, and the cases are Probe's | Probe | `task_934a715d2712` | **DISPATCHED AT 18:05 BY CHIEF, ON THE MERGED TREE, REPORT TO THE GROUP.** The implementation is landed: Cog's branch `wi/131-widening-write-one-transaction`, the implementation commit `da28686`, merged with the tip that moved under it, and **the merge carries one conflict in `CONTRACTS.md` because two sessions did the same work in parallel — the peer named `d229b53` for WI-121's claim and Cog named `4248520` — resolved by the house form: every claim in the contract that names a commit names a single-parent commit, and `4248520` is a merge.** **Cog wrote no test file.** The brief asks for the three named cases in Probe's existing check file (`apps/server/src/__tests__/blocked-capability.test.ts` — WI-121's file, landed in `32af761`), the transaction proved **load-bearing by taking it away**, **the window closed for the worker too, measured across two connections**, and the contract's citation naming the write that changes the grant (`:325`), not the delete beside it — D2's finding. **A duplicate is cancelled: Cog's own dispatch of the same check (`task_88b7089c63f2`, request `wi-131-check-probe-2026-10-22`) is cancelled, because two Probe tasks would put two writers on one test file, and because the lead's brief asks for the VERDICT as well as the cases, which is what an acceptance needs.** The base is **the published main, where the transaction now lives** — not the worker's branch, which is behind it. The trick the brief does not repeat — making the failing write fail _by the route_ — is in Cog's report in this group, and Probe wrote the check that measured E5 |
 | `wi-072-queue-is-a-file-2026-10-21` | WI-072 — the factory's queue is a file a program can read | Chief | — | **TAKEN ON 2026-10-21, AND THE LEDGER HAD NO ROW FOR IT AT ALL — the peer recreated the item file today (`c61cd7b`) and the lead records it here, because a number with no ledger row is a collision waiting to happen.** WI-072 was numbered on 2026-10-21 as the next free number above all allocated ones, renumbered from WI-071 when WI-069 was taken. **Owner: Chief. Verifier: Probe. State: `implement`, with no live dispatch — one of the twenty-three the peer's census found bound to a dead dispatch.** **And the census is this item's own evidence, measured today: the state of every work item lives in a `**State:**` line inside a prose file, a program has to parse prose to know what is live, and the numbers move because the queue moves.** **The lead corrected seven of those lines by hand today and the peer's count fell from fifty-seven to forty-seven — the defect the item names, caught in the act.** **The lead has not read the item in full and has not started it, and says so: the dispatch waits on that reading, and the lane is full in any case** |
+| `wi-130-verify-the-check-cog-2026-10-22` | WI-130 — Probe's check can fail, and the published rule is the code's rule | Cog | `task_d84ee17f8693` | **DISPATCHED AT 18:41 BY CHIEF, ON THE MERGED TREE `6f8e2ce`, REPORT TO THE GROUP.** WI-130 is LANDED — the implementation (`b7dcc8f`) and Probe's check (`3c745bc`) merged into `main` together in `6f8e2ce`, because a claim and its check move together. **Nine of nine gates on the merged tree, exit 0: 493 server / 84 web / 92 worker / 23 adapters / 28 contracts tests, 147 contract pointers, 0 failures.** **The scope is the split the file ownership makes, because Probe wrote the check and Cog wrote the implementation and neither may verify the whole item:** Probe's report (`task_984a7561b69d`) covers the implementation — he wrote none of it — and **Cog is asked for the check**, the one thing only a second pair of eyes can close. **The brief says it outright: you wrote the implementation; this brief does not ask you to verify your own code.** The brief also asks for one thing that is not a verification and is labelled as one: that the four sentences WI-130 added to `CONTRACTS.md` say what the code does. **A stale brief is cancelled: `task_c8d80aa01bfa` (request `wi-130-policy-clear-fails-open-cog-2026-10-22`) was still queued while the item was implemented, gated, pushed and merged — its id is spent and never reused** |
+| `wi-137-two-holders-for-the-boundary-2026-10-22` | WI-137 — the contract says one gate holds the adapter boundary; two hold it | worker, under Chief | — | **OPENED AT 18:41 BY CHIEF, FROM WI-134's VERIFICATION, AND ITS DISPATCH WAITS ON WI-135's LANDING.** Finding **A** in Probe's verification (`task_33fe48307f92`): `CONTRACTS.md:498-499` says _"What the check holds is that the domain cannot reach an adapter."_ **The check holds the named edge only** — a domain module reaching the adapters by a **relative path** left the check **3/3 green**, and `tsc` caught it (TS2307) — **so the boundary is held by two mechanisms and the contract names one.** **The claim is published on `main` today** (the block row and `.factory/work/WI-137.md`), and **the request id in this row is reserved and not yet used.** **It waits on WI-135 and not on a queue: both items write `CONTRACTS.md`, and one file, one live item, one writer at a time.** Owner: the contract lane (Wren — in practice Cog, because Wren's lane refuses). Finding **B** (the item file's "allow-list", of which there is none) is corrected in the lead's own file, by append |
 
 **A cancelled task is not a dispatch — but a cancelled dispatch does not free its
 request id.** That second half was wrong here, and it is corrected now rather
@@ -6318,3 +6321,71 @@ item is not it.** The resolver's rule is unchanged and now published, and **an e
 answer.**
 
 **The floor at 18:20.** **Ceiling two. Next free number WI-137.**
+
+### 18:41 — WI-130 is landed with its check, WI-134 is accepted, and a contract sentence that named one gate instead of two is WI-137
+
+**Three verdicts came in while the lead was gating WI-130's merge, and the floor moved
+under all three. Here is the state, measured rather than described.**
+
+**One — WI-130 is LANDED, in `6f8e2ce`, and it is not accepted.** The implementation
+(`b7dcc8f`) and Probe's check (`3c745bc`) went into `main` in **one merge**, because a
+claim and its check move together: the implementation alone would have put a red suite
+on `main`, because the case that pinned the old sentence — _"clears a list only when the
+owner says so"_ — is Probe's file and asserts the behaviour this item supersedes.
+**Nine of nine gates on the merged tree, exit 0: typecheck, test (49 files / 493 server,
+9 / 84 web, 7 / 92 worker, 3 / 23 adapters, 4 / 28 contracts), build, format,
+contract-status, contract-pointers (147 checked, 0 failures), smoke, compiled-build,
+bundle-size.** Pushed under the standing word, measured on the tree that was pushed.
+
+**The verification is dispatched, and its scope is not the obvious one.** Probe wrote the
+check; Cog wrote the implementation; **so neither may verify the whole item, and the lead
+does not accept an item on one writer's word.** The split the file ownership already
+makes is the split the house rule asks for: **Probe's report covers the implementation
+(he wrote none of it — the five cases pass against Cog's branch and both mutations turn
+a case red), and Cog is asked for the check** (`task_d84ee17f8693`, at `6f8e2ce`). The
+brief says it outright: _you wrote the implementation; this brief does not ask you to
+verify your own code_ — and it asks for one thing that is not a verification and is
+labelled as one: that the four sentences this item added to `CONTRACTS.md` say what the
+code does.
+
+**And one thing was cancelled.** Cog's original brief for this item
+(`task_c8d80aa01bfa`) was **still queued** when the implementation was already
+implemented, gated, pushed and merged — Cog's own report said the branch must land with
+Probe's check "or not at all", which is what the lead did. **Leaving it queued would
+have asked Cog to do landed work.** Cancelled; **the request id is spent and is never
+reused.**
+
+**Two — WI-134 is ACCEPTED, on Probe's verdict** (`task_33fe48307f92`): all seven answers
+✓, with two findings. **The tip moved four times while the verification ran, so the lead
+measured the surface rather than the sha** — `git diff --name-only d60f3c5 44260f3` over
+WI-134's eight files returns **two**: `CONTRACTS.md` and
+`apps/server/src/modules/agents/service.ts`. **Both were read by hand in the tree as it
+stands.** The domain still names no adapters package — the file's only package import
+is `} from '@personal-os/contracts';` at `:13`, and it moved because WI-131's
+transaction changed it, which did not bring the edge back. The worker still declares no
+dependency; `apps/worker/src`, `packages/contracts/src/agent.ts`, the check file and the
+lockfile are byte-identical since `d60f3c5`; and the contract's "The adapter boundary"
+section is intact at `:453` with all five re-pointed citations into `agent.ts` still
+naming their claims. **Probe wrote none of it** — the peer session wrote the work and
+the check, and the peer's own report is not a verification.
+
+**Three — WI-129's follow-up is VERIFIED**, on Probe's report
+(`task_6d4d0264d86c`): the re-pointed citation names its claim, both new cases can fail
+(the verifier's own mutations, one at a time, each seen red), nothing was weakened
+(**+51 lines and not one `-` line but the diff header**), and the restores wrote the text
+back rather than only checking it. **The lead opened the cited lines by hand** at the
+tip as it stands: `service.ts:342` is the provider's create and `:756` is the literal
+`published: false` write, and **the file has not moved at all since `cbfbf8d`**.
+
+**And a finding became an item, because a finding from an acceptance is a new item.**
+**WI-137: "The contract says one gate holds the adapter boundary; two hold it."**
+`CONTRACTS.md:498-499` says _"What the check holds is that the domain cannot reach an
+adapter."_ **The check holds the named edge only** — Probe mutated a domain module to
+reach the adapters by a **relative path** and the check stayed **3/3 green**, and `tsc`
+caught it (TS2307). **The boundary does hold; the sentence names one of the two
+mechanisms that hold it.** **WI-137 is opened and its claim is published on `main`
+today, and its dispatch waits on WI-135's landing** — both write `CONTRACTS.md`, and one
+file, one live item, one writer at a time. **Finding B** — the item file's "allow-list",
+of which there is none — is corrected **in the lead's own file, by append.**
+
+**The floor at 18:41.** **Ceiling two. Next free number WI-138.**
