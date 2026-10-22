@@ -468,6 +468,55 @@
           "value": "behavior: 'immediate'"
         }
       ]
+    },
+    {
+      "id": "the-capability-view-wi-154",
+      "section": "The capability view",
+      "note": "This entry is the contract for WI-154, and the code implements it",
+      "claim": "implemented",
+      "why": "WI-154's capability view: the view is pinned when the turn is admitted, whether a turn can be steered is asked of the turn rather than of the connection, and the revision of a connection's capability set moves by one comparison of the grant before the write and the grant after it.",
+      "expect": [
+        {
+          "kind": "present-pattern",
+          "path": "apps/server/src/modules/capabilities/capability-view.ts",
+          "value": "export function pinCapabilityView"
+        },
+        {
+          "kind": "present-pattern",
+          "path": "apps/server/src/modules/capabilities/capability-view.ts",
+          "value": "export function turnAcceptsSteering"
+        },
+        {
+          "kind": "present-text",
+          "path": "packages/contracts/src/chat.ts",
+          "value": "capabilities: agentCapabilitiesSchema.nullable()"
+        },
+        {
+          "kind": "present-pattern",
+          "path": "apps/server/src/modules/conversations/dispatch.ts",
+          "value": "capabilityView: pinCapabilityView\\(db, agentConnectionId\\)"
+        },
+        {
+          "kind": "present-pattern",
+          "path": "apps/server/src/modules/factory/service.ts",
+          "value": "capabilityView: pinCapabilityView\\(db, agentConnectionId\\)"
+        },
+        {
+          "kind": "present-text",
+          "path": "apps/server/src/modules/agents/service.ts",
+          "value": "sameToolGrants(beforeGrants, afterGrants)"
+        },
+        {
+          "kind": "present-text",
+          "path": "apps/server/src/api/executions.ts",
+          "value": "capabilityView: turn.capabilityView"
+        },
+        {
+          "kind": "present-pattern",
+          "path": "apps/web/src/components/chat/TurnCapabilityPanel.tsx",
+          "value": "export function TurnCapabilityPanel"
+        }
+      ]
     }
   ]
 }

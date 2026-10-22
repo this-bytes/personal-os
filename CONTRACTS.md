@@ -2232,6 +2232,16 @@ decisions — whether it can be steered, and what the panel says it may do — a
 it is not a per-turn enforcement of the tool surface. A client that shows the
 view is showing what the turn was admitted with, not a sandbox around it.
 
+This entry is the contract for **WI-154**, and the code implements it — as of
+`573ee57`. The rule is `apps/server/src/modules/capabilities/capability-view.ts`,
+the shape is `packages/contracts/src/chat.ts`, the pinning is
+`apps/server/src/modules/conversations/dispatch.ts` and
+`apps/server/src/modules/factory/service.ts`, the revision is
+`apps/server/src/modules/agents/service.ts`, the read is
+`apps/server/src/api/executions.ts`, and the panel is
+`apps/web/src/components/chat/TurnCapabilityPanel.tsx`. The slice's own record
+is `.factory/work/WI-154.md`.
+
 ### Canonical history
 
 A turn's output enters canonical history only when the commit is acknowledged.
