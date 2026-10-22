@@ -5,6 +5,7 @@ import path from 'node:path';
 import type { FastifyInstance } from 'fastify';
 import { buildApp } from '../app.js';
 import { loadConfig } from '../config.js';
+import { agentConnections } from '../db/schema.js';
 import { FeatureRegistry } from '../features/registry.js';
 import { forgeMapFeature } from '../features/map/feature.js';
 
@@ -148,5 +149,55 @@ describe('the Map, on the server', () => {
     expect(counter('threads')).toBe(body.threads.length);
     expect(counter('built')).toBe(body.tiles.length);
     expect(counter('waiting')).toBeGreaterThanOrEqual(0);
+  });
+
+  it('draws the same picture for the same data', async () => {
+    // The picture has to be something: an empty workspace draws an empty
+    // picture, and an empty picture cannot be the wrong one.
+    const now = new Date().toISOString();
+    app.services.runtime.db
+      .insert(agentConnections)
+      .values({
+        id: 'agt_picture',
+        workspaceId,
+        name: 'The agent',
+        adapterType: 'acp',
+        configRef: 'cfg_1',
+        toolGrants: null,
+        enabled: true,
+        capabilities: {
+          chat: true,
+          streaming: true,
+          persistentSessions: false,
+          backgroundTasks: false,
+          cancel: true,
+          approvals: true,
+          artifacts: false,
+        },
+        status: 'connected',
+        lastError: null,
+        lastConnectedAt: now,
+        createdAt: now,
+        updatedAt: now,
+      })
+      .run();
+
+    const ask = async (): Promise<unknown> => {
+      const response = await app.inject({
+        method: 'GET',
+        url: `/api/features/map?workspaceId=${workspaceId}`,
+        headers: { cookie: sessionCookie },
+      });
+      expect(response.statusCode).toBe(200);
+      return response.json();
+    };
+
+    const first = await ask();
+    const second = await ask();
+
+    expect(
+      second,
+      'the Map drew a different picture for the same data: the picture is not a function of the workspace',
+    ).toEqual(first);
   });
 });
