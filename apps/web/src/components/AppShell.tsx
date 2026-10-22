@@ -1,34 +1,15 @@
 import { Suspense, useState } from 'react';
 import { NavLink, Outlet, useNavigate } from 'react-router-dom';
-import {
-  AlertTriangle,
-  Bot,
-  Cog,
-  Database,
-  Factory,
-  LogOut,
-  Menu,
-  MessagesSquare,
-  Radio,
-  Workflow,
-  X,
-} from 'lucide-react';
+import { AlertTriangle, LogOut, Menu, Radio, X } from 'lucide-react';
 import { Badge, Button, Select } from '@personal-os/ui';
 import { cn } from '@personal-os/ui';
 import { useAuth } from '../state/auth';
 import { useServerEvents } from '../state/events';
 import { useWorkspace } from '../state/workspace';
 import type { StreamStatus } from '../lib/events';
+import { navItems, rooms } from '../features/registry';
 import { LoadingState } from './ErrorState';
-
-const NAV_ITEMS = [
-  { to: '/conversations', label: 'Conversations', icon: MessagesSquare },
-  { to: '/agents', label: 'Agents', icon: Bot },
-  { to: '/factory', label: 'Factory', icon: Factory },
-  { to: '/resources', label: 'Resources', icon: Database },
-  { to: '/automations', label: 'Automations', icon: Workflow },
-  { to: '/settings', label: 'Settings', icon: Cog },
-];
+import { RoomSwitch } from './RoomSwitch';
 
 /**
  * What the event stream is doing.
@@ -136,7 +117,7 @@ export function AppShell(): React.JSX.Element {
         </div>
 
         <nav className="flex-1 space-y-0.5 overflow-y-auto p-2">
-          {NAV_ITEMS.map((item) => {
+          {navItems.map((item) => {
             const Icon = item.icon;
             return (
               <NavLink
@@ -194,6 +175,8 @@ export function AppShell(): React.JSX.Element {
               ))}
             </Select>
           </div>
+
+          <RoomSwitch rooms={rooms} />
 
           <div className="ml-auto flex items-center gap-2">
             {streamStatus === 'reconnecting' || streamStatus === 'error' ? (

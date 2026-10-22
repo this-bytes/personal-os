@@ -43,7 +43,9 @@ export async function signIn(page: Page): Promise<void> {
     await page.getByRole('button', { name: 'Sign in' }).click();
   }
 
-  await expect(page).toHaveURL(/\/conversations/);
+  // The panel opens on the Map: it is the room the owner sees when they have
+  // not asked for anywhere in particular.
+  await expect(page).toHaveURL(/\/map/);
 }
 
 /**
