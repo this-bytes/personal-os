@@ -26,6 +26,23 @@ function dashboardSpec(resource: Resource): { published: boolean } {
   return resource.data as { published: boolean };
 }
 
+/** The spec an automation carries, as the contract publishes it. */
+function automationSpec(): {
+  trigger: { type: 'manual' };
+  action: { type: 'agent.prompt'; agentConnectionId: string; prompt: string };
+  enabled: boolean;
+} {
+  return {
+    trigger: { type: 'manual' },
+    action: {
+      type: 'agent.prompt',
+      agentConnectionId: 'agt_example',
+      prompt: 'Summarise what changed since the last run.',
+    },
+    enabled: false,
+  };
+}
+
 /**
  * The MCP `resource.create` path, reproduced exactly: the template is
  * resolved, the caller's values are merged into its spec, and the result is
@@ -126,5 +143,39 @@ describe('a resource is never born live', () => {
     });
 
     expect(dashboardSpec(updated).published).toBe(true);
+  });
+
+  it('still lets an update make an automation live, because that is deliberate too', () => {
+    stack = createTestStack();
+    const created = stack.resources.create({
+      workspaceId: 'wsp_1',
+      type: 'automation',
+      title: 'A summary, on demand',
+      data: automationSpec(),
+      author: { kind: 'owner' },
+    });
+    expect((created.data as { enabled: boolean }).enabled).toBe(false);
+
+    const updated = stack.resources.update(created.id, {
+      expectedRevision: created.revision,
+      data: { ...automationSpec(), enabled: true },
+    });
+
+    expect((updated.data as { enabled: boolean }).enabled).toBe(true);
+  });
+
+  it('still refuses a spec that is not an object, exactly as it always did', () => {
+    const testStack = createTestStack();
+    stack = testStack;
+
+    expect(() =>
+      testStack.resources.create({
+        workspaceId: 'wsp_1',
+        type: 'dashboard',
+        title: 'Homelab',
+        data: 'not a spec',
+        author: { kind: 'owner' },
+      }),
+    ).toThrow(/does not satisfy the dashboard contract/);
   });
 });

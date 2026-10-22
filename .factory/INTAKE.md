@@ -5474,71 +5474,66 @@ the file carries now, and it says which lines they were before.**
 
 **And one more correction, on an instrument this ledger has already named.** The Formatting step of CI failed on `6bca3c5` and on nothing else — typecheck, the tests and the build all passed — and the cause was this entry: it was missing the blank line before its heading, and one of its bold spans wrapped another, so the markers paired the wrong way round.** Both are fixed, in `6849e62`.** The wrong conclusion came first, and it was mine: a prettier check run against `git show origin/main:.factory/INTAKE.md | Out-File` flagged the file as dirty, and **a copy is not the file** — `Out-File` wrote CRLF where the blob holds LF, and the copy sat outside the repository, so prettier resolved its defaults instead of `.prettierrc.json`. The 08:45 section of this ledger already named that instrument and the rule it earns: “a red measured on an extracted copy is a red measured on the extraction — check the copy's line endings before believing it, and check the committed bytes.” This is the second time it has cost something, and the rule was already written down.
 
-### 16:05 — WI-134 is claimed: the domain must not depend on the adapters package
+### 15:45 — WI-129's verification asked for two things, and both are closed
 
-**WI-134 is claimed, and the claim is on `main` before the work is done.** The block's row
-and the item file land in a commit of their own. **That is the claim-first discipline used
-three times now — WI-129, WI-133 and this — and it has not collided once.**
+**WI-129 was verified independently, and the verdict is PASS WITH FINDINGS** — no blocker,
+no should-fix. The three mutation proofs in the item's own file reproduced row for row (2
+red, 1 red, 2 red), the pointer gate was green at 143 pointers with 0 failures, the server
+suite was 46 files and 480 tests with 0 failures, and the tree was restored byte for byte
+after every mutation. **Two of the findings were about the item's own claims, and both
+are closed in a follow-up on the item's branch.**
 
-**The rule is written in two places and enforced in neither.** `AGENTS.md` rule 3 says the
-domain must not know that Hermes, Codex or OpenClaw exist. `docs/decisions/0004-adapter-registry.md:39`
-says the domain never mentions a specific provider. **Both are true of the tree today.
-What is missing is the thing that keeps them true.**
+**1. The contract's dashboard citation pointed at the provider, not at the write.** The
+contract said _"the dashboard's writes `published: false`"_ and cited
+`apps/server/src/modules/resources/service.ts:337-345` — the `dashboardProvider` function.
+**That range holds the provider's create, which calls `asDraft`; the literal
+`published: false` is at `:756`.** The citation was legal — the pointer gate wants a cited
+line to hold code, and both ends of the range did — **but a reader following it landed on
+`asDraft(input.data)` rather than on the write the sentence names.** It is re-pointed, and
+the provider's call is cited with it:
 
-**The domain has exactly one dependency edge on the adapters package, and it is the wrong
-kind of edge:**
-
-```ts
-// apps/server/src/modules/agents/service.ts:13
-import type { AdapterRegistry } from '@personal-os/agent-adapters';
+```
+(`apps/server/src/modules/resources/service.ts:756`, reached from the provider's
+create at `apps/server/src/modules/resources/service.ts:342`)
 ```
 
-**It is type-only, so it compiles to nothing — but the type it names is the class from the
-package that holds every concrete adapter** (`packages/agent-adapters/src/index.ts:15-21`
-exports the ACP, A2A, CLI, echo, HTTP, MCP and model adapters, and `:27` exports
-`createDefaultRegistry`). **The whole barrel is one import away, and the compiler does not
-distinguish "I want the class" from "I want its type".** Deleting the word `type` would put
-every adapter inside the domain and nothing would complain. **A word is not a boundary.**
+**The guide's §10 carried the same range and is re-pointed the same way.** The pointer
+gate is green at **144 pointers, 0 failures** — one more than before, because the sentence
+now names two places instead of one.
 
-**And the other end of the same coupling is a dead dependency.** `apps/worker/package.json:16`
-declares `@personal-os/agent-adapters`, and **no file under `apps/worker/src` imports
-it.** The worker reaches adapters through the server's runtime —
-`apps/worker/src/executor.ts:412`, `:842`, `:1073` — and `apps/server/src/runtime.ts:16`
-types that field as `AdapterRegistry`, the class the package owns. **So the worker's
-dependency is not merely unused: it is what makes the package's types resolvable in a
-clean install.** Removing it is the proof that the edge is gone, not a tidy-up.
+**2. The contract asserted two things the proof file did not pin.** The contract says an
+update that names `published: true` **or `enabled: true`** still makes a resource live —
+**the dashboard's half was pinned and the automation's half was not** — and it says a spec
+that is not an object is passed on untouched so the schema refuses it, which was true and
+unpinned. **Two cases are added, and each is proved able to fail:**
 
-**What is not broken, and is part of the record.** The domain does not name a provider —
-the only occurrences of "Hermes", "Codex" or "OpenClaw" under `apps/server/src/modules`
-are display names in `conversations/__tests__/routing.test.ts`, **which is configuration,
-not code, exactly as ADR 0004 allows.** And adding a new adapter type does not touch the
-domain: it means the type schema and its labels, a config schema, a new file in the
-adapters package and one line in `createDefaultRegistry`. **The rule holds. What is
-missing is the thing that keeps it holding.**
+| Case                                                                         | Mutation that turns it red                                            | Red |
+| ---------------------------------------------------------------------------- | --------------------------------------------------------------------- | --- |
+| still lets an update make an automation live, because that is deliberate too | the automation's update writes `enabled: false` instead of the spec's | 1   |
+| still refuses a spec that is not an object, exactly as it always did         | `asDraft` stops passing a non-object through untouched                | 1   |
 
-**The fix: the shapes the domain needs move into the package the domain already owns.**
-`packages/contracts/src/agent.ts` already holds `AgentAdapter` (`:244`) — the adapter
-interface itself. `AdapterLogger` (`agent-adapters/src/types.ts:3-7`) and `AdapterContext`
-(`types.ts:13-16`) are the rest of the boundary vocabulary, and they belong beside it, with
-a name for the registry's **shape** — `AdapterProvider` — so the domain depends on a
-capability rather than on a class. **The adapters package keeps the class and implements
-the shape; the domain imports the shape from `@personal-os/contracts`; and the worker's
-dependency becomes removable, because `Runtime.registry` names the shape rather than the
-class.** The name follows the repository's own vocabulary: the resources module already has
-a `ResourceProvider`, the same idea on the other side of the boundary.
+**Seven cases, green; the file restored byte for byte after each mutation, the final
+`git status --porcelain` naming only the four files this follow-up touched.**
 
-**And a check, because a rule nothing checks is a wish.** The repository has already turned
-three such wishes into checks — the contract-status gate, the contract-pointer gate and
-the licence record's pin — **and this is the fourth.** The check walks the source tree the
-way `apps/worker/src/__tests__/autonomy-policy-attack.test.ts:421-463` already does, and
-asserts that the list of offenders is empty: no domain file imports the adapters package,
-the worker does not declare it, and the only importer left is the composition root.
+**One thing that went wrong and was caught by the hash, not by the eye.** The mutation
+script's `restore()` checked the file's hash and reported a mismatch — **because it only
+checked and never wrote the file back.** The file was restored from the committed version
+(the item does not change it, so the committed version _is_ the baseline) and the hash
+matched exactly; the script was then fixed to write the original text back, and the two
+mutations were re-run from a clean baseline. **A restore that only verifies is not a
+restore**, and the hash check is what turned that into a caught mistake rather than a
+mutated file that quietly shipped.
 
-**Two limits, stated rather than papered over.** The check proves the **edge**, not the
-absence of a provider's _name_ in prose — a domain module that branched on a name would
-not be seen by it; what it does prove is that the domain cannot reach an adapter without
-going through the boundary. And **the check is a test file, and the repository gives test
-files to Probe** — this session wrote it because the item could not land without it, it is
-a new file with a new name, and nothing of Probe's is touched. **Probe may take it over.**
+**The four stale citations the verifier found in the guide's summary table were not swept
+here.** WI-129 declined to sweep them and said so, and they belong to the stale-docs item
+with its own measurements. **They are recorded for whoever takes it, exactly as measured:**
 
-**The floor at 16:05.** **Ceiling two. Next free number WI-135.**
+| The guide's table row cites                | What that range actually holds                               | Where the thing is                                                          |
+| ------------------------------------------ | ------------------------------------------------------------ | --------------------------------------------------------------------------- |
+| `mcp/server.ts:467-483`                    | the tail of `resource.create` and the head of `resource.get` | the tool is at `mcp/server.ts:533-551`                                      |
+| `mcp/server.ts:352-402`                    | inside `task.create`                                         | the tool is at `mcp/server.ts:418-468`                                      |
+| `packages/contracts/src/resource.ts:58-70` | `templateId` / `templateVersion` of `resourceSchema`         | the template shape is `resourceTemplateSchema` at `resource.ts:128-148`     |
+| `packages/contracts/src/resource.ts:79-83` | the doc comment for the guide                                | the reference shape is `resourceTemplateRefSchema` at `resource.ts:157-160` |
+| `resources/templates.ts:21-124`            | `dashboard.metrics` and part of `document.brief`             | the registry runs to `templates.ts:394`                                     |
+
+**The floor at 15:45.** **Ceiling two. Next free number WI-134.**
