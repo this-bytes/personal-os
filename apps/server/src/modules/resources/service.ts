@@ -448,7 +448,7 @@ export function createResourcesService(options: ResourcesServiceOptions): Resour
   }
 
   const dashboardResourceProvider = dashboardProvider();
-  const documentProvider = tableProvider('document', documentSpecSchema);
+  const documentProvider = fileAwareDocumentProvider(tableProvider('document', documentSpecSchema));
   const dataSourceProvider = tableProvider('data-source', dataSourceSpecSchema);
   const memoryResourceProvider = memoryProvider();
   const automationResourceProvider = automationProvider();
@@ -832,4 +832,51 @@ async function runDataSource(
   }
 
   throw errors.badRequest('Unsupported data source kind.');
+}
+
+/**
+ * A document that is a file.
+ *
+ * A document is normally text. A file the owner uploaded is a document whose
+ * data says what the file is — its name, its content type, its size — and
+ * nothing else. The bytes live on the server, and the row that points at them
+ * lives in `resource_files`, so the browser never learns where they are.
+ */
+export const fileDocumentSpecSchema = z.object({
+  kind: z.literal('file'),
+  filename: z.string().min(1).max(300),
+  mimeType: z.string().min(1).max(200),
+  size: z.number().int().min(0),
+});
+export type FileDocumentSpec = z.infer<typeof fileDocumentSpecSchema>;
+
+/** Whether a document's data describes a file rather than text. */
+export function isFileDocument(data: unknown): data is FileDocumentSpec {
+  return typeof data === 'object' && data !== null && (data as { kind?: unknown }).kind === 'file';
+}
+
+/**
+ * The document provider, taught about files.
+ *
+ * A document is text, or it is a file the owner uploaded, and the two are
+ * told apart by the `kind` the data carries. A file's data is judged by the
+ * file's own contract, and everything else is judged by the document's, so a
+ * text document is exactly what it always was.
+ */
+function fileAwareDocumentProvider(base: ResourceProvider<unknown>): ResourceProvider<unknown> {
+  return {
+    ...base,
+    validate(data: unknown) {
+      if (!isFileDocument(data)) return base.validate(data);
+
+      const parsed = fileDocumentSpecSchema.safeParse(data);
+      if (!parsed.success) {
+        throw errors.validation(
+          'This document does not satisfy the document contract.',
+          parsed.error.issues,
+        );
+      }
+      return parsed.data;
+    },
+  };
 }

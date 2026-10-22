@@ -6,6 +6,8 @@
  * is turned into an `ApiError` so callers never have to inspect the body.
  */
 
+import type { Resource } from './types';
+
 export interface ApiErrorEnvelope {
   code: string;
   message: string;
@@ -143,4 +145,64 @@ export function errorMessage(error: unknown): string {
   if (error instanceof ApiError) return error.message;
   if (error instanceof Error) return error.message;
   return 'Something went wrong.';
+}
+
+/**
+ * The bytes of a file, as base64.
+ *
+ * The upload travels as JSON, so the browser encodes the bytes itself. The
+ * encoding is done here rather than in a component, so every caller sends the
+ * same body.
+ */
+export function readFileAsBase64(file: Blob): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onerror = () => reject(new Error('That file could not be read.'));
+    reader.onload = () => {
+      const buffer = reader.result as ArrayBuffer | null;
+      if (!buffer) {
+        reject(new Error('That file could not be read.'));
+        return;
+      }
+      resolve(toBase64(new Uint8Array(buffer)));
+    };
+    reader.readAsArrayBuffer(file);
+  });
+}
+
+/** The bytes of an array, as base64. */
+function toBase64(bytes: Uint8Array): string {
+  let binary = '';
+  // The chunks keep the argument list short enough for the engine.
+  const chunk = 0x8000;
+  for (let index = 0; index < bytes.length; index += chunk) {
+    binary += String.fromCharCode(...bytes.subarray(index, index + chunk));
+  }
+  return btoa(binary);
+}
+
+/**
+ * Upload a file, and get the resource that points at it.
+ *
+ * The bytes go as base64 in a JSON body: the server needs no multipart
+ * parser, and the product needs no new dependency for one. The resource that
+ * comes back is attached to a message exactly as a resource the owner picked
+ * from the workspace would be.
+ */
+export async function uploadResourceFile(input: {
+  workspaceId: string;
+  filename: string;
+  mimeType: string;
+  contentBase64: string;
+}): Promise<Resource> {
+  const response = await apiRequest<{ resource: Resource }>('/resources/upload', {
+    method: 'POST',
+    body: input,
+  });
+  return response.resource;
+}
+
+/** Where the bytes of a resource are read from. */
+export function resourceContentUrl(resourceId: string): string {
+  return `${API_BASE}/resources/${resourceId}/content`;
 }
