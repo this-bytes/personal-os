@@ -1901,12 +1901,13 @@ carries is the published one, so a client that already posts to
 
 **The row leaves when the grant is widened.** A capability the agent holds is not
 waiting on the owner any more, so the row leaves the list as soon as the grant
-includes it. Whichever route widened the grant, the row leaves: both go through
-the one write that changes a grant (`apps/server/src/modules/agents/service.ts:412`).
-A list that keeps the row is a list that lies about what is waiting.
+includes it. Whichever way the grant was widened, the row leaves: the change,
+the widening and the list all go through the one write that changes a grant
+(`apps/server/src/modules/agents/service.ts:472`). A list that keeps the row is
+a list that lies about what is waiting.
 
 **The row leaves and the grant is written in one transaction (WI-131).** The two writes are
-one change and are made together (`apps/server/src/modules/agents/service.ts:355`):
+one change and are made together (`apps/server/src/modules/agents/service.ts:353`):
 the row that says what the agent is waiting on leaves the list, and the grant that
 says what the agent may call is written. **So the guarantee is kept in both
 directions. The row leaves exactly when the grant includes the capability** — and
@@ -1915,14 +1916,12 @@ configuration that is gone, a constraint the owner cannot meet — leaves both a
 were: the row is still on the list, and the grant was not widened. A list that drops
 the row while the agent is still blocked is a list that lies the other way.
 
-**A widening is not taken back (WI-146).** **The guarantee is the widening
-route** — `POST /api/agents/:id/grants` with one tool to widen — and it is not a
-statement about every way a grant is written. The union that widens the grant
-is computed **inside** the transaction that writes it, from a read taken inside
-the same transaction (`apps/server/src/modules/agents/service.ts:376`), and the
+**A widening is not taken back (WI-146).** The union that widens the grant is
+computed **inside** the transaction that writes it, from a read taken inside the
+same transaction (`apps/server/src/modules/agents/service.ts:411`), and the
 transaction takes the write lock before it reads
-(`apps/server/src/modules/agents/service.ts:344`,
-`apps/server/src/modules/agents/service.ts:432`). **So a widening that another
+(`apps/server/src/modules/agents/service.ts:353`,
+`apps/server/src/modules/agents/service.ts:474`). **So a widening that another
 process committed while this one was waiting is not taken back: the grant ends
 up holding both capabilities.** A read taken outside the transaction could be
 stale by the time the write landed, and a union computed from a stale grant
@@ -1933,26 +1932,83 @@ another process has committed, SQLite refuses to turn its read lock into a
 write lock and answers `SQLITE_BUSY` at once rather than waiting, so the write
 is lost instead of delayed.
 
-**The grant editor's save is not covered by it yet.** The editor seeds its
-selection from the grant the page read and writes that list back
-(`apps/web/src/components/ToolGrantPanel.tsx:43`,
-`apps/web/src/components/ToolGrantPanel.tsx:48`), so a widening committed
-between the page's read and the owner's save is overwritten by the save. The
-owner never chose to narrow it, and the list goes on saying the capability is
-not waiting while the agent is still blocked by it. That path is being fixed;
-when it is, this guarantee is general again, and the claim below is re-stated
-to bind it. The citations in this paragraph move with that fix.
-
-The widening route is the contract for **WI-146**, and the code implements it — as
-of `3154819`. The guarantee is the union path: the route widens one tool, the
-union is computed inside the transaction that writes it, and that transaction
-takes the write lock before it reads.
+The widening and the owner's change are the contract for **WI-146**, and the code
+implements it — as of `e9c7d95`.
 
 A transaction is also what holds across processes. The worker is a second process on
 the same database, and the refusal it records there is written in a transaction of its
 own (`apps/server/src/modules/agents/blocked.ts:44`), so the two meet in the database
 rather than in one function's timing: a guarantee that rests on a function never
 yielding is not a guarantee.
+
+**The owner changes the grant with a change, not with a list.** `PATCH
+/api/agents/:id` accepts `toolGrants` and `toolGrantChange` beside `name`,
+`enabled`, `config`, `secrets` and `persona`
+(`apps/server/src/api/agents.ts:47`), and the route hands the body on to the
+service (`apps/server/src/api/agents.ts:211`). The grant fields of that body
+are:
+
+```ts
+type AgentGrantPatch = {
+  toolGrants?: McpToolName[];
+  toolGrantChange?: {
+    enable?: McpToolName[];
+    disable?: McpToolName[];
+  };
+};
+```
+
+**The change is the owner's own edit of the grant, and it is applied to the grant
+as it is now.** `enable` is what the owner turned on and `disable` is what they
+turned off; the server reads the grant inside the transaction that writes it
+(`apps/server/src/modules/agents/service.ts:397`) and applies the change to what
+it finds there. **So a widening another writer committed after the client read
+the grant survives the owner's save** — it is not in the change, so it is not
+taken back.
+
+**The order of the ways a body can change a grant is published, because the order
+is the point.** A body may carry a change **and** a list. **The change is
+applied and the list is not written.** The change is a command — "apply this to
+the grant as it is now" — and the list is a state — "the grant is exactly
+this". **The list is the one of the two that can take a widening back**, because
+it says what the grant was when the client read it and nothing about what it is
+now. **A body that carries only a list is written exactly as sent**
+(`apps/server/src/modules/agents/service.ts:417`).
+
+**So the order is one total order: change, then widening, then list**
+(`apps/server/src/modules/agents/service.ts:385`,
+`apps/server/src/modules/agents/service.ts:406`,
+`apps/server/src/modules/agents/service.ts:417`). **The widening is not a field
+of the update body** — it is the body of `POST /api/agents/:id/grants` — **so a
+body of `PATCH /api/agents/:id` carries at most a change and a list, and the
+change wins.**
+
+**There are two ways to widen a grant, and they are two operations with
+different meanings.** `POST /api/agents/:id/grants` takes one tool and widens the
+grant by it; it never narrows (`apps/server/src/api/agents.ts:216`). **It is the
+action a blocked agent needs**, and the one the waiting-list row carries.
+`PATCH /api/agents/:id` with `toolGrantChange` is the owner's own edit of the
+grant, and it **can** narrow, because the owner chose to. **Both stay.** They
+are not two versions of one thing: the first adds the one tool an agent was
+refused, and the second changes a set the owner is looking at.
+
+**The revision moves with the grant, and the rule is one comparison.** The grant
+as it stands and the grant the patch writes are compared, and the revision moves
+when they differ (`apps/server/src/modules/agents/service.ts:441`). **So the
+owner's change moves the revision when it moves the grant and does not move it
+when it moves nothing**, and the rule is generic over the ways a grant changes:
+a path added later cannot forget to move it.
+
+**Migration.** A client that sends only `toolGrants` is unaffected and keeps
+working exactly as before: the list still means "the grant is exactly this
+list", and the row still leaves the waiting list when the grant includes the
+capability. **A client that sends a change sends the change instead of the
+list.** **The route grew a field and nothing else** — that is the change a
+client written before has to allow for, and it is one field on one body.
+**Nothing recorded changes shape**: the connection still reports `toolGrants` as
+the effective list, the waiting list still reports the same kinds, and a
+capability the agent holds still leaves the row when the grant includes it.
+**No client has to change today.**
 
 **Migration.** Nothing changes for a client that widens a grant successfully: the row
 leaves the list and the grant is set, exactly as before. **A client whose grant write
@@ -2236,9 +2292,11 @@ before the view was captured.
 has a revision, and it moves when the set moves: the tool grants change, a
 probe reports different capabilities, or the configuration is replaced and the
 capabilities become unknown again
-(`apps/server/src/modules/agents/service.ts:438`). The rule is one comparison
+(`apps/server/src/modules/agents/service.ts:442`,
+`apps/server/src/modules/agents/service.ts:518`,
+`apps/server/src/modules/agents/service.ts:469`). The rule is one comparison
 of the grant before the write and the grant after it
-(`apps/server/src/modules/agents/service.ts:410`), so a grant saved unchanged
+(`apps/server/src/modules/agents/service.ts:441`), so a grant saved unchanged
 does not move the revision: the revision counts the changes, not the writes.
 
 **The view does not re-scope the MCP token.** The token an agent holds names
@@ -2882,7 +2940,7 @@ is not left deleting the database.
 | `GET/PATCH`        | `/api/workspaces/:id`                                | Read and update a workspace. `PATCH` accepts `autonomyPolicy`.                                                      |
 | `GET/POST`         | `/api/agents`                                        | List and create agent connections.                                                                                  |
 | `GET`              | `/api/agent-presets`                                 | The adapter preset catalogue. A template, never an integration.                                                     |
-| `GET/PATCH/DELETE` | `/api/agents/:id`                                    | Read, update, remove a connection. `PATCH` accepts `toolGrants`.                                                    |
+| `GET/PATCH/DELETE` | `/api/agents/:id`                                    | Read, update, remove a connection. `PATCH` accepts `toolGrants` and `toolGrantChange`.                              |
 | `POST`             | `/api/agents/:id/probe`                              | Re-run capability discovery.                                                                                        |
 | `POST`             | `/api/agents/:id/grants`                             | Widen one tool grant. The action a blocked agent needs.                                                             |
 | `GET/POST`         | `/api/agents/:id/tokens`                             | Issue and list MCP tokens.                                                                                          |
