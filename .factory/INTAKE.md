@@ -105,8 +105,9 @@ free number above the highest taken.**
 | WI-132 | The panel does not carry the published waiting shape, and the row carries no way to widen the grant                                                                                                                               | worker |
 | WI-133 | The audit job audits twice: one word makes it audit once                                                                                                                                                                          | worker |
 | WI-134 | The domain does not depend on the adapters package                                                                                                                                                                                | worker |
+| WI-136 | A new type cannot be named without an implementation                                                                                                                                                                              | worker |
 
-**The next free number is WI-135.**
+**The next free number is WI-137.**
 
 **Two decisions the owner took, and the numbers they took.** The owner answered
 the two questions that were open: `manual` **does not gate delegation**
@@ -5682,3 +5683,72 @@ measured npm 11.2.0 locally; that is the limit the peer's measurement removes.**
 entry stays, and this is the correction beside it.**
 
 **The floor at 16:40.** **Ceiling two. Next free number WI-135.**
+
+### 17:05 — WI-136 is claimed: a type cannot be named without an implementation
+
+**WI-136 is claimed, and the claim is on `main` before the work is done.** The block's row
+and the item file land in a commit of their own. **That is the claim-first discipline used
+five times now — WI-129, WI-133, WI-134, WI-136 and this — and it has not collided
+once.**
+
+**And WI-135 is the peer session's, and it moves nobody.** Their claim was in a commit on
+their own `main` when this worktree was cut — **written first, not yet published** — so
+their claim keeps WI-135 and this one takes WI-136. **That is the same tiebreak this
+session has applied twice already**, and it is cheaper than two claims on one number.
+
+**Two lists of types, two registries that implement them, and nothing holds them
+together.** `AGENTS.md` rule 8 says _"a new resource type must work through the same
+existing interfaces"_ and _"a new adapter must not require changes to conversation storage
+or the factory task model"_ — **both of those rules are true today, and neither is held
+by anything.**
+
+**The resource types.** The contract names six
+(`packages/contracts/src/resource.ts:4-11`); the service holds one provider for each
+(`apps/server/src/modules/resources/service.ts:457-464`). **All six are there.** But the
+registry is a `Map`:
+
+```ts
+const providers = new Map<ResourceType, ResourceProvider<unknown>>([...]);
+```
+
+**TypeScript does not require a `Map` literal to carry every key of its key type.** So a
+seventh type added to the contract compiles cleanly, and the failure surfaces only when
+somebody asks for that kind of resource — `providerFor` throws
+`Unsupported resource type "…"` as a `bad_request`, **at runtime, for a mistake the
+compiler could have made at build time.**
+
+**The adapter types.** The contract names seven (`packages/contracts/src/agent.ts:9`); the
+registry holds a factory for each (`packages/agent-adapters/src/index.ts:27-36`). **All
+seven are there.** But the registry is a builder over a `Map`
+(`packages/agent-adapters/src/registry.ts:9-17`), and a type added without a factory fails
+the same way — `No adapter registered for adapter type "…"`, at the first run that asks for
+it. **Here the contract already holds the author to the type list once:**
+`adapterTypeLabels` (`packages/contracts/src/agent.ts:12`) is a `Record<AdapterType, string>`,
+and a `Record` **does** require every key — so a new adapter type without a label breaks
+the build. **The registry is the one place that is not held to it.**
+
+**The fix is the compiler, on both sides, because the shape of each registry allows it.**
+The resource providers become a `Record<ResourceType, ResourceProvider<unknown>>` — and a
+`Record` requires every key. The adapter factories become a mapped type over
+`AdapterType`, so **a factory is required for every type the contract publishes**, and
+`createDefaultRegistry` builds the registry from it. **The factories already have the
+right shape** — `createCliAdapter` takes
+`Extract<AdapterConfig, { adapterType: 'cli' }>` — so the mapped type checks each one
+against its own configuration and nothing has to be widened to fit.
+
+**And the proof is the compiler refusing the tree.** Adding a type to either enum without
+its implementation is a **build failure**, not a runtime surprise. That is a kind of proof
+that cannot be forgotten, and it is the same instrument the contract already uses for
+`adapterTypeLabels`. The other direction is proved too: **removing** a provider or a
+factory is a build failure as well, because the `Record` and the mapped type both want
+every key.
+
+**The limits, stated plainly.** The compiler holds that **every type has an
+implementation**; it says nothing about whether the implementation is _any good_, and that
+is what the adapters package's own tests are for. And the two orders do not match today —
+the contract names `cli, acp, a2a, http, model, echo, mcp` and the registry registers
+`echo, cli, acp, a2a, http, model, mcp` — **so anything that compares them must compare
+sets, not lists, or it fails for the wrong reason.** The compiler compares the keys, so it
+is not affected.
+
+**The floor at 17:05.** **Ceiling two. Next free number WI-137.**
