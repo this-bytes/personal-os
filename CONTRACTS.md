@@ -858,7 +858,7 @@ version on at `apps/server/src/modules/mcp/server.ts:459`. The merge rules
 themselves are at `apps/server/src/modules/resources/templates.ts:509-522`, and the
 resource records them at
 `apps/server/src/modules/resources/service.ts:191-192` and
-`apps/server/src/modules/resources/service.ts:399-400`.
+`apps/server/src/modules/resources/service.ts:401-402`.
 
 **The six templates that ship are one for each kind**, authored in the repository
 at `apps/server/src/modules/resources/templates.ts:21`:
@@ -979,12 +979,12 @@ memories in the turn context.
 owner's ruling of 2026-10-21 at 07:07 was that an agent's own memory is private
 to it, on reads as well as on writes, and the sentence above now says so. The rule
 is one call — `assertOwnMemory` at
-`apps/server/src/modules/mcp/server.ts:218`, with `memoryOwner` at
-`apps/server/src/modules/mcp/server.ts:182` — and it
+`apps/server/src/modules/mcp/server.ts:240`, with `memoryOwner` at
+`apps/server/src/modules/mcp/server.ts:204` — and it
 answers the same way for the three resource tools: `resource.create` at
-`apps/server/src/modules/mcp/server.ts:451`,
-`resource.update` at `apps/server/src/modules/mcp/server.ts:515` and `resource.get`
-at `apps/server/src/modules/mcp/server.ts:485`. A memory's owner is
+`apps/server/src/modules/mcp/server.ts:482`,
+`resource.update` at `apps/server/src/modules/mcp/server.ts:551` and `resource.get`
+at `apps/server/src/modules/mcp/server.ts:516`. A memory's owner is
 `memoryOwner`'s answer, and an agent that is not that owner is refused with
 `forbidden` and the message "An agent may only reach its own memory."
 
@@ -2198,7 +2198,7 @@ author on the row — `created_by` on both tables
 (`apps/server/src/db/schema.ts:330`, `apps/server/src/db/schema.ts:416`) — and the
 projections read it
 (`apps/server/src/modules/resources/service.ts:234`,
-`apps/server/src/modules/resources/service.ts:363`). An agent-created
+`apps/server/src/modules/resources/service.ts:365`). An agent-created
 automation or task is recorded as authored by the agent that made it.
 
 **Every mutating route writes an audit entry.** Of the 37 mutating routes in
