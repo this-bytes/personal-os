@@ -19,6 +19,9 @@ const EVENT_TYPES: ServerEventType[] = [
   'agent.status',
   'automation.run',
   'approval.decided',
+  'delegation.started',
+  'delegation.delivered',
+  'delegation.consumed',
   'heartbeat',
 ];
 

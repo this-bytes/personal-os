@@ -1,5 +1,6 @@
 import { FeatureRegistry } from './registry.js';
 import { forgeMapFeature } from './map/feature.js';
+import { botsFeature } from './bots/feature.js';
 
 /**
  * The features the runtime installs.
@@ -9,5 +10,5 @@ import { forgeMapFeature } from './map/feature.js';
  * neither of them touches the runtime.
  */
 export function createDefaultFeatureRegistry(): FeatureRegistry {
-  return new FeatureRegistry().register(forgeMapFeature);
+  return new FeatureRegistry().register(forgeMapFeature).register(botsFeature);
 }

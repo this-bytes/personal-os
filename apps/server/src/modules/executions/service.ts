@@ -25,6 +25,12 @@ export interface ExecutionResolution {
 
 export interface ExecutionsService {
   /**
+   * Read one turn.
+   *
+   * A turn is an execution: its status, what it was for, and where it ran.
+   */
+  get(id: string): ExecutionDetail;
+  /**
    * Record the owner's conclusion about an execution whose outcome could not
    * be confirmed.
    *
@@ -38,6 +44,21 @@ export interface ExecutionsService {
     /** The owner's own words, when they have any. */
     note?: string;
   }): ExecutionResolution;
+}
+
+/** A turn, as the owner reads it. */
+export interface ExecutionDetail {
+  id: string;
+  workspaceId: string;
+  conversationId: string | null;
+  taskId: string | null;
+  agentConnectionId: string | null;
+  status: string;
+  error: string | null;
+  spendUnits: number;
+  startedAt: string | null;
+  finishedAt: string | null;
+  createdAt: string;
 }
 
 /**
@@ -67,6 +88,24 @@ export function createExecutionsService(options: { db: Database }): ExecutionsSe
   const { db } = options;
 
   const service: ExecutionsService = {
+    get(id): ExecutionDetail {
+      const row = db.select().from(executions).where(eq(executions.id, id)).get();
+      if (!row) throw errors.notFound('Execution');
+      return {
+        id: row.id,
+        workspaceId: row.workspaceId,
+        conversationId: row.conversationId,
+        taskId: row.taskId,
+        agentConnectionId: row.agentConnectionId,
+        status: row.status,
+        error: row.error,
+        spendUnits: row.spendUnits,
+        startedAt: row.startedAt,
+        finishedAt: row.finishedAt,
+        createdAt: row.createdAt,
+      };
+    },
+
     resolve({ executionId, outcome, note }): ExecutionResolution {
       const execution = db.select().from(executions).where(eq(executions.id, executionId)).get();
       if (!execution) {

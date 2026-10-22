@@ -397,6 +397,163 @@ describe('coordinator mode', () => {
   });
 });
 
+describe('delegated work', () => {
+  const teamConversation: RoutingConversation = {
+    ...conversation,
+    routingMode: 'coordinator',
+    coordinatorId: 'p_cto',
+  };
+
+  const team: RoutingParticipant[] = [
+    { id: 'p_human', type: 'human', displayName: 'Owner' },
+    { id: 'p_cto', type: 'agent', agentConnectionId: 'agt_cto', displayName: 'Hermes CTO' },
+    { id: 'p_scout', type: 'agent', agentConnectionId: 'agt_scout', displayName: 'Scout' },
+    { id: 'p_review', type: 'agent', agentConnectionId: 'agt_review', displayName: 'Wren' },
+  ];
+
+  const workerOrigin = { kind: 'agent' as const, actorId: 'p_scout', depth: 2 };
+
+  it('delivers a result to the coordinator that asked for it', () => {
+    // The worker hands back what it was asked for. The coordinator that
+    // asked is woken, because it is the one waiting for the answer.
+    const decision = plan({
+      conversation: teamConversation,
+      participants: team,
+      message: { senderId: 'p_scout', text: 'The answer is 42.', origin: workerOrigin },
+      explicitTargets: ['agt_cto'],
+      delegation: { id: 'dlg_1' },
+    });
+
+    expect(decision.targets).toEqual(['agt_cto']);
+    expect(decision.reason).toContain('delegated result');
+  });
+
+  it('does not wake the room when a result comes back', () => {
+    // One result wakes one agent. The reviewer is in the room and is not
+    // woken, and neither is anybody else.
+    const decision = plan({
+      conversation: teamConversation,
+      participants: team,
+      message: { senderId: 'p_scout', text: 'The answer is 42.', origin: workerOrigin },
+      explicitTargets: ['agt_cto'],
+      delegation: { id: 'dlg_1' },
+    });
+
+    expect(decision.targets).toEqual(['agt_cto']);
+    expect(decision.targets).not.toContain('agt_review');
+    expect(decision.targets).not.toContain('agt_scout');
+  });
+
+  it('does not let a result wake the coordinator without a delegation behind it', () => {
+    // The marker is what makes a report a report. An agent that names the
+    // coordinator on its own is still refused: the coordinator rule is not
+    // weakened by the existence of delegations.
+    const decision = plan({
+      conversation: teamConversation,
+      participants: team,
+      message: { senderId: 'p_scout', text: 'The answer is 42.', origin: workerOrigin },
+      explicitTargets: ['agt_cto'],
+    });
+
+    expect(decision.targets).toEqual([]);
+    expect(decision.blocked).toBe('not_coordinator');
+  });
+
+  it('does not let a result wake an agent that is not the coordinator', () => {
+    // A result addressed to somebody else is not a delivery to the
+    // coordinator, and it wakes nobody in coordinator mode.
+    const decision = plan({
+      conversation: teamConversation,
+      participants: team,
+      message: { senderId: 'p_scout', text: 'The answer is 42.', origin: workerOrigin },
+      explicitTargets: ['agt_review'],
+      delegation: { id: 'dlg_1' },
+    });
+
+    expect(decision.targets).toEqual([]);
+    expect(decision.blocked).toBe('not_coordinator');
+  });
+
+  it('refuses a result that names nobody', () => {
+    const decision = plan({
+      conversation: teamConversation,
+      participants: team,
+      message: { senderId: 'p_scout', text: 'The answer is 42.', origin: workerOrigin },
+      explicitTargets: ['agt_nobody'],
+      delegation: { id: 'dlg_1' },
+    });
+
+    expect(decision.targets).toEqual([]);
+    expect(decision.blocked).toBe('unknown_target');
+  });
+
+  it('stops a result at the delegation depth limit', () => {
+    const decision = plan({
+      conversation: teamConversation,
+      participants: team,
+      message: {
+        senderId: 'p_scout',
+        text: 'The answer is 42.',
+        origin: { ...workerOrigin, depth: MAX_DELEGATION_DEPTH },
+      },
+      explicitTargets: ['agt_cto'],
+      delegation: { id: 'dlg_1' },
+    });
+
+    expect(decision.targets).toEqual([]);
+    expect(decision.blocked).toBe('depth_limit');
+  });
+
+  it('ends a bot chain at the depth limit', () => {
+    // The chain the product walks: the coordinator delegates, the worker
+    // answers, the answer wakes the coordinator, and the coordinator
+    // delegates again. It has to stop on its own.
+    let depth = 1;
+    let delegations = 0;
+    let refusals = 0;
+
+    while (depth < MAX_DELEGATION_DEPTH + 2) {
+      const delegation = plan({
+        conversation: teamConversation,
+        participants: team,
+        message: {
+          senderId: 'p_cto',
+          text: '@Scout take this',
+          origin: { kind: 'agent', actorId: 'p_cto', depth },
+        },
+        chain: { turnCount: 0, elapsedMs: 0, spendUnits: 0 },
+      });
+
+      if (delegation.blocked === 'depth_limit') {
+        refusals += 1;
+        break;
+      }
+      expect(delegation.targets).toEqual(['agt_scout']);
+      delegations += 1;
+
+      const delivery = plan({
+        conversation: teamConversation,
+        participants: team,
+        message: {
+          senderId: 'p_scout',
+          text: 'The answer is 42.',
+          origin: { kind: 'agent', actorId: 'p_scout', depth: depth + 1 },
+        },
+        explicitTargets: ['agt_cto'],
+        delegation: { id: `dlg_${depth}` },
+        chain: { turnCount: 0, elapsedMs: 0, spendUnits: 0 },
+      });
+      expect(delivery.targets).toEqual(['agt_cto']);
+
+      // The coordinator's next turn is one deeper than the result it read.
+      depth += 2;
+    }
+
+    expect(delegations).toBeGreaterThan(0);
+    expect(refusals).toBe(1);
+  });
+});
+
 describe('autonomous mode', () => {
   const autonomousConversation: RoutingConversation = {
     ...conversation,

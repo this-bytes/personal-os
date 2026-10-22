@@ -2,6 +2,7 @@ import {
   type AgentConnectionDetail,
   type Automation,
   type AutomationRun,
+  type BotDispatchResult,
   type ContentPart,
   type Conversation,
   type EffectiveAutonomyPolicy,
@@ -22,6 +23,7 @@ import type { Database } from '../../db/client.js';
 import type { Author } from '../../lib/author.js';
 import type { AuthenticatedUser } from '../auth/service.js';
 import type { ConversationsService, PostMessageResult } from '../conversations/service.js';
+import type { BotsService } from '../conversations/bots.js';
 import type { AgentService } from '../agents/service.js';
 import type { FactoryService } from '../factory/service.js';
 import type { ResourceService } from '../resources/service.js';
@@ -75,6 +77,26 @@ export interface CapabilitiesService {
   ): Promise<PostMessageResult>;
 
   agentList(workspaceId: string): AgentConnectionDetail[];
+
+  /**
+   * Hand a piece of work to another agent, on a coordinator's behalf.
+   *
+   * The dispatch is the seam a coordinator calls: it records the intent, the
+   * tracked task and the child turn, and the worker runs the work. Only an
+   * agent connection may delegate — a person asks its coordinator, and the
+   * coordinator asks this.
+   */
+  botDispatch(
+    input: {
+      conversationId: string;
+      agentConnectionId: string;
+      instruction: string;
+      title?: string;
+      taskId?: string;
+    },
+    /** The agent that asks for the work. */
+    actor: Actor,
+  ): BotDispatchResult;
 
   taskCreate(
     input: {
@@ -193,6 +215,7 @@ export interface CapabilitiesServiceOptions {
   db: Database;
   workspaces: WorkspaceService;
   conversations: ConversationsService;
+  bots: BotsService;
   agents: AgentService;
   factory: FactoryService;
   resources: ResourceService;
@@ -203,8 +226,17 @@ export interface CapabilitiesServiceOptions {
 export function createCapabilitiesService(
   options: CapabilitiesServiceOptions,
 ): CapabilitiesService {
-  const { db, workspaces, conversations, agents, factory, resources, automations, approvals } =
-    options;
+  const {
+    db,
+    workspaces,
+    conversations,
+    bots,
+    agents,
+    factory,
+    resources,
+    automations,
+    approvals,
+  } = options;
 
   return {
     workspaceList(): Workspace[] {
@@ -251,6 +283,20 @@ export function createCapabilitiesService(
 
     agentList(workspaceId): AgentConnectionDetail[] {
       return agents.list(workspaceId);
+    },
+
+    botDispatch(input, actor): BotDispatchResult {
+      if (actor.kind !== 'agent' || !actor.agentConnectionId) {
+        throw errors.forbidden('Only an agent connection may delegate work to another agent.');
+      }
+      return bots.dispatch({
+        coordinatorAgentConnectionId: actor.agentConnectionId,
+        conversationId: input.conversationId,
+        agentConnectionId: input.agentConnectionId,
+        instruction: input.instruction,
+        ...(input.title !== undefined ? { title: input.title } : {}),
+        ...(input.taskId !== undefined ? { taskId: input.taskId } : {}),
+      });
     },
 
     taskCreate(input, actor): FactoryTask {
