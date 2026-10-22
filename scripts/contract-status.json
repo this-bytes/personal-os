@@ -327,6 +327,30 @@
           "value": "/api/conversations/:id/fork"
         }
       ]
+    },
+    {
+      "id": "the-widening-is-not-taken-back-wi-146",
+      "section": "The waiting list",
+      "note": "The widening is the contract for WI-146, and the code implements it",
+      "claim": "implemented",
+      "why": "WI-146's guarantee: the union that widens the grant is computed inside the transaction that writes it, and that transaction takes the write lock before it reads, so a widening another process committed is not overwritten by a stale union.",
+      "expect": [
+        {
+          "kind": "present-pattern",
+          "path": "apps/server/src/api/agents.ts",
+          "value": "widenToolGrant: body\\.tool"
+        },
+        {
+          "kind": "present-pattern",
+          "path": "apps/server/src/modules/agents/service.ts",
+          "value": "const granted = grantedTools\\(tx, id\\)"
+        },
+        {
+          "kind": "present-pattern",
+          "path": "apps/server/src/modules/agents/service.ts",
+          "value": "behavior: 'immediate'"
+        }
+      ]
     }
   ]
 }

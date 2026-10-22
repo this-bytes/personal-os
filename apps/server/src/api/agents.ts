@@ -205,9 +205,14 @@ export function registerAgentRoutes(app: FastifyInstance): void {
     // The grant is widened and never narrowed. The owner takes one capability
     // out of the wait and the rest of the grant stays as it was, so the
     // action a blocked agent needs is one that cannot take anything away.
-    const granted = app.services.agents.toolGrants(id);
-    const toolGrants = granted.includes(body.tool) ? granted : [...granted, body.tool];
-    const agent = app.services.agents.update(id, { toolGrants });
+    //
+    // The union is computed inside the transaction that writes the grant, and
+    // that transaction takes the write lock before it reads. A read taken
+    // here, outside the transaction, can be stale by the time the write lands:
+    // another process's widening that committed in between would be
+    // overwritten by a union computed from the old grant, and the owner's
+    // other action would be silently lost.
+    const agent = app.services.agents.update(id, { widenToolGrant: body.tool });
     audit(
       request,
       'agent.grant.widened',
