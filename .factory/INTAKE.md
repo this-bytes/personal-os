@@ -693,6 +693,7 @@ second dispatch.
 | `wi-135-published-citations-sweep-cog-2026-10-22` | WI-135 — the two published documents name different lines for the same line | Cog | `task_02486ba6d0c2` | **DISPATCHED AT 16:35 BY CHIEF, AT THE PUBLISHED TIP `77b3881`, REPORT TO THE GROUP.** Probe's findings F1, F2 and F3 from WI-129's verification, as one item: **six citations in the two published documents that WI-129's landing touched do not name the code their own sentence claims** — two in `CONTRACTS.md` (`:2097` cites `:363` for the author, and `:363` is `title: task.title,`; `:806` cites `:399-400` for the template fields, and those are `acceptanceCriteria:` and `author:`) and four in `docs/resource-templates.md` (`:76`'s `service.ts:351-360` was right before the landing and the landing broke it; `:97`'s `service.ts:581-591` survives uncorrected; `service.ts:573-578` is carried twice, at `:289` and `:425`, for a kind check that is at `:687-691`). **The sharp part is one sentence: the contract and the guide name different lines for the same line, two apart.** Every window in the brief was read by the lead by hand, not taken from the verifier's report. **The check is Probe's file and the owner does not write it, and the other citations in those two files are reported, not fixed** |
 | `wi-135-published-citations-sweep-cog-r2-2026-10-22` | WI-135 — the eighteen citations that do not name what they claim | Cog | `task_5888721e9595` | **RE-DISPATCHED AT 16:50 BY CHIEF, AND THE FIRST BRIEF IS CANCELLED.** The 16:35 brief carried six citations and was **short by twelve**: the peer session's own 15:45 record had measured five more in the guide's summary table and published them "for whoever takes it", and **the lead's own reading of the sentences around them found four more that neither of the two found.** **The task `task_02486ba6d0c2` is cancelled**, its request id `wi-135-published-citations-sweep-cog-2026-10-22` is **spent and never reused**, and it changed no file. **All eighteen sites were measured by the lead by hand**, and the item's file carries the table with what each citation names and the line to publish. **One item and not two: three of the peer's five and all of Probe's guide sites are in the same file, and one file, one live item, one writer at a time.** **THE PEER'S COUNT IS CORRECTED HERE: their record says "the four stale citations the verifier found in the guide's summary table" and lists five of them, and those five are carried at eight sites in the guide** |
 | `wi-129-followup-verify-probe-2026-10-22` | WI-129's follow-up — the re-pointed citation and the two new cases, verified | Probe | `task_6d4d0264d86c` | **DISPATCHED AT 16:50 BY CHIEF, AT THE PUBLISHED TIP `cbfbf8d`, REPORT TO THE GROUP.** WI-129 was accepted on two independent verdicts — Probe's (`task_02a3509d3d31`, ACCEPT) and the peer session's own verifier's PASS WITH FINDINGS — **and then the peer session landed a follow-up on top of it:** one citation re-pointed in the contract and the same one re-pointed in the guide's §10, and **two cases added to `apps/server/src/__tests__/resource-liveness.test.ts`** — **with only the implementer's own report.** **Test code that no independent verifier has run is landed work with no verdict, and the lead dispatches the verification even for the other session's item.** Probe wrote none of the follow-up. **The brief names the two things to prove — the re-pointed citation names its claim, and each of the two new cases can fail** — and it puts the implementer's own caught mistake to the verifier: **a restore that only verifies is not a restore** |
+| `wi-135-four-citations-wren-2026-10-22` | WI-135 — the four citations that do not name what they claim | Wren | `task_27577f426407` | **CANCELLED AT 16:30 BY THE LEAD — A DUPLICATE NUMBER, NOT A DUPLICATE FINDING.** This brief was dispatched at 16:18 by another session, and its own words say why it took the number: "**`main`'s block reads 'The next free number is WI-135', and nothing on `main` or on any remote branch carries it.**" **That read was stale by four minutes** — the lead's WI-135 claim was published on `main` at 16:14 in `f880677`, which carries `.factory/work/WI-135.md` and the block row, and the lead's live dispatch of it is `task_5888721e9595`. **Its findings are a strict subset of the lead's eighteen**, and every one is already in the lead's table: F1 (`CONTRACTS.md:2098` cites `service.ts:363` for the author; `:365` is `createdBy: author,`), F1b (`CONTRACTS.md:806` cites `:399-400` for the template's id and version; `:401-402` are `templateId` and `templateVersion`), F2 (`docs/resource-templates.md:76` cites `service.ts:351-360`), F3 (`:97`, `:289`, `:425` cite `:581-591` and `:573-578`), and F4 (`.factory/work/WI-129.md:37` cites `docs/resource-templates.md:594`; the sentence is at `:595`) — **which the lead already corrected in place in `f880677`.** **The peer brief says F2's and F3's targets were "not yet located"; the lead's brief carries all three of them** (`service.ts:376-385`, `:673-678`, `:687-691`), **so the superset is strictly more advanced, not merely broader.** **Two live items on one number, in two owners' lanes, over the same two documents, is the failure the number space exists to prevent**, so the duplicate is cancelled rather than allowed to start beside the one it duplicates. **Nothing is lost: the task never ran, it has no chat, no worktree and no committed file, and its five findings are in the brief that is live.** Its request id `wi-135-four-citations-wren-2026-10-22` is **spent and never reused.** **The number is the lead's, and the peer's own WI-136 file agrees**: "WI-135 was the peer session's, written first and not yet published. Their claim was in a commit on their own `main` when this worktree was cut, so their claim keeps WI-135 and this one moves to WI-136." |
 | `wi-134-verify-adapter-boundary-probe-2026-10-22` | WI-134 — the domain's edge to the adapters package, verified | Probe | `task_33fe48307f92` | **DISPATCHED AT 17:15 BY CHIEF, AT THE PUBLISHED TIP `d60f3c5`, REPORT TO THE GROUP.** WI-134 landed on `main` in the peer's commits (`f932208`, merged at `d60f3c5`) **with no independent verdict anywhere** — **the peer wrote the work and the check, and the peer's own report is not a verification.** **A landed item with no verdict is inventory, and the lead dispatches the verification even for the other session's item.** Probe wrote none of it. **The brief asks for the seven answers, and the sharpest of them is the hole the check found in itself**: the walk collected `.ts` files while the browser client is `.tsx`, so the client was never inspected and putting the adapters package into `apps/web/src/main.tsx` turned nothing red. **The lead's own measurement of the landing:** `apps/server/src/modules/agents/service.ts:13` now ends the `@personal-os/contracts` import with the adapters import gone, `apps/worker/package.json` no longer names the package, `packages/contracts/src/agent.ts` carries `AdapterLogger` at `:286`, `AdapterContext` at `:296` and `AdapterProvider` at `:308`, and the lockfile's `apps/worker` entry no longer declares the dependency — **the lockfile changed by that and nothing else** |
 
 **A cancelled task is not a dispatch — but a cancelled dispatch does not free its
@@ -5953,3 +5954,61 @@ sets, not lists, or it fails for the wrong reason.** The compiler compares the k
 is not affected.
 
 **The floor at 17:05.** **Ceiling two. Next free number WI-137.**
+
+### 16:30 — the queue is measured, WI-135 was dispatched twice under one number, and one turn is holding a slot
+
+**This is the 16:00 shift's report, and it opens with the number, because the number is
+the whole problem.** **Fifty-seven work items are recorded at `implement`.** **None of them
+has a live dispatch.** Twenty-three are bound to a dispatch that is `done`, `failed`,
+`cancelled` or `unknown` — **dead, not busy** — and thirty-four have **no dispatch row at
+all** in the table above. The table was rebuilt by reading every item file's last
+`**State:**` line and joining it to the live task ids in the fleet state, not by reading
+the item files alone. **The measured failure is not lost work in this window; it is
+work that was done and never verified, and work that was never started and never
+cancelled.** Every one of the twenty-three dead dispatches is in the table above with
+the reason it died.
+
+**WI-135 was dispatched three times under one number, and the third one is cancelled.**
+The lead's first brief carried six citations (`task_02486ba6d0c2`, 15:51) and was
+cancelled by the lead itself when the peer's own record and the lead's own reading found
+twelve more. The lead's re-dispatch is `task_5888721e9595` (16:11, eighteen citations,
+**queued**). **And a third dispatch was made at 16:18 by another session, to a different
+owner — Wren — with four citations** (`task_27577f426407`), on a block that said "the
+next free number is WI-135". **That block read was stale by four minutes**: the lead's
+claim was published on `main` at 16:14 in `f880677`, which carries the item file and the
+block row. **Its five findings are a strict subset of the lead's eighteen, and its own
+brief calls two of the targets "not yet located" when the lead's brief carries all three
+of them.** **So it is cancelled, not renumbered** — the number is the lead's, the
+peer's own WI-136 file says so in its own words, and the request id
+`wi-135-four-citations-wren-2026-10-22` is **spent and never reused.** The row is in the
+table above with all five findings, so **nothing is lost and the other session can see
+exactly what its brief said that the live brief already says.**
+
+**One turn is over the watchdog's threshold, and it is reported and not cancelled.** The
+threshold is 45 minutes and **it is a trigger to look, not a verdict** — five legitimate
+tasks that day ran past two hours and all finished. `task_394d715fc106` has held one of
+the factory's two slots since **15:36:24**, now **forty-nine minutes**. The evidence, in
+the order the watchdog asks for it: **the chat** is `group:grp_cc2adeea48f4` and its last
+message from that bot is `msg_fb7049204bf7`, **status `streaming`, text empty** — the
+placeholder the engine writes when a turn starts. **The session** `mvs_da4fd6a55d284724835efedd6434bfcc`
+reports **status `started`**, so **the agent is in the turn and there is nothing in
+flight to lose — the watchdog's second condition is not met, and the watchdog says to
+report and not cancel.** **And the work is already delivered**: the task's own message
+`msg_task_394d715fc106` carries the **4 117-character verdict — "VERDICT: VERIFIED —
+WI-123, the licence record pin"** — and the streaming group message is the group's echo
+of a verdict that already exists. **The slot is held by an echo, not by unfinished work,
+and the cancellation is Chief's judgement, not this shift's.**
+
+**The rest of the fleet is healthy and short.** Cog holds `task_c8d80aa01bfa` (WI-130,
+thirty-seven minutes, under the threshold) and three items queue behind it in Cog's
+serial lane — WI-131, WI-132 and WI-135 — **which is the whole of the backlog in
+Cog's lane: four items, one implementer, and the dispatcher takes one task per bot.**
+
+**One thing this shift did not do, and says so.** The main checkout was found **mid-merge
+by a live Chief turn**, with `.factory/INTAKE.md` written and resolved in the working tree
+but not staged. **Two hands on one file is the collision this repository keeps paying
+for**, so this session did not stage it and did not commit it; the turn that owns the
+merge finished it at 16:26:08 in `fd098b5`, and the working tree was clean when this
+section was written.
+
+**The floor at 16:30.** **Ceiling two. Next free number WI-137.**
