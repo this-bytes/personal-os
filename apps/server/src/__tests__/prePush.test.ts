@@ -26,8 +26,12 @@ function fixture() {
   git('commit', '--allow-empty', '-m', 'fixture');
   const main = git('rev-parse', 'HEAD');
   git('update-ref', 'refs/remotes/origin/main', main);
+  const gitShell =
+    process.platform === 'win32'
+      ? path.resolve(git('--exec-path'), '../../../usr/bin/sh.exe')
+      : 'sh';
   const remove = (branch: string, sha: string, prefix = 'refs/heads/') =>
-    spawnSync('sh', [path.join(root, '.githooks/pre-push'), 'origin', 'unused'], {
+    spawnSync(gitShell, [path.join(root, '.githooks/pre-push'), 'origin', 'unused'], {
       cwd: dir,
       encoding: 'utf8',
       input: `(delete) ${'0'.repeat(40)} ${prefix}${branch} ${sha}\n`,
