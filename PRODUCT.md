@@ -2,369 +2,169 @@
 
 **Personal OS is an environment that one person's agents operate and extend.**
 
-That is the owner's answer, given on 2026-10-20, and this document is the product's
-copy of it. An environment agents operate and extend — not a chat home. The software
-factory is a part of it, not the whole of it, and the panel is where the owner meets
-it.
-
-This document defines what the product owns, what it deliberately does not own, and
-where v1.0 stops.
+The owner-approved [chat-first recovery](docs/recovery.md) dated 2026-10-22 defines
+the current direction. This document describes requirements. The
+[implementation status](docs/recovery.md#current-evidence-and-limits) distinguishes
+working foundations from missing behavior; a requirement here is not a delivery
+claim.
 
 ## 1. The owner's role
 
-**The owner directs, approves and accepts. Agents do everything else.**
+The owner directs, approves and accepts. Agents perform the delegated work within
+explicit scope, continuing until a verified result, a configured limit or a real
+blocker. Connecting an agent is a trust decision. Permission does not expand merely
+because an agent joins a group or receives delegated work.
 
-Everything the product does on its own is something the owner has already delegated.
-The product asks the owner for authority in exactly three forms — direct it, approve
-it, accept it — and the owner is the only one who can give any of them.
-
-**One exception, and it is a trust decision rather than a decision.** Connecting a new
-agent is not something the owner evaluates and then approves; it is something the
-owner trusts. A connection is how something outside the instance acts inside it, with
-the instance's data behind it, so the owner's answer to "connect this?" is not "is it
-good?" but "do I trust it?".
+Personal OS has one human owner. Multi-user tenancy and organizations are outside
+this recovery.
 
 ## 2. Product ownership boundaries
 
-Personal OS is responsible for three things.
+Personal OS owns interaction, coordination and creation: shared conversations,
+goals/tasks, observed executions, approvals, evidence, resources and acceptance.
+External harnesses own reasoning, native tools, runtime sessions and their internal
+execution. Personal OS integrates them through supported protocols and maintained
+libraries rather than implementing a new harness.
 
-1. **Interaction.** One interface for individual agent chats, group conversations,
-   workspaces and generated content.
-2. **Coordination.** Goals, tasks, agent assignments, automation, approvals and
-   observed outcomes.
-3. **Creation.** Agents can build and maintain dashboards, documents, automations and
-   other supported resources.
+An external orchestrator may own an entire execution. Personal OS records its
+reference and observed outcomes without copying its internal scheduler. A missing
+status is unknown, not an invented success.
 
-It is **not** responsible for:
+The agents building Personal OS operate out of band using the repository, CI and
+existing coding tools. Building, releasing and recovering the product work with the
+instance stopped. The in-product factory is not their prerequisite.
 
-- implementing its own LLM inference engine,
-- replacing existing agent frameworks,
-- forcing external agents to use its internal task scheduler.
+## 3. Rich conversations
 
-The last point matters, and it is a boundary the product holds rather than a feature
-it has. When work is handed to an external orchestrator, Personal OS does not
-recreate the other system's internals — and it does not mirror the work either.
-What it stores today is an execution's `externalRef`, and the only value that ever
-reaches it is an ACP session id: the path for a genuine external task id asks the
-adapter for one, and no adapter implements it. No external status is retained, no
-execution is ever marked as externally owned, and the panel shows neither the
-reference nor the owner — `externalRef` and `executionOwner` do not appear in the
-web client at all.
+Conversation is the primary working surface. The owner can talk to one agent or
+use a persistent team room, inspect tool activity and outputs, answer questions and
+permission requests, and give further direction without losing context.
 
-## 3. The one owner, and the agents
+The required chat baseline includes streaming, Markdown/code, files and images,
+output previews, persistent history, runtime activity, cancellation, permission
+resolution and user questions. Steering-now and queued follow-ups are distinct.
+Unsupported capabilities are explained and have supported alternatives; a terminal
+can supplement the shared experience where needed.
 
-Personal OS has exactly one human user: the owner. That is a deliberate constraint,
-not an oversight. Multi-user tenancy and organisations are out of scope for v1.0.
+Group rooms support explicit mentions and optional coordinators. Handoffs and
+results are visible. An agent message never wakes every participant. Loop limits,
+depth limits, deduplication, execution budgets and pause controls remain mandatory.
+A coordinator must act and verify, not merely generate plans or task records.
 
-It does have many agents. Each connected agent is an independent runtime with its own
-context, its own credentials and its own failure modes. Personal OS owns the shared
-conversation history; each external agent owns its own runtime context.
+## 4. Runtime connections and identity
 
-## 4. Core concepts
+The target runtimes are Codex, OpenCode, Pi, Hermes and OpenClaw. Their supported
+interfaces and version checks are tracked in [the adapter matrix](docs/adapters.md).
+Local CLIs and externally hosted agents use the same conversation model. HTTP is
+one transport option, not a universal lifecycle contract.
 
-### Conversation
+Agent identity is stable across sessions: name, instructions, granted capabilities
+and optional memory. A connection, a runtime session and a run are separate
+objects. Working sessions are scoped to the conversation/project. The shared
+transcript belongs to Personal OS; private native context belongs to the harness.
 
-The centre of the product. A conversation works with one agent, several agents, or
-with no active agent at all. It carries:
+## 5. Projects, memory and files
 
-- a **routing mode** — `mentions`, `coordinator` or `autonomous`,
-- **participants** — humans and agents,
-- **messages** with content parts (text, artifacts, files),
-- **safeguards** — turn, time and spend limits, plus a pause switch.
+A project has a declared execution location, repository/files, instructions and
+permitted access. Remote agents declare their own environment; a local path is not
+assumed to identify the same remote files. Results return as inspectable artifacts,
+diffs or repository references. Parallel coding uses isolated workspaces or
+branches/worktrees with an explicit integration owner.
 
-Routing mode controls _routing_, never agent intelligence. A capable agent in
-`mentions` mode is still capable; it simply is not woken unless it is addressed.
+Instructions, project knowledge and conversation history are distinct. The owner can
+inspect and edit them; sharing between projects is explicit. Native harness memory
+is identified separately from Personal OS-managed knowledge. Attaching a file does
+not automatically grant shell or filesystem access outside the project.
 
-### Agent connection
+## 6. The factory and autonomy
 
-A named, configured attachment to an external agent, reached through an adapter. A
-connection carries a server-held configuration reference; credentials live in a
-separate encrypted record and never leave the server. It also carries the **tool
-grants**: the MCP tools that connection may call. The owner narrows them per
-connection, and a tool that was not granted is not published to the agent at all.
+The factory's work model remains:
 
-Adding a new kind of agent must not require changing conversation storage or the
-factory task model. That is the single most important extensibility boundary in the
-product.
-
-### Resource
-
-A thing that exists independently of any conversation: a dashboard, a document, an
-automation, a data source, a task or a memory item. Humans, agents and automations all
-operate on resources through one shared API, and the validation is shared: each
-kind's own provider validates its spec. The revision handling and the audit trail
-are **not** uniform, and the product says so rather than smoothing it over. A
-resource update compares `expectedRevision` and refuses on a mismatch; an
-automation update increments its revision and never compares it, so the last write
-wins. A resource update writes an audit entry; an automation update writes none.
-And the worker's own `resource.refresh` action updates the resource row with no
-revision bump and no entry.
-
-A resource is not a chat message that got pinned. It survives the conversation that
-created it.
-
-**A resource is what "native" means for an agent-created feature.** An agent's
-feature is a typed, validated resource in these contracts — one of the six kinds
-above, with a spec its owning provider validates — and never a surface invented for
-agents. **The third half of that is built.** The product publishes a template for
-each of the six kinds, and an agent lists them and creates from one: the templates
-are on the MCP surface as `resource.template.list`
-(`packages/contracts/src/mcp.ts:21`), and `resource.create` takes a template and
-builds the resource from the template's spec, with the caller's own values merged
-into it
-(`apps/server/src/modules/mcp/server.ts:428`, `:446-448`). A template is an
-example, and the spec it carries is validated by the owning provider exactly as a
-hand-written spec is.
-
-### Factory
-
-The work-tracking layer:
-
-```
-Goal -> Task -> Execution -> Evidence -> Acceptance
+```text
+Goal → Task → Execution → Evidence → Acceptance
 ```
 
-A goal survives changes in agents, sessions and provider accounts. A task keeps its
-ownership even when the agent that performs it is disconnected. An execution may be
-performed entirely by an external orchestrator; Personal OS stores the reference and
-the evidence it can observe.
+Goals endure across runtime and provider changes. Assignment that starts work is
+explicit, authorized and observable. Recording an assignee is not evidence that
+execution began. An agent's report of completion moves work to review; only owner
+acceptance closes a product task.
 
-Acceptance is deliberately separate from completion. An agent saying "done" moves a
-task to `review`; only an explicit acceptance decision closes it.
+Within approved scope agents may inspect, edit, test and delegate. Destructive
+operations, publishing, deployment and wider access follow explicit approval rules.
+Delegation cannot widen permissions. Turn, duration, concurrency and spend limits
+must bound continuing work; unavailable spend telemetry is reported as unavailable,
+not as zero or a fictional currency amount.
 
-### Automation
+The existing autonomy mode is descriptive rather than an enforced control. Making
+modes meaningful requires an explicit compatibility plan. Do not describe the
+approved target as already enforced.
 
-A trigger and an authorised action. Automations are validated before they can be
-enabled, they run in the supervised worker, and their runs are recorded.
+## 7. Resources and everyday use
 
-A trigger is a schedule, an event, or a manual run. An event trigger names one of a
-small allowlist of meaningful events, and every event carries the depth of the chain
-that produced it — so two automations cannot wake each other forever.
+Everyday scope remains tasks/work and documents, with dashboards, automations,
+data sources and memory as supported resources. Email and calendar remain out of
+scope. Resources have typed, provider-validated payloads, schemaVersion, revision
+and an audit trail. Revision checks protect updates; templates are validated
+examples rather than a second extension framework.
 
-## 5. Autonomy
+Existing resource features and data remain supported while chat is improved.
+Agent-created outputs need an inspectable result and a check before being treated
+as delivered. A text response can be an observation; it is not proof of a file,
+resource or code change.
 
-Autonomy is optional and configurable per workspace and goal. Every autonomy policy
-carries at least:
+## 8. Continuity and truthful state
 
-- execution limits (turns, duration, spend),
-- the actions that are allowed,
-- the operations that require approval.
+Closing the browser does not stop work. Reconnection restores persisted history and
+activity. Restart reconciles a surviving external run when supported; otherwise an
+uncertain side effect is reported for resolution rather than automatically replayed.
+Prompt acceptance, message delivery, agent consumption, run completion, verification
+and owner acceptance are distinct facts.
 
-**The policy is enforced.** The strictest of a workspace's policy, a goal's policy
-and a conversation's own safeguards is resolved in one place, and every enforcement
-point consumes that one result. A turn that has used up the turn budget or the
-spend budget does not start; a turn that outruns the duration limit is stopped, and
-the outcome is recorded rather than silently truncated; an action outside the
-allowed list is refused by name, and the refusal names the policy it blames; and
-an action the policy wants the owner to approve waits for the owner rather than
-proceeding. An action the system does not know is refused, not allowed through.
+No UI or documentation may claim resume, cancellation, sandboxing or exactly-once
+execution unless the relevant adapter/environment and tests establish it.
 
-**The mode is resolved, readable, and enforced nowhere.** Nothing in the product
-reads the resolved mode to make a decision, so nothing behaves differently in
-`manual` than in `autonomous`. **`manual` does not gate delegation** — an agent
-may hand work to another agent under `manual` exactly as it may under
-`autonomous`, because the mode is consulted by nothing. The mode is a
-description and not a control: it records the posture the owner has set, and it
-does not decide what runs.
+## 9. Product measures
 
-The effective policy is readable — over the API and through the MCP surface — and
-it says where each of its values came from. A policy nobody can read is a policy
-nobody can trust.
+Retain the existing measures of agent-authored resources and recorded operations.
+Show their definitions, provenance and missing data honestly. These measurements
+support the owner; they do not establish that a requested deliverable exists.
 
-And there is no pause in a policy: the only pause in the product is the
-conversation's own `paused` flag.
+## 10. Borrowing and protocol boundaries
 
-Manual is the default everywhere. An agent never gains authority by being added to a
-group: adding an agent to a conversation changes who can be reached, not what that
-agent is permitted to do.
+Borrow approaches from other products and implement Personal OS behavior against
+its contracts. Prefer maintained protocol SDKs and established libraries over
+handwritten protocol implementations. This is compatible with independent product
+ownership; it does not require embedding another product or its scheduler.
 
-An agent may only begin work through an approved trigger and within its granted
-scope. That rule is not enforced by the mode: the mode reads the same in every
-mode. The system must never create an unlimited agent-to-agent response loop; the
-routing safeguards in [CONTRACTS.md](CONTRACTS.md) exist for exactly that reason.
+The existing dependency licence record is
+[docs/dependency-licences.json](docs/dependency-licences.json). Its published model
+is one entry for every package in the lockfile, recording the evidence that identifies it
+and its source. Its actual coverage and approved licences must be verified when
+dependencies change; a prose assertion is not a new licence audit.
 
-## 6. What the product is for every day
-
-**Tasks/work and documents.** That is the owner's answer to what "everyday
-productivity" means, and it is the scope the product is built around: the work the
-owner asks for, and the things that come out of it.
-
-Deliberately out of it: **email and calendar**. The owner's answer named them by
-exclusion. An instance that reads someone's mail and writes their calendar is a
-different product with a different trust boundary, and nobody has asked for it.
-
-## 7. The product reports on itself
-
-The product answers two questions about itself, and shows both in the panel:
-
-1. **The share of features authored by agents in-instance** — of the resources that
-   exist, how many an agent made rather than the owner.
-2. **The share of operations done without the owner touching code** — of the routine
-   work the instance does, how much of it the owner never had to hand-edit.
-
-**The first measure has its data for four of the six kinds. The second is nearly
-there, and the gap is named.** A dashboard, a document, a data source and a memory
-item record who created it, so "which of these did an agent make?" is answerable
-from the data the product already keeps. But an automation and a task record their
-author as `system`, so for those two kinds the answer is **wrong**, not merely
-uncounted.
-
-The audit trail records the actor of most actions. Of the thirty-six routes that
-change something, twenty-one write an entry at the route, three more write from
-the service layer — an approval decision, an AG-UI run resume, and a task that
-leaves `unknown` — and twelve write none: a capability probe, an agent token
-revoked, a logout, an owner-token mint, an automation edited or deleted, a
-conversation deleted, a participant added or removed, a goal, and a workspace
-created or edited. An entry names who acted and what they acted on, and every
-entry written today records a success whether the action succeeded or not —
-`POST /api/resources/:id/execute` records one for a run that was merely queued.
-The second measure's denominator is therefore a real question, and it is part of
-what the owner has not settled.
-
-**The two are counted, and the panel shows them.** `GET /api/measures` returns the
-published shape for a workspace (`apps/server/src/api/measures.ts:17`), and the
-panel shows the counts in a band of their own
-(`apps/web/src/components/MeasuresBand.tsx`). Both are counted from the data the
-product already keeps — the authorship a resource carries, and the entries the
-audit trail holds — and not from a counter that is incremented on some code path.
-
-**No ratio whose denominator is zero.** For a long while the honest value of "the
-share of features authored by agents" is zero or undefined, because no agent has
-authored a feature in-instance yet. A panel that greets its owner with 0% reads as
-broken, and the product's first report on itself must not be a lie by omission. So
-the counts are shown — N features, M operations — and a ratio is shown only when
-there is a denominator to divide by.
-
-## 8. What an agent-authored artefact needs
-
-**An agent-authored artefact does not exist until something has checked it.**
-
-This is the rule behind both working precedents of agent self-extension: a skill
-authored under a typed contract with evals, and a workflow created under
-validate-before-deploy and copy-before-edit. An agent that can write a thing with
-nothing checking it has not produced a feature; it has produced a proposal.
-
-**The ledger is where the product already does this.** Goal → task → execution →
-evidence → acceptance. An execution carries the evidence the run produced, and a
-task is closed by an explicit acceptance decision rather than by the agent's own
-report that it is done. The check is the acceptance; the ledger is the shape.
-
-## 9. The extension surface — a recommendation, not a decision
-
-_This section records a recommendation. The owner has not chosen it yet._
-
-**MCP Apps (SEP-1865)** is the standard for a server shipping its own UI to a host:
-pre-declared `ui://` templates the host can review before execution, plain MCP
-JSON-RPC so the exchange stays auditable, sandboxed frames, and a host able to
-require explicit approval for UI-initiated tool calls. It is a proposal rather than
-a ratified standard, and it requires a text-only fallback. It is the recommended
-target for **agent-created UI**.
-
-**AG-UI** is the recommended target for the **agent-to-UI event stream**.
-
-**The host's approval gate stays in front of any agent-initiated call.** That part
-is not a detail: it is the same shape as "the human decides", and it is the same
-shape as the ledger.
-
-**Scoped, so nobody reads this as a licence to fork something.** MCP Apps is a
-different surface from a domain resource — it is about a server shipping its own UI
-to a host, not about what a resource is. The panel's agent-facing surface is MCP and
-AG-UI. ACP and A2A are the agent-connection side, which Personal OS speaks when it
-connects out to an agent. **Our resources, tasks and goals stay ours, and no
-protocol is forked.**
-
-## 10. Borrowing, and the protocol boundary
-
-**Borrow the idea, not the dependency.** Another project that solves part of what
-we need is inspiration: read it, take the approach, and build the feature inside this
-repository against our own contracts, schemas and data model. Personal OS does not
-vendor a codebase in and does not take a runtime dependency to get a feature. The
-doctrine keeps the rule itself in [FACTORY.md](FACTORY.md); this is the product-side
-consequence of it.
-
-**Every dependency is read, and the reading is published.** The dependencies we
-do take are read in place — from the package's own licence file where it ships
-one, and from the `license` field of its own `package.json` where it does not —
-and the 97 platform variants that are in the lockfile but not installed here
-were read from the registry's copy of that package's `package.json`. The
-reading is published in
-[docs/dependency-licences.json](docs/dependency-licences.json). The record holds
-one entry for every package in the lockfile: for a third-party package, the
-file its licence was read from, the evidence that identifies it and the date it
-was read; and the licences this project accepts with the reason for each.
-**The licences are read, not assumed.**
-
-**An interface is conformed to, never reimplemented.** Personal OS is a client of
-ACP, A2A, MCP and the OpenAI-compatible API shape. "Our spec" means our domain
-model, not our dialect of someone else's protocol.
-
-**The MiniMax Code boundary, and what was taken from it.** The CLI and harness
-are open source under MIT (first-party code defaults to MIT; the sandbox
-runtime is Apache-2.0; the Pi-derived terminal code keeps its own
-declarations), and the **desktop application is not published at all** — that
-repository hosts issue reporting for it. The harness was read as a
-specification, and six of its behaviours were reimplemented against our own
-contracts: per-turn capability pinning, the five-step canonical history
-commit, delivery versus consumption, `lost` for delegated work whose executor
-has gone, steer and queue, and the parent-child work tree. They are published
-as Contract 7 of the interaction model; the context budget and the tool
-eligibility chain stay inside the worker. **No dependency was added, and
-`package.json` and the lockfile are unchanged by any of it.** The licence
-record, read on 2026-10-21, is the row in the landscape table in
-[docs/strategy.md](docs/strategy.md) and the decision is ADR 0009.
-
-**Where the boundary falls exactly is still open.** The reading in front of the
-owner is recorded in ADR 7: the panel's agent-facing surface conforms to MCP and
-AG-UI, ACP and A2A are the agent-connection side, and our resources, tasks and goals
-stay ours. The owner is being asked to settle it.
+MCP exposes tools/resources; ACP and native agent protocols connect harnesses;
+AG-UI or MCP Apps may be interoperability projections when demonstrated needs
+justify them. None replaces the internal domain model. Evaluate actual source and
+licensing before copying code. [The adapter research](docs/adapters.md) records
+upstream sources and distinguishes documentation findings from local verification.
 
 ## 11. The panel's own rules
 
-**One accent with one meaning.** The rule is that the panel uses a single accent
-colour, and it always means the same thing: live or waiting on you. Structure and
-data stay in their own colours. Amber is the one collision that breaks it, because
-in Forge amber always means live or waiting on you and never caution, so a caution
-block has to become neutral or use the error colour. This is the rule that lets a
-number be read at a glance instead of being decoration, and it is the one thing a
-visual direction has to get right before the rest of the visual work matters.
+Keep Forge's visual language. Conversations are the primary work surface; the map,
+factory board and dashboards support them. Questions, approvals, activity and
+outputs are available where work is directed. A global waiting view links to that
+context rather than forcing the owner to reconstruct it.
 
-**The panel does this now.** Its accent is amber, and it means one thing: live,
-or waiting on you. Every row of the waiting rail wears it — an approval, a
-task in review, an unknown outcome and a blocked item are all waiting on the
-owner, and the four reasons a row can be there are carried by its label
-rather than by four colours. A task awaiting acceptance and a streaming turn
-wear it too. Structure stays in indigo — the active nav item, an agent's
-messages, the app's own badge — and the event stream's state is a shape
-rather than a colour: a filled disc when it is open, a dashed ring while it
-is connecting, a hollow ring when it is idle. A caution is the neutral scale
-or the error colour, never the accent. The tokens live in
-`apps/web/src/index.css`, the inventory of every site that used to reach for
-amber is in [docs/panel-accent.md](docs/panel-accent.md), and a test fails if
-amber appears anywhere but the token layer. The direction is **D — Forge**,
-chosen by the owner on **2026-10-21**, against the factory's recommendation of
-**B — Desk**, and it is recorded in ADR 7.
+The accent continues to mean live or waiting on the owner; structural and caution
+colors retain distinct meanings. The earlier map-first layout is superseded.
 
-## 12. What v1.0 deliberately leaves out
+## 12. Delivery and exclusions
 
-These are absent on purpose. Their absence is not an architectural limitation — the
-resource, conversation and agent boundaries provide places to add them when there is a
-demonstrated need.
+Follow [the roadmap](docs/roadmap.md): execution foundations, rich chat with Codex
+and OpenCode, all five runtimes, team coordination, then the factory. Each stage
+needs a working user demonstration and meaningful tests.
 
-- Multi-user tenancy and organisations
-- Native mobile and desktop applications
-- Full collaborative editing
-- Custom agent inference and reasoning engines
-- A general-purpose plugin marketplace
-- Complex visual workflow programming
-- Distributed task infrastructure
-- A custom multi-agent orchestration framework
-- Sophisticated automatic knowledge extraction
-- Arbitrary agent-generated application code
-
-## 13. Success criteria
-
-A milestone is not delivered because an agent reported success. It needs a working
-demonstration and tests that confirm its acceptance conditions.
-
-The five milestones and their acceptance criteria are described in
-[ARCHITECTURE.md](ARCHITECTURE.md#7-incremental-build-plan).
+This recovery does not add a general workflow engine, an inference engine,
+distributed task infrastructure, a plugin marketplace, native mobile/desktop
+applications or arbitrary agent-authored application execution. The existing web
+application remains the delivery surface.

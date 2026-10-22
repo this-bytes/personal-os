@@ -11,9 +11,20 @@ factory. Before implementing anything, read:
 1. [PRODUCT.md](PRODUCT.md) — what the product owns and what it does not.
 2. [ARCHITECTURE.md](ARCHITECTURE.md) — how the pieces fit together.
 3. [CONTRACTS.md](CONTRACTS.md) — the published contracts.
-4. [FACTORY.md](FACTORY.md) — how the factory works and which files you own.
-5. The relevant module's source. The contract definitions live in
+4. [FACTORY.md](FACTORY.md) — the independent development workflow.
+5. [docs/roadmap.md](docs/roadmap.md) — the active recovery sequence; use
+   [docs/feature-guide.md](docs/feature-guide.md) when implementing a slice.
+6. The relevant module's source. The contract definitions live in
    `packages/contracts`; the schema lives in `apps/server/src/db/schema.ts`.
+
+## Current direction
+
+The owner approved the chat-first recovery on 2026-10-22.
+[docs/recovery.md](docs/recovery.md) records the decisions and precedence.
+Build Personal OS using the repository and existing coding tools independently of
+the running product. Deliver rich chat across harnesses before expanding autonomous
+teams or the product factory. Implementer-owned tests and independent review are
+part of one delivery; fixed bot names are optional roles.
 
 ## Development contract
 
@@ -196,8 +207,8 @@ git push origin main
 ```
 
 If `origin/main` has moved, you are integrating with another agent's work.
-Stop and say so. That merge is Chief's to make and the tiebreak gets said
-out loud.
+Stop and report the overlap. That merge belongs to the designated integration
+owner, and the resolution is recorded explicitly.
 
 **Never force-push.** The pre-push hook refuses any push that is not a
 fast-forward, because a rewrite takes every commit that landed since with

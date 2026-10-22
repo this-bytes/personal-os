@@ -1,230 +1,167 @@
-# The roadmap
+# Delivery roadmap
 
-**What this is.** Where Personal OS is going, and the order that gets it there.
-It is written for two readers: the owner, who decides what gets built, and an
-agent that arrives later with no memory of any of it.
+**Active plan:** chat-first recovery approved by the owner on 2026-10-22.
+[recovery.md](recovery.md) records the decisions; ARCHITECTURE.md defines the target
+seams. Stages below are pending, not accepted work. Existing usable features remain
+supported. Each stage is delivered as small vertical slices, not one large branch.
 
-**What this is not.** It is not a wish list, and it does not replace
-`docs/strategy.md`, which records _why_ the product wants what it wants and
-which landscape artefacts were read to decide that. It does not replace
-`PRODUCT.md`, which owns the question of what the product is. It is the
-sequence: what is built next, and why that order.
+## Order and release criteria
 
----
+| Stage                      | User outcome                                                                                       | Dependency                                 |
+| -------------------------- | -------------------------------------------------------------------------------------------------- | ------------------------------------------ |
+| R0 — execution foundations | A dispatched command reaches a correctly initialized runtime and produces truthful, durable state. | Existing code and regression reproduction. |
+| R1 — rich chat             | The owner can complete real work in one cohesive conversation with Codex and OpenCode.             | R0.                                        |
+| R2 — five runtimes         | Pi, Hermes and OpenClaw use the same experience with honest capability differences.                | R1; transport research can run earlier.    |
+| R3 — autonomous teams      | A coordinator hands work to specialists, checks results and follows through visibly within bounds. | R1/R2; no factory dependency.              |
+| R4 — product factory       | A delegated goal produces inspected evidence and waits for owner acceptance.                       | R3.                                        |
 
-## The shape of the thing
+Demonstrations exercise a real supported runtime version, not an echo responder.
+Protocol fixtures remain useful deterministic tests. Record both, and name the
+limits of each. A stage is delivered only when its user demonstration and the
+applicable repository gates pass on the delivered revision.
 
-Personal OS is a self-hosted, agent-native control panel and a personal
-software factory. One product, two halves:
+## R0 — establish the execution foundation
 
-- **The control plane.** Goals, work, conversations, resources, automations,
-  approvals, events. An owner sees what is in flight and what is waiting on
-  them.
-- **The factory.** The repository, the CI, the work items, the roles. Code work
-  is recorded and checked here.
+**First slice to implement: repair MCP initialization through the worker.**
 
-`ADR 0010` draws the line between them with seven boundaries. The short
-version: **the instance never builds, merges, deploys or restarts itself, and
-the repository remains the state.** Every item below is inside one of those
-boundaries.
+Scope: packages/agent-adapters, the worker executor, relevant contracts and tests.
+Use a fixture MCP server that requires initialization. Drive the actual chat/task
+worker path, demonstrate the existing failure, initialize the executing adapter
+instance, verify capabilities and define cleanup on completion/error. Include the
+automation path if it shares the defect. Retain ACP's working send-time setup;
+do not blindly impose a second handshake on every protocol.
 
-### The five domains
+Acceptance:
 
-`ADR 0008` names five. They are the load-bearing structure — they are what
-lets work be split across parallel lanes without two agents writing one file.
+- Worker execution reaches the fixture tool and records the actual result.
+- A failed handshake blocks submission and records an actionable failure.
+- A successful probe on another instance does not falsely count as initialization.
+- Cleanup/deadlines do not leak a child process or claim confirmed cancellation
+  when it was not observed.
+- Existing echo/CLI/ACP behavior remains compatible.
 
-| Domain      | Owns                                                            |
-| ----------- | --------------------------------------------------------------- |
-| Interaction | conversations, messages, approvals, the waiting list, the panel |
-| Work        | goals, tasks, executions, the factory loop                      |
-| Resources   | resources of every kind, their templates, their history         |
-| Runtime     | adapters, connections, the event log, automations               |
-| Substrate   | auth, workspaces, capabilities, the database, the config        |
+**Next bounded slices:**
 
-A module nobody classified, a table nobody claimed, or a crossing nobody
-declared **fails the build** (`apps/server/src/domains.ts`, checked by
-`apps/server/src/__tests__/domains.test.ts`). That is a mechanism, not a
-convention, and it is what makes the lanes safe to run in parallel.
+1. Establish shared execution ownership across chat, tasks and automations. Extract
+   only the lifecycle needed by these callers, with compatible event/state mapping.
+2. Define explicit authorized task dispatch through the shared service and MCP.
+   Task creation stays non-executing. Duplicate dispatch cannot start two runs.
+3. Introduce session references, correlation/idempotency and terminal-event rules
+   sufficient for the first real integrations. Document native capability limits.
+4. Test restart/reconciliation and unknown outcomes with side effects. Keep the
+   current no-blind-replay guard; do not wait for a lease to expire and assume the
+   previous executor stopped.
 
----
+Completion evidence: a worker-level regression, duplicate-submission and restart
+cases, observed status transitions and applicable gates. Full factory autonomy,
+queue-index reform and new dashboards do not belong in R0.
 
-## The four horizons
+## R1 — complete rich chat with Codex and OpenCode
 
-Each horizon is a shape the product takes. A horizon is done when the shape
-holds, not when a feature list is checked off.
+Use the [adapter matrix](adapters.md) to pin supported runtime versions and select
+maintained integration surfaces. Implement the same UI, API and persistence flow
+for both; provider-specific behavior remains in adapters.
 
-### Horizon 1 — The panel is the product (mostly landed)
+Deliver in slices: stable sessions/history; normalized streaming/activity; scoped
+project bindings and authenticated artifacts; permission/user-question handling;
+steer/queue/stop controls; reconnect/restart behavior. Each slice includes visible
+UI and failure behavior rather than landing a backend-only promise.
 
-The owner opens one surface and sees what is happening and what needs them.
-Three rooms — **Rooms, Work, and the Needs-you rail** — plus the material
-that makes them coherent. This is the Forge direction, and the six briefs in
-`prototypes/briefs/` are its pieces. The briefs are written; the panel itself
-is `WI-024`, in flight.
+Acceptance demonstration for **each** runtime:
 
-Landing order, from the briefs themselves: material first (everything else
-draws on its tokens), rooms second (the rail, the trace, the dashboards and
-the constellation all need a room to move into), constellation last (the
-hardest piece, and it benefits from settled material).
+1. Connect/authenticate, select an approved project and begin a conversation.
+2. Ask for a small file/code change. Observe streaming text, native tool activity
+   and an inspectable output/diff with provenance.
+3. Send a follow-up during work. Demonstrate steering when supported and visible
+   queueing otherwise; distinguish received input from submitted input.
+4. Resolve a real permission request or user question in the conversation. If the
+   runtime does not expose one of these, demonstrate the explicitly documented
+   limitation and the alternative; a fabricated fixture request is not proof of
+   runtime support.
+5. Stop a run and show its confirmed state or explain uncertain remote outcome.
+6. Close/reopen the browser and continue the same conversation/session. Restart
+   the worker during a controlled run and reconcile or hold unknown without a
+   duplicate side effect.
+7. Attach a file/image and inspect an output preview where supported. Unsupported
+   modalities have clear UI behavior; neither baseline runtime may be presented as
+   image-capable without a real demonstration.
+8. Reopen persisted history with tool/result references intact. Keep credentials
+   and private native context out of the transcript and logs.
 
-**The gap this horizon closes:** the product is currently a set of parts that
-do not yet read as one surface.
+A chat baseline includes the full UI checklist even when an individual runtime has
+lesser capabilities. Unsupported controls are explained; hiding every hard feature
+behind "unsupported" does not complete R1. Record which runtime proves each
+baseline capability and any remaining unmet requirement before declaring the stage.
 
-### Horizon 2 — The agent is a peer, not a guest (in flight)
+## R2 — support Pi, Hermes and OpenClaw
 
-The instance reaches any agent over MCP. The `mcp` adapter
-(`packages/agent-adapters/src/mcp.ts`) makes any MCP server an agent
-connection, so connecting a new agent is a trust decision rather than an
-integration project. `ADR 0009` makes MiniMax Code a _specification_: the
-patterns are borrowed, the dependency is not.
+Each adapter demonstrates session continuity, event mapping, real completion,
+interruption, authentication and artifact behavior to the degree its pinned
+protocol supports. Reuse the R1 UI and lifecycle tests. Add protocol fixtures and
+real-harness evidence; document gaps rather than promising feature parity.
 
-**This is landing on `main` now, as a merge rather than a fast-forward.**
-`wi/046-domains-interaction-model` is 64 commits behind the current tip, so
-landing it means merging it onto that tip, resolving `.factory/INTAKE.md` by
-keeping **both** sessions' entries, and running the gates on the merged tree
-rather than on the branch's own tree. The rehearsal branch is
-`wi/046-merge-rehearsal`.
+Prove at least one externally hosted agent connection. Use the runtime's supported
+HTTP/SSE, WebSocket, ACP bridge or other declared native surface. Do not build a
+new remote process host merely to label every integration "HTTP". Remote workspace
+identity, reconnect, authentication and external run references are explicit.
 
-On top of the connection, the **interaction model** — one published contract
-(`CONTRACTS.md`, Contract 7) that says what an agent can observe, when it is
-asked for a decision, and what it may not do. `WI-055` implements it;
-`WI-056` gives a turn a context budget and a tool eligibility chain.
+Completion: all five named targets have a tested capability row, an installation/
+connection recipe and a real chat demonstration. Adding an adapter changes no
+conversation storage or task-provider logic.
 
-**The gap this horizon closes:** agents are connected and supervised, but the
-interaction between them and the panel is still ad hoc.
+## R3 — visible autonomous team coordination
 
-### Horizon 3 — The factory runs on the product (funded, partly built)
+Deliver direct chats and persistent group rooms with configurable identities and
+roles. Use the existing mentions/routing safeguards; add explicit correlated
+handoffs, returned results and coordinator continuation. Product tools enable the
+coordinator to act. Neither a plan nor an assignee field substitutes for dispatch.
 
-The instance knows what is wanted, what is in flight, what evidence exists and
-what is waiting on the owner — and the repository and CI do the work. The
-product's own ledger and the repository's work items refer to each other by
-id, one link each way, in the direction each record owns (`B6`).
+Acceptance demonstration:
 
-What makes this safe is that the instance **cannot** apply its own changes
-(`B1`), migrations are owner-accepted and never agent-applied (`B3`), and the
-roles keep their own host so an outage of every role still leaves the instance
-able to say what it is waiting for (`B7`).
+- The owner delegates a bounded project goal once to a coordinator.
+- The coordinator dispatches to two specialists, including different harnesses,
+  sees their actual results and follows up without another owner kickoff.
+- A reviewer checks an inspectable output; a failed check leads to correction,
+  not an unsupported success report.
+- Parent/child work, progress, waiting reasons, tool activity and results are
+  visible from the room. Private contexts are shared only through explicit handoffs.
+- Concurrent coding cannot overwrite the same files silently; isolated branches/
+  workspaces have an integration owner.
+- Turn/depth/time/concurrency/spend limits and pause stop further dispatch as
+  designed. Missing cost telemetry is explicit; a hard spend guarantee requires
+  enforceable runtime support, otherwise another enforced budget bounds execution.
+- A missing specialist produces a bounded retry or a visible blocker. No broadcast
+  loop or endless re-planning occurs.
+- An external orchestrator can own an entire execution without its internal task
+  tree being mirrored into Personal OS.
 
-**The gap this horizon closes:** the factory's work and the product's work are
-two ledgers that do not yet see each other.
+## R4 — the product factory
 
-### Horizon 4 — The product improves itself (bounded, and the refusal)
+Layer goals, durable tasks, dependencies, verification evidence and owner acceptance
+onto the proven R3 loop. Preserve the existing task/resources/approval APIs and
+history; migrate explicitly when adding fields.
 
-An agent inside the instance may propose a change to the instance. It may not
-apply, merge, deploy or restart it. `ADR 0010` and
-`docs/self-improvement.md` carry the procedure and the proof for each
-boundary — including the one that is most likely to be forgotten: **rollback
-is one command that works while the instance is down** (`B2`), and its proof is
-a rollback actually executed with the instance stopped.
+Acceptance demonstration: the owner gives a goal and scope once; work proceeds
+through execution, inspection and correction to a concrete deliverable and recorded
+verification. The owner can inspect evidence and accept/reject. Rejecting sends
+work back with the reason; agent-reported completion alone never closes the task.
+The out-of-band build/release path still functions with the instance stopped.
 
-The honest ceiling: `docs/self-improvement.md` names what is proved and what
-is still open (`WI-061`). A runbook describing a rollback nobody has run is a
-claim, not a procedure.
+## Existing backlog and scope control
 
-**The gap this horizon closes:** today the product cannot propose changes to
-itself without the risk that a bad change destroys the thing that would
-repair it.
+Historical work-item narratives are available in Git at 507708b. Compact evidence
+records retained for contract checks are not an active backlog. Inspect source and
+branches before selecting old work, identify what is already landed, and map any
+remaining gap to a stage. Preserve valuable fixes and data; do not bulk-accept
+removed items. Security/data-loss defects may be fixed immediately with a named
+reason and tests.
 
----
+Source-line citation repair, identity wording tests, counts, maps and new queue
+machinery do not displace a stage's user outcome. Documentation accompanying a
+behavioral change is part of that slice. No new role roster, orchestrator, broker
+or general workflow engine is needed to begin.
 
-## The order, and why it is this order
-
-The horizons are not independent, and the order is forced by three facts.
-
-**The panel lands before the interaction model.** The interaction model
-describes what an agent does in a conversation and what the owner sees when
-an agent needs a decision. If the panel is not yet a surface, there is nowhere
-for that to appear. Horizon 1 before Horizon 2.
-
-**The interaction model lands before the factory runs on the product.** The
-product's factory loop needs to tell an agent what it may do — that is the
-interaction model. Horizon 2 before Horizon 3.
-
-**The factory runs on the product before the product improves itself.** The
-last horizon is the one that can destroy the thing that would repair it. It
-needs the two planes from `ADR 0010` already standing, and it needs the
-recovery path proven rather than described. Horizon 3 before Horizon 4.
-
-The one thing that does not wait: **the pipeline.** It is not a horizon, and
-it is not the product. It is the thing that makes everything else land — the
-queue a program can read, the dispatcher that records its own failures, the
-one number space, a CI verdict that can be read. It is
-`docs/free-period-plan.md`, and it is Day 1.
-
----
-
-## What is funded, and what is not
-
-The record of what is actually wanted lives in `docs/strategy.md`, in the
-wants table. This is the shape of it, for the agent deciding what to pick up.
-
-| Want | Item   | State                                             |
-| ---- | ------ | ------------------------------------------------- |
-| W1   | WI-033 | accepted, resized — lands after W2                |
-| W2   | WI-034 | accepted, rescoped — lands before W1              |
-| W3   | WI-035 | deferred — the largest; the deferral was capacity |
-| W4   | WI-007 | folded — the same subject under another name      |
-| W5   | WI-036 | accepted — lands before W7                        |
-| W6   | WI-037 | accepted — the cheapest and most overdue          |
-| W7   | WI-038 | accepted — the gate                               |
-| W8   | WI-044 | funded, deferred — the licence check              |
-
-**W3's deferral should be re-examined.** It was deferred because one
-implementer meant one item at a time. That reason is a fact about the factory,
-not about the work, and it stops being true the moment the lanes run in
-parallel. A deferral for capacity should be revisited when the capacity
-changes — otherwise it becomes a decision nobody made.
-
-**A want with no work item behind it is a wish.** Two of the owner's settled
-decisions had no work item at all when the queue was last reviewed against
-them. When the owner settles something, it gets an item, an owner and a slot
-in the order.
-
----
-
-## The rules that hold across every horizon
-
-These are not preferences. Each one exists because the alternative was tried
-and it cost something.
-
-- **An agent's "done" is a proposal.** Everywhere. The factory's work items
-  and the product's tasks obey the same rule.
-- **The revision number is the concurrency guard.** Every resource update
-  carries the revision it was based on. Do not optimise the check away.
-- **A gate that fails is a finding, not an obstacle to route around.** No
-  deleting a test to make a suite pass, no widening a lint rule, no disabling
-  a CI job that fails.
-- **A contract change is a product decision.** It needs a migration plan, a
-  `CONTRACTS.md` update, and usually an ADR.
-- **Credentials are never returned.** A client that wants to change a
-  credential sends the new value; the server replaces the record.
-- **One file, one live item.** Ownership exists to stop two agents writing
-  the same file at the same time.
-- **The repository is the state.** An instance task and a repository work item
-  refer to each other by id; neither is reconstructed from the other.
-- **Borrow the idea, not the dependency.** Read it, take the approach, build
-  our own.
-
----
-
-## For an agent arriving with no memory
-
-1. `AGENTS.md` — the contract. Short, and it is binding.
-2. `FACTORY.md` — how the factory works, and who owns what.
-3. `.factory/queue.json` — the machine-readable state of every work item.
-   **Being built now**, as WI-072. Until it lands, read `.factory/work/*.md`
-   directly, which is the record the index is generated from.
-4. `docs/streams.md` — the current window's four streams, why they land in
-   that order, and what must not be built. **On `main`.**
-5. `docs/domains.md` — the five domains, and the rule that a module nobody
-   classified fails the build. **Lands with the `wi/046` merge.**
-6. `docs/self-improvement.md` — the runbook, with what is proved and what is
-   still open. **Lands with the `wi/046` merge.**
-7. `docs/free-period-plan.md` — what the current window is for.
-8. `.factory/work/WI-*.md` — the item you are about to do.
-
-Pick an item from the queue that is in `triage`, in your lane, with no
-`blockedBy`. Ask Chief for a number. Work in a worktree. Prove it with the
-gates. Push your branch. Report with the actual output.
-
-The point of this document is that an agent which has never spoken to the
-owner can still do the right thing, and the owner can still see why.
+For each selected slice record one owner, isolated branch/worktree, touched paths,
+contract/migration impact, acceptance demonstration and actual validation. The
+implementer writes tests; independent review checks the result. Follow FACTORY.md
+and [the feature guide](feature-guide.md), rather than creating a competing plan.

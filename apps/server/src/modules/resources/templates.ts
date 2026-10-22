@@ -16,7 +16,7 @@ import { errors, AppError } from '../../lib/errors.js';
  * one.
  *
  * The set that ships is one template for each of the six resource kinds, which
- * is the owner's answer of 2026-10-21, recorded in `docs/strategy.md`.
+ * remains the supported baseline; see `docs/resource-templates.md`.
  */
 export const resourceTemplates: ResourceTemplate[] = [
   {
