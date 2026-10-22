@@ -1,7 +1,7 @@
 /**
  * Start the API server and the worker for the end-to-end browser tests.
  *
- * The data directory is emptied first, so every run starts from a clean
+ * A private temporary directory is created, so every run starts from a clean
  * instance: no owner, no workspaces, nothing carried over from a previous
  * run. The server then serves the built web client, so the browser tests
  * exercise the same bundle that ships.
@@ -15,18 +15,19 @@
  */
 import fs from 'node:fs';
 import path from 'node:path';
+import os from 'node:os';
 import { spawn } from 'node:child_process';
 import { randomBytes } from 'node:crypto';
 import { fileURLToPath } from 'node:url';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const repoRoot = path.resolve(here, '..');
+const port = process.env['PERSONAL_OS_PORT'] ?? '4319';
 
-const dataDir = process.env['PERSONAL_OS_DATA_DIR'];
-if (dataDir) {
-  fs.rmSync(dataDir, { recursive: true, force: true });
-  console.log(`[e2e] cleared ${dataDir}`);
-}
+// Never delete a path inherited from a developer's environment. In particular,
+// running this harness with a production DATA_DIR must not destroy that instance.
+const dataDir = fs.mkdtempSync(path.join(os.tmpdir(), 'personal-os-e2e-'));
+console.log(`[e2e] private test data: ${dataDir}`);
 
 /**
  * Serve a private copy of the built client.
@@ -40,12 +41,10 @@ if (dataDir) {
  * own copy and serves that. The copy is taken once, before the server
  * starts, so it cannot change under the browser mid-test.
  */
-const port = process.env['PERSONAL_OS_PORT'] ?? '4319';
 const builtClient = path.join(repoRoot, 'apps', 'web', 'dist');
-const servedClient = path.join(repoRoot, 'data', `e2e-web-${port}`);
+const servedClient = path.join(dataDir, 'web');
 
 if (fs.existsSync(builtClient)) {
-  fs.rmSync(servedClient, { recursive: true, force: true });
   fs.cpSync(builtClient, servedClient, { recursive: true });
   process.env['PERSONAL_OS_WEB_DIST'] = servedClient;
   console.log(`[e2e] serving the client from ${servedClient}`);
@@ -76,6 +75,8 @@ if (!fs.existsSync(workerEntry)) {
  */
 const env = {
   ...process.env,
+  PERSONAL_OS_PORT: port,
+  PERSONAL_OS_DATA_DIR: dataDir,
   PERSONAL_OS_SECRET_KEY:
     process.env['PERSONAL_OS_SECRET_KEY'] ?? randomBytes(32).toString('base64'),
 };

@@ -82,6 +82,8 @@ export default defineConfig(({ command }) => {
       },
     },
     test: {
+      // Bound jsdom startup on mounted workspaces and concurrent agent checkouts.
+      maxWorkers: 2,
       // The browser tests in `e2e/` are run by Playwright, not by Vitest.
       include: ['src/**/*.test.{ts,tsx}'],
       environment: 'jsdom',

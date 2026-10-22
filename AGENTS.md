@@ -95,7 +95,8 @@ them because a payload does not need them yet.
 ## Working in this repository
 
 ```bash
-npm install                 # install everything (npm workspaces)
+npm ci                      # install the committed lockfile (npm workspaces)
+npm run verify:dependencies # validate manifests, lockfile and installed tree
 npm run build               # build every workspace, in dependency order
 npm run typecheck           # typecheck every workspace
 npm run test                # unit and integration tests
@@ -106,6 +107,19 @@ npm run test:e2e            # browser tests against the built client
 
 Order matters when building: `contracts` → `agent-adapters` → `server` → `worker` →
 `web`. The root `build` script already does this.
+
+Dependencies belong to the workspace that imports them. Use
+`npm install <package> -w <owning-workspace>` and commit that manifest together
+with the root lockfile and updated licence evidence. Never hand-edit resolved
+lockfile entries. Run `npm ci`, `npm run verify:dependencies`, typecheck and build
+in an isolated checkout before integration. A successful install alone does not
+prove the full transitive dependency tree is present.
+
+Each worktree and operating system needs its own `node_modules`; do not borrow it
+through junctions or symlinks. Reuse npm's download cache instead. Stop a checkout's
+dev stack before reinstalling. `dev:stack` drains on manifest/lockfile changes;
+run `npm ci` and restart it. Direct workspace commands bypass root predev checks,
+so run the dependency gate explicitly when using them.
 
 **Format what you touch.** `npm run format` rewrites the files prettier
 complains about. A pull request whose diff is mostly reformatting hides the
@@ -207,8 +221,20 @@ git push origin main
 ```
 
 If `origin/main` has moved, you are integrating with another agent's work.
-Stop and report the overlap. That merge belongs to the designated integration
-owner, and the resolution is recorded explicitly.
+Fetch and merge it into your isolated branch, resolve changes within your scope,
+and rerun the applicable gates on the resulting commit. Concurrent implementation
+does not need to stop. Escalate only an actual ownership or semantic conflict.
+The designated integration owner lands one tested result at a time; no checkout
+switch in a shared dirty main tree is required. Use a reviewed PR or a fast-forward
+push of the verified branch to main after rechecking the remote tip.
+
+After integration and owner release, remove the item's worktree from another
+checkout with `npm run work:item -- remove WI-nnn`. The helper refuses dirty,
+ambiguous, inaccessible, unmerged or unpublished work and preserves ignored local
+data. Do not use force removal. GitHub's merged-PR branch deletion can clean remote
+branches; direct-push branches require a separate reachability check and explicit
+deletion. Never prune Windows worktree registrations from WSL merely because
+`G:/...` paths appear unavailable; use their owning Git/platform. See FACTORY.md.
 
 **Never force-push.** The pre-push hook refuses any push that is not a
 fast-forward, because a rewrite takes every commit that landed since with

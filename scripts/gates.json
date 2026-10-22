@@ -1,6 +1,12 @@
 {
   "gates": [
     {
+      "name": "dependencies",
+      "command": "npm",
+      "args": ["run", "verify:dependencies"],
+      "about": "workspace manifests match the lockfile and npm reports no missing dependencies"
+    },
+    {
       "name": "typecheck",
       "command": "npm",
       "args": ["run", "typecheck"],

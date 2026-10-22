@@ -35,15 +35,15 @@ const LOOSE = 'the lines of that file that identify the licence';
 
 /** The counts the record holds. */
 const COUNTS = {
-  entries: 496,
-  thirdParty: 490,
+  entries: 530,
+  thirdParty: 524,
   firstParty: 6,
-  licenceFile: 377,
-  packageJsonField: 16,
-  publishedIdentifier: 97,
+  licenceFile: 385,
+  packageJsonField: 17,
+  publishedIdentifier: 122,
   distinctLicences: 11,
-  lockfileNonRoot: 502,
-  lockfileInstalled: 496,
+  lockfileNonRoot: 536,
+  lockfileInstalled: 530,
 };
 
 /**
@@ -154,10 +154,10 @@ export function checkRecord(
   );
   check(
     'reads.evidence names the three shapes with their counts',
-    /376 entries carry the first identifying lines/.test(evidence) &&
-      /16 the `license` field/.test(evidence) &&
-      /97 the identifier the project publishes/.test(evidence),
-    'reads.evidence no longer names 376, 16 and 97',
+    evidence.includes(`${COUNTS.licenceFile} entries carry the first identifying lines`) &&
+      evidence.includes(`${COUNTS.packageJsonField} the \`license\` field`) &&
+      evidence.includes(`${COUNTS.publishedIdentifier} the identifier the project publishes`),
+    'reads.evidence disagrees with the audited evidence counts',
   );
   check(
     'reads.evidence names the six first-party workspaces as carrying no source',
@@ -253,7 +253,7 @@ export function checkRecord(
     `the summary reads ${JSON.stringify(summary)}`,
   );
   check(
-    'the record holds 496 entries',
+    'the record holds the audited number of entries',
     entries.length === COUNTS.entries,
     `the record holds ${entries.length} entries`,
   );
@@ -276,7 +276,7 @@ export function checkRecord(
     0,
   );
   check(
-    'familiesRead holds 11 rows summing to 490',
+    'familiesRead holds the audited licence totals',
     families.length === COUNTS.distinctLicences && familyTotal === COUNTS.thirdParty,
     `familiesRead holds ${families.length} rows summing to ${familyTotal}`,
   );
@@ -296,7 +296,7 @@ export function checkRecord(
   const nonRoot = lockKeys.filter((key) => key !== '');
   const installed = nonRoot.filter((key) => key.startsWith('node_modules/'));
   check(
-    'the lockfile holds 502 non-root entries, 496 of them installed',
+    'the lockfile holds the audited package totals',
     nonRoot.length === COUNTS.lockfileNonRoot && installed.length === COUNTS.lockfileInstalled,
     `the lockfile holds ${nonRoot.length} non-root entries, ${installed.length} installed`,
   );
@@ -411,7 +411,7 @@ describe('the licence record', () => {
     const result = checkRecord(JSON.stringify(record), source.product, source.lockfile);
 
     const ids = result.findings.map((finding) => finding.id);
-    expect(ids).toContain('the record holds 496 entries');
+    expect(ids).toContain('the record holds the audited number of entries');
     expect(ids).toContain('the record covers exactly the installed packages of the lockfile');
   });
 

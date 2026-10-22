@@ -28,6 +28,45 @@ provide atomic allocation or authoritative dispatch status; resolve a collision
 before writing code. Record the branch, base commit, scope and actual progress in
 one item. A label such as `implement` is not proof of a running agent.
 
+MiniMax Bot already provides asynchronous dispatch, stable request IDs, bounded
+background concurrency, and result delivery. Use one dispatch path per item and
+reuse the request ID on retries. An admission receipt means queued, not completed;
+use the plugin's task status and returned result to decide what happened. Do not
+create a repository scheduler or wait for a named persona when an available agent
+can own the complete slice. Actual plugin slots may queue work; independent Git
+work does not need a global lock.
+
+Persistent Bot instructions must defer to this file and AGENTS.md. Retired
+exclusive ownership of tests, Markdown or manifests is invalid. A slice owner
+changes its implementation, tests, dependencies and documentation together;
+independent review remains separate. Do not load deleted role briefs from history
+as current instructions. Configure the plugin through its supported settings/API,
+not by editing a live state.json file.
+
+## Integration and cleanup
+
+Record the owner and exact branch/worktree in the item or PR. Refresh from remote
+main before implementation and before landing. Merge updated main into the item
+branch and verify the resulting tree; routine non-overlapping integration is not
+a reason to block other work. Only final landing onto the shared main ref is
+serialized. Prefer merge commits/fast-forwards when preserving Git ancestry for
+cleanup; a squash merge needs separate evidence that the original commits are
+preserved before deleting their branch.
+
+After successful integration, the item owner releases its worktree. From another
+checkout, run the existing `work:item remove` command. It automatically verifies
+main and origin/main reachability, clean state, unambiguous ownership and absence
+of ignored user data before using native Git removal and safe branch deletion.
+Locked worktrees stay protected by Git. Never remove a tree merely because its
+HEAD is old, reachable, or its Bot task says done. Preserve detached commits,
+uncommitted files and interrupted merges before any cleanup.
+
+Enable GitHub's native automatic branch deletion for merged PRs. It does not
+clean direct-push branches or local worktrees. Review those explicitly after
+fetching; keep unmerged references. Windows and WSL must not prune each other's
+unavailable worktree paths. Native `git worktree lock` protects an intentionally
+retained tree; do not bulk-rewrite registrations while either platform is active.
+
 Agree file ownership for concurrent changes. Ownership belongs to the current
 slice, not permanently to a bot persona. One implementer owns the production code,
 tests, migrations and documentation needed to deliver that slice. Use an

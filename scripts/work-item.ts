@@ -42,8 +42,10 @@ const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..'
  * checkout would then try to stage another agent's entire working tree.
  */
 function worktreeRoot(): string {
-  const parent = path.dirname(repoRoot);
-  const name = path.basename(repoRoot);
+  const common = git(['rev-parse', '--path-format=absolute', '--git-common-dir']);
+  const primary = path.dirname(common);
+  const parent = path.dirname(primary);
+  const name = path.basename(primary);
   return path.join(parent, `${name}-worktrees`);
 }
 
@@ -180,9 +182,8 @@ function listWorktrees(): Worktree[] {
  * last few commits. A work item that does not have the current code is a
  * work item whose every gate runs against the wrong tree.
  *
- * When the two have diverged — somebody pushed `main` from another clone —
- * the local `main` is the base, and the pre-push hook catches the
- * divergence when the branch is pushed and says what to do about it.
+ * Divergence requires integration before selecting a new base. A feature
+ * branch push cannot prove that its base contains the current remote main.
  */
 function baseRef(): string {
   const hasMain = gitSucceeds(['rev-parse', '--verify', 'main']);
@@ -192,7 +193,9 @@ function baseRef(): string {
   if (!hasOrigin) return 'main';
   if (gitSucceeds(['merge-base', '--is-ancestor', 'origin/main', 'main'])) return 'main';
   if (gitSucceeds(['merge-base', '--is-ancestor', 'main', 'origin/main'])) return 'origin/main';
-  return 'main';
+  fail(
+    'main and origin/main have diverged. Integrate and verify them before creating another item.',
+  );
 }
 
 /**
@@ -201,14 +204,14 @@ function baseRef(): string {
  * The number is what a `.factory/work/WI-0xx.md` file carries, so this is how
  * a worktree is matched back to the item it belongs to.
  */
-function worktreesByNumber(): Map<string, Worktree> {
-  const map = new Map<string, Worktree>();
+function worktreesByNumber(): Map<string, Worktree[]> {
+  const map = new Map<string, Worktree[]>();
   for (const worktree of listWorktrees()) {
     if (!worktree.branch) continue;
     const match = /^wi\/(\d+)-/.exec(worktree.branch);
     const number = match?.[1];
     if (number) {
-      map.set(number, worktree);
+      map.set(number, [...(map.get(number) ?? []), worktree]);
     }
   }
   return map;
@@ -231,6 +234,10 @@ function cmdNew(args: string[]): void {
 
   const branch = branchFor(id, slug);
   const target = pathFor(id, slug);
+  const number = id.replace(/^WI-/i, '');
+  const occupied = listWorktrees().filter((tree) => tree.branch?.startsWith(`wi/${number}-`));
+  if (occupied.length)
+    fail(`${id} already has a worktree: ${occupied.map((tree) => tree.path).join(', ')}`);
   const exists = gitSucceeds(['rev-parse', '--verify', `refs/heads/${branch}`]);
 
   if (exists) {
@@ -240,21 +247,9 @@ function cmdNew(args: string[]): void {
     );
   }
   if (fs.existsSync(target)) {
-    // A directory left behind by a worktree that git removed but could not
-    // delete, because the installed `node_modules` is untracked and git
-    // leaves untracked files alone. The path is derived from the work item,
-    // so it belongs to the work item, and this script is what clears it.
-    //
-    // A directory that still holds a `.git` file is a live worktree, and
-    // that is not this script's to delete.
-    if (fs.existsSync(path.join(target, '.git'))) {
-      fail(
-        `${target} already exists and is a live worktree.\n` +
-          'Work in it, or remove it first: npx tsx scripts/work-item.ts remove ' +
-          id,
-      );
-    }
-    fs.rmSync(target, { recursive: true, force: true });
+    fail(
+      `${target} already exists. Inspect and preserve its contents; creation never deletes directories.`,
+    );
   }
 
   fs.mkdirSync(worktreeRoot(), { recursive: true });
@@ -264,7 +259,7 @@ function cmdNew(args: string[]): void {
   // refs; it does not touch the working tree or the local branches.
   const fetched = gitOrNull(['fetch', 'origin']);
   if (fetched === null) {
-    process.stdout.write('Note: the fetch failed, so the base was chosen without it.\n');
+    fail('Fetch failed. Restore remote access before creating work from a potentially stale base.');
   }
 
   const base = baseRef();
@@ -273,15 +268,15 @@ function cmdNew(args: string[]): void {
 
   if (!install) {
     process.stdout.write(
-      '\nDone. The dependencies are not installed, so run "npm ci --ignore-scripts" ' +
+      '\nDone. The dependencies are not installed, so run "npm ci" ' +
         'in the worktree before the gates will pass.\n',
     );
     return;
   }
 
-  process.stdout.write('\nInstalling the dependencies (npm ci --ignore-scripts)…\n');
+  process.stdout.write('\nInstalling the dependencies (npm ci)…\n');
   const npm = npmCommand();
-  run(npm.command, [...npm.prefix, 'ci', '--ignore-scripts'], target);
+  run(npm.command, [...npm.prefix, 'ci'], target);
   process.stdout.write('\nBuilding the packages the gates need (npm run build:deps)…\n');
   run(npm.command, [...npm.prefix, 'run', 'build:deps'], target);
 
@@ -307,10 +302,14 @@ function cmdList(): void {
     process.stdout.write('  none\n');
     return;
   }
-  for (const [number, worktree] of [...byNumber.entries()].sort()) {
+  for (const [number, trees] of [...byNumber.entries()].sort()) {
     const itemFile = path.join(repoRoot, '.factory', 'work', `WI-${number}.md`);
     const state = fs.existsSync(itemFile) ? readState(itemFile) : 'no work item file';
-    process.stdout.write(`  WI-${number}  ${state.padEnd(14)} ${worktree.path}\n`);
+    for (const worktree of trees) {
+      process.stdout.write(
+        `  WI-${number}  ${state.padEnd(14)} ${worktree.path}${trees.length > 1 ? ' (ambiguous item number)' : ''}\n`,
+      );
+    }
   }
 }
 
@@ -327,50 +326,89 @@ function readState(itemFile: string): string {
 }
 
 function cmdRemove(args: string[]): void {
-  const force = args.includes('--force');
+  if (args.includes('--force')) fail('Force removal is not supported. Preserve unmerged work.');
   const [id] = args.filter((arg) => !arg.startsWith('--'));
 
   if (!id) {
-    fail('Usage: npx tsx scripts/work-item.ts remove <WI-nnn> [--force]');
+    fail('Usage: npx tsx scripts/work-item.ts remove <WI-nnn>');
   }
 
   const number = id.replace(/^WI-/i, '');
-  const worktree = worktreesByNumber().get(number);
+  const matches = listWorktrees().filter((tree) => tree.branch?.startsWith(`wi/${number}-`));
+  if (matches.length > 1)
+    fail(
+      `WI-${number} has multiple worktrees. Select and inspect the exact path with git worktree; no implicit selection is safe.`,
+    );
+  const worktree = matches[0];
   if (!worktree) {
     fail(`WI-${number} has no worktree.`);
   }
+  if (path.resolve(worktree.path) === repoRoot)
+    fail('Run removal from another checkout, after the worktree owner has finished.');
 
   const status = gitOrNull(['status', '--porcelain'], worktree.path);
+  if (status === null)
+    fail(
+      `Cannot inspect ${worktree.path}. Use the Git/platform that owns this worktree; do not prune it.`,
+    );
   if (status) {
     fail(
       `${worktree.path} has uncommitted changes:\n${status}\n\n` +
         'Commit them, or move them elsewhere, before the worktree is removed.',
     );
   }
+  for (const operation of [
+    'MERGE_HEAD',
+    'CHERRY_PICK_HEAD',
+    'REVERT_HEAD',
+    'rebase-merge',
+    'rebase-apply',
+    'sequencer',
+    'BISECT_LOG',
+  ]) {
+    const state = git(
+      ['rev-parse', '--path-format=absolute', '--git-path', operation],
+      worktree.path,
+    );
+    if (fs.existsSync(state))
+      fail(`Preserve ${worktree.path}: ${operation} indicates an unfinished Git operation.`);
+  }
 
   const branch = worktree.branch ?? '';
+  if (gitOrNull(['fetch', 'origin']) === null)
+    fail('Fetch failed; cleanup requires current remote integration evidence.');
   const merged = branch !== '' && gitSucceeds(['merge-base', '--is-ancestor', branch, 'main']);
+
+  if (!merged) fail(`Kept ${worktree.path}: ${branch} is not merged into main.`);
+  if (!gitSucceeds(['merge-base', '--is-ancestor', branch, 'origin/main'])) {
+    fail(
+      `Kept ${worktree.path}: ${branch} is not reachable from origin/main. Fetch and verify integration first.`,
+    );
+  }
+
+  // Git also removes ignored files. Only disposable build/install output may
+  // be discarded automatically; local data, credentials and notes must survive.
+  const ignored = git(
+    ['ls-files', '--others', '--ignored', '--exclude-standard', '--directory', '-z'],
+    worktree.path,
+  )
+    .split('\0')
+    .filter(Boolean);
+  const valuable = ignored.filter(
+    (file) =>
+      !/^(?:(?:apps\/(?:server|web|worker)|packages\/(?:contracts|ui|agent-adapters))\/)?(?:node_modules|dist|coverage|\.vite)\//.test(
+        file,
+      ) &&
+      !/^(?:(?:apps\/(?:server|web|worker)|packages\/(?:contracts|ui|agent-adapters))\/)?[^/]+\.tsbuildinfo$/.test(
+        file,
+      ),
+  );
+  if (valuable.length) fail(`Preserve ignored files before cleanup:\n${valuable.join('\n')}`);
 
   run('git', ['worktree', 'remove', worktree.path]);
 
-  // `git worktree remove` leaves the directory behind when it holds
-  // untracked files, and the installed `node_modules` is exactly that: it is
-  // gitignored, so git leaves it. The worktree is not gone until the
-  // directory is, and a directory that is still there makes the next
-  // `new` refuse.
-  if (fs.existsSync(worktree.path)) {
-    fs.rmSync(worktree.path, { recursive: true, force: true });
-  }
-
   if (branch) {
-    if (merged || force) {
-      run('git', ['branch', force ? '-D' : '-d', branch]);
-    } else {
-      process.stdout.write(
-        `Kept the branch "${branch}" — it is not merged into main yet.\n` +
-          'Delete it yourself once it has landed, or pass --force.\n',
-      );
-    }
+    run('git', ['branch', '-d', branch]);
   }
 
   process.stdout.write(`Removed ${worktree.path}\n`);

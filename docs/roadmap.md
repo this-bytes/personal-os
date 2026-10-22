@@ -246,6 +246,49 @@ The out-of-band build/release path still functions with the instance stopped.
 
 ## Existing backlog and scope control
 
+### Engineering review follow-ups (2026-10-23)
+
+These are bounded implementation slices found during the repository review at
+`644d33f`; they are not claims that the corresponding recovery stage is complete.
+Inspect updated main and existing branches before assigning them.
+
+- **R0: hold an expired worker lease as uncertain before replaying side effects.**
+  `Queue.reapStaleJobs` currently requeues a stale running job unless the executor
+  already recorded an unknown outcome. A process killed before that write can
+  replay an external side effect. Add worker-loss integration coverage, lease
+  fencing and an atomic domain/job transition; retain remote reconciliation where
+  supported. Acceptance: kill a worker after a fixture records a side effect,
+  restart it, and prove no duplicate effect and a visible owner-resolvable outcome.
+- **R0/R3: make Bot dispatch retry-safe.** `bot.dispatch` currently accepts no
+  request ID. Add an actor-scoped idempotency key and atomic creation of the
+  delegation, task, execution and queue job through existing services. Acceptance:
+  simultaneous identical retries yield one child; changed content conflicts;
+  returned results wake only the requesting coordinator.
+- **R1/R2: persist native sessions and expose advanced capabilities coherently.**
+  `AgentAdapterExtras` names native capabilities, but the common execution path
+  does not project them into the product. Ordinary follow-ups are not proven to
+  restore native context; named runtime presets remain unverified. Use the adapter
+  matrix and maintained protocol clients. Acceptance: real Codex and OpenCode
+  multi-turn/reconnect demonstrations with one advanced capability surfaced safely,
+  explicit unsupported operations, and no provider branches in conversation storage.
+- **Platform: prove execution isolation and recovery outside the agent's authority.**
+  CLI `cwd` and sanitized environment do not confine filesystem access. The Compose
+  worker shares the database volume and currently runs as the image's default user.
+  Keep release/recovery external, define the project execution binding and least
+  privilege, and test backup/restore including SQLite WAL, artifacts and encryption
+  key handling. Acceptance: an agent cannot alter the running release/recovery
+  controls; restore a disposable populated instance and verify its records/files.
+- **Development configuration: replace retired persistent Bot role instructions.**
+  The installed Bot settings still refer to deleted role briefs and prohibit
+  implementers from editing tests/docs/manifests. Apply current FACTORY.md through
+  the plugin's supported settings or management API, retaining existing identities,
+  memory and chats. Acceptance: one implementer delivers a bounded slice with its
+  own tests/dependencies/docs; an independent reviewer checks it; no ceremonial
+  file-role handoffs or duplicated dispatch occurs. Never edit live state.json.
+
+The engineering evidence and preserved-work locations are recorded in
+[the review](engineering-review-2026-10-23.md).
+
 Historical work-item narratives are available in Git at 507708b. Compact evidence
 records retained for contract checks are not an active backlog. Inspect source and
 branches before selecting old work, identify what is already landed, and map any

@@ -6,8 +6,8 @@ import { defineConfig, devices } from '@playwright/test';
  * End-to-end browser tests.
  *
  * The server serves the built web client, so these tests run against the
- * same bundle that ships — not the Vite dev server. The data directory is
- * emptied before the server starts, so every run begins with an instance
+ * same bundle that ships — not the Vite dev server. A new temporary data directory
+ * is created before the server starts, so every run begins with an instance
  * that has no owner.
  */
 
@@ -50,9 +50,7 @@ export default defineConfig({
     env: {
       PERSONAL_OS_HOST: '127.0.0.1',
       PERSONAL_OS_PORT: String(port),
-      // The data directory is per port, for the same reason the port is
-      // configurable: two runs must never share a database.
-      PERSONAL_OS_DATA_DIR: path.join(repoRoot, 'data', `e2e-${port}`),
+      // The harness creates a fresh temporary data directory for every run.
       PERSONAL_OS_OWNER_TOKEN: 'e2e-owner-token',
       LOG_LEVEL: 'warn',
     },

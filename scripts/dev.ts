@@ -118,6 +118,19 @@ interface WatchTarget {
  */
 const WATCH_TARGETS: WatchTarget[] = [
   {
+    label: 'dependency manifests',
+    paths: [
+      path.join(root, 'package.json'),
+      path.join(root, 'package-lock.json'),
+      ...['apps', 'packages'].flatMap((parent) =>
+        fs
+          .readdirSync(path.join(root, parent))
+          .map((name) => path.join(root, parent, name, 'package.json')),
+      ),
+    ],
+    restarts: [],
+  },
+  {
     label: 'server',
     paths: [path.join(root, 'apps', 'server', 'src')],
     restarts: ['server'],
@@ -367,6 +380,13 @@ async function watch(): Promise<void> {
       if (next === snapshots.get(target.label)) continue;
       snapshots.set(target.label, next);
       log(`${target.label} changed`);
+      if (target.label === 'dependency manifests') {
+        log(
+          'Dependency declarations changed. Draining the stack; run npm ci in this checkout and restart it.',
+        );
+        await shutdown();
+        return;
+      }
       for (const name of target.restarts) pending.add(name);
     }
 

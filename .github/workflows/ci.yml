@@ -44,6 +44,9 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Validate workspace dependencies
+        run: npm run verify:dependencies
+
       # The typecheck and the tests come before the build, deliberately.
       #
       # Both build the packages they need first, so they work on a checkout

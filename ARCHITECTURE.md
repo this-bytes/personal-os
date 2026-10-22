@@ -74,10 +74,13 @@ adapter initialization, capability discovery, session creation/resumption, promp
 submission, event consumption, input delivery, cancellation and cleanup. Callers
 provide purpose and authorized context; they do not each implement adapter setup.
 
-Treat current adapter instances as ephemeral until session ownership and cleanup
-are implemented. A successful capability probe on one instance does not initialize
-a later instance. MCP currently exposes this lifecycle gap; the first recovery
-slice reproduces and repairs it through the worker.
+Adapter instances remain ephemeral. The worker now connects the instance that
+runs a turn and releases it in `finally`; adapters with `holdsRuntime: false`
+establish their runtime inside `send`. A capability probe closes its own instance.
+This repairs the earlier MCP initialization defect (WI-145); it does not establish
+conversation-wide native session continuity. The worker currently restores an
+external session for supported approval continuations, while ordinary follow-up
+turns still need explicit session ownership and persistence.
 
 Store runtime references and capability snapshots sufficient to interpret a run.
 Unsupported resume, steering, artifacts or approvals remain unsupported, not

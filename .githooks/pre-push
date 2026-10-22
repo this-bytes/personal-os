@@ -63,6 +63,24 @@ for update in "$@"; do
   remote_ref="$3"
   remote_sha="$4"
 
+  # Deletion has no local commit. Permit only a topic branch already contained
+  # in this remote's integration branch; never treat deletion as force-pushing.
+  if [ "$local_sha" = "$zero" ]; then
+    if [ "$remote_ref" = "refs/heads/main" ] || [ "$remote_ref" = "refs/heads/master" ]; then
+      printf 'PUSH BLOCKED: deleting the integration branch is not allowed.\n'
+      failed=1
+    elif [ "${remote_ref#refs/heads/}" = "$remote_ref" ]; then
+      printf 'PUSH BLOCKED: automatic cleanup applies only to topic branches, not %s.\n' "$remote_ref"
+      failed=1
+    elif git merge-base --is-ancestor "$remote_sha" "refs/remotes/$remote_name/main" 2>/dev/null; then
+      printf 'Deleting merged topic branch %s.\n' "$remote_ref"
+    else
+      printf 'PUSH BLOCKED: %s is not proven merged into %s/main. Fetch and preserve unmerged work.\n' "$remote_ref" "$remote_name"
+      failed=1
+    fi
+    continue
+  fi
+
   if [ "$remote_sha" = "$zero" ]; then
     # A branch that does not exist on the remote yet. Nothing is being
     # rewritten, so the only check that applies is the format gate.
