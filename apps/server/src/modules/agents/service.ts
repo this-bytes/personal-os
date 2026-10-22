@@ -332,25 +332,19 @@ export function createAgentService(options: AgentServiceOptions): AgentService {
 
           if (patch.name !== undefined) updates.name = patch.name.trim();
           if (patch.enabled !== undefined) updates.enabled = patch.enabled;
-          if (patch.toolGrants !== undefined) {
-            updates.toolGrants = patch.toolGrants;
-            // A capability the agent may now call is not waiting on the owner any
-            // more, so its row leaves the list here. The grant may be widened
-            // from the list or from the agent's own page, and both go through
-            // this one write, so the row leaves either way.
-            clearGrantedCapabilities(tx, id, patch.toolGrants);
-          } else if (patch.widenToolGrant !== undefined) {
-            // The union is computed from a read taken inside this transaction.
-            // A read taken outside it can be stale by the time the write lands,
-            // and a union computed from a stale grant narrows the grant back
-            // to what it was: the other process's widening is silently lost.
-            const granted = grantedTools(tx, id);
-            const widened = granted.includes(patch.widenToolGrant)
-              ? granted
-              : [...granted, patch.widenToolGrant];
-            updates.toolGrants = widened;
-            clearGrantedCapabilities(tx, id, widened);
-          } else if (patch.toolGrantChange !== undefined) {
+          // The order of these three branches is the precedence between the
+          // three ways a body can change a grant, and the precedence is the
+          // point.
+          //
+          // A body may carry a change AND a list. The change is a command --
+          // "apply this to the grant as it is now" -- and the list is a state
+          // -- "the grant is exactly this". The list is the one of the two
+          // that can take a widening back, because it says what the grant was
+          // when the client read it and nothing about what it is now. So the
+          // command is applied and the list is not written: the list is
+          // written only when the body carries no change, which is what its
+          // published meaning says.
+          if (patch.toolGrantChange !== undefined) {
             // The owner's change, applied to the grant as it is now.
             //
             // The grant editor shows the grant the page read, and the owner
@@ -371,6 +365,24 @@ export function createAgentService(options: AgentServiceOptions): AgentService {
             const changed = [...kept, ...enabled];
             updates.toolGrants = changed;
             clearGrantedCapabilities(tx, id, changed);
+          } else if (patch.widenToolGrant !== undefined) {
+            // The union is computed from a read taken inside this transaction.
+            // A read taken outside it can be stale by the time the write lands,
+            // and a union computed from a stale grant narrows the grant back
+            // to what it was: the other process's widening is silently lost.
+            const granted = grantedTools(tx, id);
+            const widened = granted.includes(patch.widenToolGrant)
+              ? granted
+              : [...granted, patch.widenToolGrant];
+            updates.toolGrants = widened;
+            clearGrantedCapabilities(tx, id, widened);
+          } else if (patch.toolGrants !== undefined) {
+            updates.toolGrants = patch.toolGrants;
+            // A capability the agent may now call is not waiting on the owner any
+            // more, so its row leaves the list here. The grant may be widened
+            // from the list or from the agent's own page, and both go through
+            // this one write, so the row leaves either way.
+            clearGrantedCapabilities(tx, id, patch.toolGrants);
           }
           if (patch.persona !== undefined) updates.persona = patch.persona;
 
