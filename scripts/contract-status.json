@@ -1,6 +1,6 @@
 {
   "contract": "CONTRACTS.md",
-  "about": "The claims the contract status gate checks. Each claim names the contract section the note lives in, the fragment of that note which carries the claim, the claim itself, and what the tree must contain for the claim to be true. A note whose claim changes has to change this file in the same commit: the gate fails when a note is false, when the note and this table disagree, and when the note this table describes is no longer in the contract. A note this file says nothing about is reported as unchecked and never fails the gate.",
+  "about": "The claims the contract status gate checks. Each claim names the contract section the note lives in, the fragment of that note which carries the claim, the claim itself, and what the tree must contain for the claim to be true. A note whose claim changes has to change this file in the same commit: the gate fails when a note is false, when the note and this table disagree, and when the note this table describes is no longer in the contract. A note this file says nothing about is reported as unchecked and never fails the gate. A note that names the commit which carries the claim is checked at that commit as well as in the working tree, so an assertion that only says a name is present will not do: it has to say the shape the contract publishes.",
   "claims": [
     {
       "id": "the-unknown-outcome",
@@ -172,9 +172,9 @@
           "value": "export interface WaitingItem"
         },
         {
-          "kind": "present-text",
+          "kind": "present-pattern",
           "path": "packages/contracts/src/waiting.ts",
-          "value": "toolName"
+          "value": "toolName: string \\| null;"
         },
         {
           "kind": "present-pattern",

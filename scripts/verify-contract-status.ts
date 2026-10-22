@@ -16,6 +16,15 @@
  * itself, and what the tree must contain for the claim to be true. It checks
  * exactly those, and it checks nothing else.
  *
+ * A note that names the commit which carries the claim — "the code implements
+ * it — as of `<commit>`" — is checked at that commit as well as in the working
+ * tree. The tree moves on, and a shape can be tightened after the note was
+ * written, so the note has to hold where it stands: the commit has to be in
+ * this history, and the code at that commit has to carry what the note says it
+ * carries. WI-132's note named a commit that held the loose declaration of a
+ * field the contract publishes as required, and nothing noticed, because a
+ * claim about the working tree says nothing about the commit it names.
+ *
  *   npx tsx scripts/verify-contract-status.ts
  *
  * The exit codes:
@@ -30,6 +39,7 @@
  */
 import fs from 'node:fs';
 import path from 'node:path';
+import { execFileSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 
 /** What a note claims about the code. The set is closed. */
@@ -410,13 +420,123 @@ function readTree(root: string, relative: string): { files: { path: string; text
 }
 
 /**
+ * Every file under a path, read at a commit rather than at the working tree.
+ *
+ * A note that says "the code implements it — as of `<commit>`" is a claim about
+ * that commit, not about whatever the branch tip happens to hold now. The tree
+ * moves on, and the shape can be tightened afterwards, so the note has to be
+ * checked where it stands.
+ *
+ * The commit is read out of the repository rather than checked out: nothing is
+ * written, and the working tree is never disturbed.
+ */
+function readTreeAtCommit(
+  root: string,
+  commit: string,
+  relative: string,
+): { files: { path: string; text: string }[] } {
+  const git = (args: string[]): string =>
+    execFileSync('git', args, {
+      cwd: root,
+      encoding: 'utf8',
+      maxBuffer: 64 * 1024 * 1024,
+      stdio: ['ignore', 'pipe', 'pipe'],
+    });
+
+  let names: string[];
+  try {
+    names = git(['ls-tree', '-r', '--name-only', commit, '--', relative])
+      .split('\n')
+      .map((line) => line.trim())
+      .filter((line) => line.length > 0);
+  } catch {
+    return { files: [] };
+  }
+
+  const files: { path: string; text: string }[] = [];
+  for (const name of names) {
+    try {
+      files.push({ path: name, text: git(['show', `${commit}:${name}`]) });
+    } catch {
+      // A file that cannot be read at that commit is not there, as far as the
+      // note is concerned.
+    }
+  }
+  return { files };
+}
+
+/**
+ * The commit a note names, if it names one.
+ *
+ * The house form is "as of `<commit>`". A note that carries a commit in any
+ * other shape is not this gate's business: another gate already checks that a
+ * status claim names a commit the tree has.
+ */
+function namedCommit(text: string): string | null {
+  const match = /as of `([0-9a-f]{7,40})`/.exec(text);
+  return match?.[1] ?? null;
+}
+
+/** Whether the checkout holds the commit at all. */
+function commitIsKnown(root: string, commit: string): boolean {
+  try {
+    execFileSync('git', ['rev-parse', '--verify', '--quiet', `${commit}^{commit}`], {
+      cwd: root,
+      stdio: 'ignore',
+    });
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Whether the checkout can see the whole history.
+ *
+ * A shallow checkout holds one commit, so a commit a note names is not there to
+ * be checked. That is a fact about the checkout and not about the note, and a
+ * gate that fails on it would fail for the wrong reason.
+ */
+function repositoryIsShallow(root: string): boolean {
+  try {
+    const answer = execFileSync('git', ['rev-parse', '--is-shallow-repository'], {
+      cwd: root,
+      encoding: 'utf8',
+      stdio: ['ignore', 'pipe', 'ignore'],
+    });
+    return answer.trim() === 'true';
+  } catch {
+    return true;
+  }
+}
+
+/** Whether a commit is in the tree's history. */
+function commitIsInTheTree(root: string, commit: string): boolean {
+  try {
+    execFileSync('git', ['merge-base', '--is-ancestor', commit, 'HEAD'], {
+      cwd: root,
+      stdio: 'ignore',
+    });
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/** How a claim's assertions are read: from the working tree, or from a commit. */
+type TreeReader = (relative: string) => { files: { path: string; text: string }[] };
+
+/**
  * Whether one assertion holds, and what the tree said about it.
  *
  * An assertion over a path that does not exist holds when it is an absence —
  * the thing is certainly not there — and fails when it is a presence.
  */
-function checkAssertion(root: string, assertion: Assertion): { holds: boolean; detail: string } {
-  const { files } = readTree(root, assertion.path);
+function checkAssertion(
+  read: TreeReader,
+  assertion: Assertion,
+): { holds: boolean; detail: string } {
+  const { files } = read(assertion.path);
 
   if (assertion.kind === 'present-text') {
     const hit = files.find((file) => file.text.includes(assertion.value));
@@ -515,10 +635,13 @@ function checkTheTree(options: GateOptions): GateResult {
   const sections = readSections(lines);
   const paragraphs = readParagraphs(lines);
 
+  const read: TreeReader = (relative) => readTree(root, relative);
+
   const failures: Failure[] = [];
   const checked: CheckedClaim[] = [];
   const unchecked: UncheckedNote[] = [];
   const coveredParagraphs = new Set<number>();
+  const skippedCommits = new Set<string>();
 
   for (const entry of table.claims) {
     const matching = sections.filter((section) => section.title === entry.section);
@@ -619,7 +742,7 @@ function checkTheTree(options: GateOptions): GateResult {
     }
 
     const broken = entry.expect
-      .map((assertion) => ({ assertion, outcome: checkAssertion(root, assertion) }))
+      .map((assertion) => ({ assertion, outcome: checkAssertion(read, assertion) }))
       .filter((result) => !result.outcome.holds);
 
     if (broken.length > 0) {
@@ -632,6 +755,59 @@ function checkTheTree(options: GateOptions): GateResult {
         message: `the note says ${entry.claim}, but ${first.outcome.detail}.`,
       });
       continue;
+    }
+
+    // A note that names a commit is a claim about that commit, not about
+    // whatever the branch tip holds now. The tree moves on and a shape can be
+    // tightened afterwards, so the note has to hold where it stands: the
+    // commit has to be in this history, and the code at that commit has to
+    // carry what the note says it carries.
+    const commit = namedCommit(paragraph?.text ?? '');
+    if (commit) {
+      if (!commitIsKnown(root, commit)) {
+        // A checkout that cannot see the commit cannot say whether the note is
+        // true there. A shallow checkout is that case, and it is a fact about
+        // the checkout rather than about the note.
+        if (!repositoryIsShallow(root)) {
+          failures.push({
+            id: entry.id,
+            line: hit.line,
+            kind: 'false-note',
+            message:
+              `the note says ${entry.claim} as of ${commit}, but this repository holds no commit by that name, ` +
+              'so the note points at code nobody can read.',
+          });
+          continue;
+        }
+        skippedCommits.add(commit);
+      } else if (!commitIsInTheTree(root, commit)) {
+        failures.push({
+          id: entry.id,
+          line: hit.line,
+          kind: 'false-note',
+          message:
+            `the note says ${entry.claim} as of ${commit}, but that commit is not in this tree's history, ` +
+            'so the note points at code this repository does not carry.',
+        });
+        continue;
+      } else {
+        const readAtCommit: TreeReader = (relative) => readTreeAtCommit(root, commit, relative);
+        const brokenAtCommit = entry.expect
+          .map((assertion) => ({ assertion, outcome: checkAssertion(readAtCommit, assertion) }))
+          .filter((result) => !result.outcome.holds);
+
+        if (brokenAtCommit.length > 0) {
+          const first = brokenAtCommit[0];
+          if (!first) continue;
+          failures.push({
+            id: entry.id,
+            line: hit.line,
+            kind: 'false-note',
+            message: `the note says ${entry.claim} as of ${commit}, but at that commit ${first.outcome.detail}.`,
+          });
+          continue;
+        }
+      }
     }
 
     checked.push({
@@ -664,7 +840,7 @@ function checkTheTree(options: GateOptions): GateResult {
 
   return {
     exitCode: failures.length > 0 ? 1 : 0,
-    output: report(table, contractPath, tablePath, checked, unchecked, failures),
+    output: report(table, contractPath, tablePath, checked, unchecked, failures, skippedCommits),
     checked,
     unchecked,
     failures,
@@ -692,6 +868,7 @@ function report(
   checked: CheckedClaim[],
   unchecked: UncheckedNote[],
   failures: Failure[],
+  skippedCommits: ReadonlySet<string>,
 ): string {
   const out: string[] = [];
   out.push('The contract status gate');
@@ -726,6 +903,17 @@ function report(
     out.push(`        ${failure.message}`);
   }
   out.push('');
+
+  if (skippedCommits.size > 0) {
+    const named = [...skippedCommits].join(', ');
+    const one = skippedCommits.size === 1;
+    out.push(
+      `This checkout cannot see the commit${one ? '' : 's'} a note names (${named}), so the code at ` +
+        `${one ? 'that commit' : 'those commits'} was not checked.`,
+    );
+    out.push('A checkout with the whole history checks them: git fetch --unshallow.');
+    out.push('');
+  }
 
   if (failures.length > 0) {
     out.push(

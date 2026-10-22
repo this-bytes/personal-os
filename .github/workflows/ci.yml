@@ -28,6 +28,13 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
+        with:
+          # The contract's claims name the commit that carries them, and the
+          # gate reads the code at that commit to check the claim. A shallow
+          # checkout holds one commit, so the gate could not read those
+          # commits and would skip the check. The history is small, so the
+          # whole of it is fetched.
+          fetch-depth: 0
 
       - uses: actions/setup-node@v4
         with:
@@ -114,6 +121,11 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
+        with:
+          # The gate reads the code at the commit a claim names, so it needs
+          # the history. A shallow checkout holds one commit, and the gate
+          # would skip the commits it could not see.
+          fetch-depth: 0
 
       - uses: actions/setup-node@v4
         with:

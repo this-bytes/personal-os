@@ -16,7 +16,7 @@
  * gate as CI runs it — the arguments, the output and the exit code — and not
  * a function called in-process.
  */
-import { spawn } from 'node:child_process';
+import { execFileSync, spawn } from 'node:child_process';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
@@ -77,6 +77,44 @@ function write(root: string, relative: string, contents: string): void {
   const file = path.join(root, relative);
   fs.mkdirSync(path.dirname(file), { recursive: true });
   fs.writeFileSync(file, contents, 'utf8');
+}
+
+function git(root: string, args: string[]): string {
+  return execFileSync('git', args, { cwd: root, encoding: 'utf8' }).trim();
+}
+
+/** A repository of its own, so that nothing here reads this repository's history. */
+function initRepository(root: string): void {
+  git(root, ['init', '--quiet']);
+  git(root, ['config', 'user.email', 'gate@example.com']);
+  git(root, ['config', 'user.name', 'Contract status gate']);
+  git(root, ['config', 'commit.gpgsign', 'false']);
+  git(root, ['config', 'core.autocrlf', 'false']);
+}
+
+/** Commit the files, and say which commit that was. */
+function commit(root: string, files: Record<string, string>): string {
+  for (const [relative, contents] of Object.entries(files)) {
+    write(root, relative, contents);
+  }
+  git(root, ['add', '--all']);
+  git(root, ['commit', '--quiet', '-m', 'a change']);
+  return git(root, ['rev-parse', 'HEAD']);
+}
+
+/** Whether this checkout can look up an old commit at all. */
+function isShallowRepository(): boolean {
+  try {
+    return (
+      execFileSync('git', ['rev-parse', '--is-shallow-repository'], {
+        cwd: repoRoot,
+        encoding: 'utf8',
+        stdio: ['ignore', 'pipe', 'ignore'],
+      }).trim() === 'true'
+    );
+  } catch {
+    return true;
+  }
 }
 
 describe('a note that no longer matches the tree', () => {
@@ -338,6 +376,301 @@ describe('a note the gate cannot read', () => {
 
     expect(result.status).toBe(0);
     expect(result.stdout).toContain('Unchecked (0)');
+  }, 60_000);
+});
+
+describe('a note that names a commit', () => {
+  // WI-132's note said "the code implements it — as of `4d389c7`", and at that
+  // commit the declaration was the loose `toolName?: string | null`: a third
+  // wire shape the server never sends. The shape landed later, in a commit of
+  // its own. A note that names a commit has to name one that carries the
+  // shape, and the gate is where that is checked.
+  it('fails when the code at that commit does not carry the shape', async () => {
+    const root = scratch('contract-status-commit-shape-');
+    initRepository(root);
+    const first = commit(root, { 'src/thing.ts': 'export const theThing = 1;\n' });
+    commit(root, { 'src/thing.ts': 'export const theThing = 2;\n' });
+
+    write(
+      root,
+      'CONTRACTS.md',
+      [
+        '# Contracts',
+        '',
+        '## Contract 1 — A thing',
+        '',
+        `**The code implements it — as of \`${first}\`.**`,
+        '',
+      ].join('\n'),
+    );
+    write(
+      root,
+      'table.json',
+      JSON.stringify(
+        {
+          contract: 'CONTRACTS.md',
+          claims: [
+            {
+              id: 'a-thing',
+              section: 'Contract 1 — A thing',
+              note: 'The code implements it',
+              claim: 'implemented',
+              expect: [{ kind: 'present-text', path: 'src/thing.ts', value: 'theThing = 2' }],
+            },
+          ],
+        },
+        null,
+        2,
+      ),
+    );
+
+    const result = await runGate([
+      '--root',
+      root,
+      '--contract',
+      'CONTRACTS.md',
+      '--table',
+      'table.json',
+    ]);
+
+    expect(result.status).toBe(1);
+    expect(result.stdout).toContain('FAIL');
+    expect(result.stdout).toContain(`as of ${first}`);
+    expect(result.stdout).toContain('at that commit');
+    expect(result.stdout).toContain('theThing = 2');
+  }, 60_000);
+
+  it('fails on this repository, on a note naming a commit without the shape', async () => {
+    // The defect this check was written for. WI-132's note named `4d389c7`,
+    // and at that commit the waiting item declared `toolName?: string | null`:
+    // the field was optional, so a row could leave it out, and that is a
+    // third wire shape the server never sends. The declaration was tightened
+    // afterwards, in a commit of its own, and the note still named the old
+    // one.
+    //
+    // The proof reads this repository's own history: the contract and the
+    // table are scratch copies, and the code and the commits are the real
+    // ones.
+    if (isShallowRepository()) {
+      // A shallow checkout holds one commit, so the old one cannot be looked
+      // up in it. Say so, rather than report a commit the tree has as one it
+      // does not.
+      console.warn(
+        '[contract-status] the commit check is skipped: this checkout is shallow, so an old commit cannot be looked up in it',
+      );
+      return;
+    }
+
+    const root = scratch('contract-status-real-commit-');
+    write(
+      root,
+      'CONTRACTS.md',
+      [
+        '# Contracts',
+        '',
+        '## Contract 1 — The waiting shape',
+        '',
+        '**The code implements it — as of `4d389c7`.**',
+        '',
+      ].join('\n'),
+    );
+    write(
+      root,
+      'table.json',
+      JSON.stringify({
+        contract: 'CONTRACTS.md',
+        claims: [
+          {
+            id: 'the-waiting-shape',
+            section: 'Contract 1 — The waiting shape',
+            note: 'The code implements it',
+            claim: 'implemented',
+            expect: [
+              {
+                kind: 'present-pattern',
+                path: 'packages/contracts/src/waiting.ts',
+                value: 'toolName: string \\| null;',
+              },
+            ],
+          },
+        ],
+      }),
+    );
+
+    const result = await runGate([
+      '--root',
+      repoRoot,
+      '--contract',
+      path.join(root, 'CONTRACTS.md'),
+      '--table',
+      path.join(root, 'table.json'),
+    ]);
+
+    expect(result.status).toBe(1);
+    expect(result.stdout).toContain('as of 4d389c7');
+    expect(result.stdout).toContain('at that commit');
+    expect(result.stdout).toContain('packages/contracts/src/waiting.ts');
+  }, 60_000);
+
+  it('fails when the commit it names is not in this tree', async () => {
+    const root = scratch('contract-status-commit-absent-');
+    initRepository(root);
+    commit(root, { 'src/thing.ts': 'export const theThing = 1;\n' });
+
+    // A commit that this repository has never heard of. The note points at
+    // code nobody can read, which is not a claim about anything.
+    const unknown = '0'.repeat(40);
+
+    write(
+      root,
+      'CONTRACTS.md',
+      [
+        '# Contracts',
+        '',
+        '## Contract 1 — A thing',
+        '',
+        `**The code implements it — as of \`${unknown}\`.**`,
+        '',
+      ].join('\n'),
+    );
+    write(
+      root,
+      'table.json',
+      JSON.stringify(
+        {
+          contract: 'CONTRACTS.md',
+          claims: [
+            {
+              id: 'a-thing',
+              section: 'Contract 1 — A thing',
+              note: 'The code implements it',
+              claim: 'implemented',
+              expect: [{ kind: 'present-text', path: 'src/thing.ts', value: 'theThing' }],
+            },
+          ],
+        },
+        null,
+        2,
+      ),
+    );
+
+    const result = await runGate([
+      '--root',
+      root,
+      '--contract',
+      'CONTRACTS.md',
+      '--table',
+      'table.json',
+    ]);
+
+    expect(result.status).toBe(1);
+    expect(result.stdout).toContain('FAIL');
+    expect(result.stdout).toContain(`as of ${unknown}`);
+    expect(result.stdout).toContain('holds no commit by that name');
+  }, 60_000);
+
+  it('fails when the commit it names is on a branch this tree does not carry', async () => {
+    const root = scratch('contract-status-commit-branch-');
+    initRepository(root);
+    commit(root, { 'src/thing.ts': 'export const theThing = 1;\n' });
+    git(root, ['checkout', '--quiet', '-b', 'a-branch']);
+    const onBranch = commit(root, { 'src/thing.ts': 'export const theThing = 2;\n' });
+    git(root, ['checkout', '--quiet', '-']);
+
+    write(
+      root,
+      'CONTRACTS.md',
+      [
+        '# Contracts',
+        '',
+        '## Contract 1 — A thing',
+        '',
+        `**The code implements it — as of \`${onBranch}\`.**`,
+        '',
+      ].join('\n'),
+    );
+    write(
+      root,
+      'table.json',
+      JSON.stringify({
+        contract: 'CONTRACTS.md',
+        claims: [
+          {
+            id: 'a-thing',
+            section: 'Contract 1 — A thing',
+            note: 'The code implements it',
+            claim: 'implemented',
+            expect: [{ kind: 'present-text', path: 'src/thing.ts', value: 'theThing' }],
+          },
+        ],
+      }),
+    );
+
+    const result = await runGate([
+      '--root',
+      root,
+      '--contract',
+      'CONTRACTS.md',
+      '--table',
+      'table.json',
+    ]);
+
+    expect(result.status).toBe(1);
+    expect(result.stdout).toContain('FAIL');
+    expect(result.stdout).toContain(`as of ${onBranch}`);
+    expect(result.stdout).toContain("not in this tree's history");
+  }, 60_000);
+
+  it('passes when the commit it names carries the shape', async () => {
+    const root = scratch('contract-status-commit-holds-');
+    initRepository(root);
+    const first = commit(root, { 'src/thing.ts': 'export const theThing = 1;\n' });
+    commit(root, { 'src/thing.ts': 'export const theThing = 2;\n' });
+
+    write(
+      root,
+      'CONTRACTS.md',
+      [
+        '# Contracts',
+        '',
+        '## Contract 1 — A thing',
+        '',
+        `**The code implements it — as of \`${first}\`.**`,
+        '',
+      ].join('\n'),
+    );
+    write(
+      root,
+      'table.json',
+      JSON.stringify(
+        {
+          contract: 'CONTRACTS.md',
+          claims: [
+            {
+              id: 'a-thing',
+              section: 'Contract 1 — A thing',
+              note: 'The code implements it',
+              claim: 'implemented',
+              expect: [{ kind: 'present-text', path: 'src/thing.ts', value: 'theThing' }],
+            },
+          ],
+        },
+        null,
+        2,
+      ),
+    );
+
+    const result = await runGate([
+      '--root',
+      root,
+      '--contract',
+      'CONTRACTS.md',
+      '--table',
+      'table.json',
+    ]);
+
+    expect(result.status).toBe(0);
+    expect(result.stdout).toContain('Every claim in the table matches the tree.');
   }, 60_000);
 });
 

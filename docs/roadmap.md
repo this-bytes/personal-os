@@ -60,6 +60,14 @@ says which tool the agent was refused and widens the grant from the row itself,
 through the published route, and it is labelled "Needs a grant" rather than
 "Blocked" — a grant the owner can widen from the row is not work that is stuck.
 
+**WI-132's two claims named a commit that did not carry the shape.** They named
+`4d389c7`, and at that commit the published field was the loose
+`toolName?: string | null` — optional, so a row could leave it out, and that is a
+third wire shape the server never sends. The declaration was tightened, and it
+landed on main in `e76b124`; the claims name that commit now. **The gate reads the
+code at the commit a claim names**, not only the working tree: a claim about the
+tree says nothing about the commit it points at, and nothing noticed.
+
 **The chat surface now stands on adopted source.** The owner asked for the
 conversation to be built from existing open-source work rather than from
 scratch, so the trace and the code block were re-anchored onto shadcn/ui's
