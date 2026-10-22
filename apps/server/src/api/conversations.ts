@@ -1,6 +1,6 @@
 import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
-import { personaSchema, routingModeSchema } from '@personal-os/contracts';
+import { personaSchema, routingModeSchema, botRoleSchema } from '@personal-os/contracts';
 import { audit, parseBody, parseQuery, requireAuth } from './helpers.js';
 
 const listQuerySchema = z.object({
@@ -52,6 +52,28 @@ const postMessageSchema = z.object({
     .min(1),
   replyToId: z.string().optional(),
   targetParticipantIds: z.array(z.string()).optional(),
+});
+
+const registerBotSchema = z.object({
+  agentConnectionId: z.string().min(1),
+  role: botRoleSchema,
+  displayName: z.string().min(1).max(200).optional(),
+  scope: z
+    .object({
+      mayDispatch: z.boolean().optional(),
+      dispatchableAgentConnectionIds: z.array(z.string()).optional(),
+    })
+    .optional(),
+});
+
+const dispatchSchema = z.object({
+  /** The bot that hands the work over. */
+  coordinatorAgentConnectionId: z.string().min(1),
+  /** The bot that does the work. */
+  agentConnectionId: z.string().min(1),
+  instruction: z.string().min(1).max(10_000),
+  title: z.string().min(1).max(300).optional(),
+  taskId: z.string().optional(),
 });
 
 export function registerConversationRoutes(app: FastifyInstance): void {
@@ -194,6 +216,74 @@ export function registerConversationRoutes(app: FastifyInstance): void {
         workspaceId: conversation.workspaceId,
       });
       return reply.send({ ok: true });
+    },
+  );
+
+  /**
+   * The team of a room: who is in it, what each one may hand work to, and
+   * the work that has been handed over.
+   */
+  app.get('/api/conversations/:id/bots', { preHandler: requireAuth }, async (request) => {
+    const { id } = request.params as { id: string };
+    const conversation = app.services.conversations.get(id);
+    return {
+      bots: app.services.bots.list(conversation.id),
+      delegatedTasks: app.services.bots.listDelegations(conversation.id),
+    };
+  });
+
+  app.post('/api/conversations/:id/bots', { preHandler: requireAuth }, async (request, reply) => {
+    const { id } = request.params as { id: string };
+    const body = parseBody(registerBotSchema, request.body);
+    const conversation = app.services.conversations.get(id);
+    const bot = app.services.bots.register({
+      conversationId: conversation.id,
+      agentConnectionId: body.agentConnectionId,
+      role: body.role,
+      displayName: body.displayName,
+      scope: body.scope,
+    });
+    audit(
+      request,
+      'bot.registered',
+      { type: 'conversation', id: conversation.id, workspaceId: conversation.workspaceId },
+      { agentConnectionId: bot.agentConnectionId, role: bot.role },
+    );
+    return reply.code(201).send({ bot });
+  });
+
+  /**
+   * Hand a piece of work to another agent on the owner's behalf.
+   *
+   * The scope of the coordinator still decides: the owner can ask for a
+   * delegation the coordinator is allowed to make, and no other.
+   */
+  app.post(
+    '/api/conversations/:id/bots/dispatch',
+    { preHandler: requireAuth },
+    async (request, reply) => {
+      const { id } = request.params as { id: string };
+      const body = parseBody(dispatchSchema, request.body);
+      const conversation = app.services.conversations.get(id);
+      const result = app.services.bots.dispatch({
+        coordinatorAgentConnectionId: body.coordinatorAgentConnectionId,
+        conversationId: conversation.id,
+        agentConnectionId: body.agentConnectionId,
+        instruction: body.instruction,
+        title: body.title,
+        taskId: body.taskId,
+      });
+      audit(
+        request,
+        'bot.dispatched',
+        { type: 'conversation', id: conversation.id, workspaceId: conversation.workspaceId },
+        {
+          coordinatorAgentConnectionId: body.coordinatorAgentConnectionId,
+          agentConnectionId: body.agentConnectionId,
+          delegatedTaskId: result.delegatedTask.id,
+        },
+      );
+      return reply.code(201).send(result);
     },
   );
 }

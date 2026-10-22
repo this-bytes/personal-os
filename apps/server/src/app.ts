@@ -13,6 +13,7 @@ import { createAgentTokenService } from './modules/auth/tokens.js';
 import { createWorkspaceService } from './modules/workspaces/service.js';
 import { createAgentService } from './modules/agents/service.js';
 import { createConversationsService } from './modules/conversations/service.js';
+import { createBotsService } from './modules/conversations/bots.js';
 import { createResourcesService } from './modules/resources/service.js';
 import { createFactoryService } from './modules/factory/service.js';
 import { createAutomationsService } from './modules/automations/service.js';
@@ -95,10 +96,29 @@ export async function buildApp(options: BuildAppOptions = {}): Promise<FastifyIn
   });
   const automations = createAutomationsService({ db: runtime.db });
   const approvals = createApprovalsService(runtime.db);
+  const bots = createBotsService({
+    db: runtime.db,
+    events,
+    queue,
+    audit: runtime.audit,
+    factory,
+    conversations,
+    agentToolGrants: (connectionId) => agents.toolGrants(connectionId),
+    agentConnection: (connectionId) => {
+      const connection = agents.get(connectionId);
+      return {
+        id: connection.id,
+        workspaceId: connection.workspaceId,
+        enabled: connection.enabled,
+      };
+    },
+    agentDisplayName: (connectionId) => agents.get(connectionId).name,
+  });
   const capabilities = createCapabilitiesService({
     db: runtime.db,
     workspaces,
     conversations,
+    bots,
     agents,
     factory,
     resources,
@@ -117,6 +137,7 @@ export async function buildApp(options: BuildAppOptions = {}): Promise<FastifyIn
     workspaces,
     agents,
     conversations,
+    bots,
     resources,
     factory,
     automations,
