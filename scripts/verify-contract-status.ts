@@ -16,6 +16,11 @@
  * itself, and what the tree must contain for the claim to be true. It checks
  * exactly those, and it checks nothing else.
  *
+ * A claim is rebuilt field by field when the table is read, so a field the
+ * gate does not know about would be silently dropped: the table says
+ * something the gate cannot read, and the claim looks checked while the rule
+ * it names is applied to nothing. A field the gate does not read is refused.
+ *
  * A note that names the commit which carries the claim — "the code implements
  * it — as of `<commit>`" — is checked at that commit as well as in the working
  * tree. The tree moves on, and a shape can be tightened after the note was
@@ -326,6 +331,20 @@ function readTable(raw: string, tablePath: string): ClaimTable {
       throw new GateError(`${tablePath}: claim ${index} must be an object.`);
     }
     const claim = raw as Partial<ClaimEntry>;
+
+    // A claim is rebuilt field by field below, so a field the gate does not
+    // know about is a field that is silently dropped: the table says
+    // something the gate cannot read, and the table looks checked. A field
+    // nobody reads is a mistake worth saying out loud.
+    const known = new Set(['id', 'section', 'note', 'claim', 'why', 'item', 'expect']);
+    for (const field of Object.keys(claim)) {
+      if (!known.has(field)) {
+        throw new GateError(
+          `${tablePath}: claim ${index} carries a "${field}" the gate does not read. ` +
+            'A field the gate does not read is a field it cannot check.',
+        );
+      }
+    }
 
     for (const field of ['id', 'section', 'note', 'claim'] as const) {
       if (typeof claim[field] !== 'string' || (claim[field] as string).length === 0) {

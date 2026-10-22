@@ -899,6 +899,65 @@ describe('two claims about one item', () => {
   }, 60_000);
 });
 
+describe('a field the gate does not read', () => {
+  // A claim is rebuilt field by field when the table is read, so a field the
+  // gate does not know about is a field that is silently dropped. The table
+  // then says something the gate cannot read, and the table looks checked:
+  // the rule it names is not being applied to anything. This is what happened
+  // when the item field was added — the rule was written, the field was
+  // named, and the gate ignored both.
+  it('is refused rather than dropped', async () => {
+    const root = scratch('contract-status-unknown-field-');
+    initRepository(root);
+    commit(root, { 'src/thing.ts': 'export const theThing = 1;\n' });
+
+    write(
+      root,
+      'CONTRACTS.md',
+      ['# Contracts', '', '## Contract 1 — A thing', '', '**The code implements it.**', ''].join(
+        '\n',
+      ),
+    );
+    write(
+      root,
+      'table.json',
+      JSON.stringify(
+        {
+          contract: 'CONTRACTS.md',
+          claims: [
+            {
+              id: 'a-thing',
+              section: 'Contract 1 — A thing',
+              note: 'The code implements it',
+              claim: 'implemented',
+              // A field the gate does not read: it would be dropped, and the
+              // claim would be checked without it.
+              itemm: 'WI-132',
+              expect: [{ kind: 'present-text', path: 'src/thing.ts', value: 'theThing = 1' }],
+            },
+          ],
+        },
+        null,
+        2,
+      ),
+    );
+
+    const result = await runGate([
+      '--root',
+      root,
+      '--contract',
+      'CONTRACTS.md',
+      '--table',
+      'table.json',
+    ]);
+
+    expect(result.status).toBe(2);
+    expect(result.stdout).toContain('could not run');
+    expect(result.stdout).toContain('"itemm"');
+    expect(result.stdout).toContain('the gate does not read');
+  }, 60_000);
+});
+
 describe('the tree as it stands', () => {
   it('passes, with every claim in the table checked', async () => {
     const result = await runGate([]);
