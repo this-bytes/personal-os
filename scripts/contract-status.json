@@ -406,12 +406,22 @@
       "section": "The adapter presets",
       "note": "This entry is the contract for WI-153, and the code implements it",
       "claim": "implemented",
-      "why": "WI-153's Hermes preset and the proof of a runtime: the catalogue carries the surface the installed Hermes publishes, the script proves a runtime through the product's own adapter, and the ACP adapter opens a session the way the protocol asks.",
+      "why": "WI-153's Hermes preset, the proof of a runtime, and the evidence a claim of demonstration rests on.",
       "expect": [
         {
           "kind": "present-pattern",
           "path": "packages/contracts/src/adapter-presets.ts",
           "value": "id: 'hermes-acp'"
+        },
+        {
+          "kind": "present-pattern",
+          "path": "packages/contracts/src/adapter-presets.ts",
+          "value": "evidence: z"
+        },
+        {
+          "kind": "present-pattern",
+          "path": "packages/contracts/src/adapter-presets.ts",
+          "value": "demonstratedOn: z\\.string\\(\\)\\.regex"
         },
         {
           "kind": "present-pattern",
