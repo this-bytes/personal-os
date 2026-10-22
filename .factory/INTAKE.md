@@ -5271,3 +5271,33 @@ this round. **Queued:** Cog's WI-116 (`task_30fa1c22fa81`), WI-130 (`task_c8d80a
 WI-131 (`task_f57ccf614193`) and WI-132 (`task_5cde5cfe02bf`); Probe's WI-121
 (`task_122e0e2e02bf`) and WI-129 (`task_b433527c33d7`); the WI-122 verdict's copy to the
 peer session; and the WI-121 addendum. **Ceiling two. Next free number WI-133.**
+
+### 15:05 — the addendum reached the group, and the lead measured what it did not
+
+**Probe's addendum to the WI-121 report landed in the group** (`task_d7b5010f2199`). **It
+is the addendum the lead already accepted on** — WI-121 was accepted at 14:40 with D1, D2
+and D3 numbered **WI-131** and O1 and Q1 numbered **WI-132**, and the addendum's content is
+recorded in `WI-121.md`. **No new finding.**
+
+**And the lead re-measured the two things the addendum said moved.** On the published tip
+`4dd92ef`, read by hand: **`CONTRACTS.md:1443-1447`** carries the row-leaves paragraph,
+unchanged word for word; **`:1446`** carries the citation that names `:261` for _"the one
+write that changes a grant"_; and **`:1460`** carries _"The blocked capability is the
+contract for **WI-121**, and the code implements it —"_. **All three of the addendum's
+numbers hold.**
+
+**And WI-121's implementation is byte-identical between the verifier's measured tree
+`9e8bf84` and the tip published now** — `git diff --name-only 9e8bf84 origin/main` over the
+eight files the addendum named returns **nothing** — **so every measurement, and D1 and D3,
+stand on the tree published now.**
+
+**And the gates the addendum did not re-run, the lead did:** the lead merged the check and
+gated the tree that carries it (`86635d1`, then `0b81603`) — **nine of nine, exit 0, 70
+files and 710 tests, 0 failures, pointer gate 143 checked** — and that tree carries WI-129's
+work too, which is the movement the addendum named.
+
+**The floor at 15:05.** **Running:** Cog's WI-127 verification (`task_48aacbb2df4b`) and
+this round. **Queued:** Cog's WI-116 (`task_30fa1c22fa81`), WI-130 (`task_c8d80aa01bfa`),
+WI-131 (`task_f57ccf614193`) and WI-132 (`task_5cde5cfe02bf`); Probe's WI-121
+(`task_122e0e2e02bf`) and WI-129 (`task_b433527c33d7`); and the WI-123 verdict's copy.
+**Ceiling two. Next free number WI-133.**
