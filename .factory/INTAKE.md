@@ -3576,9 +3576,12 @@ is that item and this block's 08:19 sentence was the stale claim."_ **So WI-117 
 by the session that had the other claim, in writing, on `main`.** The number space reads
 **WI-117 = this item, WI-118 = the mode item, WI-119 = the prose item**, and the next
 free number is **WI-124** — WI-120, WI-121, WI-122 and WI-123 were taken after this section was
-written, and the block moved with them. **WI-122 was taken at 10:37 and has since been
-renumbered to WI-124 by the session that had it**, with WI-123 left alone because nobody
-contested it — the same tiebreak, applied again, and a number nobody contests is not moved for
+written, and the block moved with them. **Two more renumberings have happened behind that block
+and neither has landed: WI-122 → WI-124 and WI-123 → WI-125.** Both moved for the same reason —
+the holder's claim was bound to a live dispatch and the other's was not — and
+**`.factory/work/WI-124.md` and `WI-125.md` are both absent from `main`**, so to a session reading
+`main` both numbers still look free. **That is the same exposure as WI-113, WI-116 and WI-122, and
+it only closes when the renumbering is pushed.** A number nobody contests is not moved for
 tidiness.
 
 ## 2026-10-22 09:20 — Chief: the front page is corrected, two numbers are taken, and WI-112's record is true
