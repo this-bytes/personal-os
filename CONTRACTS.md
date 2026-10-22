@@ -1920,8 +1920,7 @@ the row while the agent is still blocked is a list that lies the other way.
 computed **inside** the transaction that writes it, from a read taken inside the
 same transaction (`apps/server/src/modules/agents/service.ts:411`), and the
 transaction takes the write lock before it reads
-(`apps/server/src/modules/agents/service.ts:353`,
-`apps/server/src/modules/agents/service.ts:474`). **So a widening that another
+(`apps/server/src/modules/agents/service.ts:474`). **So a widening that another
 process committed while this one was waiting is not taken back: the grant ends
 up holding both capabilities.** A read taken outside the transaction could be
 stale by the time the write landed, and a union computed from a stale grant
