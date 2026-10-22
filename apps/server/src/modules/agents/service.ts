@@ -4,6 +4,7 @@ import {
   type AdapterConfig,
   type AdapterProvider,
   type AdapterType,
+  type AgentAdapter,
   type AgentCapabilities,
   type AgentConnection,
   type AgentConnectionDetail,
@@ -349,9 +350,10 @@ export function createAgentService(options: AgentServiceOptions): AgentService {
       const current = service.get(id);
       const now = new Date().toISOString();
 
+      let adapter: AgentAdapter | null = null;
       try {
         const config = service.readConfig(id);
-        const adapter = registry.create(config, {
+        adapter = registry.create(config, {
           resolveSecret: options.resolveSecret,
           logger: { info: () => undefined, warn: () => undefined, error: () => undefined },
         });
@@ -379,6 +381,12 @@ export function createAgentService(options: AgentServiceOptions): AgentService {
           })
           .where(eq(agentConnections.id, id))
           .run();
+      } finally {
+        // The probe's adapter is a throwaway instance, and a throwaway
+        // instance that held a supervised process would leave it running for
+        // the life of the server. The probe establishes a runtime and learns
+        // what it can do; it does not keep one.
+        await adapter?.close?.();
       }
 
       return service.get(id);
