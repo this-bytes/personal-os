@@ -4,6 +4,11 @@ import { audit, parseBody, parseQuery, requestAuthor, requireAuth } from './help
 
 const workspaceQuerySchema = z.object({ workspaceId: z.string() });
 
+const dependencyQuerySchema = z.object({
+  workspaceId: z.string(),
+  goalId: z.string().optional(),
+});
+
 const createGoalSchema = z.object({
   workspaceId: z.string(),
   title: z.string().min(1).max(300),
@@ -31,6 +36,9 @@ const updateTaskSchema = z.object({
   status: z.enum(['open', 'active', 'blocked', 'review', 'cancelled']).optional(),
   assigneeId: z.string().optional(),
   acceptanceCriteria: z.array(z.string()).optional(),
+  // The tasks this task waits on. A task never waits on itself, directly or
+  // through a chain, so a change that would close a loop is refused.
+  dependsOnTaskIds: z.array(z.string()).optional(),
   // The revision the caller read. A task that changed in the meantime is
   // rejected instead of being overwritten.
   expectedRevision: z.number().int().min(1).optional(),
@@ -56,14 +64,36 @@ export function registerFactoryRoutes(app: FastifyInstance): void {
     return reply.code(201).send({ goal });
   });
 
+  app.get('/api/goals/overview', { preHandler: requireAuth }, async (request) => {
+    const { workspaceId } = parseQuery(workspaceQuerySchema, request.query);
+    return {
+      goals: app.services.factory.listGoals(workspaceId),
+      rollups: app.services.factory.listGoalRollups(workspaceId),
+    };
+  });
+
   app.get('/api/goals/:id', { preHandler: requireAuth }, async (request) => {
     const { id } = request.params as { id: string };
     return { goal: app.services.factory.getGoal(id) };
   });
 
+  app.get('/api/goals/:id/view', { preHandler: requireAuth }, async (request) => {
+    const { id } = request.params as { id: string };
+    return app.services.factory.goalView(id);
+  });
+
   app.get('/api/tasks', { preHandler: requireAuth }, async (request) => {
     const { workspaceId } = parseQuery(workspaceQuerySchema, request.query);
     return { tasks: app.services.factory.listTasks(workspaceId) };
+  });
+
+  app.get('/api/tasks/dependencies', { preHandler: requireAuth }, async (request) => {
+    const { workspaceId, goalId } = parseQuery(dependencyQuerySchema, request.query);
+    return {
+      dependencies: app.services.factory.listDependencies(workspaceId, {
+        ...(goalId !== undefined ? { goalId } : {}),
+      }),
+    };
   });
 
   app.post('/api/tasks', { preHandler: requireAuth }, async (request, reply) => {

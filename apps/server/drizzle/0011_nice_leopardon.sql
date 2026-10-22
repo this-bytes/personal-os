@@ -1,0 +1,1 @@
+ALTER TABLE `tasks` ADD `depends_on_task_ids` text;

@@ -10,9 +10,12 @@ import type {
   Evidence,
   FactoryTask,
   Goal,
+  GoalRollup,
+  GoalView,
   Message,
   Participant,
   Resource,
+  TaskDependency,
   Workspace,
 } from '@personal-os/contracts';
 
@@ -87,6 +90,17 @@ export interface TaskWithEvidence {
   evidence: Evidence[];
 }
 
+/** The goals of a workspace, and the counts of the work under each of them. */
+export interface GoalOverview {
+  goals: Goal[];
+  rollups: GoalRollup[];
+}
+
+/** What the tasks of a workspace wait on. */
+export interface TaskDependencies {
+  dependencies: TaskDependency[];
+}
+
 export interface ResourceInspection {
   resource: Resource;
   valid: boolean;
@@ -158,7 +172,10 @@ export type {
   Evidence,
   FactoryTask,
   Goal,
+  GoalRollup,
+  GoalView,
   Message,
   Resource,
+  TaskDependency,
   Workspace,
 };

@@ -348,6 +348,8 @@ export const tasks = sqliteTable(
     evidenceResourceIds: text('evidence_resource_ids', { mode: 'json' })
       .$type<string[]>()
       .notNull(),
+    /** The tasks this task waits on. Null is what the old rows recorded. */
+    dependsOnTaskIds: text('depends_on_task_ids', { mode: 'json' }).$type<string[] | null>(),
     /** External task identifier when the work is delegated to an orchestrator. */
     externalRef: text('external_ref'),
     /**
