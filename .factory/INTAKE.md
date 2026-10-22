@@ -6064,3 +6064,54 @@ times are the record; the labels are not, and a label in the peer's own section 
 lead's to change.** So the correction is appended here and the sections stand as they are.
 
 **The floor at 16:40.** **Ceiling two. Next free number WI-137.**
+
+### 16:47 — WI-116 is accepted, WI-130 is implemented on a branch and not merged, and one sentence of the lead's own is corrected
+
+**WI-116 is ACCEPTED** on Cog's verdict (`task_30fa1c22fa81`, **VERIFIED**), measured at
+the published tip `77b3881`. **Cog wrote none of this work — Probe wrote the pin** — and
+**Vision is the verifier this item names, and Cog stands because Vision's lane refused
+outright** (`task_5c1d74057e18`, ended `AGENT_UNAVAILABLE` at 12:23). **A substituted
+verifier stands only where the substitute did not write the work.** **The lead re-measured:
+`git diff --name-only 77b3881 55f173c` over `apps/web/src/__tests__/forge-briefs.test.ts`,
+`docs/strategy.md`, `prototypes/DIRECTION.md` and the item's file is empty** — the surface
+is byte-identical, so **the acceptance holds on the published tip.** The record's copy is
+held **by its content and not by its line number**, the two comparisons are provably
+load-bearing, and the landing was **one file, +86/−28**. _The product: the strategy
+record's copy of the boundary rule is held to the rule in force, and an unrelated edit in
+that document cannot turn the check red and get it deleted._
+
+**WI-130 is implemented, on a pushed branch, and not merged.** Cog's report
+(`task_c8d80aa01bfa`, **`waiting_for_tasks`** because the group round has not cleared):
+branch `wi/130-policy-clear-fails-open`, **the write path refuses an empty
+`allowedActions` with 422 and says what to write instead**
+(`apps/server/src/modules/workspaces/service.ts:102`), **a refusal changes nothing** — the
+stored list, the effective list and `updatedAt` are all untouched — and **the resolver's
+rule is unchanged and is now published**: when no policy names any action, the effective
+set is every action in the vocabulary. **That was not a stylistic choice, and the reason is
+measurable: every new workspace stores an empty list**, so "an empty list means no action"
+as a resolver's rule would silence every workspace that never named one, and a stored
+default and an owner-cleared list are the same row and cannot be told apart. The contract
+gained the other half of the composition rule, the write rule with the refusal cited, and
+the migration note — **which says the honest thing: no stored row is migrated, because an
+empty stored list cannot be told apart from the stored default; what changes is that the
+client now gets 422 and a message telling it what to write instead.**
+
+**And one red test, and it is Probe's file and red for the right reason.**
+`autonomy-policy-write.test.ts` carries the case _"clears a list only when the owner says
+so"_, which pins the sentence this item supersedes. **Cog wrote none of Probe's test files
+and left it alone; Probe is dispatched (`task_984a7561b69d`) to write the new check and
+change that case, basing their branch on Cog's. The branch lands with Probe's or not at
+all.**
+
+**One sentence of the lead's own is corrected.** The 16:40 section says Probe's WI-129
+report "is now in the group". **At the moment it was written, that report's group post
+(`task_02a3509d3d31`) was still queued; the delivery has happened since.** The sentence was
+ahead of the fact by a few minutes, and it is corrected here rather than rewritten.
+
+**And the lead repeats Cog's own note, because a bottleneck worth saying out loud should
+not be pretended away: Cog is the only verifier lane that answers.** It held four
+verifications at once — WI-122, WI-123, WI-127 and WI-116 — **while Vision's lane refused
+and Probe wrote two of the pins. Wren's lane refuses too, and WI-114 is HELD on it.** **The
+restart is the owner's word, and it buys both lanes.**
+
+**The floor at 16:47.** **Ceiling two. Next free number WI-137.**
