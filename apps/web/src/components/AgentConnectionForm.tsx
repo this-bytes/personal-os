@@ -1,7 +1,9 @@
-import { useMemo, useState, type FormEvent } from 'react';
-import type { AdapterType, Persona } from '@personal-os/contracts';
+import { useEffect, useMemo, useState, type FormEvent } from 'react';
+import type { AdapterPreset, AdapterType, Persona } from '@personal-os/contracts';
 import { adapterTypeLabels } from '@personal-os/contracts';
+import { CircleCheck, Info } from 'lucide-react';
 import {
+  Badge,
   Button,
   Dialog,
   DialogContent,
@@ -15,6 +17,7 @@ import {
   Textarea,
 } from '@personal-os/ui';
 import type { AgentConnectionDetail } from '../lib/types';
+import { findPreset, presetsForType } from '../lib/presets';
 import { Field } from './Field';
 
 export interface AgentFormInput {
@@ -25,6 +28,13 @@ export interface AgentFormInput {
   enabled?: boolean;
   /** The base persona of this agent. `null` means it has none. */
   persona: Persona | null;
+  /**
+   * The preset this connection was started from.
+   *
+   * The server applies it as the base the configuration is laid over, and
+   * takes its persona when the owner wrote none.
+   */
+  presetId?: string | null;
 }
 
 interface AgentConnectionFormProps {
@@ -33,10 +43,14 @@ interface AgentConnectionFormProps {
   agent?: AgentConnectionDetail | null;
   busy?: boolean;
   error?: string | null;
+  /** The preset catalogue. Without it the form still works, template-free. */
+  presets?: AdapterPreset[];
+  /** The preset to start from, when the owner chose one before opening. */
+  initialPresetId?: string | null;
   onSubmit: (input: AgentFormInput) => void;
 }
 
-interface FormState {
+export interface FormState {
   name: string;
   role: string;
   personaInstructions: string;
@@ -242,6 +256,112 @@ function secretFieldFor(type: AdapterType): 'apiKey' | 'authToken' | null {
 }
 
 /**
+ * The form fields a preset fills in.
+ *
+ * A preset's configuration is the shape the server stores; the form's state
+ * is flat, one field per input. This is the one place the two are
+ * translated, so the rest of the form never has to know a preset exists.
+ */
+export function formValuesFromPreset(preset: AdapterPreset): Partial<FormState> {
+  const config = preset.config as unknown as Record<string, unknown>;
+  const text = (key: string, fallback = ''): string =>
+    typeof config[key] === 'string' ? (config[key] as string) : fallback;
+  const count = (key: string, fallback: number): number =>
+    typeof config[key] === 'number' ? (config[key] as number) : fallback;
+  const list = (key: string): string[] =>
+    Array.isArray(config[key]) ? (config[key] as unknown[]).map((value) => String(value)) : [];
+  const keyValues = (key: string): string[] => {
+    const value = config[key];
+    if (!value || typeof value !== 'object') return [];
+    return Object.entries(value as Record<string, unknown>).map(
+      ([name, item]) => `${name}=${String(item)}`,
+    );
+  };
+  const headerLines = (key: string): string[] => {
+    const value = config[key];
+    if (!value || typeof value !== 'object') return [];
+    return Object.entries(value as Record<string, unknown>).map(
+      ([name, item]) => `${name}: ${String(item)}`,
+    );
+  };
+
+  switch (preset.adapterType) {
+    case 'cli': {
+      const mode = text('promptMode', 'stdin');
+      return {
+        command: text('command'),
+        args: list('args').join('\n'),
+        cwd: text('cwd'),
+        env: keyValues('env').join('\n'),
+        promptMode: mode === 'arg' || mode === 'file' ? mode : 'stdin',
+        promptArg: text('promptArg', '--prompt'),
+        timeoutSeconds: String(count('timeoutSeconds', 600)),
+      };
+    }
+    case 'acp':
+      return {
+        command: text('command'),
+        args: list('args').join('\n'),
+        cwd: text('cwd'),
+        env: keyValues('env').join('\n'),
+        timeoutSeconds: String(count('timeoutSeconds', 900)),
+      };
+    case 'a2a':
+      return {
+        baseUrl: text('baseUrl'),
+        agentCardPath: text('agentCardPath', '/.well-known/agent-card.json'),
+        messageUrl: text('messageUrl', 'message/send'),
+        timeoutSeconds: String(count('timeoutSeconds', 600)),
+      };
+    case 'http':
+      return {
+        baseUrl: text('baseUrl'),
+        path: text('path', '/chat'),
+        method: text('method', 'POST') === 'PUT' ? 'PUT' : 'POST',
+        headers: headerLines('headers').join('\n'),
+        bodyTemplate: text('bodyTemplate', '{"message":"{{message}}","context":"{{context}}"}'),
+        responseTextPath: text('responseTextPath', 'message'),
+        sse: config['sse'] === true,
+        sseTextPath: text('sseTextPath'),
+        authHeader: text('authHeader', 'Authorization'),
+        authScheme: text('authScheme', 'Bearer'),
+        timeoutSeconds: String(count('timeoutSeconds', 600)),
+      };
+    case 'model':
+      return {
+        baseUrl: text('baseUrl'),
+        model: text('model'),
+        temperature: String(count('temperature', 0.7)),
+        maxTokens: String(count('maxTokens', 4096)),
+        systemPrompt: text('systemPrompt'),
+        apiKeyHeader: text('apiKeyHeader', 'Authorization'),
+        apiKeyScheme: text('apiKeyScheme', 'Bearer'),
+        timeoutSeconds: String(count('timeoutSeconds', 600)),
+      };
+    case 'mcp':
+      return {
+        mcpTransport: text('transport', 'stdio') === 'http' ? 'http' : 'stdio',
+        command: text('command'),
+        args: list('args').join('\n'),
+        cwd: text('cwd'),
+        env: keyValues('env').join('\n'),
+        mcpUrl: text('url'),
+        mcpProtocolVersion: text('protocolVersion', '2025-06-18'),
+        mcpToolName: text('toolName'),
+        mcpArgumentTemplate: text('argumentTemplate', '{"message":"{{message}}"}'),
+        mcpAllowedTools: list('allowedTools').join('\n'),
+        timeoutSeconds: String(count('timeoutSeconds', 600)),
+      };
+    case 'echo':
+    default:
+      return {
+        reply: text('reply'),
+        delayMs: String(count('delayMs', 0)),
+      };
+  }
+}
+
+/**
  * The add / edit form for an agent connection.
  *
  * The configuration fields follow the selected adapter type. Credentials
@@ -254,20 +374,46 @@ export function AgentConnectionForm({
   agent,
   busy,
   error,
+  presets = [],
+  initialPresetId = null,
   onSubmit,
 }: AgentConnectionFormProps): React.JSX.Element {
   const isEdit = Boolean(agent);
   const [form, setForm] = useState<FormState>(EMPTY);
   const [replaceConfig, setReplaceConfig] = useState(false);
   const [localError, setLocalError] = useState<string | null>(null);
+  /** The template the owner is starting from, if any. */
+  const [presetId, setPresetId] = useState('');
 
   const secretField = useMemo(() => secretFieldFor(form.adapterType), [form.adapterType]);
+
+  const available = useMemo(
+    () => presetsForType(presets, form.adapterType),
+    [presets, form.adapterType],
+  );
+  const selected = useMemo(() => findPreset(presets, presetId), [presets, presetId]);
 
   const set = <K extends keyof FormState>(key: K, value: FormState[K]): void => {
     setForm((current) => ({ ...current, [key]: value }));
   };
 
+  /**
+   * Lay a template into the form: its configuration, and the persona it
+   * starts the agent with. Every field stays editable afterwards.
+   */
+  const applyPreset = (preset: AdapterPreset): void => {
+    setForm((current) => ({
+      ...current,
+      adapterType: preset.adapterType,
+      ...formValuesFromPreset(preset),
+      role: preset.persona.role ?? current.role,
+      personaInstructions: preset.persona.instructions ?? current.personaInstructions,
+    }));
+    setPresetId(preset.id);
+  };
+
   const reset = (): void => {
+    const preset = agent ? undefined : findPreset(presets, initialPresetId);
     setForm(
       agent
         ? {
@@ -277,10 +423,46 @@ export function AgentConnectionForm({
             role: agent.persona?.role ?? '',
             personaInstructions: agent.persona?.instructions ?? '',
           }
-        : EMPTY,
+        : preset
+          ? {
+              ...EMPTY,
+              adapterType: preset.adapterType,
+              ...formValuesFromPreset(preset),
+              role: preset.persona.role ?? '',
+              personaInstructions: preset.persona.instructions ?? '',
+            }
+          : EMPTY,
     );
+    setPresetId(preset?.id ?? '');
     setReplaceConfig(false);
     setLocalError(null);
+  };
+
+  // A template the owner chose on the page is laid into the form when the
+  // form opens. The effect watches the id and not the catalogue, so a
+  // catalogue that reloads cannot overwrite what the owner has edited.
+  useEffect(() => {
+    if (!open || isEdit || !initialPresetId) return;
+    const preset = findPreset(presets, initialPresetId);
+    if (preset) applyPreset(preset);
+  }, [open, initialPresetId]);
+
+  /** The owner chose a template, or chose none. */
+  const handlePresetChange = (value: string): void => {
+    setPresetId(value);
+    if (!value) return;
+    const preset = findPreset(presets, value);
+    if (preset) applyPreset(preset);
+  };
+
+  /**
+   * The owner chose an adapter type. A template belongs to one type, so a
+   * template of another type stops being the template.
+   */
+  const handleAdapterTypeChange = (type: AdapterType): void => {
+    setForm((current) => ({ ...current, adapterType: type }));
+    const current_ = findPreset(presets, presetId);
+    if (current_ && current_.adapterType !== type) setPresetId('');
   };
 
   const handleSubmit = (event: FormEvent<HTMLFormElement>): void => {
@@ -365,6 +547,9 @@ export function AgentConnectionForm({
       config,
       secrets: Object.keys(secrets).length > 0 ? secrets : null,
       persona,
+      // The template the connection was started from, so the server can lay
+      // it under the configuration as well.
+      presetId: presetId.length > 0 ? presetId : null,
       ...(isEdit ? { enabled: agent?.enabled ?? true } : {}),
     });
   };
@@ -403,7 +588,7 @@ export function AgentConnectionForm({
                 id="agent-adapter"
                 value={form.adapterType}
                 disabled={isEdit}
-                onChange={(event) => set('adapterType', event.target.value as AdapterType)}
+                onChange={(event) => handleAdapterTypeChange(event.target.value as AdapterType)}
               >
                 {(Object.keys(adapterTypeLabels) as AdapterType[]).map((type) => (
                   <option key={type} value={type}>
@@ -413,6 +598,75 @@ export function AgentConnectionForm({
               </Select>
             </Field>
           </div>
+
+          {!isEdit && available.length > 0 ? (
+            <div className="space-y-3 rounded-md border border-slate-800 bg-slate-950/40 p-3">
+              <p className="text-[11px] font-medium uppercase tracking-wide text-slate-500">
+                Start from a template
+              </p>
+              <Field
+                label="Template"
+                htmlFor="agent-preset"
+                hint="A template fills the fields below. Every field stays editable, and a template is only a starting point."
+              >
+                <Select
+                  id="agent-preset"
+                  value={presetId}
+                  onChange={(event) => handlePresetChange(event.target.value)}
+                >
+                  <option value="">No template — fill the fields yourself</option>
+                  {available.map((preset) => (
+                    <option key={preset.id} value={preset.id}>
+                      {preset.name}
+                    </option>
+                  ))}
+                </Select>
+              </Field>
+
+              {selected ? (
+                <div className="space-y-2">
+                  <p className="text-xs leading-snug text-slate-300">{selected.description}</p>
+                  <div className="flex flex-wrap items-center gap-1.5">
+                    {selected.verified ? (
+                      <Badge variant="success">
+                        <CircleCheck className="h-3 w-3" />
+                        demonstrated here
+                      </Badge>
+                    ) : (
+                      <Badge variant="warning">
+                        <Info className="h-3 w-3" />
+                        not demonstrated
+                      </Badge>
+                    )}
+                  </div>
+                  <p className="text-[11px] leading-snug text-slate-500">
+                    {selected.verified
+                      ? 'This template is exercised by this repository’s own tests.'
+                      : 'A starting template. What the agent actually supports is discovered when the connection is probed.'}
+                  </p>
+
+                  {selected.requires.length > 0 ? (
+                    <div>
+                      <p className="pos-field-label">What you still have to supply</p>
+                      <ul className="list-disc space-y-0.5 pl-4 text-[11px] leading-snug text-slate-400">
+                        {selected.requires.map((requirement) => (
+                          <li key={requirement}>{requirement}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  ) : null}
+
+                  {selected.credential ? (
+                    <p className="text-[11px] leading-snug text-slate-500">
+                      This connection needs a{' '}
+                      {selected.credential === 'apiKey' ? 'API key' : 'auth token'}. Enter it in the
+                      credential field below: it is encrypted at rest and never returned.
+                    </p>
+                  ) : null}
+                </div>
+              ) : null}
+            </div>
+          ) : null}
 
           <div className="space-y-4 rounded-md border border-slate-800 bg-slate-950/40 p-3">
             <p className="text-[11px] font-medium uppercase tracking-wide text-slate-500">

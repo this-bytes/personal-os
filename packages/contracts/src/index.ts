@@ -10,6 +10,7 @@ export * from './autonomy.js';
 export * from './conversation.js';
 export * from './agent.js';
 export * from './adapter-config.js';
+export * from './adapter-presets.js';
 export * from './resource.js';
 export * from './factory.js';
 export * from './automation.js';
