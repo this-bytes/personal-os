@@ -105,7 +105,7 @@ free number above the highest taken.**
 | WI-132 | The panel does not carry the published waiting shape, and the row carries no way to widen the grant                                                                                                                               | worker |
 | WI-133 | The audit job audits twice: one word makes it audit once                                                                                                                                                                          | worker |
 | WI-134 | The domain does not depend on the adapters package                                                                                                                                                                                | worker |
-| WI-135 | The two published documents name different lines for the same line                                                                                                                                                                | worker |
+| WI-135 | The published documents name things that have moved                                                                                                                                                                               | worker |
 
 **The next free number is WI-136.**
 
