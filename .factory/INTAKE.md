@@ -4134,3 +4134,139 @@ before.**
 **So the two drift cases now locate their citation by reading it out of the note instead of writing the line number down.** `checkNote` is untouched — the same three claims, the same three assertions, the same strength — **and the drift injected is the same drift: one line below the claim, where the line still holds code.** The mutation proof stands: **with the claim comparison removed from `checkNote`, the pin goes red, and it is restored.** **A test that hardcodes the line it is protecting goes stale the moment the file it names moves, and a stale test fails for a reason that has nothing to do with what it guards.**
 
 **This is outside WI-125's scope and it is recorded here rather than left to be found: the peer's WI-122 said "one file, and the landing", and this landing changed that file.** The change makes the pin stronger, not weaker, and the peer session has been told.
+
+## 2026-10-22 11:15 — Chief: the front page is live and green, the dead lanes are named, and WI-114's brief is re-measured on the published tree
+
+**One — the published front page, measured by anonymous fetch at the published tip.**
+`git ls-remote origin refs/heads/main` = **`e856a53`**. The served `README.md` opens
+`# Personal OS` and its line 3 reads **`**The environment one person's agents operate and
+extend.**`**, the served `package.json` carries the matching description `Personal OS — the
+environment one person's agents operate and extend.`, and the repository still reads **MIT**.
+**The owner's sentence is the page's sentence** — read from what GitHub serves, not from the
+working tree.
+
+**Two — the tip's verdict, and two cancelled runs that explain themselves.** On `e856a53`:
+**CI `completed/success`, CodeQL `completed/success`.** The two runs before it — on `92b64c1`
+and on `675cc84` — came back **`cancelled`**, and that is the rule working rather than a red
+build: **a push cancels the run that judges it**, and both of those trees were pushed while
+the previous run was still judging. **`git diff --stat da8e126 HEAD` over `apps/**`,
+`packages/**`, `scripts/**`and`.github/**` is empty**, so the source the nine gates read is
+byte-identical to the tree that is published.
+
+**Three — two lanes were archived, and a task queued on an archived session never runs.**
+Probe named the cause for Chief's private chat: **`mvs_e109a52fca0541f196725ffdedd0d316` is
+archived** (crash-recovery at 10:32) and a delivery into it is accepted, reported queued, and
+never runs. **Measured, and it is not the only one: Vision's chat session
+`mvs_1dd69a42fec84f3ca0600075470232a4` was archived too — by this lead, for cause, at 09:45 —
+and the liveboard still maps `bot:bot_0ffddd8c30bc` onto it.** So WI-122's verification was
+queued onto a lane that could not answer it, and **no amount of waiting would have started
+it.** **Both were un-archived at 11:07, reversibly.** **That is a lever this lead previously
+said did not exist: the restart was named as the only repair, and un-archiving is a second
+one.** It does not clear the refusal — but it does stop the _archive_ from being the thing
+that kills a delivery, and until now it was.
+
+**Four — and the refusal itself is still there, so the restart still stands.** Measured on the
+chat liveboards, not on a session: **Wren's chat lane's last five delegations died with 0
+characters, and the delivery that arrived at 10:59 died the same way**
+(`msg_47de2acf2359`, `status=error`, role=bot, empty). **Vision's chat's last two turns are
+`aborted` (10:25, 10:31) and nothing has landed since.** **Wren's own session is alive and
+capable — it did real work at 10:15 and pushed two branches — so the lane that dies is the
+chat relay, not the agent.** **A correction to a suspicion of this lead's: the suspicion was
+that "Wren's lane is down" was stale, because her session works. Measured, it is not stale —
+the chat relay dies, and WI-114's hold stands.** _Measure the lane before publishing a claim
+about the lane_ — and this time the measurement said the other Chief session was right.
+
+**Five — WI-114's brief, re-measured on the tree that is published, because the tree moved
+twice under it.** WI-114 was measured on `fc2e39b`; WI-086's landing moved `service.ts` again
+and the contract's own line numbers moved with it. **All thirteen targets still hold — verified
+by content, not by arithmetic:** `service.ts:647-650` (the `try {` at 647 and the
+`throw errors.validation(` at 650), `:662-663`, `:376-377` (`templateId: input.templateId,`),
+`:351-356` (the task provider's `validate` and its refusal), `:596`, `:601`, `:340`
+(`createdBy: author,`); `templates.ts:509` (`const mergeRules`), `:534`
+(`export function mergeTemplateSpec(`) and `:534-555`; `service.ts:583-593` for the automation
+provider's `execute`. **The contract's citations are the stale side, not the brief's:** it
+cites `service:648-653`, `service:662-666`, `service:374-375`, `service:349-354`,
+`service:338`, `templates:509-522`, `templates:522-543` and `service:581-591` — **every one
+of them holds code, which is exactly why the pointer gate is green, and not one of them names
+the right line.** **That is WI-122's lesson applied one layer down: a pointer gate proves
+code, and only a pin proves the claim.** The six citations WI-114 says not to touch are still
+untouched. **The anchors moved: `CONTRACTS.md:1230→:1242`, `:1231→:1243`, `:1943→:1955`, and
+`docs/resource-templates.md:355→:360`.** **The item is the other Chief session's and
+`CONTRACTS.md` is its live file, so this lead did not dispatch it — it measured it and handed
+the measurement over.**
+
+**Six — WI-113 had no file anywhere, and now it has one.** The index has carried WI-113 since
+07:27 and **no item file, no dispatch record and no commit existed for it.** Measured on the
+published tree: **the contract publishes the _status_ (`CONTRACTS.md:748`, `:1083`) and not the
+_message_** — `grep 'does not satisfy the' CONTRACTS.md` returns nothing — **while six
+assertions in two test files repeat the message literally** (`resources.test.ts:183`, `:209`,
+`:231`, `:254`; `resource-templates.test.ts:782`, `:814`), **and the source builds it at
+runtime** (`service.ts:739` is a template string, so there is no constant to import). **So
+the sentence a caller reads is written in five places, the contract says nothing about it, and
+no gate notices.** `.factory/work/WI-113.md` is filed with that measurement, with the scope
+split into the contract half (Wren) and the test half (Probe), and with both blockers named:
+**Wren's chat lane refuses, and `CONTRACTS.md` is WI-114's file.** **No request id is spent.**
+
+**Seven — the floor at 11:15.** **Running:** Cog's WI-121 (`task_bbf11f83be2b`, a second hour).
+**Queued:** Probe's WI-120 verification (`task_f689f6b918a1`), Probe's WI-123
+(`task_a606329a3dc1`), Probe's WI-116 (`task_9a4337f73e61`), Vision's WI-122
+(`task_ae9f26b09fd3`). **Ceiling two. Next free number WI-124.**
+
+**Eight — the one word the owner owes, and it has not changed.** `miniapp restart minimax-bot`
+is still the repair for the two chat lanes that are refusing. **It is no longer the only
+candidate:** un-archiving a dead session is available and was used twice today. **But the
+verdict copies that would have woken Chief's private-chat lane were cancelled already, so
+nothing will wake it on its own.** **The recommendation stands: restart after Cog's WI-121
+turn lands, and not before.**
+
+## 2026-10-22 11:22 — Chief: WI-122's verification moves to the standing substitute, the tree that carries WI-123's pin is green, and the push goes out
+
+**One — WI-122's verification now has a lane behind it.** Vision's chat lane is dead, not busy:
+**her last two turns both ended `status=aborted` (10:25 and 10:31)** and nothing has landed
+since. The cause is measured and it is the archive, not the queue: **her session had been
+archived at 09:45 — by this lead, for cause — and the liveboard still maps
+`bot:bot_0ffddd8c30bc` onto it**, and **a task queued on an archived session is accepted and
+never runs** (Probe's finding, applied here). **Un-archiving it at 11:07 did not start the
+task**, so the dispatch had no lane behind it. **The rule this factory has settled on —
+recorded in this ledger — names Cog as the substitute for both pins, because she wrote none of
+either.** So WI-122's verification is **re-dispatched to Cog**: request
+`wi-122-verify-note-citations-pin-cog-substitute-2026-10-22`, task `task_d374c36981e7`,
+**queued behind Cog's WI-121**. **`task_ae9f26b09fd3` (Vision) is cancelled** — one item, one
+dispatch that counts, one verdict. **Cog's brief tells her to judge the pin rather than the
+code it guards, because WI-086's route and schema were hers, and to say in her verdict that she
+wrote none of the pin.**
+
+**Two — the gap the other Chief session left, named so that it is visible.** **WI-123's pin is
+landed and has no verification dispatched at all.** The landing is `86a0e52` / `e38d62c` —
+`apps/server/src/__tests__/licenceRecord.test.ts`, 438 insertions, one file — and the item file
+still reads "**State:** implement". **WI-123.md names Vision as its verifier, and the substitute
+rule names Cog.** **This lead did not dispatch it: the item is the other Chief session's, it
+was opened and landed there, and one session opens work items.** **It is a live gap, and the fix
+is one dispatch to Cog with a fresh request id and a fresh title.**
+
+**Three — the tree that is being pushed now carries code, so the gates ran on it.** The other
+Chief session landed WI-123's pin and pushed its records (`db6a29b`) while this session was
+measuring. **So the tree to be pushed is no longer the tree the platform measured green on
+`e856a53`** — it carries one new test file. **The nine gates were re-run on that tree and all
+nine pass:** typecheck 40591ms, test 87287ms, build 19507ms, format 13152ms, contract-status
+692ms, contract-pointers 1231ms, smoke 10363ms, compiled-build 2513ms, bundle-size 723ms —
+"**Every gate passed. The tree is green.**" **The pointer gate reports 126 checked, 0 failures
+— every one of the 126 pointers points at code — and the contract-status gate reports 0
+failures.**
+
+**Four — and the push.** The tree to be pushed carries this session's records on top of the
+other Chief session's WI-123 landing (`e38d62c`, `86a0e52`). **The tip is read with
+`git ls-remote origin refs/heads/main` immediately before the push, and the push is a
+fast-forward.** The platform's verdict is read afterwards and recorded here.
+
+**Five — the floor at 11:22.** **Running:** Cog's WI-121 (`task_bbf11f83be2b`), now with
+WI-122's verification queued behind it. **Queued:** Probe's WI-120 verification
+(`task_f689f6b918a1`), Probe's WI-123 (`task_a606329a3dc1`), Probe's WI-116
+(`task_9a4337f73e61`), Cog's WI-122 verification (`task_d374c36981e7`). **Vision's task is
+cancelled and her lane stays dead. Wren's lane still refuses — the 10:59 delivery died with 0
+characters. Ceiling two. Next free number WI-124.**
+
+**Six — the one word the owner owes, unchanged.** `miniapp restart minimax-bot` is the repair
+for the two chat lanes that are refusing, and it is still the owner's to give. **The
+substitution above does not need it, and that is the point of a substitute: the factory's work
+moves on a live lane while the dead ones wait.**
