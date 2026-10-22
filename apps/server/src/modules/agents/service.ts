@@ -63,6 +63,15 @@ export interface AgentService {
       config?: Record<string, unknown>;
       secrets?: Record<string, string>;
       toolGrants?: McpToolName[];
+      /**
+       * One tool to add to the grant.
+       *
+       * The union is computed inside the transaction that writes the grant, so
+       * a widening cannot narrow a grant another process widened in the
+       * meantime. An exact list says what the grant is; this says what the
+       * grant gains, and never takes anything away.
+       */
+      widenToolGrant?: McpToolName;
       /** The base persona. `null` clears it. */
       persona?: Persona | null;
     },
@@ -219,6 +228,21 @@ export function createAgentService(options: AgentServiceOptions): AgentService {
     return JSON.parse(decrypted) as { adapterType: AdapterType; config: Record<string, unknown> };
   }
 
+  /**
+   * The grant a connection holds, read inside the transaction that writes it.
+   *
+   * The read has to be inside the transaction. A read taken outside it can be
+   * stale by the time the write lands: another process widened the grant in
+   * between, and a union computed from the stale grant narrows the grant back
+   * to what it was. The other process's widening is then lost, and nothing says
+   * so — the owner widened a grant and it did not take.
+   */
+  function grantedTools(db: Database, id: string): McpToolName[] {
+    const row = db.select().from(agentConnections).where(eq(agentConnections.id, id)).get();
+    if (!row) throw errors.notFound('Agent connection');
+    return effectiveToolGrants(row.toolGrants);
+  }
+
   const service: AgentService = {
     list(workspaceId): AgentConnectionDetail[] {
       return db
@@ -284,47 +308,70 @@ export function createAgentService(options: AgentServiceOptions): AgentService {
       // A transaction is also what holds across processes. The worker is a
       // second process on the same database, and a guarantee that rests on
       // this function never yielding is not a guarantee.
-      db.transaction((tx) => {
-        const updates: Partial<typeof agentConnections.$inferInsert> = { updatedAt: now };
+      //
+      // The transaction takes the write lock BEFORE it reads. A deferred
+      // transaction that reads and then writes cannot wait for another
+      // process's write: once another process has committed, SQLite refuses to
+      // turn the transaction's read lock into a write lock and answers
+      // SQLITE_BUSY at once instead of waiting, so the write is lost rather
+      // than delayed. Taking the lock first means the read inside the
+      // transaction sees what the other process committed, and the union
+      // computed from that read keeps what the other process added.
+      db.transaction(
+        (tx) => {
+          const updates: Partial<typeof agentConnections.$inferInsert> = { updatedAt: now };
 
-        if (patch.name !== undefined) updates.name = patch.name.trim();
-        if (patch.enabled !== undefined) updates.enabled = patch.enabled;
-        if (patch.toolGrants !== undefined) {
-          updates.toolGrants = patch.toolGrants;
-          // A capability the agent may now call is not waiting on the owner any
-          // more, so its row leaves the list here. The grant may be widened
-          // from the list or from the agent's own page, and both go through
-          // this one write, so the row leaves either way.
-          clearGrantedCapabilities(tx, id, patch.toolGrants);
-        }
-        if (patch.persona !== undefined) updates.persona = patch.persona;
-
-        if (patch.config !== undefined || patch.secrets !== undefined) {
-          const existing = readConfigPayload(tx, current.configRef);
-          // Merge rather than replace: a configuration edit must not silently
-          // drop the reference to a stored credential.
-          const merged: Record<string, unknown> =
-            patch.config !== undefined
-              ? { ...existing.config, ...patch.config }
-              : { ...existing.config };
-          for (const key of SECRET_CONFIG_KEYS) {
-            if (merged[key] === undefined) delete merged[key];
+          if (patch.name !== undefined) updates.name = patch.name.trim();
+          if (patch.enabled !== undefined) updates.enabled = patch.enabled;
+          if (patch.toolGrants !== undefined) {
+            updates.toolGrants = patch.toolGrants;
+            // A capability the agent may now call is not waiting on the owner any
+            // more, so its row leaves the list here. The grant may be widened
+            // from the list or from the agent's own page, and both go through
+            // this one write, so the row leaves either way.
+            clearGrantedCapabilities(tx, id, patch.toolGrants);
+          } else if (patch.widenToolGrant !== undefined) {
+            // The union is computed from a read taken inside this transaction.
+            // A read taken outside it can be stale by the time the write lands,
+            // and a union computed from a stale grant narrows the grant back
+            // to what it was: the other process's widening is silently lost.
+            const granted = grantedTools(tx, id);
+            const widened = granted.includes(patch.widenToolGrant)
+              ? granted
+              : [...granted, patch.widenToolGrant];
+            updates.toolGrants = widened;
+            clearGrantedCapabilities(tx, id, widened);
           }
-          updates.configRef = writeConfig(
-            tx,
-            current.workspaceId,
-            existing.adapterType,
-            merged,
-            patch.secrets ?? {},
-          );
-          // The previous configuration record is replaced, not kept.
-          tx.delete(secretConfigs).where(eq(secretConfigs.id, current.configRef)).run();
-          updates.status = 'unknown';
-          updates.capabilities = null;
-        }
+          if (patch.persona !== undefined) updates.persona = patch.persona;
 
-        tx.update(agentConnections).set(updates).where(eq(agentConnections.id, id)).run();
-      });
+          if (patch.config !== undefined || patch.secrets !== undefined) {
+            const existing = readConfigPayload(tx, current.configRef);
+            // Merge rather than replace: a configuration edit must not silently
+            // drop the reference to a stored credential.
+            const merged: Record<string, unknown> =
+              patch.config !== undefined
+                ? { ...existing.config, ...patch.config }
+                : { ...existing.config };
+            for (const key of SECRET_CONFIG_KEYS) {
+              if (merged[key] === undefined) delete merged[key];
+            }
+            updates.configRef = writeConfig(
+              tx,
+              current.workspaceId,
+              existing.adapterType,
+              merged,
+              patch.secrets ?? {},
+            );
+            // The previous configuration record is replaced, not kept.
+            tx.delete(secretConfigs).where(eq(secretConfigs.id, current.configRef)).run();
+            updates.status = 'unknown';
+            updates.capabilities = null;
+          }
+
+          tx.update(agentConnections).set(updates).where(eq(agentConnections.id, id)).run();
+        },
+        { behavior: 'immediate' },
+      );
 
       return service.get(id);
     },
