@@ -2615,6 +2615,39 @@ approval that has already been answered. The event is published once, whatever t
 turn does next — whether it continues or closes does not change the fact that the
 owner decided.
 
+**The approval the event carries is published.** A client reading only this
+contract must be able to know the fields of the payload it receives, so the
+approval is declared here member for member. It is the same approval the decide
+route already returns, and the server's own type is derived from the schema rather
+than being a copy of it
+(`packages/contracts/src/approvals.ts:25`).
+
+```ts
+type ApprovalStatus = 'pending' | 'approved' | 'rejected';
+
+interface Approval {
+  id: string;
+  workspaceId: string;
+  /** What the approval was raised against. Null when it names nothing. */
+  executionId: string | null;
+  conversationId: string | null;
+  taskId: string | null;
+  agentConnectionId: string | null;
+  /** The one line the owner reads to decide. */
+  summary: string;
+  /** What the agent wanted. The shape is the agent's own and is not published. */
+  details: unknown;
+  status: ApprovalStatus;
+  /** Why the decision was made. Null while the approval is still waiting. */
+  reason: string | null;
+  requestedBy: string | null;
+  decidedBy: string | null;
+  createdAt: string;
+  /** When the owner decided. Null while the approval is still waiting. */
+  decidedAt: string | null;
+}
+```
+
 **Migration.** The event vocabulary grows by one member and nothing is
 reclassified. **A client that does not know `approval.decided` needs no change**:
 the event is additive, and the approval it carries is the same approval the decide
