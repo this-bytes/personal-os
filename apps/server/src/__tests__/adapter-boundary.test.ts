@@ -27,7 +27,7 @@ function walk(root: string): string[] {
   for (const entry of fs.readdirSync(root, { withFileTypes: true })) {
     const full = path.join(root, entry.name);
     if (entry.isDirectory()) out.push(...walk(full));
-    else if (entry.name.endsWith('.ts')) out.push(full);
+    else if (entry.name.endsWith('.ts') || entry.name.endsWith('.tsx')) out.push(full);
   }
   return out;
 }
@@ -35,6 +35,32 @@ function walk(root: string): string[] {
 /** The source files that make up the domain, relative to the repository root. */
 function domainFiles(): string[] {
   const roots = [path.join('apps', 'server', 'src', 'modules'), path.join('apps', 'worker', 'src')];
+  const out: string[] = [];
+  for (const root of roots) {
+    for (const file of walk(path.join(repoRoot, root))) {
+      const relative = path.relative(repoRoot, file);
+      if (relative.includes(`${path.sep}__tests__${path.sep}`)) continue;
+      out.push(relative);
+    }
+  }
+  return out;
+}
+
+/**
+ * Every shipped source file outside the tests, relative to the repository root.
+ *
+ * The browser client and the UI package are in here as well as the domain:
+ * **the CLI adapter spawns a process**, so a client that reached the adapters
+ * package would carry it into the bundle.
+ */
+function shippedFiles(): string[] {
+  const roots = [
+    path.join('apps', 'server', 'src'),
+    path.join('apps', 'worker', 'src'),
+    path.join('apps', 'web', 'src'),
+    path.join('packages', 'ui', 'src'),
+    path.join('packages', 'contracts', 'src'),
+  ];
   const out: string[] = [];
   for (const root of roots) {
     for (const file of walk(path.join(repoRoot, root))) {
@@ -75,18 +101,14 @@ describe('the domain does not depend on the adapters package', () => {
     ).toBeUndefined();
   });
 
-  it('the composition root is the only place that builds the registry', () => {
-    const importers: string[] = [];
-    for (const file of walk(path.join(repoRoot, 'apps', 'server', 'src'))) {
-      const relative = path.relative(repoRoot, file);
-      if (relative.includes(`${path.sep}__tests__${path.sep}`)) continue;
-      if (names(relative)) importers.push(relative);
-    }
+  it('the composition root is the only place that names the adapters package', () => {
+    const importers = shippedFiles().filter(names);
 
     expect(
       importers,
-      'one place builds the registry and the domain does not know about it: these files name the ' +
-        'package that holds the adapters, and the composition root is the only one that may.',
+      'one place builds the registry and nothing shipped knows about the package: these files ' +
+        'name the package that holds the adapters, and the composition root is the only one ' +
+        'that may. The browser client is in the sweep because the CLI adapter spawns a process.',
     ).toEqual([path.join('apps', 'server', 'src', 'runtime.ts')]);
   });
 });

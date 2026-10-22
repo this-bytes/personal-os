@@ -5617,19 +5617,31 @@ installed. `npm ci --ignore-scripts` in the worktree then succeeded — **added 
 packages, audited 404** — which is the check that matters, because CI installs from the
 lockfile on a clean checkout.
 
-**The check, and its two proofs.** `apps/server/src/__tests__/adapter-boundary.test.ts`
+**The check, and its three proofs.** `apps/server/src/__tests__/adapter-boundary.test.ts`
 reads the source tree the way `apps/worker/src/__tests__/autonomy-policy-attack.test.ts`
 already does, and asserts three things: no domain module imports the adapters package;
-the worker does not declare it; and the composition root is the only importer. **Three
-cases, green.** **And each is proved able to fail:**
+the worker does not declare it; and **the composition root is the only file in the shipped
+code that names the package** — the sweep covers the browser client and the UI package as
+well as the domain, **because the CLI adapter spawns a process** and a client that reached
+the package would carry it into the bundle. **Three cases, green.** **And each is proved
+able to fail:**
 
-| Mutation                                      | Cases that go red                                    |
-| --------------------------------------------- | ---------------------------------------------------- |
-| the domain imports the adapters package again | 2 — the domain check, and the composition-root check |
-| the worker declares the dependency again      | 1 — the worker's check                               |
+| Mutation                                        | Cases that go red                                    |
+| ----------------------------------------------- | ---------------------------------------------------- |
+| the domain imports the adapters package again   | 2 — the domain check, and the composition-root check |
+| the worker declares the dependency again        | 1 — the worker's check                               |
+| the browser client imports the adapters package | 1 — the composition-root check                       |
 
-**Both restored byte for byte, the final run green, and the final `git status
+**All three restored byte for byte, the final run green, and the final `git status
 --porcelain` naming only the files this item touched.**
+
+**And the third mutation found a hole in the check this item wrote, which is the reason it
+is worth having.** The walk collected `.ts` files, and the browser client is `.tsx` — **so
+the client was never inspected at all**, and the mutation that put the adapters package
+into `apps/web/src/main.tsx` turned **nothing** red. The walk now collects `.tsx` as well,
+and the same mutation turns the check red. **A check that has never been given a mutation
+it can fail is not a check** — and this one had two of its three cases proved, and still
+had a hole the third found.
 
 **The contract publishes it.** `CONTRACTS.md` gains a section, _The adapter boundary_,
 carrying the three shapes, the rule, the one place that builds the registry, the check,
