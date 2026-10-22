@@ -4,6 +4,7 @@ import { KeyRound, ShieldCheck } from 'lucide-react';
 import { Button, Card, CardContent, Input } from '@personal-os/ui';
 import { errorMessage } from '../lib/api';
 import { useAuth } from '../state/auth';
+import { landingPath } from '../features/registry';
 import { ErrorState, LoadingState } from '../components/ErrorState';
 import { Field } from '../components/Field';
 
@@ -31,7 +32,7 @@ export function Login(): React.JSX.Element {
   }
 
   if (status === 'authenticated') {
-    return <Navigate to="/conversations" replace />;
+    return <Navigate to={landingPath} replace />;
   }
 
   if (status === 'offline') {
@@ -60,7 +61,7 @@ export function Login(): React.JSX.Element {
       } else {
         await login(email, password);
       }
-      navigate('/conversations', { replace: true });
+      navigate(landingPath, { replace: true });
     } catch (cause) {
       setFormError(errorMessage(cause));
     } finally {

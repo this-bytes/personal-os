@@ -42,6 +42,13 @@ export interface WaitingItem {
   toolName: string | null;
 }
 
+export function registerWaitingRoutes(app: FastifyInstance): void {
+  app.get('/api/waiting', { preHandler: requireAuth }, async (request) => {
+    const { workspaceId } = parseQuery(waitingQuerySchema, request.query);
+    return { items: listWaiting(app, workspaceId) };
+  });
+}
+
 /**
  * What is waiting on the owner.
  *
@@ -58,15 +65,12 @@ export interface WaitingItem {
  * waiting for an acceptance decision, then the work that is stuck. That order
  * is over the reasons, not the kinds: a turn and a task whose outcome could
  * not be confirmed are both something to check, so they are in the same band.
+ *
+ * It is exported because another surface — the Map's counters — counts the
+ * same list rather than counting its own way. Two numbers that say the same
+ * thing must not be able to disagree.
  */
-export function registerWaitingRoutes(app: FastifyInstance): void {
-  app.get('/api/waiting', { preHandler: requireAuth }, async (request) => {
-    const { workspaceId } = parseQuery(waitingQuerySchema, request.query);
-    return { items: listWaiting(app, workspaceId) };
-  });
-}
-
-function listWaiting(app: FastifyInstance, workspaceId: string): WaitingItem[] {
+export function listWaiting(app: FastifyInstance, workspaceId: string): WaitingItem[] {
   const pending = app.services.approvals.list(workspaceId, 'pending');
 
   const approvals: WaitingItem[] = pending.map((approval) => ({

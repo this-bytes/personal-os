@@ -12,10 +12,11 @@ import { firstWorkspaceId, signIn } from './support/owner';
 
 /** The chunk the build emits for each lazily loaded page. */
 const ROUTE_CHUNK =
-  /^(Agents|Automations|ConversationDetail|Conversations|Factory|Resources|Settings)-[\w-]+\.js$/;
+  /^(Agents|Automations|ConversationDetail|Conversations|Factory|ForgeMap|Resources|Settings)-[\w-]+\.js$/;
 
 /** The routes behind the login screen and the heading each one shows. */
 const ROUTES = [
+  { path: '/map', heading: 'Map' },
   { path: '/conversations', heading: 'Conversations' },
   { path: '/agents', heading: 'Agents' },
   { path: '/factory', heading: 'Factory' },
