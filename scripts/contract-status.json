@@ -613,6 +613,40 @@
           "value": "export function ActivityTimeline"
         }
       ]
+    },
+    {
+      "id": "the-feature-seam-wi-139",
+      "section": "Contract 8 — The feature seam",
+      "note": "This entry is the contract for WI-139, and the code implements it",
+      "claim": "implemented",
+      "why": "WI-139's seam: the manifest a feature declares itself with, the server registry that installs what is in it, and the client glob that finds the features.",
+      "expect": [
+        {
+          "kind": "present-pattern",
+          "path": "packages/contracts/src/feature.ts",
+          "value": "export const featureManifestSchema"
+        },
+        {
+          "kind": "present-pattern",
+          "path": "packages/contracts/src/feature.ts",
+          "value": "export function mergeFeatureRooms"
+        },
+        {
+          "kind": "present-pattern",
+          "path": "apps/server/src/features/registry.ts",
+          "value": "export class FeatureRegistry"
+        },
+        {
+          "kind": "present-text",
+          "path": "apps/server/src/app.ts",
+          "value": "createDefaultFeatureRegistry().install(app, services)"
+        },
+        {
+          "kind": "present-pattern",
+          "path": "apps/web/src/features/registry.ts",
+          "value": "import\\.meta\\.glob"
+        }
+      ]
     }
   ]
 }

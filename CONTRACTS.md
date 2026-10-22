@@ -2797,7 +2797,8 @@ code.** A feature is first-party: it lives in this repository, it is reviewed
 like the rest of it, and it is named at build time. What the seam buys is
 narrower and more useful — two features can be built at the same time, on two
 branches, and land without either of them touching `app.ts`, `App.tsx` or the
-shell.
+shell. How a feature is written is in
+[docs/feature-authoring.md](docs/feature-authoring.md).
 
 ### What the seam does not yet cover
 
@@ -2810,13 +2811,22 @@ routes on the server: that is a coverage gap, not a structural one, and the
 seam itself is what makes closing it a matter of adding a feature rather than
 editing the runtime.
 
-**The published table is the surface this contract promises, not every route
-the server registers.** Eleven registered routes have no row in it: the agent
-memory route, the participant route, the MCP transport's own methods on `/mcp`,
-and the CORS catch-all. Two rows have no route yet —
+**The published table is the surface this contract promises, and it is
+exhaustive over the API.** Every route the server registers under `/api` has a
+row in it. Two routes outside `/api` do not, and both are transports rather
+than API routes: the MCP endpoint on `/mcp`, whose methods the transport
+itself declares, and the CORS catch-all. The MCP endpoint is described in prose
+under MCP exposure. Two rows have no route yet —
 `POST /api/conversations/:id/fork` and `POST /api/conversations/:id/rewind` —
 and they arrive with WI-055, which publishes them first and implements them
 second.
+
+This entry is the contract for **WI-139**, and the code implements it — as of
+`f2d9195`. The shape is `packages/contracts/src/feature.ts`, the server's
+registry is `apps/server/src/features/registry.ts`, the runtime installs what
+is in it at `apps/server/src/app.ts:259`, and the client finds its features by
+a glob at `apps/web/src/features/registry.ts:57`. The slice's own record is
+`.factory/work/WI-139.md`.
 
 ## The HTTP surface
 
@@ -2861,12 +2871,14 @@ is not left deleting the database.
 | `POST`             | `/api/agents/:id/grants`                             | Widen one tool grant. The action a blocked agent needs.                                                             |
 | `GET/POST`         | `/api/agents/:id/tokens`                             | Issue and list MCP tokens.                                                                                          |
 | `DELETE`           | `/api/agents/:id/tokens/:tokenId`                    | Revoke an MCP token.                                                                                                |
+| `GET`              | `/api/agents/:id/memories`                           | The agent's own memories, and the brief's budget, used and dropped counts.                                          |
 | `GET`              | `/api/secrets`                                       | List the secret configurations. Metadata only — a value never leaves the server.                                    |
 | `GET/POST`         | `/api/conversations`                                 | List and create conversations.                                                                                      |
 | `GET/PATCH/DELETE` | `/api/conversations/:id`                             | Read, update, remove a conversation.                                                                                |
 | `GET/POST`         | `/api/conversations/:id/messages`                    | Read and post messages.                                                                                             |
 | `POST`             | `/api/conversations/:id/participants`                | Add a participant.                                                                                                  |
 | `DELETE`           | `/api/conversations/:id/participants/:participantId` | Remove a participant.                                                                                               |
+| `PATCH`            | `/api/conversations/:id/participants/:participantId` | Change a participant's persona override. `null` clears it.                                                          |
 | `GET/POST`         | `/api/conversations/:id/bots`                        | The team of a room, and register or change a bot in it.                                                             |
 | `POST`             | `/api/conversations/:id/bots/dispatch`               | Hand work to another agent on the coordinator's behalf.                                                             |
 | `GET/POST`         | `/api/resources`                                     | List and create resources. A resource is never born live.                                                           |
