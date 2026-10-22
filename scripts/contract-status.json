@@ -517,6 +517,102 @@
           "value": "export function TurnCapabilityPanel"
         }
       ]
+    },
+    {
+      "id": "the-adapter-lifecycle-wi-145",
+      "section": "The adapter lifecycle",
+      "note": "This entry is the contract for WI-145, and the code implements it",
+      "claim": "implemented",
+      "why": "WI-145's lifecycle: the adapter's own lifecycle object, and the tests that drive it against a real MCP server, a real ACP agent and real child processes.",
+      "expect": [
+        {
+          "kind": "present-pattern",
+          "path": "packages/agent-adapters/src/lifecycle.ts",
+          "value": "export class AdapterLifecycle"
+        },
+        {
+          "kind": "present-pattern",
+          "path": "packages/agent-adapters/src/__tests__/lifecycle.test.ts",
+          "value": "the ACP adapter lifecycle"
+        },
+        {
+          "kind": "present-pattern",
+          "path": "packages/agent-adapters/src/__tests__/lifecycle.test.ts",
+          "value": "the MCP adapter lifecycle"
+        }
+      ]
+    },
+    {
+      "id": "the-adapter-presets-wi-142",
+      "section": "The adapter presets",
+      "note": "This entry is the contract for WI-142, and the code implements it",
+      "claim": "implemented",
+      "why": "WI-142's presets: the catalogue of templates, the route that serves it, and the picker the connection form carries.",
+      "expect": [
+        {
+          "kind": "present-pattern",
+          "path": "packages/contracts/src/adapter-presets.ts",
+          "value": "export const adapterPresetSchema"
+        },
+        {
+          "kind": "present-text",
+          "path": "apps/server/src/api/agents.ts",
+          "value": "app.get('/api/agent-presets'"
+        },
+        {
+          "kind": "present-pattern",
+          "path": "apps/web/src/components/AgentConnectionForm.tsx",
+          "value": "presetsForType"
+        }
+      ]
+    },
+    {
+      "id": "the-goals-wi-143",
+      "section": "Goals, dependencies and progress",
+      "note": "This entry is the contract for WI-143, and the code implements it",
+      "claim": "implemented",
+      "why": "WI-143's goals: the shapes of a goal and its tasks, and the rules that roll one up and refuse a cycle, written as pure functions.",
+      "expect": [
+        {
+          "kind": "present-pattern",
+          "path": "packages/contracts/src/factory.ts",
+          "value": "export const goalSchema"
+        },
+        {
+          "kind": "present-pattern",
+          "path": "apps/server/src/modules/factory/graph.ts",
+          "value": "export function rollupGoal"
+        },
+        {
+          "kind": "present-pattern",
+          "path": "apps/server/src/modules/factory/graph.ts",
+          "value": "export function wouldCreateCycle"
+        }
+      ]
+    },
+    {
+      "id": "the-chat-surface-wi-141",
+      "section": "The chat surface",
+      "note": "This entry is the contract for WI-141, and the code implements it",
+      "claim": "implemented",
+      "why": "WI-141's chat surface: the activity shapes, the read model the trace is drawn from, and the surface itself.",
+      "expect": [
+        {
+          "kind": "present-pattern",
+          "path": "packages/contracts/src/chat.ts",
+          "value": "export const chatActivitySchema"
+        },
+        {
+          "kind": "present-pattern",
+          "path": "apps/server/src/modules/executions/activity.ts",
+          "value": "export function deriveActivities"
+        },
+        {
+          "kind": "present-pattern",
+          "path": "apps/web/src/components/chat/ActivityTimeline.tsx",
+          "value": "export function ActivityTimeline"
+        }
+      ]
     }
   ]
 }

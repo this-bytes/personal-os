@@ -2715,6 +2715,109 @@ is written.
 
 ---
 
+## Contract 8 — The feature seam
+
+A feature is a unit of product that slots into the runtime: a room in the panel,
+a surface in the client, and — when it needs one — routes under the API. A
+feature declares itself in a **manifest**, and both sides read it.
+
+### The manifest
+
+The manifest is a published shape, so it is validated rather than trusted: a
+feature that ships an id that is not an id, or a room with no path, fails when
+the tree is checked rather than when the owner opens the panel.
+
+```ts
+interface FeatureManifest {
+  /** "feat_" followed by lower-case words. */
+  id: string;
+  /** What the feature is called in words. */
+  name: string;
+  /** One sentence on what the feature is for. */
+  description?: string;
+  /** The rooms the feature contributes. */
+  rooms: FeatureRoom[];
+  /**
+   * The prefix the feature's own routes live under.
+   *
+   * A feature that has no routes of its own leaves it out. When it is there,
+   * it is the whole of the feature's share of the HTTP surface — nothing else
+   * registers under it.
+   */
+  apiPrefix?: string;
+}
+
+interface FeatureRoom {
+  /** Stable across renames: the room's own id. */
+  id: string;
+  /** What the owner reads in the room switch. */
+  label: string;
+  /** Where the room lives. */
+  path: string;
+  /** How dense the room is: the orientation room is airy, the work room is dense. */
+  density: 'airy' | 'dense';
+  /** Where the room sits in the switch. Lower comes first. */
+  order: number;
+}
+```
+
+The shape is `packages/contracts/src/feature.ts:73`, and the manifest a feature
+writes is `FeatureManifestInput` — the same fields, with the defaults left for
+the reader to fill in — while `FeatureManifest` is the same shape with them
+filled.
+
+### What the seam enforces
+
+**The rules are refusals, not repairs.** A feature registered twice under one id
+is refused, and two features claiming the same room path are refused, because a
+path leads to one room and a second claim would send the owner to the wrong
+one (`packages/contracts/src/feature.ts:105`).
+
+**A feature's routes live under the prefix it declared.** The manifest's
+`apiPrefix` is the whole of that feature's share of the HTTP surface; nothing
+else registers under it.
+
+**The server holds a registry, and the runtime installs what is in it.** A
+feature is given the app and the services, so it registers its own routes
+(`apps/server/src/features/registry.ts:48`), and the runtime installs every
+registered feature when it builds the app
+(`apps/server/src/app.ts:259`). Adding a server feature is one line in
+`apps/server/src/features/index.ts:12`; the runtime's own files are not
+touched.
+
+**The client finds its features by a glob.** The files are part of this
+repository, they are reviewed like the rest of it, and the browser never fetches
+a feature it did not ask for
+(`apps/web/src/features/registry.ts:57`).
+
+### What the seam is not
+
+**It is not a plugin marketplace and not a runtime loader for third-party
+code.** A feature is first-party: it lives in this repository, it is reviewed
+like the rest of it, and it is named at build time. What the seam buys is
+narrower and more useful — two features can be built at the same time, on two
+branches, and land without either of them touching `app.ts`, `App.tsx` or the
+shell.
+
+### What the seam does not yet cover
+
+**The seam is not yet the union of the server's routes.** Measured on
+2026-10-23 against `e717408`: the server registers 90 routes with `HEAD`
+excluded, and two of them come from a feature — the Map's and the bots team's.
+The client globs eight features, and six of them have no server-side feature
+behind them. The route table below is therefore not the union of the features'
+routes on the server: that is a coverage gap, not a structural one, and the
+seam itself is what makes closing it a matter of adding a feature rather than
+editing the runtime.
+
+**The published table is the surface this contract promises, not every route
+the server registers.** Eleven registered routes have no row in it: the agent
+memory route, the participant route, the MCP transport's own methods on `/mcp`,
+and the CORS catch-all. Two rows have no route yet —
+`POST /api/conversations/:id/fork` and `POST /api/conversations/:id/rewind` —
+and they arrive with WI-055, which publishes them first and implements them
+second.
+
 ## The HTTP surface
 
 All routes are prefixed with `/api`. Authentication is a session cookie
