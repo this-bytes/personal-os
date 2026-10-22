@@ -1514,7 +1514,7 @@ a client that reads the fields it knows keeps working; a client that switches
 exhaustively on the item's fields has one more field to read.
 
 The blocked capability is the contract for **WI-121**, and the code implements it —
-the refusal is recorded at `apps/server/src/modules/mcp/server.ts:720`, the list
+as of `d229b53`: the refusal is recorded at `apps/server/src/modules/mcp/server.ts:720`, the list
 draws it as its own kind at `apps/server/src/api/waiting.ts:159`, and the owner's
 action is `POST /api/agents/:id/grants`.
 
