@@ -1502,7 +1502,7 @@ includes it. Whichever route widened the grant, the row leaves: both go through
 the one write that changes a grant (`apps/server/src/modules/agents/service.ts:325`).
 A list that keeps the row is a list that lies about what is waiting.
 
-**The row leaves and the grant is written in one transaction.** The two writes are
+**The row leaves and the grant is written in one transaction (WI-131).** The two writes are
 one change and are made together (`apps/server/src/modules/agents/service.ts:286`):
 the row that says what the agent is waiting on leaves the list, and the grant that
 says what the agent may call is written. **So the guarantee is kept in both
@@ -1535,8 +1535,8 @@ cannot go on. The new field is `null` on every kind that is not a capability, so
 a client that reads the fields it knows keeps working; a client that switches
 exhaustively on the item's fields has one more field to read.
 
-The blocked capability is the contract for **WI-121**, and the code implements it —
-the refusal is recorded at `apps/server/src/modules/mcp/server.ts:720`, the list
+The blocked capability is the contract for **WI-121**, and the code implements it — as of
+`4248520` — the refusal is recorded at `apps/server/src/modules/mcp/server.ts:720`, the list
 draws it as its own kind at `apps/server/src/api/waiting.ts:159`, and the owner's
 action is `POST /api/agents/:id/grants`.
 
