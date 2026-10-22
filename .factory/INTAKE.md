@@ -3507,23 +3507,25 @@ owner can widen the grant from the list; the row leaves when the grant is
 widened; a test proves the refusal reaches the list and that the row leaves
 after the grant.
 
-## 2026-10-22 09:00 — the branch pile-up, re-measured at `2806f72`: every branch merges clean now, and four of them must not be merged
+## 2026-10-22 09:00 — the branch pile-up, re-measured at `db6a29b`: every branch merges clean now, and four of them must not be merged
 
 **The 08:05 entry above is kept as written, because it was true when it was written.** This
 section is the re-measurement, and it changes the verdict in three ways worth naming.
 
-**`origin/main` moved again, and the numbers moved with it.** The tree was observed at twelve
-tips while the measurement ran, ending at **`2806f72`** — and it was **rewritten once**: the tip
+**`origin/main` moved again, and the numbers moved with it.** The tree was observed at thirteen
+tips while the measurement ran, ending at **`db6a29b`** — and it was **rewritten once**: the tip
 that was `main` at `115d226` was `wi/112-second-landing`'s own tip, and by `d4c12c1` that branch
-was no longer an ancestor of `main`, because the landing was rebased. **83 remote branches: 61
-merged, 22 unlanded.** The unlanded count did not fall, because the peer opened branches of its
+was no longer an ancestor of `main`, because the landing was rebased. **87 remote branches: 63
+merged, 24 unlanded.** The unlanded count did not fall, because the peer opened branches of its
 own while this was being measured — including a **v2** of the evidence route,
 `wi/086-evidence-read-route-v2`, which is the same work re-based onto `main` and is the better
 branch of the two. **The v2 has since landed**, and the evidence route's code is in the tree.
+**Two more branches have appeared since**: `wi/123-licence-record-pin`, which merges clean, and
+`wi/122-mode-is-settled`, the peer's mode item, which conflicts in three ledger files.
 
 **And the finding that matters: the counts move, the verdicts do not.** The whole table was
-re-measured at **four** different tips of `main` — `115d226`, `d4c12c1`, `20ce58e` and `2806f72` —
-and **every verdict came out the same at all four**. The same branches merge clean, the same
+re-measured at **five** different tips of `main` — `115d226`, `d4c12c1`, `20ce58e`, `2806f72` and
+`db6a29b` — and **every verdict came out the same at all five**. The same branches merge clean, the same
 branches conflict, the same ones must not be merged. Only the counts moved, because the peer was
 landing work while the measurement ran. **That is what separates a pile-up from a mess**, and it is
 why the answer to the owner's question does not depend on catching `main` at a lucky moment.
@@ -3544,12 +3546,12 @@ read. Four branches are worse than they look because of this.
 
 **The re-measured verdict, in one line each:**
 
-- **3 landable now** — `wi/092-bundle-budget-timeout` (+84/−44, green), `wi/119-strategy-record-prose` (+126 over the prose item's own file), `wi/117-branch-pileup-verdict` (+609, green). `wi/086-evidence-read-route-v2`, which was first on the list, has landed.
+- **5 landable now** — `wi/092-bundle-budget-timeout` (+84/−44, green), `wi/106-record-four-loose-sentences` (+47/−1 over its item file, green), `wi/119-strategy-record-prose` (+126 over the prose item's own file, green), `wi/123-licence-record-pin` (+438 over the licence record's own pin), `wi/117-branch-pileup-verdict` (+637, green). `wi/086-evidence-read-route-v2`, which was first on the list, has landed.
 - **2 clean but red** — `wi/095-resolver-robustness` (carries `wi/085`'s commit, so landing it closes `085`) and `wi/085-autonomy-policy-attack`.
 - **5 dead weight** — `wi/071-accent-one-meaning`, `wi/086-evidence-read-route` (its work landed as `-v2`), and the peer's withdrawn `wi/116-strategy-record-prose`, `wi/117-strategy-record-prose` and `wi/118-strategy-record-prose`, which touch no file at all.
 - **4 that must not be merged** — `wi/062-measures-citation-refresh` (its pointers are older than `main`'s, so resolving the conflict in its favour re-points the contract at old code), `wi/042-product-record-closed-questions` (says the measures are "funded and in flight"; `main` has since shipped them and says "the two are counted"), `wi/046-merge-rehearsal` (its `INTAKE.md` is the file from **before** `INTAKE.md` and `history.md` were split — merging it tries to re-import 9,966 lines of process history into the state file, 4,165 of whose long lines `main` already keeps in `history.md`), and **`wi/103-contract-pointers-after-wi-080`** — its work is done and the gate is green, but the branch's copy of `.factory/work/WI-103.md` is **101 lines shorter** than `main`'s, so merging it would **delete 101 lines of the record**.
-- **6 real work needing a re-base** — `wi/075-published-status-claims`, `wi/077-agent-adapter-domain`, `wi/077-author-shape-house-form`, `wi/067-mcp-workspace-scope`, `wi/044-vendored-sources`, `wi/106-record-four-loose-sentences` (whose product work has landed; only its item file differs).
-- **1 in flight with the peer** — `wi/088-ledger-state-and-history`.
+- **5 real work needing a re-base** — `wi/075-published-status-claims`, `wi/077-agent-adapter-domain`, `wi/077-author-shape-house-form`, `wi/067-mcp-workspace-scope`, `wi/044-vendored-sources`.
+- **2 in flight with the peer** — `wi/088-ledger-state-and-history`, `wi/122-mode-is-settled`.
 - **1 preserved, not landed** — `wi/072-queue-index`.
 
 **And the finding the publication left for WI-103 is closed by measurement.** The pointer it
@@ -3573,8 +3575,11 @@ says the earlier published claim keeps the number where no dispatch binds it, so
 is that item and this block's 08:19 sentence was the stale claim."_ **So WI-117 is settled
 by the session that had the other claim, in writing, on `main`.** The number space reads
 **WI-117 = this item, WI-118 = the mode item, WI-119 = the prose item**, and the next
-free number is **WI-122** — WI-120 and WI-121 were taken after this section was written, and
-the block moved with them.
+free number is **WI-124** — WI-120, WI-121, WI-122 and WI-123 were taken after this section was
+written, and the block moved with them. **WI-122 was taken at 10:37 and has since been
+renumbered to WI-124 by the session that had it**, with WI-123 left alone because nobody
+contested it — the same tiebreak, applied again, and a number nobody contests is not moved for
+tidiness.
 
 ## 2026-10-22 09:20 — Chief: the front page is corrected, two numbers are taken, and WI-112's record is true
 
