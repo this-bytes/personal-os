@@ -9815,3 +9815,40 @@ un-archiving them is a second repair** — and Vision's verification had been qu
 session that could not answer it, which no amount of waiting would have started. **The
 peer's correction is taken. The refusal itself is still there, so the restart still stands
 for Wren's lane, and the recommendation is unchanged: after Cog's WI-121 turn lands.**
+
+## 2026-10-22 11:45 — the repository's own description still carries the old tagline, and nothing holds the front page
+
+**Probe's WI-120 report carried two findings. The lead measured both before recording
+either.**
+
+**A correction to this lead's own published acceptance:** the CodeQL run id cited for the
+merge `ce51521` was `39689241897`. Measured unauthenticated on the GitHub API,
+**`39689241897` → 404 Not Found**, and **`39687241897` → `CodeQL`, head `main`, sha
+`ce51521`, `completed/success`.** A transposition, from this lead's brief. **A run id
+that 404s cannot be a run** — a published acceptance that cites one cites something that
+was never measured.
+
+**And a finding from an acceptance, so it is numbered: WI-126.** The repository's
+**published description** still reads _"An agent-native control panel and personal software
+factory: talk to agents, run group conversations, and let agents build the things you
+need."_ — **three of the product's own exclusions, live, on the public repository.**
+WI-120 fixed the files because the description is a setting and not a commit, so it was
+outside WI-120's scope; **and it is the first field a stranger meets, because GitHub
+renders it into the page's meta description and the social card.** The fix is one field
+and one sentence — `package.json`'s `description`, byte for byte. **It is an externally
+visible change, so it waits on the owner's word and spends no request id.**
+
+**And the sweep behind it found WI-127.** **Nothing holds the front page.** The identity
+sentence is in `README.md`'s third line and in `package.json`'s `description`, and **no
+gate, test or script in the repository reads either** — WI-122's defect class, one layer
+out. The precedent for the check is already in the tree: `ownerPasswordExposure.test.ts:341`
+reads `README.md` from the repository root, and `forge-briefs.test.ts:73` resolves
+`repoRoot`. **So it is one file and one owner** — a test in the server's suite, **no
+wiring and no new gate** — and it must say nothing about the four places WI-120
+deliberately left alone.
+
+**And the number space moved under this lead while it worked.** The peer took WI-124 and
+WI-125 between 11:20 and 11:30, **both with block rows and no item file yet** — so this
+lead's "the next free number is WI-126" would have collided with the peer's WI-126 had it
+not been read immediately before the number was taken. **The block reads WI-128 next
+free.**

@@ -96,8 +96,10 @@ free number above the highest taken.**
 | WI-123 | The licence record's four corrected sentences are held by a check that can see them drift                                                                                                                                         | lead   |
 | WI-124 | The mode's meaning is settled — `manual` does not gate delegation                                                                                                                                                                 | worker |
 | WI-125 | Publish `approval.decided`, so a decided approval can leave the waiting list                                                                                                                                                      | worker |
+| WI-126 | The repository's own description still publishes the sentence the owner replaced                                                                                                                                                  | lead   |
+| WI-127 | Nothing holds the front page's identity sentence                                                                                                                                                                                  | lead   |
 
-**The next free number is WI-126.**
+**The next free number is WI-128.**
 
 **WI-118 was claimed twice, and this is the record that kept it.** The lead
 opened this session's mode item as WI-113 at 07:50, yielded it when the
@@ -4423,3 +4425,63 @@ WI-124 and WI-117** (branches at 11:31 and 11:32). **Ceiling two. Next free numb
 stalled turn; **`approval.decided` (C-16/C-22) has an implementation waiting and needs the
 owner's word, not a session's guess**; and **reversibility (Q4) is still unanswered, with
 WI-035 carrying the work.**
+
+### 11:45 — a finding from an acceptance, measured and numbered: the repository's own description still publishes the old tagline
+
+**Probe's WI-120 report carried two findings, and the lead measured both on its own
+instrument before recording either.**
+
+**One — a correction to this lead's own published acceptance.** The CodeQL run id cited
+for the merge `ce51521` was `39689241897`. **Measured: `39689241897` → 404 Not Found;
+`39687241897` → `CodeQL`, head `main`, sha `ce51521`, `completed/success`.** It was a
+transposition, from this lead's own brief. **The correction is written into WI-120.md,
+dated.** The rest of the acceptance stands.
+
+**Two — and this one is a finding from an acceptance, so it is numbered.** The repository's
+**published GitHub description** still carries the old tagline:
+
+```
+description: An agent-native control panel and personal software factory: talk to agents,
+             run group conversations, and let agents build the things you need.
+```
+
+**Measured by the lead, unauthenticated, `GET https://api.github.com/repos/this-bytes/
+personal-os`:** `homepage` is the repository's own URL, `topics` empty, `visibility`
+public, `license` MIT, `default_branch` main. **And the description states three of the
+things the product is not** — a chat home, multi-user, a workflow editor — which
+`docs/strategy.md:37` lists as exclusions. **WI-120 was opened because those three stood
+in the README's tagline; the description was outside WI-120's scope, because it is a
+setting and not a commit — and it is still published, in the first field a stranger
+meets, because GitHub renders the description into the page's meta description and the
+social card.**
+
+**WI-126 is opened for it.** Owner Chief — an externally visible change, and only the
+owner's word releases it. Verifier Probe, who fetched the published front page for WI-120
+with the same instrument. **The description becomes `package.json`'s `description`, byte
+for byte: `Personal OS — the environment one person's agents operate and extend.`** **The
+item waits on the owner's word and spends no request id: there is nothing to verify until
+the description changes.**
+
+**And the sweep behind it found a second thing, numbered WI-127.** **Nothing holds the
+front page.** The identity sentence is in `README.md`'s third line and in `package.json`'s
+`description`, and **no gate, test or script in this repository reads either** — the same
+defect class as WI-122, WI-123 and WI-116, one layer out. **The precedent is right
+there**: `ownerPasswordExposure.test.ts:341` reads `README.md` from the repository root
+and `forge-briefs.test.ts:73` resolves `repoRoot`. **So WI-127 is one file and one owner**
+— `apps/server/src/__tests__/frontPage.test.ts`, Probe's file, **no wiring, no new gate,
+and the gate count stays at nine.** **It must not assert anything about the four places
+WI-120 deliberately left** — `AGENTS.md:8`, `CONTRIBUTING.md:4`, `docs/roadmap.md:17`,
+`.factory/work/WI-011.md:20` — because WI-120's decision was that they are not silently
+fixed. Dispatched to Probe.
+
+**The number space moved under this lead's feet while it worked, and the block caught
+up.** The peer took **WI-124** (the mode's meaning) and **WI-125** (publish
+`approval.decided`) between 11:20 and 11:30 — **and both have block rows and no item
+file yet.** So this lead's own "the next free number is WI-126" would have collided with
+the peer's WI-126 if it had not been read immediately before the number was taken.
+**WI-126 and WI-127 are filed, and the block reads WI-128 next free.**
+
+**The floor at 11:45.** **Running:** Cog's WI-121 (`task_bbf11f83be2b`, a second hour).
+**Queued:** Cog's WI-122 verification (`task_d374c36981e7`), Cog's WI-123 verification
+(`task_017a543cd28d`), Probe's WI-116 (`task_9a4337f73e61`), Probe's WI-127 (dispatched
+11:45). **Ceiling two. Next free number WI-128.**
