@@ -4650,3 +4650,58 @@ WI-120 group post. **Queued:** Cog's WI-122 verification (`task_d374c36981e7`), 
 WI-123 verification (`task_017a543cd28d`), Vision's WI-116 verification
 (`task_5c1d74057e18`), Probe's WI-127 (`task_e33a476f252f`), Probe's WI-126 verification
 (`task_74ee53b2ab2d`). **Ceiling two. Next free number WI-128.**
+
+### 12:50 — WI-126 is accepted, WI-127's pin is landed, and the private-chat repair did not hold
+
+**WI-126 is ACCEPTED** on Probe's verdict (`wi-126-verify-repository-description-probe-2026-10-22`,
+`task_74ee53b2ab2d`): measured at published tip `c26f650`, the field is **69 code points,
+71 bytes, sha256 `2d2527b7…`** — **the same digest as `package.json`'s description**, string
+equal and bytes equal; **no commit between `ce51521` and `c26f650` touches `package.json` or
+`README.md`**; **"agent-native control panel": 0 occurrences** in the whole 400,855-byte
+public page; and the identity sentence appears 8 times in it. **The lead re-measured the
+digest and the diff itself, and both hold.** _What the product can now do: a stranger who
+finds the repository — in a search result, a shared link, or a social preview — reads the
+product's own identity sentence._
+
+**WI-127's pin is LANDED** — merge `8a97178`, one file, +417
+(`apps/server/src/__tests__/frontPage.test.ts`), from branch `wi/127-front-page-pin`,
+commit `8ff041e`. **Three findings held by name** — `README.md`'s third line, the
+manifest's `description`, and the two agreeing on one sentence in two renderings — **and it
+holds itself to failing on the real files**: the README drifted → **3 red**; the manifest
+drifted → **3 red**; both drifted → **4 red**; each restored with `git checkout` and an
+empty diff. **The nine gates were green on the tree that was pushed: 67 files, 690 tests,
+0 failures.** **Verification dispatched to Cog**
+(`wi-127-verify-front-page-pin-cog-2026-10-22`, `task_48aacbb2df4b`) — **Vision is the
+verifier this item names, and Cog stands because Vision's queue has not drained** — **and
+the report goes to the group, because the private chat does not run.**
+
+**And the lead's repair of the private-chat route did not hold, and that is measured.** The
+one-field change to the liveboard's state — re-pointing Chief's private chat at the live
+session — **was overwritten by the runtime.** Measured at 12:45: the binding is again
+`mvs_e109a52fca0541f196725ffdedd0d316`, and the file's own mtime is 12:43:51. **The runtime
+holds that map in memory and rewrites the file: a state file edited on disk is not state.**
+And it showed in the work: **Probe's WI-127 report was accepted into the private chat and
+left queued for eight minutes without running**, and Probe repeated it in the group,
+exactly as the brief instructed. **The route that works is the group.**
+
+**The floor at 12:50.** **Running:** Cog's WI-121 (`task_bbf11f83be2b`, a third hour), and
+Probe's WI-126 verdict group post. **Queued:** Cog's WI-122 verification (`task_d374c36981e7`),
+Cog's WI-123 verification (`task_017a543cd28d`), Cog's WI-127 verification
+(`task_48aacbb2df4b`), Vision's WI-116 verification (`task_5c1d74057e18`). **Ceiling two.
+Next free number WI-128.**
+
+### 13:00 — Vision's lane refused the WI-116 verification, and the substitute takes it
+
+**`task_5c1d74057e18` ended `AGENT_UNAVAILABLE` at 12:23** — Vision's lane refused the
+WI-116 verification. **The standing substitute stands: the verification is re-dispatched to
+Cog** (`wi-116-verify-strategy-copy-pin-cog-2026-10-22`, `task_30fa1c22fa81`), **with a new
+request id and a new title; the spent Vision id is not reused.**
+
+**And the load is now stated rather than hidden: Cog holds four verifications** — WI-122,
+WI-123, WI-127, WI-116 — **because Vision's lane refuses and Probe wrote two of the pins.
+Cog is the only verifier lane that answers.** That is the bottleneck, and it is the restart
+the owner has been asked for.
+
+**One stale copy cancelled:** `task_cac389dbf50d` — Probe's WI-126 verdict addressed to
+Chief's private chat, a route that never runs. **WI-126 is accepted and on the record**,
+so the copy was a duplicate and a queue slot.
