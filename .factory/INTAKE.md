@@ -5206,3 +5206,27 @@ Probe's WI-121 (`task_122e0e2e02bf`) and WI-129 (`task_b433527c33d7`); Cog's WI-
 (`task_c8d80aa01bfa`), WI-131 (`task_f57ccf614193`) and WI-132 (`task_5cde5cfe02bf`); and
 the two verdicts on their way to the group and to the peer session. **Ceiling two. Next
 free number WI-133.**
+
+### 15:10 — WI-133: the dependency audit job audits twice, and the duplicate is what turned a slow registry into a timeout
+
+**The `Dependency audit` job was cancelled on `ccc3564`, and the diagnosis published at 14:05 above is wrong in the way that matters.** It says the failing run "had queued a while for a runner". **It did not.** The run was created at **03:01:31** and **every job started at 03:01:34** — **three seconds.** The job was on a runner, and it was sitting in the audit.
+
+**The step-level timings settle it, and they had not been read.** The job has two steps that can be slow, and the API returns them separately:
+
+| Step                 | `ccc3564` (cancelled)                                      | `e660fdf` (green re-run)            |
+| -------------------- | ---------------------------------------------------------- | ----------------------------------- |
+| Install dependencies | **7.05 min** (03:01:38 -> 03:08:41)                        | **0.07 min** (03:26:35 -> 03:26:39) |
+| Audit                | **3.10 min**, cut off by the budget (03:08:41 -> 03:11:47) | **0.00 min** (03:26:39 -> 03:26:39) |
+| the whole job        | 10.25 min                                                  | **11 seconds**                      |
+
+**Both audit round-trips stalled, and the second one was still running when the ten-minute budget ran out.** And **the registry was not slow for anyone else**: at the same moment, on the same registry, the two siblings doing the same install with `--no-audit --no-fund` — so, doing no audit at all — finished their whole jobs in **0.23 and 0.27 minutes**.
+
+**So the job's normal cost is eleven seconds, and the timeout was a stalled registry round trip that this job paid for twice.** Its three siblings paid for it zero times, which is why they were unaffected.
+
+**WI-133 is claimed and published, and the claim is the measurement.** `.factory/work/WI-133.md`; the claim commit `27d87ef` is on `wi/133-dependency-audit-once` **before the branch carries the change**. The block still reads "Next free number WI-133" because the block row is the lead's bookkeeping, and **the number is taken on a published branch, which is what the claim-first protocol says is enough to take it.**
+
+**The change is one word, in one line of one job.** `.github/workflows/ci.yml`, the `Dependency audit` job's install: `npm ci --ignore-scripts` becomes `npm ci --ignore-scripts --no-audit --no-fund`, so the install stops auditing and the job audits exactly once, with the level the job names.
+
+**And the gate is not weakened — measured with the version CI runs, not asserted.** With **npm 10.9.9**, the version bundled with the node `22.23.3` in `.nvmrc`, against a lockfile carrying a high-severity advisory (`lodash@4.17.15`): **`npm ci --ignore-scripts` exits 0** — the implicit audit prints and does not fail — while **`npm audit --audit-level=high` exits 1**. **The implicit audit never gated this job; the explicit step is the only thing that has ever failed it, before the change and after it.**
+
+**What it does not claim:** it does not end the flake. The job's worst case is now one stalled round trip instead of two, and a registry slow enough to stall one of them for ten minutes would still time the job out — and it would be right to. It does not raise the timeout: the normal cost is eleven seconds against a ten-minute budget, so the budget was never the thing that was wrong. And it does not delete the install, which is the change that would remove the job's dependency on it entirely, and which wants the owner's word.
