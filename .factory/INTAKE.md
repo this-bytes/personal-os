@@ -696,6 +696,7 @@ second dispatch.
 | `wi-129-followup-verify-probe-2026-10-22` | WI-129's follow-up — the re-pointed citation and the two new cases, verified | Probe | `task_6d4d0264d86c` | **DISPATCHED AT 16:50 BY CHIEF, AT THE PUBLISHED TIP `cbfbf8d`, REPORT TO THE GROUP.** WI-129 was accepted on two independent verdicts — Probe's (`task_02a3509d3d31`, ACCEPT) and the peer session's own verifier's PASS WITH FINDINGS — **and then the peer session landed a follow-up on top of it:** one citation re-pointed in the contract and the same one re-pointed in the guide's §10, and **two cases added to `apps/server/src/__tests__/resource-liveness.test.ts`** — **with only the implementer's own report.** **Test code that no independent verifier has run is landed work with no verdict, and the lead dispatches the verification even for the other session's item.** Probe wrote none of the follow-up. **The brief names the two things to prove — the re-pointed citation names its claim, and each of the two new cases can fail** — and it puts the implementer's own caught mistake to the verifier: **a restore that only verifies is not a restore** |
 | `wi-135-four-citations-wren-2026-10-22` | WI-135 — the four citations that do not name what they claim | Wren | `task_27577f426407` | **CANCELLED AT 16:30 BY THE LEAD — A DUPLICATE NUMBER, NOT A DUPLICATE FINDING.** This brief was dispatched at 16:18 by another session, and its own words say why it took the number: "**`main`'s block reads 'The next free number is WI-135', and nothing on `main` or on any remote branch carries it.**" **That read was stale by four minutes** — the lead's WI-135 claim was published on `main` at 16:14 in `f880677`, which carries `.factory/work/WI-135.md` and the block row, and the lead's live dispatch of it is `task_5888721e9595`. **Its findings are a strict subset of the lead's eighteen**, and every one is already in the lead's table: F1 (`CONTRACTS.md:2098` cites `service.ts:363` for the author; `:365` is `createdBy: author,`), F1b (`CONTRACTS.md:806` cites `:399-400` for the template's id and version; `:401-402` are `templateId` and `templateVersion`), F2 (`docs/resource-templates.md:76` cites `service.ts:351-360`), F3 (`:97`, `:289`, `:425` cite `:581-591` and `:573-578`), and F4 (`.factory/work/WI-129.md:37` cites `docs/resource-templates.md:594`; the sentence is at `:595`) — **which the lead already corrected in place in `f880677`.** **The peer brief says F2's and F3's targets were "not yet located"; the lead's brief carries all three of them** (`service.ts:376-385`, `:673-678`, `:687-691`), **so the superset is strictly more advanced, not merely broader.** **Two live items on one number, in two owners' lanes, over the same two documents, is the failure the number space exists to prevent**, so the duplicate is cancelled rather than allowed to start beside the one it duplicates. **Nothing is lost: the task never ran, it has no chat, no worktree and no committed file, and its five findings are in the brief that is live.** Its request id `wi-135-four-citations-wren-2026-10-22` is **spent and never reused.** **The number is the lead's, and the peer's own WI-136 file agrees**: "WI-135 was the peer session's, written first and not yet published. Their claim was in a commit on their own `main` when this worktree was cut, so their claim keeps WI-135 and this one moves to WI-136." |
 | `wi-134-verify-adapter-boundary-probe-2026-10-22` | WI-134 — the domain's edge to the adapters package, verified | Probe | `task_33fe48307f92` | **DISPATCHED AT 17:15 BY CHIEF, AT THE PUBLISHED TIP `d60f3c5`, REPORT TO THE GROUP.** WI-134 landed on `main` in the peer's commits (`f932208`, merged at `d60f3c5`) **with no independent verdict anywhere** — **the peer wrote the work and the check, and the peer's own report is not a verification.** **A landed item with no verdict is inventory, and the lead dispatches the verification even for the other session's item.** Probe wrote none of it. **The brief asks for the seven answers, and the sharpest of them is the hole the check found in itself**: the walk collected `.ts` files while the browser client is `.tsx`, so the client was never inspected and putting the adapters package into `apps/web/src/main.tsx` turned nothing red. **The lead's own measurement of the landing:** `apps/server/src/modules/agents/service.ts:13` now ends the `@personal-os/contracts` import with the adapters import gone, `apps/worker/package.json` no longer names the package, `packages/contracts/src/agent.ts` carries `AdapterLogger` at `:286`, `AdapterContext` at `:296` and `AdapterProvider` at `:308`, and the lockfile's `apps/worker` entry no longer declares the dependency — **the lockfile changed by that and nothing else** |
+| `wi-072-queue-is-a-file-2026-10-21` | WI-072 — the factory's queue is a file a program can read | Chief | — | **TAKEN ON 2026-10-21, AND THE LEDGER HAD NO ROW FOR IT AT ALL — the peer recreated the item file today (`c61cd7b`) and the lead records it here, because a number with no ledger row is a collision waiting to happen.** WI-072 was numbered on 2026-10-21 as the next free number above all allocated ones, renumbered from WI-071 when WI-069 was taken. **Owner: Chief. Verifier: Probe. State: `implement`, with no live dispatch — one of the twenty-three the peer's census found bound to a dead dispatch.** **And the census is this item's own evidence, measured today: the state of every work item lives in a `**State:**` line inside a prose file, a program has to parse prose to know what is live, and the numbers move because the queue moves.** **The lead corrected seven of those lines by hand today and the peer's count fell from fifty-seven to forty-seven — the defect the item names, caught in the act.** **The lead has not read the item in full and has not started it, and says so: the dispatch waits on that reading, and the lane is full in any case** |
 
 **A cancelled task is not a dispatch — but a cancelled dispatch does not free its
 request id.** That second half was wrong here, and it is corrected now rather
@@ -6169,3 +6170,63 @@ the measurement and the ledger correction, **taking no number**, with a fuller h
 follow once its merged tip is green.
 
 **The floor at 16:52.** **Ceiling two. Next free number WI-137.**
+
+### 18:05 — WI-131 is landed, a merge conflict is resolved by the house form, and the cases are Probe's
+
+**WI-131 is implemented and landed.** Cog's branch
+`wi/131-widening-write-one-transaction` — the implementation commit `da28686`, merged with
+the tip that moved under it. **The delete at `:297` and the grant write at `:325` are one
+change now**, so a failure in either leaves both as they were: **the row stays while the
+grant did not change, and the grant changes with the row gone only when the grant really
+was widened.** The contract publishes the guarantee **in both directions**, and **its
+citation names the write that changes the grant (`:325`), not the delete beside it — which
+is D2's finding.** The migration note says the honest thing: nothing changes for a client
+that widens a grant successfully, **and a client whose grant write failed now keeps the row
+it was told about.**
+
+**And the merge carried a conflict, because two sessions did the same work in parallel.**
+The peer named **`d229b53`** for WI-121's claim (`515a4ca`); Cog named **`4248520`**
+(`da3984a`). **Both carry the same message — `d229b53` is the commit that carries WI-121's
+work and `4248520` is the lead's merge of it** — **and the house form says which: every
+claim in this contract that names a commit names a single-parent commit** (`9ad4f98`,
+`20ca643`, `622812c` — all one parent), **and `4248520` has two.** **The lead took
+`d229b53`**, and the peer's side of the conflict was the one already published. **The lead
+measured it rather than taking the side that was easier to merge.**
+
+**And the lead's own State-line correction is what made `main` red, and the peer fixed it.**
+WI-121's claim named the work item and no commit; **accepting WI-121 closed the item, so
+the claim went unsatisfied and `published-shapes.test.ts` went red on `main`** — the
+peer's words, and the mechanism is exact: **the check asks every claim about the code to
+name a commit or an item that is still open**, and a closed item is neither. The peer
+landed the fix (`515a4ca`, _"and land the red main"_), the claim now names `d229b53`, and
+the test is **8 of 8 green** with the pointer gate at 144. **So the lead's correction and
+the peer's fix are one story: a claim that names a closed item names nothing that is
+watched.**
+
+**And the census is forty-seven now.** The peer measured fifty-seven at `8696d4c`, and
+**the seven State lines the lead corrected four minutes later are on `main` in `55f173c`**
+— WI-121, WI-122, WI-123, WI-126, WI-127, WI-128 and WI-129 all move to `accepted`.
+**The number is the number on the tree it was measured on, and the peer's correction of
+its own census is on `main` already.**
+
+**The three cases are Probe's, and the verification is dispatched** — request
+`wi-131-verify-one-transaction-probe-2026-10-22`, batch `batch_0d4abe67451e`, task
+**`task_934a715d2712`**, **at the published tip, report to the group**. **Cog wrote no test
+file.** The brief asks for the three named cases in Probe's existing check file
+(`apps/server/src/__tests__/blocked-capability.test.ts` — WI-121's file), the transaction
+proved **load-bearing by taking it away**, **the window closed for the worker too, measured
+across two connections**, and the contract's citation naming the write that changes the
+grant.
+
+**And one number the ledger had lost, found by the census.** **WI-072** — _"the factory's
+queue is a file a program can read"_ — was numbered on 2026-10-21, renumbered from WI-071
+when WI-069 was taken, **and no row for it existed in this ledger at all** until the peer
+recreated its item file today. **It is the lead's own item** (Owner: Chief, Verifier:
+Probe), it sits at `implement` with no live dispatch, **and the census that found it is this
+item's own evidence: the state of every work item lives in a `**State:**` line inside a
+prose file, so a program has to parse prose to know what is live.** The lead corrected seven
+of those lines by hand today and the peer's count fell from fifty-seven to forty-seven.
+**The dispatch waits on the lead reading the item in full — the lead has not, and says so
+rather than claiming it.**
+
+**The floor at 18:05.** **Ceiling two. Next free number WI-137.**

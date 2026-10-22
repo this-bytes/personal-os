@@ -1499,8 +1499,30 @@ action that unblocks an agent cannot take anything away.
 **The row leaves when the grant is widened.** A capability the agent holds is not
 waiting on the owner any more, so the row leaves the list as soon as the grant
 includes it. Whichever route widened the grant, the row leaves: both go through
-the one write that changes a grant (`apps/server/src/modules/agents/service.ts:261`).
+the one write that changes a grant (`apps/server/src/modules/agents/service.ts:325`).
 A list that keeps the row is a list that lies about what is waiting.
+
+**The row leaves and the grant is written in one transaction (WI-131).** The two writes are
+one change and are made together (`apps/server/src/modules/agents/service.ts:286`):
+the row that says what the agent is waiting on leaves the list, and the grant that
+says what the agent may call is written. **So the guarantee is kept in both
+directions. The row leaves exactly when the grant includes the capability** — and
+**the row stays when the grant write fails.** A write that is refused — a
+configuration that is gone, a constraint the owner cannot meet — leaves both as they
+were: the row is still on the list, and the grant was not widened. A list that drops
+the row while the agent is still blocked is a list that lies the other way.
+
+A transaction is also what holds across processes. The worker is a second process on
+the same database, and the refusal it records there is written in a transaction of its
+own (`apps/server/src/modules/agents/blocked.ts:44`), so the two meet in the database
+rather than in one function's timing: a guarantee that rests on a function never
+yielding is not a guarantee.
+
+**Migration.** Nothing changes for a client that widens a grant successfully: the row
+leaves the list and the grant is set, exactly as before. **A client whose grant write
+failed now keeps the row it was told about** — the write is refused and the list still
+says what is waiting, where before the row had left the list while the agent was still
+blocked and the owner was told that nothing was waiting.
 
 **Migration.** The kind grows by one member and the item grows by one field, and
 nothing is reclassified. A client that matched on three kinds has a fourth case
