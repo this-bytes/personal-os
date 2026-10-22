@@ -1209,6 +1209,16 @@ goal may tighten its workspace and may never loosen it. The action vocabulary is
 closed — `message.send`, `tool.call` and `artifact.create` — and an action outside
 it is refused rather than passed.
 
+**When no policy names any action, the effective set is every action in the
+vocabulary.** That is the other half of the intersection, and it is published
+rather than implied: a policy that names no action does not restrict the
+actions, so the effective set is the whole vocabulary, which is what the stored
+defaults mean. **The policies that reach that state are the ones that never
+named one** — a write that names an empty list is refused, because an empty list
+is not a tighter policy but the absence of one, and a stored empty list cannot
+be told apart from the stored default. See
+[the autonomy-policy write](#the-autonomy-policy-write).
+
 **The limits, the allowed actions and the approvals are enforced.** The worker holds
 a turn to the effective policy: the chain's turn count
 (`apps/worker/src/executor.ts:1426`) and its spend
@@ -2085,12 +2095,18 @@ type AutonomyPolicyPatch = {
 
 **A change says what changes.** Every field is optional and the ones the owner does not
 name are left as they were, so setting the turn limit does not clear the action list that
-was set before it (`apps/server/src/modules/workspaces/service.ts:109`). **An absent list
-is left alone and an empty list clears it**, so clearing is still deliberate.
+was set before it (`apps/server/src/modules/workspaces/service.ts:127`). **An absent list
+is left alone and an empty list is refused**
+(`apps/server/src/modules/workspaces/service.ts:102`), so a change can tighten the list
+but never clear it. An empty list names no action, and a policy that names no action does
+not restrict the actions — **writing one would widen the policy to every action in the
+vocabulary while looking like a tightening.** The refusal is a `422 validation_failed` in
+the shared error envelope, and it says what to write instead: name the actions the agent
+may take, or leave the list out to keep the one the policy already carries.
 
 **An action the system does not know is refused.** The two lists are constrained to the
 published vocabulary — `message.send`, `tool.call`, `artifact.create`
-(`packages/contracts/src/autonomy.ts:34`) — and a name outside it comes back
+(`packages/contracts/src/autonomy.ts:38`) — and a name outside it comes back
 `422 validation_failed` in the shared error envelope. A policy that names an action the
 system does not understand allows nothing, and a write that was accepted would say so
 only by silence.
@@ -2098,7 +2114,7 @@ only by silence.
 **The mode is written into both of the places a workspace keeps it.** The mode the owner
 sets is the mode that is in force: a patch that names a mode sets the column the panel
 shows _and_ the policy the resolver reads, and a patch that names no mode leaves both
-alone (`apps/server/src/modules/workspaces/service.ts:113`). The two cannot disagree.
+alone (`apps/server/src/modules/workspaces/service.ts:133`). The two cannot disagree.
 
 **The goal's policy is still not writable.** Goals have no update route, so the policy a
 goal carries can only be changed by editing the database. This entry is about the
@@ -2109,6 +2125,16 @@ write is additive — no route changes its shape, no record is reclassified, and
 that does not send the field is unaffected. A client that sent `autonomyPolicy` to this
 route before and saw no effect now sees the effect it asked for; that is the point of
 the write, and it is not a promise this contract breaks.
+
+**A client that cleared the list under the rule in force got every action.** The write
+path landed on 2026-10-22 and an empty list was accepted then, so a workspace whose owner
+cleared its list carries an empty stored list today, and the resolver reads a stored
+empty list as a policy that names no action — the same as the stored default, and the
+same effective set of every action in the vocabulary. **No stored row is migrated:** an
+empty stored list cannot be told apart from the stored default, and reading it as "no
+action allowed" would silence every workspace that never named one. What changes is the
+write: a client that means to clear now gets `422 validation_failed` and a message
+saying what to write instead, and it tightens by naming the actions it allows.
 
 ### The measures route
 
