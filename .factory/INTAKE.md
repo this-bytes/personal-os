@@ -4192,3 +4192,55 @@ candidate:** un-archiving a dead session is available and was used twice today. 
 verdict copies that would have woken Chief's private-chat lane were cancelled already, so
 nothing will wake it on its own.** **The recommendation stands: restart after Cog's WI-121
 turn lands, and not before.**
+
+## 2026-10-22 11:22 — Chief: WI-122's verification moves to the standing substitute, the tree that carries WI-123's pin is green, and the push goes out
+
+**One — WI-122's verification now has a lane behind it.** Vision's chat lane is dead, not busy:
+**her last two turns both ended `status=aborted` (10:25 and 10:31)** and nothing has landed
+since. The cause is measured and it is the archive, not the queue: **her session had been
+archived at 09:45 — by this lead, for cause — and the liveboard still maps
+`bot:bot_0ffddd8c30bc` onto it**, and **a task queued on an archived session is accepted and
+never runs** (Probe's finding, applied here). **Un-archiving it at 11:07 did not start the
+task**, so the dispatch had no lane behind it. **The rule this factory has settled on —
+recorded in this ledger — names Cog as the substitute for both pins, because she wrote none of
+either.** So WI-122's verification is **re-dispatched to Cog**: request
+`wi-122-verify-note-citations-pin-cog-substitute-2026-10-22`, task `task_d374c36981e7`,
+**queued behind Cog's WI-121**. **`task_ae9f26b09fd3` (Vision) is cancelled** — one item, one
+dispatch that counts, one verdict. **Cog's brief tells her to judge the pin rather than the
+code it guards, because WI-086's route and schema were hers, and to say in her verdict that she
+wrote none of the pin.**
+
+**Two — the gap the other Chief session left, named so that it is visible.** **WI-123's pin is
+landed and has no verification dispatched at all.** The landing is `86a0e52` / `e38d62c` —
+`apps/server/src/__tests__/licenceRecord.test.ts`, 438 insertions, one file — and the item file
+still reads "**State:** implement". **WI-123.md names Vision as its verifier, and the substitute
+rule names Cog.** **This lead did not dispatch it: the item is the other Chief session's, it
+was opened and landed there, and one session opens work items.** **It is a live gap, and the fix
+is one dispatch to Cog with a fresh request id and a fresh title.**
+
+**Three — the tree that is being pushed now carries code, so the gates ran on it.** The other
+Chief session landed WI-123's pin and pushed its records (`db6a29b`) while this session was
+measuring. **So the tree to be pushed is no longer the tree the platform measured green on
+`e856a53`** — it carries one new test file. **The nine gates were re-run on that tree and all
+nine pass:** typecheck 40591ms, test 87287ms, build 19507ms, format 13152ms, contract-status
+692ms, contract-pointers 1231ms, smoke 10363ms, compiled-build 2513ms, bundle-size 723ms —
+"**Every gate passed. The tree is green.**" **The pointer gate reports 126 checked, 0 failures
+— every one of the 126 pointers points at code — and the contract-status gate reports 0
+failures.**
+
+**Four — and the push.** The tree to be pushed carries this session's records on top of the
+other Chief session's WI-123 landing (`e38d62c`, `86a0e52`). **The tip is read with
+`git ls-remote origin refs/heads/main` immediately before the push, and the push is a
+fast-forward.** The platform's verdict is read afterwards and recorded here.
+
+**Five — the floor at 11:22.** **Running:** Cog's WI-121 (`task_bbf11f83be2b`), now with
+WI-122's verification queued behind it. **Queued:** Probe's WI-120 verification
+(`task_f689f6b918a1`), Probe's WI-123 (`task_a606329a3dc1`), Probe's WI-116
+(`task_9a4337f73e61`), Cog's WI-122 verification (`task_d374c36981e7`). **Vision's task is
+cancelled and her lane stays dead. Wren's lane still refuses — the 10:59 delivery died with 0
+characters. Ceiling two. Next free number WI-124.**
+
+**Six — the one word the owner owes, unchanged.** `miniapp restart minimax-bot` is the repair
+for the two chat lanes that are refusing, and it is still the owner's to give. **The
+substitution above does not need it, and that is the point of a substitute: the factory's work
+moves on a live lane while the dead ones wait.**
