@@ -2101,6 +2101,76 @@ does not count as a new turn for the duplicate check. This extends
 consumed is delivered to the next turn, and is recorded as having been
 delivered late.
 
+### The chat surface
+
+The conversation surface renders the turn, the work behind it and the owner's
+controls over it.
+
+**The turn's activity is published, not inferred.** The events the worker
+already writes — `turn.admitted`, `session.started`, `tool.started`,
+`tool.completed`, `message.delta`, `message.completed`, `artifact.created`,
+`execution.status` — are read back from the event log and given a shape a
+client can render.
+
+```ts
+type TurnActivityKind =
+  | 'turn' // the turn itself: admitted, running, finished
+  | 'tool' // a tool call: started and completed
+  | 'message' // the reply being written
+  | 'artifact' // something the agent produced
+  | 'status'; // the execution's status changing
+
+interface TurnActivity {
+  kind: TurnActivityKind;
+  /** The event's own name, so nothing is lost in the projection. */
+  type: string;
+  /** The tool's name, when the event is about a tool. */
+  toolName: string | null;
+  /** The artifact's resource id, when the event is about an artifact. */
+  resourceId: string | null;
+  /** A short, already-redacted summary for the trace row. */
+  summary: string;
+  /** The turn's own id, so a row can be tied back to it. */
+  executionId: string | null;
+  at: string;
+}
+```
+
+**A tool's output is summarised, never carried whole.** The trace row carries a
+bounded summary — how big it was, what it changed — rather than the output
+itself. The event log keeps the truth; the surface keeps it readable.
+
+**The stop control asks, and says what it did.** `POST /api/executions/:id/stop`
+records the request and answers with what actually happened, because a request
+to stop is not a confirmed cancellation: a queued job that never started is
+cancelled truthfully, and a turn already running can only be asked.
+
+```ts
+type StopOutcome = 'cancelled' | 'stopping' | 'unsupported' | 'unknown';
+```
+
+**`unsupported` is a real answer.** A connection whose adapter cannot be
+interrupted says so, and the control is disabled with the reason beside it —
+never offered and then silently ignored.
+
+**Markdown is rendered as text.** A message body is parsed into blocks and
+rendered as elements; raw HTML in a message is shown as the characters the
+agent wrote and never becomes markup, and a link or an image is checked before
+its URL is used. A message cannot run code in the panel that shows it.
+
+**The limits, stated plainly.** Steering does not work yet: the route accepts
+`delivery: 'steer'` and the mode is carried, but nothing acts on it — a steer
+is a queued message today. A file the owner attaches is carried by reference to
+a resource, not uploaded by the composer, and the composer offers the reference
+rather than a picker. The trace shows the events the log holds; it is not a
+complete account of what an adapter did inside its own runtime.
+
+This entry is the contract for **WI-141**, and the code implements it — as of
+`dad1801` — the shapes are in `packages/contracts/src/chat.ts`, the activity
+read model is `apps/server/src/modules/executions/activity.ts`, and the surface
+is `apps/web/src/components/chat/`. The slice's own record is
+[docs/contract-chat-rich-client.md](docs/contract-chat-rich-client.md).
+
 ### Fork and rewind
 
 Two additive operations on a conversation.
@@ -2204,60 +2274,62 @@ by running something else instead. That is the cost of this recovery path, and
 it is paid knowingly: the path exists so that an owner who cannot authenticate
 is not left deleting the database.
 
-| Method             | Path                                                 | Purpose                                                                                 |
-| ------------------ | ---------------------------------------------------- | --------------------------------------------------------------------------------------- |
-| `GET`              | `/api/health`                                        | Liveness and setup state.                                                               |
-| `GET`              | `/api/auth/status`                                   | Whether setup is still required.                                                        |
-| `POST`             | `/api/auth/setup`                                    | Create the owner account. Once per instance.                                            |
-| `POST`             | `/api/auth/login`                                    | Start a session.                                                                        |
-| `POST`             | `/api/auth/logout`                                   | End the session.                                                                        |
-| `GET`              | `/api/auth/me`                                       | The current owner.                                                                      |
-| `POST`             | `/api/auth/owner-token`                              | Return the configured owner token. Owner only — an agent token is refused.              |
-| `GET/POST`         | `/api/workspaces`                                    | List and create workspaces.                                                             |
-| `GET/PATCH`        | `/api/workspaces/:id`                                | Read and update a workspace. `PATCH` accepts `autonomyPolicy`.                          |
-| `GET/POST`         | `/api/agents`                                        | List and create agent connections.                                                      |
-| `GET`              | `/api/agent-presets`                                 | The adapter preset catalogue. A template, never an integration.                         |
-| `GET/PATCH/DELETE` | `/api/agents/:id`                                    | Read, update, remove a connection. `PATCH` accepts `toolGrants`.                        |
-| `POST`             | `/api/agents/:id/probe`                              | Re-run capability discovery.                                                            |
-| `POST`             | `/api/agents/:id/grants`                             | Widen one tool grant. The action a blocked agent needs.                                 |
-| `GET/POST`         | `/api/agents/:id/tokens`                             | Issue and list MCP tokens.                                                              |
-| `DELETE`           | `/api/agents/:id/tokens/:tokenId`                    | Revoke an MCP token.                                                                    |
-| `GET`              | `/api/secrets`                                       | List the secret configurations. Metadata only — a value never leaves the server.        |
-| `GET/POST`         | `/api/conversations`                                 | List and create conversations.                                                          |
-| `GET/PATCH/DELETE` | `/api/conversations/:id`                             | Read, update, remove a conversation.                                                    |
-| `GET/POST`         | `/api/conversations/:id/messages`                    | Read and post messages.                                                                 |
-| `POST`             | `/api/conversations/:id/participants`                | Add a participant.                                                                      |
-| `DELETE`           | `/api/conversations/:id/participants/:participantId` | Remove a participant.                                                                   |
-| `GET/POST`         | `/api/resources`                                     | List and create resources. A resource is never born live.                               |
-| `GET/PATCH`        | `/api/resources/:id`                                 | Read and update a resource.                                                             |
-| `POST`             | `/api/resources/:id/publish`                         | Publish a resource. The act that makes one live.                                        |
-| `POST`             | `/api/resources/:id/execute`                         | Execute a resource.                                                                     |
-| `GET`              | `/api/resources/:id/inspect`                         | Validate without changing.                                                              |
-| `GET/POST`         | `/api/goals`                                         | List and create goals.                                                                  |
-| `GET`              | `/api/goals/overview`                                | The goals and the counts under each.                                                    |
-| `GET`              | `/api/goals/:id`                                     | Read a goal.                                                                            |
-| `GET`              | `/api/goals/:id/view`                                | A goal with its work, its dependencies and its shape.                                   |
-| `GET/POST`         | `/api/tasks`                                         | List and create tasks.                                                                  |
-| `GET`              | `/api/tasks/dependencies`                            | What the workspace's tasks wait on.                                                     |
-| `GET/PATCH`        | `/api/tasks/:id`                                     | Read and update a task. `PATCH` cannot set `done`; it also enforces `expectedRevision`. |
-| `POST`             | `/api/tasks/:id/assign`                              | Assign a task to an agent.                                                              |
-| `POST`             | `/api/tasks/:id/accept`                              | Record an acceptance decision.                                                          |
-| `POST`             | `/api/executions/:id/resolve`                        | Close a turn the owner cannot confirm. See [the entry](#closing-an-unknown-outcome).    |
-| `GET/POST`         | `/api/automations`                                   | List and create automations.                                                            |
-| `GET/PATCH/DELETE` | `/api/automations/:id`                               | Read, update and remove an automation.                                                  |
-| `POST`             | `/api/automations/:id/enable` · `/disable`           | Toggle scheduling.                                                                      |
-| `GET`              | `/api/approvals`                                     | List approval requests.                                                                 |
-| `GET`              | `/api/approvals/:id`                                 | Read an approval request.                                                               |
-| `GET`              | `/api/approvals/:id/evidence`                        | The evidence a decision is taken against. See [the entry](#the-approval-evidence).      |
-| `POST`             | `/api/approvals/:id/decide`                          | Approve or reject a sensitive operation. Publishes `approval.decided`.                  |
-| `GET`              | `/api/waiting`                                       | Everything waiting on the owner, in one list. See below.                                |
-| `GET`              | `/api/audit`                                         | Read the audit trail. See [the entry](#the-audit-outcome).                              |
-| `GET`              | `/api/measures`                                      | The product's two measures of itself. See below.                                        |
-| `GET`              | `/api/autonomy-policy`                               | The autonomy policy in force for a scope. See below.                                    |
-| `GET`              | `/api/events`                                        | Server-sent event stream.                                                               |
-| `GET`              | `/api/agui/events`                                   | The same stream in AG-UI. See [the AG-UI stream](#the-ag-ui-stream).                    |
-| `POST`             | `/api/agui/runs/:runId/resume`                       | Answer the interrupts of an AG-UI run. See [the AG-UI stream](#the-ag-ui-stream).       |
-| `ANY`              | `/mcp`                                               | MCP streamable HTTP endpoint.                                                           |
+| Method             | Path                                                 | Purpose                                                                                                             |
+| ------------------ | ---------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------- |
+| `GET`              | `/api/health`                                        | Liveness and setup state.                                                                                           |
+| `GET`              | `/api/auth/status`                                   | Whether setup is still required.                                                                                    |
+| `POST`             | `/api/auth/setup`                                    | Create the owner account. Once per instance.                                                                        |
+| `POST`             | `/api/auth/login`                                    | Start a session.                                                                                                    |
+| `POST`             | `/api/auth/logout`                                   | End the session.                                                                                                    |
+| `GET`              | `/api/auth/me`                                       | The current owner.                                                                                                  |
+| `POST`             | `/api/auth/owner-token`                              | Return the configured owner token. Owner only — an agent token is refused.                                          |
+| `GET/POST`         | `/api/workspaces`                                    | List and create workspaces.                                                                                         |
+| `GET/PATCH`        | `/api/workspaces/:id`                                | Read and update a workspace. `PATCH` accepts `autonomyPolicy`.                                                      |
+| `GET/POST`         | `/api/agents`                                        | List and create agent connections.                                                                                  |
+| `GET`              | `/api/agent-presets`                                 | The adapter preset catalogue. A template, never an integration.                                                     |
+| `GET/PATCH/DELETE` | `/api/agents/:id`                                    | Read, update, remove a connection. `PATCH` accepts `toolGrants`.                                                    |
+| `POST`             | `/api/agents/:id/probe`                              | Re-run capability discovery.                                                                                        |
+| `POST`             | `/api/agents/:id/grants`                             | Widen one tool grant. The action a blocked agent needs.                                                             |
+| `GET/POST`         | `/api/agents/:id/tokens`                             | Issue and list MCP tokens.                                                                                          |
+| `DELETE`           | `/api/agents/:id/tokens/:tokenId`                    | Revoke an MCP token.                                                                                                |
+| `GET`              | `/api/secrets`                                       | List the secret configurations. Metadata only — a value never leaves the server.                                    |
+| `GET/POST`         | `/api/conversations`                                 | List and create conversations.                                                                                      |
+| `GET/PATCH/DELETE` | `/api/conversations/:id`                             | Read, update, remove a conversation.                                                                                |
+| `GET/POST`         | `/api/conversations/:id/messages`                    | Read and post messages.                                                                                             |
+| `POST`             | `/api/conversations/:id/participants`                | Add a participant.                                                                                                  |
+| `DELETE`           | `/api/conversations/:id/participants/:participantId` | Remove a participant.                                                                                               |
+| `GET/POST`         | `/api/resources`                                     | List and create resources. A resource is never born live.                                                           |
+| `GET/PATCH`        | `/api/resources/:id`                                 | Read and update a resource.                                                                                         |
+| `POST`             | `/api/resources/:id/publish`                         | Publish a resource. The act that makes one live.                                                                    |
+| `POST`             | `/api/resources/:id/execute`                         | Execute a resource.                                                                                                 |
+| `GET`              | `/api/resources/:id/inspect`                         | Validate without changing.                                                                                          |
+| `GET/POST`         | `/api/goals`                                         | List and create goals.                                                                                              |
+| `GET`              | `/api/goals/overview`                                | The goals and the counts under each.                                                                                |
+| `GET`              | `/api/goals/:id`                                     | Read a goal.                                                                                                        |
+| `GET`              | `/api/goals/:id/view`                                | A goal with its work, its dependencies and its shape.                                                               |
+| `GET/POST`         | `/api/tasks`                                         | List and create tasks.                                                                                              |
+| `GET`              | `/api/tasks/dependencies`                            | What the workspace's tasks wait on.                                                                                 |
+| `GET/PATCH`        | `/api/tasks/:id`                                     | Read and update a task. `PATCH` cannot set `done`; it also enforces `expectedRevision`.                             |
+| `POST`             | `/api/tasks/:id/assign`                              | Assign a task to an agent.                                                                                          |
+| `POST`             | `/api/tasks/:id/accept`                              | Record an acceptance decision.                                                                                      |
+| `POST`             | `/api/executions/:id/resolve`                        | Close a turn the owner cannot confirm. See [the entry](#closing-an-unknown-outcome).                                |
+| `GET`              | `/api/executions/:id`                                | The turn: its status, its capability view, its delegation tree, its committed revision, and the activity behind it. |
+| `POST`             | `/api/executions/:id/stop`                           | Ask a turn to stop, and answer with what the request actually did.                                                  |
+| `GET/POST`         | `/api/automations`                                   | List and create automations.                                                                                        |
+| `GET/PATCH/DELETE` | `/api/automations/:id`                               | Read, update and remove an automation.                                                                              |
+| `POST`             | `/api/automations/:id/enable` · `/disable`           | Toggle scheduling.                                                                                                  |
+| `GET`              | `/api/approvals`                                     | List approval requests.                                                                                             |
+| `GET`              | `/api/approvals/:id`                                 | Read an approval request.                                                                                           |
+| `GET`              | `/api/approvals/:id/evidence`                        | The evidence a decision is taken against. See [the entry](#the-approval-evidence).                                  |
+| `POST`             | `/api/approvals/:id/decide`                          | Approve or reject a sensitive operation. Publishes `approval.decided`.                                              |
+| `GET`              | `/api/waiting`                                       | Everything waiting on the owner, in one list. See below.                                                            |
+| `GET`              | `/api/audit`                                         | Read the audit trail. See [the entry](#the-audit-outcome).                                                          |
+| `GET`              | `/api/measures`                                      | The product's two measures of itself. See below.                                                                    |
+| `GET`              | `/api/autonomy-policy`                               | The autonomy policy in force for a scope. See below.                                                                |
+| `GET`              | `/api/events`                                        | Server-sent event stream.                                                                                           |
+| `GET`              | `/api/agui/events`                                   | The same stream in AG-UI. See [the AG-UI stream](#the-ag-ui-stream).                                                |
+| `POST`             | `/api/agui/runs/:runId/resume`                       | Answer the interrupts of an AG-UI run. See [the AG-UI stream](#the-ag-ui-stream).                                   |
+| `ANY`              | `/mcp`                                               | MCP streamable HTTP endpoint.                                                                                       |
 
 ### The autonomy-policy route
 
@@ -2464,8 +2536,8 @@ projections read it
 `apps/server/src/modules/resources/service.ts:365`). An agent-created
 automation or task is recorded as authored by the agent that made it.
 
-**Every mutating route writes an audit entry.** Of the 37 mutating routes in
-`apps/server/src/api/`, 34 write an audit entry at the route level, and three more
+**Every mutating route writes an audit entry.** Of the 38 mutating routes in
+`apps/server/src/api/`, 35 write an audit entry at the route level, and three more
 write one from the service layer — `POST /api/approvals/:id/decide` and `POST
 /api/agui/runs/:runId/resume`, both at
 `apps/server/src/modules/approvals/resume.ts:55`, and `PATCH /api/tasks/:id` at
