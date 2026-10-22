@@ -5444,9 +5444,10 @@ word was changed.** That is WI-129's claim-first discipline, used a second time,
 worked a second time.
 
 **The floor at 15:25.** **Ceiling two. Next free number WI-134.**
+
 ### 15:45 — WI-133 was claimed twice, twelve minutes apart, and the two claims found the same one word
 
-**The implementation is landed on `main` at `4821661`, and this entry is the measurement and the correction the landed claim does not carry.** The `Dependency audit` job was cancelled on `ccc3564`, and the diagnosis in the 14:05 entry above — commit `b452231`, "Record WI-129's landing, the claim-first protocol working, and the timed-out job that looked cancelled" — is wrong in the way that matters.** It says the failing run "had queued a while for a runner". **It did not.** The run was created at **03:01:31** and **every job started at 03:01:34** — **three seconds.** The job was on a runner, and it was sitting in the audit. **The entry stays in the ledger and this is the correction beside it.**
+**The implementation is landed on `main` at `4821661`, and this entry is the measurement and the correction the landed claim does not carry.** The `Dependency audit` job was cancelled on `ccc3564`, and the diagnosis in the 14:05 entry above — commit `b452231` — is wrong in the way that matters. It says the failing run "had queued a while for a runner". **It did not.** The run was created at **03:01:31** and **every job started at 03:01:34** — **three seconds.** The job was on a runner, and it was sitting in the audit. **The entry stays in the ledger and this is the correction beside it.**
 
 **The step-level timings settle it, and they had not been read.** The job has two steps that can be slow, and the API returns them separately:
 
