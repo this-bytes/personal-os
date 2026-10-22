@@ -376,6 +376,8 @@ Every adapter has the same three steps, and the order matters.
 ```ts
 interface AgentAdapter {
   readonly type: AdapterType;
+  /** Whether this adapter holds a runtime between the connection and the turn. */
+  readonly holdsRuntime?: boolean;
   connect(connection: AgentConnection): Promise<AgentCapabilities>;
   send(input: AgentTurnInput): AsyncIterable<AgentEvent>;
   close?(): void | Promise<void>;
@@ -386,10 +388,25 @@ interface AgentAdapter {
 true. `send` runs one turn on that runtime. `close` releases everything the
 adapter holds — the supervised child process, the transport, the socket.
 
-**A capability probe on one instance does not initialize a later instance.**
-`connect()` on a throwaway instance says nothing about an instance that has not
-been connected, so an instance whose runtime was never established is not
-assumed to be ready.
+**The worker connects the instance the turn runs on.** The worker creates the
+adapter, connects it, sends on it, and closes it — on the chat path, the task
+path and the automation path alike. **A capability probe on one instance does
+not initialize a later instance**, so the instance that runs the turn is the
+one that is connected; a probe elsewhere says nothing about it.
+
+**`holdsRuntime` says whether the connection is needed.** An adapter that holds
+a runtime between the connection and the turn says `true`; an adapter whose
+turn brings its own runtime — a protocol that sets up its session when it is
+asked for one — says `false`, so the caller does not impose a second handshake
+on a protocol that already has one. **Absent means true**: a caller that
+connects before it sends is never wrong, only occasionally more work than the
+protocol needs.
+
+**A failed handshake is the turn's failure.** A connection that cannot be
+established records an actionable failure rather than a turn that quietly
+completed, and the adapter's own report of the failure is the turn's outcome:
+a turn the agent failed is a failed turn, and the reason it gave is the reason
+the owner reads.
 
 **A turn asked to run on an unconnected instance is refused, not attempted.** The
 refusal is an `execution.error` event with the code `adapter_not_connected`
@@ -2585,7 +2602,7 @@ audit entry — there is no audit call anywhere in
 tools call, which reach the resources service directly rather than through the
 auditing route. The only writer of the trail that is not an owner HTTP route is
 the worker — its `unknown` record (`apps/worker/src/executor.ts:105`) and the
-policy refusals it writes (`apps/worker/src/executor.ts:1521-1528`). So every audited
+policy refusals it writes (`apps/worker/src/executor.ts:1568-1575`). So every audited
 operation is an owner operation, except the worker's own entries, which carry
 `actorType: 'agent'`. **The second measure does not count the work an agent does
 through MCP**: an agent can create, update and publish resources all day and the

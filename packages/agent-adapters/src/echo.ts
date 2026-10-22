@@ -32,6 +32,9 @@ const CAPABILITIES: AgentCapabilities = {
 export class EchoAdapter implements AgentAdapter {
   readonly type = 'echo' as const;
 
+  /** The echo agent has no runtime to establish. */
+  readonly holdsRuntime = false;
+
   constructor(
     private readonly config: EchoAdapterConfig,
     private readonly ctx: AdapterContext,

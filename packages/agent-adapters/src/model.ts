@@ -24,6 +24,9 @@ import { getByPath, parseSseData, readSseEvents } from './util.js';
 export class ModelAdapter implements AgentAdapter {
   readonly type = 'model' as const;
 
+  /** The request is made and answered within the turn. */
+  readonly holdsRuntime = false;
+
   private readonly config: Extract<AdapterConfig, { adapterType: 'model' }>;
   private readonly ctx: AdapterContext;
 

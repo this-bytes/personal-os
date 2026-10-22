@@ -260,6 +260,20 @@ export const ADAPTER_NOT_CONNECTED_CODE = 'adapter_not_connected';
  */
 export interface AgentAdapter {
   readonly type: AdapterType;
+  /**
+   * Whether this adapter holds a runtime between the connection and the turn.
+   *
+   * True when `connect()` establishes something the turn then runs on — a
+   * supervised child process, a transport, a socket — and a turn asked to run
+   * before that is refused. False when the turn establishes its own runtime, as
+   * a protocol that sets up its session when it is asked for one does.
+   *
+   * It is optional, and absent means true: a caller that connects before it
+   * sends is never wrong, only occasionally more work than the protocol
+   * needs. An adapter whose turn brings its own runtime says so, so a caller
+   * does not impose a second handshake on a protocol that already has one.
+   */
+  readonly holdsRuntime?: boolean;
   connect(connection: AgentConnection): Promise<AgentCapabilities>;
   send(input: AgentTurnInput): AsyncIterable<AgentEvent>;
   /**

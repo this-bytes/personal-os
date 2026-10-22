@@ -418,6 +418,10 @@ async function executeChatTurn(context: ExecutorContext, job: QueueJob): Promise
       },
     });
 
+    // The runtime this turn runs on is established here, on the instance that
+    // runs it. A probe on another instance says nothing about this one.
+    await connectForTurn(adapter, asAdapterConnection(connection));
+
     // The session is restored before the turn continues in it. A session that
     // cannot be restored is not a failure of the turn: the turn closes, and
     // the owner's decision is already recorded.
@@ -463,6 +467,9 @@ async function executeChatTurn(context: ExecutorContext, job: QueueJob): Promise
         onRefusal: (reason) => {
           refusal = reason;
         },
+        onFailure: (reason) => {
+          failure = failure ?? reason;
+        },
       });
       // The agent is waiting for the owner. The turn stops here and continues
       // in a new turn when the decision arrives.
@@ -499,6 +506,7 @@ async function executeChatTurn(context: ExecutorContext, job: QueueJob): Promise
     failure = error instanceof Error ? error.message : String(error);
   } finally {
     clearTimeout(timeout);
+    await releaseTurn(adapter);
   }
 
   if (suspended) {
@@ -665,6 +673,15 @@ interface EventContext {
   onText: (text: string) => void;
   /** The policy refused the action. The turn stops, and the refusal is kept. */
   onRefusal: (reason: string) => void;
+  /**
+   * The adapter reported that the turn failed.
+   *
+   * An adapter says so in its own vocabulary — an `execution.error` with the
+   * reason, or an `execution.status` of `failed`. The turn's outcome is the
+   * adapter's outcome: a turn the agent failed is a failed turn, and the
+   * reason it gave is the reason the owner reads.
+   */
+  onFailure: (reason: string) => void;
 }
 
 /**
@@ -752,6 +769,20 @@ async function handleAgentEvent(
       .run();
   }
 
+  if (event.type === 'execution.error') {
+    // The adapter said the turn failed, and it said why. The turn's outcome is
+    // the adapter's outcome, so a refused or broken runtime is recorded as the
+    // failure it is rather than as a turn that quietly completed.
+    eventContext.onFailure(event.message);
+  }
+
+  if (event.type === 'execution.status' && event.status === 'failed') {
+    // The adapter ended the turn as failed without naming a reason of its own.
+    // The reason is still the adapter's to give, so it is asked for rather than
+    // invented here.
+    eventContext.onFailure('The agent reported that the turn failed.');
+  }
+
   if (event.type === 'approval.requested') {
     // A sensitive operation needs the owner's decision. The request is
     // recorded and the execution is held until it is resolved.
@@ -824,9 +855,12 @@ async function executeFactoryTask(
   let failure: string | undefined;
   /** Whether the task's turn reached the agent. */
   let agentTurnRan = false;
+  /** The adapter this turn runs on, so the runtime is released with it. */
+  let adapter: AgentAdapter | null = null;
 
   const controller = new AbortController();
   const adapterConfig = await loadAdapterConfig(context, payload.agentConnectionId);
+  const connection = await loadAgentConnection(context, payload.agentConnectionId);
   const timeoutSeconds = adapterTimeout(adapterConfig);
   // The deadline is the earlier of the adapter's own timeout and the policy's
   // duration limit: a policy may tighten the adapter's budget, and it may
@@ -839,10 +873,14 @@ async function executeFactoryTask(
   }, deadlineSeconds * 1000);
 
   try {
-    const adapter = runtime.registry.create(adapterConfig, {
+    adapter = runtime.registry.create(adapterConfig, {
       resolveSecret: runtime.resolveSecret,
       logger: { info: () => undefined, warn: () => undefined, error: () => undefined },
     });
+
+    // The runtime this turn runs on is established here, on the instance that
+    // runs it. The task path shares the defect the chat path had.
+    await connectForTurn(adapter, connection);
 
     // The turn is handed to the agent here. A turn that reaches the agent is
     // a turn that cost what a turn costs, and a turn that never got this far
@@ -862,6 +900,7 @@ async function executeFactoryTask(
     failure = error instanceof Error ? error.message : String(error);
   } finally {
     clearTimeout(timeout);
+    await releaseTurn(adapter);
   }
 
   // The task's agent was already running, so a turn that ran out of time may
@@ -1089,6 +1128,10 @@ async function executeAutomation(
         controller.abort();
       }, timeoutSeconds * 1000);
       try {
+        // The automation path shares the defect the chat path had: the runtime
+        // this turn runs on is established here, on the instance that runs it.
+        await connectForTurn(adapter, await loadAgentConnection(context, action.agentConnectionId));
+
         // The turn is handed to the agent here. A turn that reaches the agent
         // is a turn that cost what a turn costs, and a turn that never got
         // this far cost nothing.
@@ -1105,6 +1148,7 @@ async function executeAutomation(
         }
       } finally {
         clearTimeout(timeout);
+        await releaseTurn(adapter);
       }
       output = { text };
     } else if (action.type === 'resource.refresh') {
@@ -1618,6 +1662,78 @@ async function loadAdapterConfig(
   if (!raw) throw new Error('The agent configuration could not be read.');
   const stored = JSON.parse(raw) as { adapterType: string; config: Record<string, unknown> };
   return parseAdapterConfig({ adapterType: stored.adapterType, ...stored.config } as AdapterConfig);
+}
+
+/**
+ * The connection an adapter is handed when it is connected.
+ *
+ * The stored row carries the connection's identity and the reference to its
+ * configuration; the adapter is given the connection itself, so that the
+ * boundary stays the one the contract publishes.
+ */
+function asAdapterConnection(row: typeof agentConnections.$inferSelect): AgentConnection {
+  return {
+    id: row.id,
+    name: row.name,
+    adapterType: row.adapterType as AgentConnection['adapterType'],
+    configRef: row.configRef,
+    enabled: row.enabled,
+    persona: row.persona ?? undefined,
+  };
+}
+
+/**
+ * Load the connection an adapter is handed when it is connected.
+ *
+ * The row is read here rather than carried around, because the caller that
+ * has a configuration does not necessarily have the connection that
+ * configuration belongs to.
+ */
+async function loadAgentConnection(
+  context: ExecutorContext,
+  agentConnectionId: string,
+): Promise<AgentConnection> {
+  const { db } = context.runtime;
+  const row = db
+    .select()
+    .from(agentConnections)
+    .where(eq(agentConnections.id, agentConnectionId))
+    .get();
+  if (!row) throw new Error('The agent connection no longer exists.');
+  return asAdapterConnection(row);
+}
+
+/**
+ * Connect the instance that is about to run the turn.
+ *
+ * An adapter that holds a runtime needs that runtime established before the
+ * turn runs on it, and a handshake that fails is a failure of the turn with a
+ * message that says what to do. **The instance that runs the turn is the one
+ * that is connected**: a capability probe on another instance says nothing
+ * about this one.
+ *
+ * An adapter whose turn brings its own runtime is not connected here. The
+ * protocol already sets its session up when it is asked for one, and
+ * connecting it as well would start the agent twice for nothing.
+ */
+async function connectForTurn(adapter: AgentAdapter, connection: AgentConnection): Promise<void> {
+  if (adapter.holdsRuntime === false) return;
+  await adapter.connect(connection);
+}
+
+/**
+ * Release what the turn held.
+ *
+ * A turn that ends, fails or is abandoned must not leave a child process
+ * behind, so the runtime is released however the turn ended.
+ */
+async function releaseTurn(adapter: AgentAdapter | null): Promise<void> {
+  try {
+    await adapter?.close?.();
+  } catch {
+    // A runtime that cannot be released is not a second failure of the turn.
+    // The turn's own outcome is the one that is recorded.
+  }
 }
 
 /**

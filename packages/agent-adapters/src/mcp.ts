@@ -158,6 +158,9 @@ class McpHttpTransport implements McpTransport {
 export class McpAdapter implements AgentAdapter {
   readonly type = 'mcp' as const;
 
+  /** The transport is established in `connect()` and the turn runs on it. */
+  readonly holdsRuntime = true;
+
   private readonly config: Extract<AdapterConfig, { adapterType: 'mcp' }>;
   private readonly ctx: AdapterContext;
   private readonly lifecycle = new AdapterLifecycle('MCP');

@@ -53,6 +53,9 @@ const TERMINAL_STATES = new Set([
 export class A2aAdapter implements AgentAdapter {
   readonly type = 'a2a' as const;
 
+  /** The request is made and answered within the turn. */
+  readonly holdsRuntime = false;
+
   private readonly config: Extract<AdapterConfig, { adapterType: 'a2a' }>;
   private readonly ctx: AdapterContext;
   /** The card the connection discovered, if it has been asked for one. */

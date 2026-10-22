@@ -31,6 +31,9 @@ import { buildSanitizedEnv, terminateChild } from './util.js';
 export class CliAdapter implements AgentAdapter {
   readonly type = 'cli' as const;
 
+  /** The supervised process is established in `connect()` and the turn runs on it. */
+  readonly holdsRuntime = true;
+
   private readonly config: Extract<AdapterConfig, { adapterType: 'cli' }>;
   private readonly ctx: AdapterContext;
   private readonly lifecycle = new AdapterLifecycle('CLI');

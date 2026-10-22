@@ -45,6 +45,12 @@ interface AcpCapabilities {
 export class AcpAdapter implements AgentAdapter {
   readonly type = 'acp' as const;
 
+  /**
+   * The ACP session is set up by the turn itself, so a turn does not need a
+   * prior connection and the agent is not started twice.
+   */
+  readonly holdsRuntime = false;
+
   private readonly config: Extract<AdapterConfig, { adapterType: 'acp' }>;
   private readonly ctx: AdapterContext;
   /** The session each execution is in, so the worker can persist it. */

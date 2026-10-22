@@ -36,6 +36,14 @@ import { executeJob, type ExecutionOutcome, type ExecutorContext } from '../exec
 class HangingAdapter implements AgentAdapter {
   readonly type = 'http' as const;
 
+  /**
+   * The request is made and answered within the turn, so there is no runtime
+   * to establish before it. This is the adapter's own flag, and the worker
+   * reads it: a double that stood in for an HTTP adapter and hid that fact
+   * would be less faithful than the adapter it stands in for.
+   */
+  readonly holdsRuntime = false;
+
   async connect(): Promise<never> {
     throw new Error('not used');
   }

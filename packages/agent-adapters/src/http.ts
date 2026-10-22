@@ -23,6 +23,9 @@ import { asText, getByPath, interpolate, parseSseData, readSseEvents } from './u
 export class HttpAdapter implements AgentAdapter {
   readonly type = 'http' as const;
 
+  /** The request is made and answered within the turn. */
+  readonly holdsRuntime = false;
+
   private readonly config: Extract<AdapterConfig, { adapterType: 'http' }>;
   private readonly ctx: AdapterContext;
 

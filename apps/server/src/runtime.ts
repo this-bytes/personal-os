@@ -53,6 +53,16 @@ export { loadConfig, findRepoRoot } from './config.js';
 export type { AppConfig } from './config.js';
 
 /**
+ * The registry, for the callers that need the real adapters.
+ *
+ * This is the composition root, so it is the one place that names the
+ * adapters package. A test that drives a real runtime — a worker test that
+ * runs a turn against a real MCP server, say — reaches the adapters through
+ * here rather than importing the package itself.
+ */
+export { createDefaultRegistry } from '@personal-os/agent-adapters';
+
+/**
  * Build the runtime shared by the API server and the worker.
  *
  * Both processes open the same SQLite file and use the same adapter
