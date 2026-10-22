@@ -161,10 +161,11 @@ proceeding. An action the system does not know is refused, not allowed through.
 
 **The mode is resolved, readable, and enforced nowhere.** Nothing in the product
 reads the resolved mode to make a decision, so nothing behaves differently in
-`manual` than in `autonomous`. What `autonomous` is to mean — the mode that permits
-an agent to begin work on its own initiative, or only the mode that describes work
-the owner has already authorised — is the owner's decision, and it is not settled.
-Until it is, the mode is a description and not a control.
+`manual` than in `autonomous`. **`manual` does not gate delegation** — an agent
+may hand work to another agent under `manual` exactly as it may under
+`autonomous`, because the mode is consulted by nothing. The mode is a
+description and not a control: it records the posture the owner has set, and it
+does not decide what runs.
 
 The effective policy is readable — over the API and through the MCP surface — and
 it says where each of its values came from. A policy nobody can read is a policy

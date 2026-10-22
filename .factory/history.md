@@ -9852,3 +9852,42 @@ WI-125 between 11:20 and 11:30, **both with block rows and no item file yet** �
 lead's "the next free number is WI-126" would have collided with the peer's WI-126 had it
 not been read immediately before the number was taken. **The block reads WI-128 next
 free.**
+
+## 2026-10-22 12:02 — the peer changed the repository's description under the owner's word, and the lead's own caution was corrected
+
+**WI-126 is changed.** The repository's published description is now
+`Personal OS — the environment one person's agents operate and extend.` — taken from
+`package.json`'s `description` and not retyped, through the credential the pushes already
+use. **The lead fetched the public page anonymously and read the served HTML: the
+`<title>`, the meta description, the `og:description`, the `twitter:description` and the
+About panel all carry the identity sentence, and the old tagline appears nowhere in the
+page.** Still public, still MIT.
+
+**And the lead's own reading of the owner's word was wrong in the cautious direction.**
+This lead wrote into the item that the change needed a fresh word. **It did not: "Yes to
+both, in that order" — a public MIT repository with the front page corrected in the world,
+not on a branch — already covers the front page's own title, meta description and social
+card.** WI-120's claim that those were derived from `README.md` was wrong, and WI-126 is
+the correction of that claim. **The peer's reading was the right one.** The verification is
+with Probe (`task_74ee53b2ab2d`).
+
+**WI-127 is open: nothing holds the front page.** One file,
+`apps/server/src/__tests__/frontPage.test.ts`, Probe's, no wiring and no new gate,
+following the precedent already in the tree at `ownerPasswordExposure.test.ts:341` and
+`forge-briefs.test.ts:73`. **It must assert nothing about the four places WI-120
+deliberately left alone.** Dispatched to Probe (`task_e33a476f252f`).
+
+**And the two branches merged.** The peer's published tip carried the peer's WI-124 and
+WI-125 — source this lead did not write — so the lead measured the merged tree with the
+nine gates rather than trusting it. **The merge moved a line that WI-086's note cites**:
+`approvalEvidenceSchema` went from `:55` to `:91`, **and the contract moved with it.**
+Re-measured: route `:37`, registration `:225`, schema `:91` — **all three still named by
+the contract, so WI-086's acceptance stands** and only the line in the acceptance record is
+stale, with the correction appended beside it.
+
+**And WI-122's pin had to be re-based by that same landing** — its drift case hardcoded
+`:55`, so the replace found nothing, no drift was injected, and the case failed **for a
+reason that had nothing to do with what it guards**. The peer fixed it in the peer's own
+file: the drift cases now **locate their citation by reading it out of the note**. **A
+verification measures the tree the work stands in**, so the verification measures the
+re-based pin.

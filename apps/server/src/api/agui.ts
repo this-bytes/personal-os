@@ -164,6 +164,7 @@ export function registerAgUiRoutes(app: FastifyInstance): void {
         db: app.services.runtime.db,
         queue: app.services.queue,
         audit: app.services.audit,
+        events: app.services.events,
         approvals: app.services.approvals,
         approvalId: entry.interruptId,
         approved: answer.approved,
