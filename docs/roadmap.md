@@ -34,9 +34,15 @@ its own worktree, and each was merged into `main` with its contract published in
 | **WI-141** — the rich chat surface | Markdown and code, a turn activity trace, artifact previews and a stop control that says what it did — in the Forge visual language.                                                              |
 | **WI-144** — the team room         | A coordinator dispatches to a worker, the worker runs, the result returns, and the handoff is visible. See the slice's own record for what is partial.                                            |
 
-**R0 is not closed.** The adapter half of the first slice has landed; the worker
-still has to connect the executing adapter before it sends, and that change is
-made after the merge rather than inside it.
+**R0's first slice is landed.** The adapter lifecycle gives every adapter an
+explicit `connect` → `send` → `close`, the worker connects the instance the
+turn runs on — on the chat path, the task path and the automation path alike —
+and the turn's outcome is the adapter's outcome rather than a quiet completion.
+The proof is a worker-level regression that drives a **real** MCP server over
+stdio and records its answer, and a second case where a handshake that fails is
+an actionable failure. **R0 is not closed**: the rest of the stage — shared
+execution ownership across the three callers, authorised dispatch, session
+references and restart reconciliation — has not been done.
 
 **R1 is partly landed and partly not.** The chat surface, the activity trace and
 the stop control are in. Steering is not: the route carries `delivery: 'steer'`
