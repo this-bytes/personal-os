@@ -296,6 +296,65 @@ async function main(): Promise<void> {
     check('the list and the grant agree', agreement.holds, agreement.detail);
   }
 
+  // ---------------------------------------------------------------------
+  console.log('');
+  console.log('4. the body the editor used to send, measured: the same bytes mean two things');
+  {
+    const agent = await createAgent('Old body', ['conversation.read']);
+    const base = await readGrant(agent.id);
+    await widen(agent.id, 'task.get');
+    const before = await readGrant(agent.id);
+
+    // The editor's old request: the whole list the page read.
+    const response = await app.inject({
+      method: 'PATCH',
+      url: `/api/agents/${agent.id}`,
+      headers: { cookie },
+      payload: { toolGrants: base },
+    });
+    const after = await readGrant(agent.id);
+
+    check('the old request succeeds', response.statusCode === 200, `status ${response.statusCode}`);
+    check(
+      'the old request takes the widening back — this is why the body changed',
+      !after.includes('task.get'),
+      `the grant before the save was [${before.join(', ')}] and after it is [${after.join(', ')}]`,
+    );
+    console.log(
+      '  note the same bytes are a legitimate narrowing: the owner unchecking "task.get" and',
+    );
+    console.log(
+      '  saving sends the same request, so the server cannot tell the two apart without the',
+    );
+    console.log(
+      "  client's view of the grant. That is what the change body carries, and why the body changed.",
+    );
+  }
+
+  // ---------------------------------------------------------------------
+  console.log('');
+  console.log('5. the editor sends the change and not the list');
+  {
+    // The editor's own request body, checked over its source: the component
+    // cannot be rendered outside the browser suite, and the check that
+    // renders it is Probe's. What this holds is that the editor sends the
+    // change the measurement above sends, and not the list it used to send.
+    const source = fs.readFileSync(
+      path.join(repoRoot, 'apps/web/src/components/ToolGrantPanel.tsx'),
+      'utf8',
+    );
+    check(
+      'the editor sends the change',
+      source.includes('toolGrantChange: grantChange('),
+      "the editor sends toolGrantChange, computed by the web's own grantChange",
+    );
+    check(
+      'the editor does not send the whole list',
+      !/toolGrants:\s*(change\.)?selected/.test(source),
+      'the editor does not send toolGrants',
+    );
+  }
+
   await app.close();
   fs.rmSync(dataDir, { recursive: true, force: true });
 
