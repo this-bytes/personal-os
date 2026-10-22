@@ -1,10 +1,21 @@
 import { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Brain, KeyRound, Pencil, Plus, RefreshCw, ShieldCheck, Trash2 } from 'lucide-react';
+import {
+  Brain,
+  CircleCheck,
+  Info,
+  KeyRound,
+  Pencil,
+  Plus,
+  RefreshCw,
+  ShieldCheck,
+  Trash2,
+} from 'lucide-react';
 import { Badge, Button, Card, CardContent, Switch } from '@personal-os/ui';
 import type { AgentCapabilities, AdapterType } from '@personal-os/contracts';
 import { adapterTypeLabels, resolvePersona } from '@personal-os/contracts';
 import { api, errorMessage } from '../lib/api';
+import { useAgentPresets } from '../lib/presets';
 import type { AgentConnectionDetail, SecretSummary } from '../lib/types';
 import { useWorkspace } from '../state/workspace';
 import { EmptyState, ErrorState, LoadingState } from '../components/ErrorState';
@@ -35,6 +46,10 @@ export function Agents(): React.JSX.Element {
   const [grantAgent, setGrantAgent] = useState<AgentConnectionDetail | null>(null);
   const [memoryAgent, setMemoryAgent] = useState<AgentConnectionDetail | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
+  /** The template a new connection starts from, when one was chosen here. */
+  const [presetSeed, setPresetSeed] = useState<string | null>(null);
+
+  const catalogue = useAgentPresets();
 
   const agents = useQuery<AgentConnectionDetail[]>({
     queryKey: ['agents', activeWorkspaceId],
@@ -72,6 +87,10 @@ export function Agents(): React.JSX.Element {
         config: input.config ?? {},
         ...(input.secrets ? { secrets: input.secrets } : {}),
         ...(input.persona ? { persona: input.persona } : {}),
+        // The template the connection was started from. The server lays it
+        // under the configuration and takes its persona when the owner wrote
+        // none.
+        ...(input.presetId ? { presetId: input.presetId } : {}),
       }),
     onSuccess: async () => {
       setActionError(null);
@@ -138,6 +157,13 @@ export function Agents(): React.JSX.Element {
     else create.mutate(input);
   };
 
+  /** Start a new connection from a template. */
+  const startFromPreset = (presetId: string): void => {
+    setEditing(null);
+    setPresetSeed(presetId);
+    setFormOpen(true);
+  };
+
   return (
     <div className="mx-auto flex w-full max-w-5xl flex-col gap-4 p-3 sm:p-4">
       <header className="flex flex-wrap items-center justify-between gap-2">
@@ -152,6 +178,7 @@ export function Agents(): React.JSX.Element {
           size="sm"
           onClick={() => {
             setEditing(null);
+            setPresetSeed(null);
             setFormOpen(true);
           }}
         >
@@ -159,6 +186,59 @@ export function Agents(): React.JSX.Element {
           Add connection
         </Button>
       </header>
+
+      {catalogue.presets.length > 0 ? (
+        <Card>
+          <CardContent className="p-3">
+            <div className="flex items-baseline justify-between gap-2">
+              <p className="pos-field-label">Templates</p>
+              <p className="text-[10px] text-slate-600">{catalogue.presets.length} available</p>
+            </div>
+            <ul className="mt-1.5 grid gap-1.5 sm:grid-cols-2">
+              {catalogue.presets.map((preset) => (
+                <li
+                  key={preset.id}
+                  className="flex items-start justify-between gap-2 rounded-md border border-slate-800 bg-slate-950/40 px-2.5 py-2"
+                >
+                  <div className="min-w-0">
+                    <p className="truncate text-xs font-medium text-slate-200">{preset.name}</p>
+                    <p className="text-[11px] text-slate-500">
+                      {adapterTypeLabels[preset.adapterType]}
+                    </p>
+                  </div>
+                  <div className="flex shrink-0 items-center gap-1.5">
+                    {preset.verified ? (
+                      <Badge variant="success">
+                        <CircleCheck className="h-3 w-3" />
+                        demonstrated
+                      </Badge>
+                    ) : (
+                      <Badge variant="warning">
+                        <Info className="h-3 w-3" />
+                        not demonstrated
+                      </Badge>
+                    )}
+                    <Button variant="ghost" size="sm" onClick={() => startFromPreset(preset.id)}>
+                      Use
+                    </Button>
+                  </div>
+                </li>
+              ))}
+            </ul>
+            <p className="mt-2 text-[11px] leading-snug text-slate-500">
+              A template is a starting point, not a proven integration. What the agent actually
+              supports is discovered when the connection is probed.
+            </p>
+          </CardContent>
+        </Card>
+      ) : null}
+
+      {catalogue.error ? (
+        <p className="text-[11px] text-slate-500">
+          The templates could not be read, so a connection has to be filled in by hand:{' '}
+          {catalogue.error}
+        </p>
+      ) : null}
 
       {actionError ? <ErrorState title="The change was not applied" message={actionError} /> : null}
 
@@ -306,8 +386,15 @@ export function Agents(): React.JSX.Element {
 
       <AgentConnectionForm
         open={formOpen}
-        onOpenChange={setFormOpen}
+        onOpenChange={(open) => {
+          setFormOpen(open);
+          // A template belongs to the connection it started, not to the next
+          // one.
+          if (!open) setPresetSeed(null);
+        }}
         agent={editing}
+        presets={catalogue.presets}
+        initialPresetId={presetSeed}
         busy={create.isPending || update.isPending}
         error={
           create.isError

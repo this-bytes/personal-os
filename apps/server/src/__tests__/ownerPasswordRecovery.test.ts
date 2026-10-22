@@ -166,9 +166,13 @@ describe('the recovery path over HTTP', () => {
   };
 
   it('is not in the route table', () => {
-    const routes = app.printRoutes({ commonPrefix: false });
-    expect(routes.toLowerCase()).not.toContain('password');
-    expect(routes.toLowerCase()).not.toContain('reset');
+    const routes = app.printRoutes({ commonPrefix: false }).toLowerCase();
+    expect(routes).not.toContain('password');
+    // A reset route is a path of its own: "reset", "/reset-password",
+    // "/auth/reset". A word that merely ends in those letters — the preset
+    // catalogue at "/api/agent-presets" — is not a way back in for an owner
+    // who has forgotten their password.
+    expect(routes).not.toMatch(/(^|[/\-_])reset($|[/\-_a-z])/);
   });
 
   it('cannot be reached by an anonymous caller', async () => {

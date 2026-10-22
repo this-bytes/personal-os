@@ -1,16 +1,28 @@
 import type { FastifyInstance } from 'fastify';
-import { z } from 'zod';
+import { z, ZodError } from 'zod';
 import {
   adapterTypeSchema,
   buildAgentMemoryBrief,
+  getAdapterPreset,
+  listAdapterPresets,
+  listAdapterPresetsFor,
   mcpToolNameSchema,
+  parseAdapterConfig,
   personaSchema,
   toolGrantListSchema,
+  type AdapterType,
+  type Persona,
 } from '@personal-os/contracts';
 import { listAgentMemories } from '../modules/resources/agent-memory.js';
+import { errors } from '../lib/errors.js';
 import { audit, parseBody, parseQuery, requireAuth } from './helpers.js';
 
 const listQuerySchema = z.object({ workspaceId: z.string() });
+
+const presetQuerySchema = z.object({
+  /** The type to filter by. Omitted means every preset. */
+  adapterType: adapterTypeSchema.optional(),
+});
 
 const createSchema = z.object({
   workspaceId: z.string(),
@@ -22,6 +34,14 @@ const createSchema = z.object({
   toolGrants: toolGrantListSchema.optional(),
   /** The base persona: the role and the standing instructions of this agent. */
   persona: personaSchema.optional(),
+  /**
+   * The preset this connection was started from.
+   *
+   * The preset supplies defaults: its configuration is the base the owner's
+   * configuration is laid over, and its persona becomes the base persona when
+   * the owner did not write one. It supplies no credential.
+   */
+  presetId: z.string().optional(),
 });
 
 const updateSchema = z.object({
@@ -40,21 +60,118 @@ const widenGrantSchema = z.object({
   tool: mcpToolNameSchema,
 });
 
+/** What a preset contributes to a new connection. */
+interface PresetApplication {
+  /** The configuration to store: the preset's, with the owner's over it. */
+  config: Record<string, unknown>;
+  /** The credential material, if any was supplied. */
+  secrets: Record<string, string>;
+  /** The base persona: the owner's, or the preset's. */
+  persona: Persona | undefined;
+}
+
+/**
+ * Lay a preset under the owner's configuration.
+ *
+ * The preset is a **base**, not a replacement: the owner's fields are laid
+ * over it, so every field of the template stays editable, and the merged
+ * result is validated with the same parser the stored configuration is
+ * validated with. A preset therefore cannot create a connection the server
+ * would refuse.
+ *
+ * A preset carries no credential. One supplied inside the configuration is
+ * moved to the secrets, exactly as it is for a configuration sent without a
+ * preset.
+ */
+function applyPreset(
+  presetId: string,
+  adapterType: AdapterType,
+  config: Record<string, unknown>,
+  secrets: Record<string, string> | undefined,
+): PresetApplication {
+  const preset = getAdapterPreset(presetId);
+  if (!preset) throw errors.notFound('Adapter preset');
+  if (preset.adapterType !== adapterType) {
+    throw errors.validation('That preset does not belong to this adapter type.', {
+      presetId: preset.id,
+      presetAdapterType: preset.adapterType,
+      adapterType,
+    });
+  }
+
+  const merged: Record<string, unknown> = { ...preset.config, ...config };
+  // The type the request declares wins: a configuration may not carry one.
+  merged['adapterType'] = adapterType;
+
+  const inline: Record<string, string> = { ...(secrets ?? {}) };
+  for (const key of ['apiKey', 'authToken'] as const) {
+    const value = merged[key];
+    if (typeof value === 'string' && value.length > 0) {
+      inline[key] = value;
+      delete merged[key];
+    }
+  }
+
+  let validated: Record<string, unknown>;
+  try {
+    validated = parseAdapterConfig(merged) as unknown as Record<string, unknown>;
+  } catch (error) {
+    throw errors.validation('The configuration is not valid for this adapter type.', {
+      issues: error instanceof ZodError ? error.flatten() : String(error),
+    });
+  }
+
+  // The stored record holds the configuration on its own; the type is stored
+  // beside it.
+  delete validated['adapterType'];
+
+  return { config: validated, secrets: inline, persona: preset.persona };
+}
+
 export function registerAgentRoutes(app: FastifyInstance): void {
   app.get('/api/agents', { preHandler: requireAuth }, async (request) => {
     const { workspaceId } = parseQuery(listQuerySchema, request.query);
     return { agents: app.services.agents.list(workspaceId) };
   });
 
+  /**
+   * The preset catalogue.
+   *
+   * It is published data with no credential in it: the catalogue names the
+   * credential a connection needs, and never a value.
+   */
+  app.get('/api/agent-presets', { preHandler: requireAuth }, async (request) => {
+    const { adapterType } = parseQuery(presetQuerySchema, request.query);
+    return {
+      presets: adapterType ? listAdapterPresetsFor(adapterType) : listAdapterPresets(),
+    };
+  });
+
   app.post('/api/agents', { preHandler: requireAuth }, async (request, reply) => {
     const body = parseBody(createSchema, request.body);
-    const agent = app.services.agents.create(body);
+    const applied = body.presetId
+      ? applyPreset(body.presetId, body.adapterType, body.config, body.secrets)
+      : undefined;
+    // The owner's persona wins; the preset's is the base when there is none.
+    const persona = body.persona ?? applied?.persona;
+    const secrets = applied ? applied.secrets : body.secrets;
+
+    const agent = app.services.agents.create({
+      workspaceId: body.workspaceId,
+      name: body.name,
+      adapterType: body.adapterType,
+      config: applied ? applied.config : body.config,
+      ...(secrets && Object.keys(secrets).length > 0 ? { secrets } : {}),
+      ...(body.toolGrants ? { toolGrants: body.toolGrants } : {}),
+      ...(persona ? { persona } : {}),
+    });
     audit(
       request,
       'agent.created',
       { type: 'agent', id: agent.id, workspaceId: body.workspaceId },
       {
         adapterType: body.adapterType,
+        ...(body.presetId ? { presetId: body.presetId } : {}),
       },
     );
     // Probe immediately so the client sees real capabilities, not guesses.
