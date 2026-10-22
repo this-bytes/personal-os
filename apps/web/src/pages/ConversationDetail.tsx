@@ -3,7 +3,15 @@ import { Link, useNavigate, useParams } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { AlertTriangle, ArrowLeft, Ban, Check, Info, Pause, Play, Trash2 } from 'lucide-react';
 import { Badge, Button, Card, CardContent, CardHeader, CardTitle, Select } from '@personal-os/ui';
-import type { Participant, Persona, RoutingMode } from '@personal-os/contracts';
+import type {
+  ChatActivityReadModel,
+  MessageDelivery,
+  Participant,
+  Persona,
+  Resource,
+  RoutingMode,
+  StopTurnResult,
+} from '@personal-os/contracts';
 import { resolvePersona } from '@personal-os/contracts';
 import { api, errorMessage } from '../lib/api';
 import type {
@@ -14,10 +22,14 @@ import type {
   PostMessageResult,
   RoutingDecision,
 } from '../lib/types';
+import { countTurns, operationState } from '../lib/chat';
 import { useServerEvents } from '../state/events';
 import { useWorkspace } from '../state/workspace';
 import { ChatMessageList, type StreamingEntry } from '../components/ChatMessageList';
-import { Composer } from '../components/Composer';
+import { Composer, type ComposerSendOptions } from '../components/Composer';
+import { ActivityTimeline } from '../components/chat/ActivityTimeline';
+import { PresenceList } from '../components/chat/PresenceList';
+import { RunControls } from '../components/chat/RunControls';
 import { EmptyState, ErrorState, LoadingState } from '../components/ErrorState';
 import { ParticipantManager } from '../components/ParticipantManager';
 import { PersonaBadge } from '../components/PersonaBadge';
@@ -40,6 +52,16 @@ export function ConversationDetail(): React.JSX.Element {
   const [executionNames, setExecutionNames] = useState<Record<string, string>>({});
   const [actionError, setActionError] = useState<string | null>(null);
   const [personaParticipant, setPersonaParticipant] = useState<Participant | null>(null);
+  /**
+   * How the next message is delivered.
+   *
+   * The owner picks, and the panel never turns one into the other: a message
+   * meant for the running turn and a message meant for the next turn are
+   * different things.
+   */
+  const [delivery, setDelivery] = useState<MessageDelivery>('queue');
+  /** What the stop request actually did. */
+  const [stopNotice, setStopNotice] = useState<StopTurnResult | null>(null);
 
   const conversation = useQuery<ConversationDetail>({
     queryKey: ['conversation', conversationId],
@@ -70,11 +92,64 @@ export function ConversationDetail(): React.JSX.Element {
     enabled: Boolean(activeWorkspaceId),
   });
 
+  // The resources of the workspace. They are what an attachment points at,
+  // and what an artifact in the transcript resolves to.
+  const resources = useQuery<Resource[]>({
+    queryKey: ['resources', activeWorkspaceId],
+    queryFn: () =>
+      api
+        .get<{ resources: Resource[] }>('/resources', { workspaceId: activeWorkspaceId ?? '' })
+        .then((r) => r.resources),
+    enabled: Boolean(activeWorkspaceId),
+  });
+
+  /**
+   * The turn the room is watching.
+   *
+   * It is the turn that is streaming, or the last turn a message belongs to.
+   * The trace is drawn from that turn, so the panel shows what the agent is
+   * doing rather than a list of things that happened once.
+   */
+  const activeExecutionId = useMemo(() => {
+    const streamingEntry = streaming[streaming.length - 1];
+    if (streamingEntry) return streamingEntry.executionId;
+    const withExecution = (messages.data ?? []).filter((message) => message.executionId);
+    const lastMessage = withExecution[withExecution.length - 1];
+    if (lastMessage?.executionId) return lastMessage.executionId;
+    const dispatches = routingNotice?.dispatches ?? [];
+    const lastDispatch = dispatches[dispatches.length - 1];
+    return lastDispatch?.executionId ?? null;
+  }, [streaming, messages.data, routingNotice]);
+
+  const turn = useQuery<ChatActivityReadModel>({
+    queryKey: ['turn', activeExecutionId],
+    queryFn: () => api.get<ChatActivityReadModel>(`/executions/${activeExecutionId}`),
+    enabled: Boolean(activeExecutionId),
+  });
+
+  /** The resources, by id, so an artifact in the transcript can be drawn. */
+  const resourceIndex = useMemo(() => {
+    const map: Record<string, Resource> = {};
+    for (const resource of resources.data ?? []) map[resource.id] = resource;
+    return map;
+  }, [resources.data]);
+
+  /** The chain depth the conversation is at. */
+  const conversationDepth = useMemo(() => {
+    const transcript = messages.data ?? [];
+    const last = transcript[transcript.length - 1];
+    return last?.origin?.depth ?? 0;
+  }, [messages.data]);
+
   // Live updates: the transcript grows over SSE, never by polling.
   useEffect(() => {
     return subscribe((event) => {
       if (event.type === 'execution.event') {
         if (event.conversationId !== conversationId) return;
+        // The trace is a read model of the event log. It is read again when
+        // the log grew, rather than patched here, so what the owner sees is
+        // what the server would say.
+        void queryClient.invalidateQueries({ queryKey: ['turn', event.executionId] });
         if (event.event.type !== 'message.delta') return;
         const delta = event.event.text;
         setStreaming((current) => {
@@ -104,7 +179,7 @@ export function ConversationDetail(): React.JSX.Element {
         setStreaming((current) => current.filter((entry) => entry.executionId !== executionId));
       }
     });
-  }, [subscribe, conversationId, executionNames]);
+  }, [subscribe, conversationId, executionNames, queryClient]);
 
   const agentById = useMemo(() => {
     const map = new Map<string, AgentConnectionDetail>();
@@ -119,10 +194,22 @@ export function ConversationDetail(): React.JSX.Element {
   }, [queryClient, conversationId]);
 
   const postMessage = useMutation({
-    mutationFn: async (text: string) =>
-      api.post<PostMessageResult>(`/conversations/${conversationId}/messages`, {
-        content: [{ type: 'text', text }],
-      }),
+    mutationFn: async (input: { text: string; options: ComposerSendOptions }) => {
+      const content: Array<Record<string, unknown>> = [];
+      if (input.text.length > 0) content.push({ type: 'text', text: input.text });
+      for (const attachment of input.options.attachments) {
+        // An attachment is a reference to a resource that already exists.
+        // There is no upload path through the resource API, so the message
+        // points at the resource rather than carrying its bytes.
+        content.push({
+          type: 'file',
+          resourceId: attachment.resourceId,
+        });
+      }
+      return api.post<PostMessageResult>(`/conversations/${conversationId}/messages`, {
+        content,
+      });
+    },
     onSuccess: async (result) => {
       setExecutionNames((current) => {
         const next = { ...current };
@@ -139,6 +226,23 @@ export function ConversationDetail(): React.JSX.Element {
       });
       await invalidate();
     },
+  });
+
+  /**
+   * Ask a turn to stop.
+   *
+   * The answer says what actually happened: a turn that had not started was
+   * cancelled, and a turn that was already running was only asked. The panel
+   * shows the server's sentence rather than one of its own.
+   */
+  const stopTurn = useMutation({
+    mutationFn: async (executionId: string) =>
+      api.post<StopTurnResult>(`/executions/${executionId}/stop`, {}),
+    onSuccess: async (result) => {
+      setStopNotice(result);
+      await queryClient.invalidateQueries({ queryKey: ['turn', result.executionId] });
+    },
+    onError: (error) => setActionError(errorMessage(error)),
   });
 
   const updateConversation = useMutation({
@@ -266,6 +370,12 @@ export function ConversationDetail(): React.JSX.Element {
                 <PersonaBadge role={resolved.persona?.role} source={resolved.source} />
               </span>
             ))}
+            <span className="font-mono text-slate-600">
+              turns {countTurns(messages.data ?? [])}/{current.maxTurns}
+            </span>
+            <span className="font-mono text-slate-600">
+              max {current.maxSpendUnits} spend units
+            </span>
           </div>
         </div>
 
@@ -339,6 +449,7 @@ export function ConversationDetail(): React.JSX.Element {
                 participants={current.participants}
                 agents={agents.data ?? []}
                 streaming={streaming}
+                resources={resourceIndex}
               />
             </div>
 
@@ -374,16 +485,42 @@ export function ConversationDetail(): React.JSX.Element {
               </div>
             ) : null}
 
+            {stopNotice ? (
+              <div className="rounded-md border border-slate-700 bg-slate-950/60 px-3 py-2 text-[11px] text-slate-300">
+                <div className="flex items-start gap-2">
+                  <Info className="mt-0.5 h-3 w-3 shrink-0 text-caution" />
+                  <p>{stopNotice.detail}</p>
+                </div>
+              </div>
+            ) : null}
+
+            <RunControls
+              run={turn.data?.run ?? null}
+              delivery={delivery}
+              onDeliveryChange={setDelivery}
+              stopping={stopTurn.isPending}
+              onStop={() => {
+                if (!activeExecutionId) return;
+                stopTurn.mutate(activeExecutionId);
+              }}
+            />
+
             <Composer
               participants={current.participants}
               disabled={current.paused || postMessage.isPending}
+              delivery={delivery}
+              steer={operationState(turn.data?.run, 'steer')}
+              attachable={resources.data ?? []}
+              routingMode={current.routingMode}
+              depth={conversationDepth}
+              maxTurns={current.maxTurns}
               placeholder={
                 current.paused
                   ? 'This conversation is paused. Resume it to send messages.'
                   : 'Write a message. Use @Name to address an agent.'
               }
-              onSend={async (text) => {
-                await postMessage.mutateAsync(text);
+              onSend={async (text, options) => {
+                await postMessage.mutateAsync({ text, options });
               }}
             />
             {postMessage.isError ? (
@@ -393,6 +530,50 @@ export function ConversationDetail(): React.JSX.Element {
         </Card>
 
         <div className="space-y-3">
+          <Card>
+            <CardHeader className="pb-1">
+              <CardTitle className="flex items-center justify-between gap-2">
+                <span>Execution trace</span>
+                {activeExecutionId ? (
+                  <span className="font-mono text-[10px] font-normal text-slate-600">
+                    {activeExecutionId}
+                  </span>
+                ) : null}
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="pt-1">
+              {turn.isError ? (
+                <ErrorState
+                  title="The trace could not be loaded"
+                  message={errorMessage(turn.error)}
+                  onRetry={() => void turn.refetch()}
+                />
+              ) : (
+                <ActivityTimeline
+                  activities={turn.data?.activities ?? []}
+                  run={
+                    turn.data
+                      ? {
+                          spendUnits: turn.data.turn.spendUnits,
+                          startedAt: turn.data.turn.startedAt,
+                          finishedAt: turn.data.turn.finishedAt,
+                        }
+                      : null
+                  }
+                />
+              )}
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="pb-1">
+              <CardTitle>Presence</CardTitle>
+            </CardHeader>
+            <CardContent className="pt-1">
+              <PresenceList participants={current.participants} agents={agents.data ?? []} />
+            </CardContent>
+          </Card>
+
           <Card>
             <CardHeader className="pb-1">
               <CardTitle>Routing</CardTitle>

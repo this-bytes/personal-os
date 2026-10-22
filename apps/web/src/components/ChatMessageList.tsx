@@ -1,7 +1,13 @@
-import { AlertTriangle, Bot, FileText, HelpCircle, Loader2, User } from 'lucide-react';
+import { Loader2 } from 'lucide-react';
 import { Badge, cn } from '@personal-os/ui';
-import type { Message, Participant } from '@personal-os/contracts';
+import type { Message, Participant, Resource } from '@personal-os/contracts';
 import type { AgentConnectionDetail } from '../lib/types';
+import { hueFor } from '../features/map/constellation';
+import { hueResolverFor } from '../lib/chat';
+import { ActivityLine } from './chat/ActivityLine';
+import { AgentOrb } from './chat/AgentOrb';
+import { MessageBadges } from './chat/MessageBadges';
+import { MessageBody } from './chat/MessageBody';
 
 export interface StreamingEntry {
   executionId: string;
@@ -14,6 +20,8 @@ interface ChatMessageListProps {
   participants: Participant[];
   agents: AgentConnectionDetail[];
   streaming: StreamingEntry[];
+  /** The resources the messages point at, when the panel has loaded them. */
+  resources?: Record<string, Resource>;
 }
 
 function formatTime(value: string): string {
@@ -39,35 +47,21 @@ function agentNameOf(
   return participant?.displayName ?? 'Unknown';
 }
 
-function MessageBody({ message }: { message: Message }): React.JSX.Element {
-  if (message.content.length === 0) {
-    return <p className="text-xs italic text-slate-500">No content</p>;
-  }
-  return (
-    <div className="space-y-1.5">
-      {message.content.map((part, index) => {
-        if (part.type === 'text') {
-          return (
-            <p
-              key={`text-${index}`}
-              className="whitespace-pre-wrap break-words text-sm leading-relaxed text-slate-200"
-            >
-              {part.text}
-            </p>
-          );
-        }
-        return (
-          <div
-            key={`${part.type}-${index}`}
-            className="inline-flex items-center gap-1.5 rounded border border-slate-800 bg-slate-950/60 px-2 py-1 text-[11px] text-slate-400"
-          >
-            <FileText className="h-3 w-3" />
-            {part.type === 'artifact' ? 'artifact' : 'file'} · {part.resourceId}
-          </div>
-        );
-      })}
-    </div>
-  );
+/**
+ * The connection an agent's message came from.
+ *
+ * It is the connection the participant names, and the panel shows its
+ * adapter beside the name so the owner can tell at a glance which runtime
+ * spoke.
+ */
+function agentOf(
+  message: Message,
+  participants: Participant[],
+  agents: AgentConnectionDetail[],
+): AgentConnectionDetail | undefined {
+  const participant = senderOf(message, participants);
+  if (!participant?.agentConnectionId) return undefined;
+  return agents.find((item) => item.id === participant.agentConnectionId);
 }
 
 /**
@@ -79,13 +73,24 @@ export function ChatMessageList({
   participants,
   agents,
   streaming,
+  resources = {},
 }: ChatMessageListProps): React.JSX.Element {
+  const mentions = participants.map((participant) => participant.displayName);
+  const hueOf = hueResolverFor(participants, hueFor);
+
   return (
     <div className="space-y-2.5">
       {messages.map((message) => {
         const participant = senderOf(message, participants);
         const isAgent = participant?.type === 'agent' || message.origin?.kind === 'agent';
         const name = agentNameOf(message, participants, agents);
+        const agent = agentOf(message, participants, agents);
+
+        if (message.kind === 'activity') {
+          return (
+            <ActivityLine key={message.id} message={message} time={formatTime(message.createdAt)} />
+          );
+        }
 
         return (
           <article
@@ -98,37 +103,32 @@ export function ChatMessageList({
             )}
           >
             <header className="mb-1.5 flex flex-wrap items-center gap-2">
-              {isAgent ? (
-                <Bot className="h-3.5 w-3.5 text-indigo-400" />
-              ) : (
-                <User className="h-3.5 w-3.5 text-slate-400" />
-              )}
+              <AgentOrb
+                name={name}
+                agentId={participant?.agentConnectionId ?? null}
+                owner={!isAgent}
+              />
               <span className="text-xs font-semibold text-slate-200">{name}</span>
-              <Badge variant={isAgent ? 'info' : 'outline'}>{isAgent ? 'agent' : 'human'}</Badge>
-              {message.status === 'streaming' ? (
-                <Badge variant="accent">
-                  <Loader2 className="h-2.5 w-2.5 animate-spin text-accent" />
-                  streaming
-                </Badge>
+              {agent ? (
+                <span className="rounded border border-slate-800 px-1 py-px font-mono text-[10px] text-slate-500">
+                  {agent.adapterType}
+                </span>
               ) : null}
-              {message.status === 'failed' ? (
-                <Badge variant="danger">
-                  <AlertTriangle className="h-2.5 w-2.5" />
-                  failed
-                </Badge>
-              ) : null}
-              {message.status === 'unknown' ? (
-                <Badge variant="warning">
-                  <HelpCircle className="h-2.5 w-2.5" />
-                  outcome unknown
-                </Badge>
-              ) : null}
+              <MessageBadges isAgent={isAgent} status={message.status} />
               {message.replyToId ? <span className="text-[10px] text-slate-600">reply</span> : null}
               <span className="ml-auto text-[10px] text-slate-600">
                 {formatTime(message.createdAt)}
+                {message.origin ? ` · depth ${message.origin.depth}` : ''}
+                {message.executionId ? ` · ${message.executionId}` : ''}
               </span>
             </header>
-            <MessageBody message={message} />
+
+            <MessageBody
+              parts={message.content}
+              resources={resources}
+              mentions={mentions}
+              hueOf={hueOf}
+            />
             {message.detail ? (
               // The server's account of how this message ended. It is shown
               // as it is given: the client does not reword what the server
@@ -145,7 +145,7 @@ export function ChatMessageList({
           className="rounded-lg border border-slate-800 bg-slate-900/50 px-3 py-2.5"
         >
           <header className="mb-1.5 flex items-center gap-2">
-            <Bot className="h-3.5 w-3.5 text-indigo-400" />
+            <AgentOrb name={entry.agentName ?? 'Agent'} agentId={null} owner={false} size="sm" />
             <span className="text-xs font-semibold text-slate-200">
               {entry.agentName ?? 'Agent'}
             </span>
@@ -153,11 +153,17 @@ export function ChatMessageList({
               <Loader2 className="h-2.5 w-2.5 animate-spin text-accent" />
               streaming
             </Badge>
+            <span className="ml-auto font-mono text-[10px] text-slate-600">
+              {entry.executionId}
+            </span>
           </header>
           {entry.text.length > 0 ? (
-            <p className="whitespace-pre-wrap break-words text-sm leading-relaxed text-slate-300">
-              {entry.text}
-            </p>
+            <MessageBody
+              parts={[{ type: 'text', text: entry.text }]}
+              resources={resources}
+              mentions={mentions}
+              hueOf={hueOf}
+            />
           ) : (
             <p className="text-xs italic text-slate-500">Waiting for the first token…</p>
           )}
