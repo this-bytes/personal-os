@@ -155,4 +155,45 @@ test.describe('the chat surface', () => {
     // The adapter and the state of the connection are beside the name.
     await expect(presence.getByText(/echo · /)).toBeVisible();
   });
+
+  test('an empty room offers prompts, and pressing one is the same as typing it', async ({
+    page,
+  }) => {
+    await signIn(page);
+    const workspaceId = await firstWorkspaceId(page);
+    const agentId = await createAgent(page, 'Echo', { reply: 'I can answer questions.' });
+
+    const createdConversation = await page.request.post('/api/conversations', {
+      data: {
+        workspaceId,
+        title: 'The prompts',
+        routingMode: 'mentions',
+        participantAgentConnectionIds: [agentId],
+      },
+    });
+    expect(createdConversation.ok()).toBe(true);
+    const conversationId = (await createdConversation.json()).conversation.id as string;
+
+    await page.goto(`/conversations/${conversationId}`);
+
+    // An empty room offers prompts rather than only an instruction to type.
+    const row = page.locator('[data-slot="suggestions"]');
+    await expect(row).toBeVisible();
+    // The first one names the room's own agent, because it is the room that
+    // says who can be asked.
+    await expect(
+      row.getByRole('button', { name: '@Echo, what can you do in this room?' }),
+    ).toBeVisible();
+
+    // Pressing one is the same act as typing it: the message goes out, and it
+    // goes out addressed, so the agent is the one that answers.
+    await row.getByRole('button', { name: '@Echo, what can you do in this room?' }).click();
+    await expect(page.getByText('I can answer questions.')).toBeVisible();
+
+    // The room is no longer empty, so the prompts go away.
+    await expect(row).toBeHidden();
+
+    // And the prompt is in the transcript as the message it was.
+    await expect(page.getByText('@Echo, what can you do in this room?')).toBeVisible();
+  });
 });

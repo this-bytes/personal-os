@@ -181,3 +181,57 @@
     transform: translateX(100%);
   }
 }
+
+/*
+ * The fade a scrolling row wears at the edge that has more to show.
+ *
+ * A row that runs off the panel should say so rather than end in a hard cut,
+ * and the edge that softens is the edge with something behind it: the left
+ * when there is more to the left, the right when there is more to the right,
+ * and neither when the row is at its end.
+ *
+ * The fade follows the scroll position rather than a listener, so there is
+ * nothing to attach and nothing to clean up. A row that does not scroll has
+ * no scroll position to follow, so no mask is set on it at all.
+ *
+ * This comes from shadcn/ui's `scroll-fade`, which is MIT licensed.
+ */
+@utility scroll-fade-x {
+  @supports (animation-timeline: scroll()) {
+    animation-name: pos-fade-inline;
+    animation-duration: auto;
+    animation-timing-function: linear;
+    animation-fill-mode: both;
+    animation-timeline: scroll(self inline);
+  }
+}
+
+@keyframes pos-fade-inline {
+  0% {
+    mask-image: linear-gradient(to right, transparent 0, black 1.5rem);
+  }
+  15% {
+    mask-image: linear-gradient(to right, black 0, black 100%);
+  }
+  85% {
+    mask-image: linear-gradient(to right, black 0, black 100%);
+  }
+  100% {
+    mask-image: linear-gradient(to right, black calc(100% - 1.5rem), transparent 100%);
+  }
+}
+
+/*
+ * The scrollbar a row hides.
+ *
+ * A row of prompts is a strip, not a document, and a scrollbar under it says
+ * "there is a document here" when what there is a shelf. The repository's
+ * scrollbars are otherwise thin and slate, and this one is not there at all.
+ */
+@utility scrollbar-none {
+  scrollbar-width: none;
+
+  &::-webkit-scrollbar {
+    display: none;
+  }
+}

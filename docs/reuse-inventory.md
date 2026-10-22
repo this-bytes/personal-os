@@ -121,6 +121,33 @@ rather than a component: **a question for the owner is not a step the agent
 took.** Personal OS already puts approvals on the waiting list and not in the
 trace, and the pattern says that is right.
 
+### 2.4 `Suggestion` — the prompts an empty room offers
+
+**Upstream.** shadcn/ui's `Suggestion`, MIT licensed, and like the rest of the
+AI Elements it is a pattern rather than a package: upstream publishes it as
+Markdown so that a coding agent takes the composition. The composition is a row
+that scrolls sideways, and one outline button per prompt, each carrying the
+prompt it sends — upstream's own words are that the label is the message and is
+sent as it is.
+
+**What was taken.** The composition, kept intact so that a refresh upstream is a
+merge here rather than a rewrite: the row is `scrollbar-none scroll-fade-x flex
+gap-2 overflow-x-auto overscroll-x-contain`, and each prompt is a button with
+`shrink-0`. The two utilities upstream asks for and this repository did not
+have — `scroll-fade-x` and `scrollbar-none` — live in `apps/web/src/index.css`,
+written in this repository's tokens.
+
+**What was written.** The prompts themselves, and the rule that chooses them:
+`apps/web/src/lib/suggestions.ts`. Upstream's demo hard-codes four prompts and
+shows a room with one agent in it. Personal OS derives them from the room, so
+the first one names a participant — the room saying who can be asked — and the
+rest are openings any agent can answer.
+
+**What was refused.** Nothing was added that makes a prompt a different kind of
+request. Upstream's rule was kept because it is the right one: a prompt is sent
+as the message it is, through the same path a typed message takes, with the
+delivery mode the owner has chosen.
+
 ---
 
 ## 3. What was rejected, and on what evidence
@@ -247,6 +274,8 @@ It is listed because it is the half of the answer that is not "reused".
 | `apps/web/src/components/chat/ActivityTimeline.tsx`       | what a trace row _means_ — the dot's tone, the sentence, the caution and failure markers, the run's cost at the end.                                                                              |
 | `apps/web/src/components/chat/Markdown.tsx`               | markdown drawn as text, and the mention that wears its agent's hue.                                                                                                                               |
 | `packages/ui/src/forge.tsx`                               | the Forge visual language: the room, the counters, the panels.                                                                                                                                    |
+| `packages/ui/src/suggestion.tsx`                          | the row of prompts an empty room offers: the composition upstream owns, drawn in this repository's tokens.                                                                                        |
+| `apps/web/src/lib/suggestions.ts`                         | the prompts themselves, and the rule that chooses them from the room's participants. No DOM, so it is testable on its own.                                                                        |
 | `apps/server/src/modules/executions/activity.ts`          | the read model the trace is drawn from.                                                                                                                                                           |
 | `apps/server/src/modules/capabilities/capability-view.ts` | the rule that a turn runs against the capability set it was admitted with: the view is pinned at admission, and whether a turn can be steered is asked of the turn rather than of the connection. |
 | `apps/web/src/components/chat/TurnCapabilityPanel.tsx`    | what the turn was admitted with — the agent, the revision, the capabilities, the tools — and the limit the view does not reach.                                                                   |
@@ -289,7 +318,6 @@ only in part. Each says what is missing and what it would cost.
 | Gap                              | What is missing                                                                                                                                                                                                                                                                                                                                                                      | What it would take                                                                                                        |
 | -------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------- |
 | **A branching conversation**     | the contract publishes `origin.depth` and the delegation tree, and the forked turn is a turn; the client has no branch view and no way back.                                                                                                                                                                                                                                         | the `MessageBranch` idea and the canonical history the contract already publishes. The server side of a fork is WI-055's. |
-| **Suggestions**                  | an empty transcript says "No events yet." and stops.                                                                                                                                                                                                                                                                                                                                 | shadcn's `Suggestion` pattern. Small.                                                                                     |
 | **A committed turn**             | `TurnStatus` publishes `committed` beside `completed`, and only `completed` is ever written.                                                                                                                                                                                                                                                                                         | WI-055's five-step commit. The vocabulary is published; the transaction is not.                                           |
 | **Five native runtimes**         | Codex, OpenCode, Pi, Hermes and OpenClaw have presets — a configuration, a leader persona, capabilities — and **only Hermes has been demonstrated**: the installed 0.21.0 answered the ACP handshake and completed a turn through the product's own adapter, and its template carries the evidence that rests on. The other four are not installed here and carry `verified: false`. | the adapters themselves. This is the largest gap in the product and it is not a chat-surface gap.                         |
 | **A real runtime demonstration** | the roadmap's R1 acceptance needs one of the named runtimes running, and Hermes has run: `scripts/verify-runtime.ts` drives the real adapter against the real runtime, and the answer came back through it. The browser suite proves the rest of the chain — server, queue, worker, adapter, event log, stream — with the built-in `echo` adapter.                                   | one runtime, one deployment, one recorded round trip.                                                                     |
@@ -329,6 +357,13 @@ uploaded and becomes a resource the message points at. Both rows are struck
 rather than reworded, because the rules the gaps asked for are now the rules
 the code follows.
 
+**And a third correction, measured on 2026-10-23:** this inventory listed the
+empty transcript as saying "No events yet." It does not — it says "No messages
+yet", and has said so since the chat surface landed. The gap underneath the
+wrong wording was real and is now closed: an empty room offers a row of
+prompts, and pressing one sends it as the message it is. The row is struck
+rather than reworded, for the same reason the other two were.
+
 ---
 
 ## 9. Sources
@@ -353,6 +388,9 @@ Every source below was opened directly.
 - `https://ui.shadcn.com/docs/ai-elements/base/reasoning.md` and
   `…/base/tool.md` — the patterns, and the rule that a pending approval sits
   outside the trace.
+- `https://ui.shadcn.com/docs/ai-elements/base/suggestion.md` — the
+  `Suggestion` pattern: the row that scrolls sideways, the button per prompt,
+  and the rule that the label is the message and is sent as it is.
 - `https://raw.githubusercontent.com/shadcn-ui/ui/main/LICENSE.md` — MIT.
 
 **Rejected, with the evidence for the rejection**

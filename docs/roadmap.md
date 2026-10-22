@@ -109,6 +109,14 @@ route already cover most of the brief, and **the chat surface was never the
 gap** — steering, the five native runtimes and a real runtime demonstration
 are.
 
+**And the empty room now offers prompts.** The reuse inventory listed the empty
+transcript as a gap, and it named shadcn's `Suggestion` pattern as what would
+close it. It is closed: an empty room offers a row of prompts, the first of
+them names a participant in the room, and pressing one sends it as the message
+it is — the same path a typed message takes, with the delivery mode the owner
+has chosen. The pattern is upstream's (MIT) and its composition is kept whole;
+the prompts are this repository's.
+
 ## R0 — establish the execution foundation
 
 **First slice to implement: repair MCP initialization through the worker.**

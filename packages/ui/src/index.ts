@@ -10,6 +10,7 @@ export * from './input.js';
 export * from './card.js';
 export * from './collapsible.js';
 export * from './code-block.js';
+export * from './suggestion.js';
 export * from './trace.js';
 export * from './primitives.js';
 export * from './forge.js';

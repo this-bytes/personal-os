@@ -21,6 +21,7 @@ import {
   CodeBlockCopyButton,
   CodeBlockHeader,
   CodeBlockTitle,
+  Suggestions,
   Trace,
   TraceCollapsible,
   TraceCollapsibleContent,
@@ -213,5 +214,52 @@ describe("the code block keeps upstream's accessibility rules", () => {
     );
 
     expect(container.querySelector('[data-slot="code-block-title"]')).toHaveTextContent('ts');
+  });
+});
+
+describe("the suggestion row keeps upstream's composition", () => {
+  it('is a row that scrolls sideways, so prompts that do not fit are not lost', () => {
+    const { container } = render(
+      <Suggestions suggestions={['What can you do?']} onSend={() => {}} />,
+    );
+
+    const row = container.querySelector('[data-slot="suggestions"]');
+    expect(row).toBeInTheDocument();
+    // Upstream's own classes, kept so that a refresh upstream is a merge here
+    // rather than a rewrite.
+    expect(row?.className).toContain('scrollbar-none');
+    expect(row?.className).toContain('scroll-fade-x');
+    expect(row?.className).toContain('overflow-x-auto');
+    expect(row?.className).toContain('overscroll-x-contain');
+    expect(row?.className).toContain('flex');
+  });
+
+  it('keeps each prompt on a button that does not wrap, so the row stays a row', () => {
+    const { container } = render(
+      <Suggestions suggestions={['What can you do?']} onSend={() => {}} />,
+    );
+
+    const button = container.querySelector('[data-slot="suggestion"]');
+    expect(button?.className).toContain('shrink-0');
+  });
+
+  it('sends the label as the message, exactly as upstream does', () => {
+    const sent: string[] = [];
+    render(
+      <Suggestions
+        suggestions={['What can you do here?', 'What are you waiting on?']}
+        onSend={(suggestion) => sent.push(suggestion)}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: 'What are you waiting on?' }));
+
+    expect(sent).toEqual(['What are you waiting on?']);
+  });
+
+  it('cannot be pressed while a send is in flight', () => {
+    render(<Suggestions suggestions={['What can you do?']} onSend={() => {}} busy />);
+
+    expect(screen.getByRole('button', { name: 'What can you do?' })).toBeDisabled();
   });
 });

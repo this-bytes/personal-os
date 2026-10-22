@@ -2,7 +2,16 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { AlertTriangle, ArrowLeft, Ban, Check, Info, Pause, Play, Trash2 } from 'lucide-react';
-import { Badge, Button, Card, CardContent, CardHeader, CardTitle, Select } from '@personal-os/ui';
+import {
+  Badge,
+  Button,
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  Select,
+  Suggestions,
+} from '@personal-os/ui';
 import type {
   ChatActivityReadModel,
   MessageDelivery,
@@ -23,6 +32,7 @@ import type {
   RoutingDecision,
 } from '../lib/types';
 import { countTurns, messageRequest, operationState } from '../lib/chat';
+import { starterSuggestions } from '../lib/suggestions';
 import { useServerEvents } from '../state/events';
 import { useWorkspace } from '../state/workspace';
 import { ChatMessageList, type StreamingEntry } from '../components/ChatMessageList';
@@ -189,6 +199,18 @@ export function ConversationDetail(): React.JSX.Element {
     for (const agent of agents.data ?? []) map.set(agent.id, agent);
     return map;
   }, [agents.data]);
+
+  // The prompts an empty room offers. They are the room's own — one of them
+  // names a participant — so they are derived from the participants rather
+  // than written down once.
+  //
+  // This sits above the early returns on purpose. A hook after them would run
+  // only once the conversation has loaded, and the component would then have
+  // more hooks on the second render than on the first.
+  const suggestions = useMemo(
+    () => starterSuggestions(conversation.data?.participants ?? []),
+    [conversation.data?.participants],
+  );
 
   const invalidate = useCallback(async (): Promise<void> => {
     await queryClient.invalidateQueries({ queryKey: ['conversation', conversationId] });
@@ -509,6 +531,23 @@ export function ConversationDetail(): React.JSX.Element {
                 stopTurn.mutate(activeExecutionId);
               }}
             />
+
+            {/* The prompts an empty room offers. They are placed where the
+                composer is, so pressing one is the same act as typing it: the
+                message goes out with the delivery mode the owner has chosen,
+                and the owner can see which one that is. */}
+            {(messages.data ?? []).length === 0 && !messages.isError && !current.paused ? (
+              <Suggestions
+                suggestions={suggestions}
+                busy={postMessage.isPending}
+                onSend={(suggestion) => {
+                  void postMessage.mutateAsync({
+                    text: suggestion,
+                    options: { delivery, attachments: [] },
+                  });
+                }}
+              />
+            ) : null}
 
             <Composer
               participants={current.participants}
