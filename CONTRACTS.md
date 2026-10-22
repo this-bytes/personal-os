@@ -1450,7 +1450,7 @@ remembering: a client that declares its own copy is describing a list the
 server does not send.
 
 The published waiting shape is the contract for **WI-132**, and the code
-implements it — as of `4d389c7`.
+implements it — as of `a9f7066`.
 
 **Migration.** The shape moved and nothing is reclassified: the route returns
 the same rows it returned before. **A client that copied the old declaration
@@ -1544,7 +1544,7 @@ would file it under work that is stuck rather than under a grant the owner can
 widen from the row.
 
 The panel's capability row is the contract for **WI-132**, and the code
-implements it — as of `4d389c7`.
+implements it — as of `a9f7066`.
 
 **Migration.** Nothing changes for a client that reads the list: the rows are
 the rows, and the fourth kind is the fourth kind. **A client that renders the
