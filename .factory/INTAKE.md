@@ -105,8 +105,10 @@ free number above the highest taken.**
 | WI-132 | The panel does not carry the published waiting shape, and the row carries no way to widen the grant                                                                                                                               | worker |
 | WI-133 | The audit job audits twice: one word makes it audit once                                                                                                                                                                          | worker |
 | WI-134 | The domain does not depend on the adapters package                                                                                                                                                                                | worker |
+| WI-135 | The published documents name things that have moved                                                                                                                                                                               | worker |
+| WI-136 | A new type cannot be named without an implementation                                                                                                                                                                              | worker |
 
-**The next free number is WI-135.**
+**The next free number is WI-137.**
 
 **Two decisions the owner took, and the numbers they took.** The owner answered
 the two questions that were open: `manual` **does not gate delegation**
@@ -688,6 +690,11 @@ second dispatch.
 | `wi-131-widening-write-one-transaction-cog-2026-10-22` | WI-131 — the widening write is one transaction, and the contract says so | Cog | `task_f57ccf614193` | **DISPATCHED AT 14:45 BY CHIEF, AT THE PUBLISHED TIP `338fef0`, REPORT TO THE GROUP.** D1, D2 and D3 from WI-121's verification, as one item: the delete at `agents/service.ts:261` and the grant write at `:288` span nothing, so a failed grant write leaves the list under-reporting a block that is still there; D3's window is unreachable through the API today but the worker is a second process on the same database; D2 is the contract's own citation naming `:261` for "the one write that changes a grant". **One transaction closes D1 and D3 together, and D2 is the sentence about those two lines.** The cases go in Probe's existing check |
 | `wi-132-panel-waiting-shape-cog-2026-10-22` | WI-132 — the panel carries the published shape and the row's action | Cog | `task_5cde5cfe02bf` | **DISPATCHED AT 14:45 BY CHIEF, AT THE PUBLISHED TIP `338fef0`, REPORT TO THE GROUP.** O1 and Q1 from WI-121's verification: `apps/web/src/lib/types.ts:100` still declares three kinds and no `toolName`, and a capability row carries no way to widen the grant. **The lead's answer to Q1: the API satisfies WI-121's criterion, and the panel owes the action** — a criterion that says "from the list" names the surface where the owner finds the row. The structural fix is available: the web already depends on `@personal-os/contracts`, so the waiting shape moves there and the client imports it, and the drift cannot come back |
 | `wi-129-verify-resource-liveness-probe-2026-10-22` | WI-129 — the resource is never born live: the verification | Probe | `task_b433527c33d7` | **DISPATCHED AT 14:50 BY CHIEF, AT THE PUBLISHED TIP `338fef0`, REPORT TO THE GROUP. WI-129 WAS LANDED AND UNVERIFIED, WITH NO DISPATCH ANYWHERE** — the lead read the floor and the dispatch table and there was none, so the item was inventory. **The peer session owns the item and its claim, and wrote the implementation and the check; Probe wrote none of it.** If the peer has a verification in flight it should say so and the lead will cancel one of the two as a duplicate. **The lead's reading of the brief: the two gates that were corrected rather than weakened are the sharpest thing in this landing, and a moved window is a gate that was moved** |
+| `wi-135-published-citations-sweep-cog-2026-10-22` | WI-135 — the two published documents name different lines for the same line | Cog | `task_02486ba6d0c2` | **DISPATCHED AT 16:35 BY CHIEF, AT THE PUBLISHED TIP `77b3881`, REPORT TO THE GROUP.** Probe's findings F1, F2 and F3 from WI-129's verification, as one item: **six citations in the two published documents that WI-129's landing touched do not name the code their own sentence claims** — two in `CONTRACTS.md` (`:2097` cites `:363` for the author, and `:363` is `title: task.title,`; `:806` cites `:399-400` for the template fields, and those are `acceptanceCriteria:` and `author:`) and four in `docs/resource-templates.md` (`:76`'s `service.ts:351-360` was right before the landing and the landing broke it; `:97`'s `service.ts:581-591` survives uncorrected; `service.ts:573-578` is carried twice, at `:289` and `:425`, for a kind check that is at `:687-691`). **The sharp part is one sentence: the contract and the guide name different lines for the same line, two apart.** Every window in the brief was read by the lead by hand, not taken from the verifier's report. **The check is Probe's file and the owner does not write it, and the other citations in those two files are reported, not fixed** |
+| `wi-135-published-citations-sweep-cog-r2-2026-10-22` | WI-135 — the eighteen citations that do not name what they claim | Cog | `task_5888721e9595` | **RE-DISPATCHED AT 16:50 BY CHIEF, AND THE FIRST BRIEF IS CANCELLED.** The 16:35 brief carried six citations and was **short by twelve**: the peer session's own 15:45 record had measured five more in the guide's summary table and published them "for whoever takes it", and **the lead's own reading of the sentences around them found four more that neither of the two found.** **The task `task_02486ba6d0c2` is cancelled**, its request id `wi-135-published-citations-sweep-cog-2026-10-22` is **spent and never reused**, and it changed no file. **All eighteen sites were measured by the lead by hand**, and the item's file carries the table with what each citation names and the line to publish. **One item and not two: three of the peer's five and all of Probe's guide sites are in the same file, and one file, one live item, one writer at a time.** **THE PEER'S COUNT IS CORRECTED HERE: their record says "the four stale citations the verifier found in the guide's summary table" and lists five of them, and those five are carried at eight sites in the guide** |
+| `wi-129-followup-verify-probe-2026-10-22` | WI-129's follow-up — the re-pointed citation and the two new cases, verified | Probe | `task_6d4d0264d86c` | **DISPATCHED AT 16:50 BY CHIEF, AT THE PUBLISHED TIP `cbfbf8d`, REPORT TO THE GROUP.** WI-129 was accepted on two independent verdicts — Probe's (`task_02a3509d3d31`, ACCEPT) and the peer session's own verifier's PASS WITH FINDINGS — **and then the peer session landed a follow-up on top of it:** one citation re-pointed in the contract and the same one re-pointed in the guide's §10, and **two cases added to `apps/server/src/__tests__/resource-liveness.test.ts`** — **with only the implementer's own report.** **Test code that no independent verifier has run is landed work with no verdict, and the lead dispatches the verification even for the other session's item.** Probe wrote none of the follow-up. **The brief names the two things to prove — the re-pointed citation names its claim, and each of the two new cases can fail** — and it puts the implementer's own caught mistake to the verifier: **a restore that only verifies is not a restore** |
+| `wi-135-four-citations-wren-2026-10-22` | WI-135 — the four citations that do not name what they claim | Wren | `task_27577f426407` | **CANCELLED AT 16:30 BY THE LEAD — A DUPLICATE NUMBER, NOT A DUPLICATE FINDING.** This brief was dispatched at 16:18 by another session, and its own words say why it took the number: "**`main`'s block reads 'The next free number is WI-135', and nothing on `main` or on any remote branch carries it.**" **That read was stale by four minutes** — the lead's WI-135 claim was published on `main` at 16:14 in `f880677`, which carries `.factory/work/WI-135.md` and the block row, and the lead's live dispatch of it is `task_5888721e9595`. **Its findings are a strict subset of the lead's eighteen**, and every one is already in the lead's table: F1 (`CONTRACTS.md:2098` cites `service.ts:363` for the author; `:365` is `createdBy: author,`), F1b (`CONTRACTS.md:806` cites `:399-400` for the template's id and version; `:401-402` are `templateId` and `templateVersion`), F2 (`docs/resource-templates.md:76` cites `service.ts:351-360`), F3 (`:97`, `:289`, `:425` cite `:581-591` and `:573-578`), and F4 (`.factory/work/WI-129.md:37` cites `docs/resource-templates.md:594`; the sentence is at `:595`) — **which the lead already corrected in place in `f880677`.** **The peer brief says F2's and F3's targets were "not yet located"; the lead's brief carries all three of them** (`service.ts:376-385`, `:673-678`, `:687-691`), **so the superset is strictly more advanced, not merely broader.** **Two live items on one number, in two owners' lanes, over the same two documents, is the failure the number space exists to prevent**, so the duplicate is cancelled rather than allowed to start beside the one it duplicates. **Nothing is lost: the task never ran, it has no chat, no worktree and no committed file, and its five findings are in the brief that is live.** Its request id `wi-135-four-citations-wren-2026-10-22` is **spent and never reused.** **The number is the lead's, and the peer's own WI-136 file agrees**: "WI-135 was the peer session's, written first and not yet published. Their claim was in a commit on their own `main` when this worktree was cut, so their claim keeps WI-135 and this one moves to WI-136." |
+| `wi-134-verify-adapter-boundary-probe-2026-10-22` | WI-134 — the domain's edge to the adapters package, verified | Probe | `task_33fe48307f92` | **DISPATCHED AT 17:15 BY CHIEF, AT THE PUBLISHED TIP `d60f3c5`, REPORT TO THE GROUP.** WI-134 landed on `main` in the peer's commits (`f932208`, merged at `d60f3c5`) **with no independent verdict anywhere** — **the peer wrote the work and the check, and the peer's own report is not a verification.** **A landed item with no verdict is inventory, and the lead dispatches the verification even for the other session's item.** Probe wrote none of it. **The brief asks for the seven answers, and the sharpest of them is the hole the check found in itself**: the walk collected `.ts` files while the browser client is `.tsx`, so the client was never inspected and putting the adapters package into `apps/web/src/main.tsx` turned nothing red. **The lead's own measurement of the landing:** `apps/server/src/modules/agents/service.ts:13` now ends the `@personal-os/contracts` import with the adapters import gone, `apps/worker/package.json` no longer names the package, `packages/contracts/src/agent.ts` carries `AdapterLogger` at `:286`, `AdapterContext` at `:296` and `AdapterProvider` at `:308`, and the lockfile's `apps/worker` entry no longer declares the dependency — **the lockfile changed by that and nothing else** |
 
 **A cancelled task is not a dispatch — but a cancelled dispatch does not free its
 request id.** That second half was wrong here, and it is corrected now rather
@@ -5445,37 +5452,6 @@ worked a second time.
 
 **The floor at 15:25.** **Ceiling two. Next free number WI-134.**
 
-### 15:45 — WI-133 was claimed twice, twelve minutes apart, and the two claims found the same one word
-
-**The implementation is landed on `main` at `4821661`, and this entry is the measurement and the correction the landed claim does not carry.** The `Dependency audit` job was cancelled on `ccc3564`, and the diagnosis in the 14:05 entry above — commit `b452231` — is wrong in the way that matters. It says the failing run "had queued a while for a runner". **It did not.** The run was created at **03:01:31** and **every job started at 03:01:34** — **three seconds.** The job was on a runner, and it was sitting in the audit. **The entry stays in the ledger and this is the correction beside it.**
-
-**The step-level timings settle it, and they had not been read.** The job has two steps that can be slow, and the API returns them separately:
-
-| Step                 | `ccc3564` (cancelled)                                      | `e660fdf` (green re-run)            |
-| -------------------- | ---------------------------------------------------------- | ----------------------------------- |
-| Install dependencies | **7.05 min** (03:01:38 -> 03:08:41)                        | **0.07 min** (03:26:35 -> 03:26:39) |
-| Audit                | **3.10 min**, cut off by the budget (03:08:41 -> 03:11:47) | **0.00 min** (03:26:39 -> 03:26:39) |
-| the whole job        | 10.25 min                                                  | **11 seconds**                      |
-
-**Both audit round-trips stalled, and the second one was still running when the ten-minute budget ran out.** And **the registry was not slow for anyone else**: at the same moment, on the same registry, the two siblings doing the same install with `--no-audit --no-fund` — so, doing no audit at all — finished their whole jobs in **0.23 and 0.27 minutes**.
-
-**So the job's normal cost is eleven seconds, and the timeout was a stalled registry round trip that this job paid for twice.** Its three siblings paid for it zero times, which is why they were unaffected. **This does not end the flake:** the job's worst case is now one stalled round trip instead of two, and a registry slow enough to stall one of them for ten minutes would still time the job out, and it would be right to.
-
-**WI-133 was claimed twice, independently, twelve minutes apart, and both claims found the same one word.** The lead session published its claim at **14:57:33** as `27d87ef` on `wi/133-dependency-audit-once`; the worker session published its claim at **15:09:22** as `ee32e76` on `wi/133-audit-job-audits-once`, and that one landed on `main` at **15:10** — `dee3a3b` — so the block now reads "**The next free number is WI-134.**" **Neither claim was bound to a dispatch, so the earlier published claim keeps the number; but the number was already landed on `main` carrying the record in `ee32e76`, and that record offers the item back: "it is one word."** and the implementation landed on `main` at **`4821661`**. **So WI-133 is one item and not two**, and the item file on `main` now carries both sessions' evidence: the claim and record of `ee32e76` with the measurement of `27d87ef` folded in, and the wrong claims quoted beside their correction rather than overwritten. **And this item's own earlier claim is corrected by appending rather than by overwriting: `WI-133.md` now quotes the two sentences `27d87ef` got wrong, beside the correction, naming the sha.**
-
-**And the gate is not weakened — measured with the version CI runs, not asserted.** With **npm 10.9.9**, the version bundled with the node `22.23.3` in `.nvmrc`, against a lockfile carrying a high-severity advisory (`lodash@4.17.15`): **`npm ci --ignore-scripts` exits 0** — the implicit audit prints and does not fail — while **`npm audit --audit-level=high` exits 1**. **The implicit audit never gated this job; the explicit step is the only thing that has ever failed it, before the change and after it.**
-
-**And the citations in the 15:25 entry above have drifted by nine lines.** The comment the change
-carries moved the install from `:94` to **`:103`** and the audit from `:99` to **`:108`**, and the
-siblings' installs to `:128`, `:155` and `:180`. **The item file on `main` is repointed at the lines
-the file carries now, and it says which lines they were before.**
-
-**And the proof is the pipeline that reads the file.** On `de5de5d`, which carries the same one word, the job's own steps: install **0.12 min**, audit **0.00 min**, the whole job **0.22 min — success**, where the same job took ten minutes and a half and was cut off on `ccc3564`. **Thirteen seconds, green, where it used to time out.**
-
-**And one more correction, on an instrument this ledger has already named.** The Formatting step of CI failed on `6bca3c5` and on nothing else — typecheck, the tests and the build all passed — and the cause was this entry: it was missing the blank line before its heading, and one of its bold spans wrapped another, so the markers paired the wrong way round.** Both are fixed, in `6849e62`.** The wrong conclusion came first, and it was mine: a prettier check run against `git show origin/main:.factory/INTAKE.md | Out-File` flagged the file as dirty, and **a copy is not the file** — `Out-File` wrote CRLF where the blob holds LF, and the copy sat outside the repository, so prettier resolved its defaults instead of `.prettierrc.json`. The 08:45 section of this ledger already named that instrument and the rule it earns: “a red measured on an extracted copy is a red measured on the extraction — check the copy's line endings before believing it, and check the committed bytes.” This is the second time it has cost something, and the rule was already written down.
-
-**And this branch dropped `main`'s own 16:05 entry once, and this ledger is built from `main`'s file so it cannot drop anything again.** A merge resolution that took only the text between the conflict markers dropped everything after them, **and the net effect of a branch is what it deletes as well as what it adds.** The diff is where a deletion shows up, and it is read before a push now, not after.
-
 ### 15:45 — WI-129's verification asked for two things, and both are closed
 
 **WI-129 was verified independently, and the verdict is PASS WITH FINDINGS** — no blocker,
@@ -5609,6 +5585,89 @@ a new file with a new name, and nothing of Probe's is touched. **Probe may take 
 
 **The floor at 16:05.** **Ceiling two. Next free number WI-135.**
 
+### 16:35 — WI-127 and WI-129 are accepted, WI-135 is opened, and the tip moved twice under the lead
+
+**The tip moved twice while the lead was reading, and both moves were the peer's.**
+`4821661` — "The audit job audits twice: one word makes it audit once" — and then `77b3881`,
+"Claim WI-134: the domain does not depend on the adapters package". **The lead's local
+branch was behind and was fast-forwarded** (`2b1cb78` → `77b3881`); the merge was a
+fast-forward, not a conflict. **The peer took WI-133 and WI-134 while the lead was
+holding two verdicts, and the published block was right both times** — it read "the next
+free number is WI-135" before either claim landed, and the lead's own number, read
+immediately before it was taken, was **WI-135**.
+
+**The lead's reading of the peer's CI change, because `.github/workflows/**`is the
+lead's file.** The peer's WI-133 changed the audit job's install line to`npm ci --ignore-scripts --no-audit --no-fund` (`:103`). **The gate does not weaken: the
+explicit `npm audit --audit-level=high`at`:107-108`is untouched, so the job still fails
+on a high-severity finding.** What the flags remove is the *second* audit — the one`npm ci` performs at npm's own default level inside the install — and **that one never
+failed an install; it only reported.** The install line is now byte-identical to its
+three siblings' (`:128`, `:155`, `:180`), which do the same install inside the same
+budget and **passed on the very run the audit job timed out on.** **The lead's note for
+the record: the change is the peer's item and the peer's claim, and the lead's gate stands
+as it was.**
+
+**WI-127 is ACCEPTED** on Cog's verdict (`task_9bb1e77f2a86`, **VERDICT: VERIFIED**) —
+**Cog as the standing substitute for Vision**, whose queue had not drained, and **Cog
+wrote none of the work: Probe wrote the pin and the lead landed it.** A substituted
+verifier stands only where the substitute did not write the work. The verifier reproduced
+**Probe's three drift proofs on the real files** — the README drifted → **3 failed | 6
+passed**, the manifest's description drifted → **3 failed | 6 passed**, both drifted to
+different sentences → **4 failed | 5 passed** — each restored with `git checkout` and an
+empty diff, **and two mutations of its own**: removing a finding from the check turned the
+suite red, and making the agreement comparison always agree turned three drift tests
+red, so the comparison is load-bearing. It also read the check's whole file list: it names
+none of `AGENTS.md`, `CONTRIBUTING.md`, `docs/roadmap.md` or `.factory/work/WI-011.md`, so
+**WI-120's decision to leave those four alone is not overturned.** The landing's own diff
+is **exactly one file, 417 insertions**, with no `it.fails`, no `.skip` and no `.only`.
+**The lead re-measured and the surface is byte-identical** — `git diff --name-only
+2b1cb78 77b3881` over `README.md`, `package.json` and
+`apps/server/src/__tests__/frontPage.test.ts` **is empty** — so **the acceptance holds on
+the published tip.** _What the product can now do: the front page says the product's own
+identity sentence, and nothing can change that sentence without a check going red._
+
+**WI-129 is ACCEPTED** on Probe's verdict (`task_02a3509d3d31`, **ACCEPT**) — **Probe
+wrote none of the work: the peer session wrote the implementation and the check.** The
+twelve claims hold under measurement, the check fails exactly the way the item says (three
+mutations, one at a time, each restored with an empty diff), and **both gates were
+corrected rather than weakened.** **The lead re-measured and the surface is byte-identical**
+— `git diff --name-only 2b1cb78 77b3881` over the seven files of WI-129's surface **is
+empty** — so **the acceptance holds on the published tip.** _What the product can now do: a
+resource is never born live — a dashboard made from a template arrives unpublished whatever
+the caller asked for, an automation arrives disabled, and publishing stays a separate,
+deliberate act._
+
+**Four findings, and three of them are WI-135.** **F1**: the contract's two citations do
+not name their claims — `CONTRACTS.md:2097` cites `:363` for the author and `:363` is
+`title: task.title,` (the author is read at `:365`), and `CONTRACTS.md:806` cites
+`:399-400` for the template fields and those are `acceptanceCriteria:` and `author:` (the
+fields are at `:401-402`). **F2, F3**: the guide's `service.ts:351-360` was right before
+WI-129 and the landing broke it; `service.ts:581-591` survives uncorrected at
+`docs/resource-templates.md:97`; and `service.ts:573-578` is carried twice, at `:289` and
+`:425`, for a kind check that is at `:687-691`. **Every one of those windows was read by
+the lead by hand before it went into the brief.** **F4 is the lead's own** —
+`.factory/work/WI-129.md` is `.factory/**` — and **it is corrected in place**: the
+citation named `docs/resource-templates.md:594` for "The dashboard is not published", the
+landing added one line above it, and the sentence is at `:595`. **O1–O4 are observations,
+not defects, and are recorded in the item's file.**
+
+**WI-135 is opened and dispatched to Cog** — request
+`wi-135-published-citations-sweep-cog-2026-10-22`, batch `batch_4555c9055dfa`, task
+**`task_02486ba6d0c2`**, **at the published tip `77b3881`, report to the group**. The
+brief carries the six corrections with the window each one now names, **the check is
+Probe's file and the owner does not write it**, and **the other citations in those two
+files are reported, not fixed** — because WI-129's own file says the rest of the guide's
+citations were not swept and that this is "the stale-docs item, and it is not this one",
+and **a citation which does not name its claim is a defect and an unowned defect is a
+defect.** The lead opens the item from that report, with its own number.
+
+**One thing the lead does not own, and says so.** The peer's WI-134 file states that the
+peer **wrote the check itself**, because "the check is a test file, and the repository
+gives test files to Probe", and offers Probe the file. **The lead's standing is that
+`**/\*.test.ts` is Probe's, and the lead has not touched the peer's branch.\*\* **Probe may
+take it over when it lands.**
+
+**The floor at 16:35.** **Ceiling two. Next free number WI-136.**
+
 ### 16:40 — WI-134 is implemented: the domain's edge to the adapters package is gone
 
 **The domain no longer depends on the package that holds the adapters.** The shapes it
@@ -5714,28 +5773,403 @@ entry stays, and this is the correction beside it.**
 
 **The floor at 16:40.** **Ceiling two. Next free number WI-135.**
 
-### 16:50 — a want with four measured findings that are still open, and the number that is free
+### 16:50 — the peer landed a follow-up on top of WI-129, and the lead's first WI-135 brief was short by twelve citations
+
+**The tip moved again while the lead was reading, and this time it moved the item under the
+lead's hands.** `cbfbf8d` — "Merge commit `77b3881` into `wi/129-template-creates-a-draft`" —
+**the peer session landed a follow-up to WI-129 and accepted the item on its own
+verifier's report.** The follow-up changed five files: the contract, the guide, WI-129's own
+check file, the item's file and the ledger.
+
+**What the follow-up did, measured by the lead on the diff.** One citation was re-pointed in
+the contract and the same one in the guide's §10: **the contract's "the dashboard's writes
+`published: false`" cited `service.ts:337-345` — the provider's `create`, which calls
+`asDraft` — and now cites `:756`, reached from the provider's create at `:342`.** The lead
+read both lines: `:754-757` is `asDraft`, whose last line is
+`{ ...(data as Record<string, unknown>), published: false }`, and `:342` is
+`return base.create({ ...input, data: asDraft(input.data) });`. **That is Probe's observation
+O1, closed.** And **two cases were added** to `apps/server/src/__tests__/resource-liveness.test.ts`
+— the automation's half of "an update still makes a resource live", and "a spec that is not
+an object is passed on untouched" — **each with a mutation proof in the implementer's own
+hand.** The pointer gate is green at **144 pointers, 0 failures**, one more than before,
+because the sentence now names two places.
+
+**The lead's re-measurement of WI-129's acceptance, at the moved tip.** The behavioural
+surface — `apps/server/src/modules/resources/service.ts` and
+`apps/server/src/modules/resources/templates.ts` — **is byte-identical** across
+`77b3881 → cbfbf8d`. Four files moved, and **all four moved in the direction of
+strengthening the item**: a citation re-pointed onto the code it names, the same citation
+re-pointed in the guide, two cases added, and the item's own file. **The acceptance holds
+on the published tip, and the lead's record of it in `WI-129.md` — which named the
+measurement at `77b3881` — is corrected by this paragraph rather than left standing.**
+
+**And the follow-up is dispatched for independent verification** — request
+`wi-129-followup-verify-probe-2026-10-22`, batch `batch_4e6a2cfdf0a8`, task
+**`task_6d4d0264d86c`**, **at the published tip `cbfbf8d`, report to the group**. **Test
+code that no independent verifier has run is landed work with no verdict, and the lead
+dispatches the verification even for the other session's item.** Probe wrote none of the
+follow-up. **The brief asks for two proofs — the re-pointed citation names its claim, and
+each of the two new cases can fail** — and it puts the implementer's own caught mistake to
+the verifier: **the mutation script's `restore()` checked the file's hash and reported a
+mismatch, because it only checked and never wrote the file back. A restore that only
+verifies is not a restore.**
+
+**The lead's first WI-135 brief was short by twelve citations, and it is cancelled.** The
+16:35 brief carried the six Probe found. **The peer session's own 15:45 record had
+measured five more in the guide's summary table and published them "for whoever takes
+it"** — and **the lead's reading of the sentences around them found four more that neither
+of the two found**: a citation that names the reverse of its own claim
+(`docs/resource-templates.md:29`'s `resource.ts:49-57` holds the template fields, not the
+resource's `workspaceId`, `revision` and `createdBy`), a second name in a pair that names a
+different tool (`mcp.ts:45` is `resource.get`, not `resource.template.list`), and **two
+stale citations in the same sentence as a third** (the guide's `:134-145` and `:153-165` —
+`listTemplates` is at `:404` and `findTemplate` at `:423`). **The task
+`task_02486ba6d0c2` is cancelled, its request id is spent and never reused, and it changed
+no file. The new brief carries all eighteen: `task_5888721e9595`, request
+`wi-135-published-citations-sweep-cog-r2-2026-10-22`.** **One item and not two, because
+three of the peer's five and all of Probe's guide sites are in the same file, and one file,
+one live item, one writer at a time.**
+
+**The peer's count is corrected here rather than left standing.** Their record says **"the
+four stale citations the verifier found in the guide's summary table"** and then lists
+**five**. **And those five are carried at eight sites in the guide**, not five:
+`resource.ts:58-70` at `:29` and `:734`, `resource.ts:79-83` at `:30`, `templates.ts:21-124`
+at `:31`, `:294` and `:565`, `mcp/server.ts:467-483` at `:33`, and `mcp/server.ts:352-402`
+at `:34`. **With the lead's four, the guide carries sixteen stale citation sites and the
+contract two.**
+
+**The floor at 16:50.** **Ceiling two. Next free number WI-136.**
+
+### 17:15 — the peer's WI-134 landed, the peer's WI-136 is claimed, and the block was behind for the sixth time
+
+**The push was refused and the peer had moved the tip again.** The lead's tree was green
+on all nine gates (tree `96cb61b`, unchanged by the gates) and `git push origin main` was
+**rejected as non-fast-forward**: the peer had published `f932208` and `d60f3c5` while the
+gates ran. **The lead merged rather than forced** — the pre-push hook refuses a
+non-fast-forward, and `PERSONAL_OS_ALLOW_FORCE=1` must never be used — and **the code
+changed under the merge, so the gates are run again on the merged tree before the push.**
+That is the standing word's condition: **green is measured on the tree being pushed.**
+
+**WI-134 is implemented and landed by the peer session.** The domain's one dependency edge
+on the adapters package is gone: `apps/server/src/modules/agents/service.ts:13` now ends
+the `@personal-os/contracts` import, `apps/worker/package.json` no longer declares the
+package, and the shapes the domain needs — `AdapterLogger` at
+`packages/contracts/src/agent.ts:286`, `AdapterContext` at `:296`, `AdapterProvider` at
+`:308` — now live in the package the domain already owns. **The lead measured the lockfile
+too, because it is the lead's file: the `apps/worker` entry no longer declares the
+dependency, and the lockfile changed by that and nothing else.**
+
+**And the verification is dispatched to Probe** — request
+`wi-134-verify-adapter-boundary-probe-2026-10-22`, batch `batch_b00089b62ac2`, task
+**`task_33fe48307f92`**, **at the published tip `d60f3c5`, report to the group**.
+**WI-134 landed with no independent verdict anywhere — the peer wrote the work and the
+check, and the peer's own report is not a verification.** The brief asks for seven
+answers, and the sharpest is the hole the check found in itself: **the walk collected
+`.ts` files while the browser client is `.tsx`, so the client was never inspected at all,
+and putting the adapters package into `apps/web/src/main.tsx` turned nothing red.** The
+brief asks Probe to reproduce that, because **a check that has never been given a mutation
+it can fail is not a check** — and that sentence is the peer's own, which is exactly why it
+deserves an independent test.
+
+**The check is Probe's file, and the peer said so.** The item's own limitations section
+says the check is a test file, that the repository gives test files to Probe, that the
+peer wrote it because the item could not land without it, and that **"Probe may take it
+over."** **The lead has not touched the peer's branch, and the brief says Probe may take
+the file over.**
+
+**And WI-136 is the peer's — claimed at 17:05, "a type cannot be named without an
+implementation".** The block read "**The next free number is WI-136**" when the peer took
+WI-136 off it, **so the block was behind for the sixth time**, and it now reads
+**"The next free number is WI-137."** **WI-135 is the lead's and is safe: it was read
+immediately before it was taken and it is in the block, so the peer's WI-136 cannot
+collide with it.**
+
+**The floor at 17:15.** **Ceiling two. Next free number WI-137.**
+
+### 17:05 — WI-136 is claimed: a type cannot be named without an implementation
+
+**WI-136 is claimed, and the claim is on `main` before the work is done.** The block's row
+and the item file land in a commit of their own. **That is the claim-first discipline used
+five times now — WI-129, WI-133, WI-134, WI-136 and this — and it has not collided
+once.**
+
+**And WI-135 is the peer session's, and it moves nobody.** Their claim was in a commit on
+their own `main` when this worktree was cut — **written first, not yet published** — so
+their claim keeps WI-135 and this one takes WI-136. **That is the same tiebreak this
+session has applied twice already**, and it is cheaper than two claims on one number.
+
+**Two lists of types, two registries that implement them, and nothing holds them
+together.** `AGENTS.md` rule 8 says _"a new resource type must work through the same
+existing interfaces"_ and _"a new adapter must not require changes to conversation storage
+or the factory task model"_ — **both of those rules are true today, and neither is held
+by anything.**
+
+**The resource types.** The contract names six
+(`packages/contracts/src/resource.ts:4-11`); the service holds one provider for each
+(`apps/server/src/modules/resources/service.ts:457-464`). **All six are there.** But the
+registry is a `Map`:
+
+```ts
+const providers = new Map<ResourceType, ResourceProvider<unknown>>([...]);
+```
+
+**TypeScript does not require a `Map` literal to carry every key of its key type.** So a
+seventh type added to the contract compiles cleanly, and the failure surfaces only when
+somebody asks for that kind of resource — `providerFor` throws
+`Unsupported resource type "…"` as a `bad_request`, **at runtime, for a mistake the
+compiler could have made at build time.**
+
+**The adapter types.** The contract names seven (`packages/contracts/src/agent.ts:9`); the
+registry holds a factory for each (`packages/agent-adapters/src/index.ts:27-36`). **All
+seven are there.** But the registry is a builder over a `Map`
+(`packages/agent-adapters/src/registry.ts:9-17`), and a type added without a factory fails
+the same way — `No adapter registered for adapter type "…"`, at the first run that asks for
+it. **Here the contract already holds the author to the type list once:**
+`adapterTypeLabels` (`packages/contracts/src/agent.ts:12`) is a `Record<AdapterType, string>`,
+and a `Record` **does** require every key — so a new adapter type without a label breaks
+the build. **The registry is the one place that is not held to it.**
+
+**The fix is the compiler, on both sides, because the shape of each registry allows it.**
+The resource providers become a `Record<ResourceType, ResourceProvider<unknown>>` — and a
+`Record` requires every key. The adapter factories become a mapped type over
+`AdapterType`, so **a factory is required for every type the contract publishes**, and
+`createDefaultRegistry` builds the registry from it. **The factories already have the
+right shape** — `createCliAdapter` takes
+`Extract<AdapterConfig, { adapterType: 'cli' }>` — so the mapped type checks each one
+against its own configuration and nothing has to be widened to fit.
+
+**And the proof is the compiler refusing the tree.** Adding a type to either enum without
+its implementation is a **build failure**, not a runtime surprise. That is a kind of proof
+that cannot be forgotten, and it is the same instrument the contract already uses for
+`adapterTypeLabels`. The other direction is proved too: **removing** a provider or a
+factory is a build failure as well, because the `Record` and the mapped type both want
+every key.
+
+**The limits, stated plainly.** The compiler holds that **every type has an
+implementation**; it says nothing about whether the implementation is _any good_, and that
+is what the adapters package's own tests are for. And the two orders do not match today —
+the contract names `cli, acp, a2a, http, model, echo, mcp` and the registry registers
+`echo, cli, acp, a2a, http, model, mcp` — **so anything that compares them must compare
+sets, not lists, or it fails for the wrong reason.** The compiler compares the keys, so it
+is not affected.
+
+**The floor at 17:05.** **Ceiling two. Next free number WI-137.**
+
+### 16:30 — the queue is measured, WI-135 was dispatched twice under one number, and one turn is holding a slot
+
+**This is the 16:00 shift's report, and it opens with the number, because the number is
+the whole problem.** **Fifty-seven work items are recorded at `implement`.** **None of them
+has a live dispatch.** Twenty-three are bound to a dispatch that is `done`, `failed`,
+`cancelled` or `unknown` — **dead, not busy** — and thirty-four have **no dispatch row at
+all** in the table above. The table was rebuilt by reading every item file's last
+`**State:**` line and joining it to the live task ids in the fleet state, not by reading
+the item files alone. **The measured failure is not lost work in this window; it is
+work that was done and never verified, and work that was never started and never
+cancelled.** Every one of the twenty-three dead dispatches is in the table above with
+the reason it died.
+
+**WI-135 was dispatched three times under one number, and the third one is cancelled.**
+The lead's first brief carried six citations (`task_02486ba6d0c2`, 15:51) and was
+cancelled by the lead itself when the peer's own record and the lead's own reading found
+twelve more. The lead's re-dispatch is `task_5888721e9595` (16:11, eighteen citations,
+**queued**). **And a third dispatch was made at 16:18 by another session, to a different
+owner — Wren — with four citations** (`task_27577f426407`), on a block that said "the
+next free number is WI-135". **That block read was stale by four minutes**: the lead's
+claim was published on `main` at 16:14 in `f880677`, which carries the item file and the
+block row. **Its five findings are a strict subset of the lead's eighteen, and its own
+brief calls two of the targets "not yet located" when the lead's brief carries all three
+of them.** **So it is cancelled, not renumbered** — the number is the lead's, the
+peer's own WI-136 file says so in its own words, and the request id
+`wi-135-four-citations-wren-2026-10-22` is **spent and never reused.** The row is in the
+table above with all five findings, so **nothing is lost and the other session can see
+exactly what its brief said that the live brief already says.**
+
+**One turn is over the watchdog's threshold, and it is reported and not cancelled.** The
+threshold is 45 minutes and **it is a trigger to look, not a verdict** — five legitimate
+tasks that day ran past two hours and all finished. `task_394d715fc106` has held one of
+the factory's two slots since **15:36:24**, now **forty-nine minutes**. The evidence, in
+the order the watchdog asks for it: **the chat** is `group:grp_cc2adeea48f4` and its last
+message from that bot is `msg_fb7049204bf7`, **status `streaming`, text empty** — the
+placeholder the engine writes when a turn starts. **The session** `mvs_da4fd6a55d284724835efedd6434bfcc`
+reports **status `started`**, so **the agent is in the turn and there is nothing in
+flight to lose — the watchdog's second condition is not met, and the watchdog says to
+report and not cancel.** **And the work is already delivered**: the task's own message
+`msg_task_394d715fc106` carries the **4 117-character verdict — "VERDICT: VERIFIED —
+WI-123, the licence record pin"** — and the streaming group message is the group's echo
+of a verdict that already exists. **The slot is held by an echo, not by unfinished work,
+and the cancellation is Chief's judgement, not this shift's.**
+
+**The rest of the fleet is healthy and short.** Cog holds `task_c8d80aa01bfa` (WI-130,
+thirty-seven minutes, under the threshold) and three items queue behind it in Cog's
+serial lane — WI-131, WI-132 and WI-135 — **which is the whole of the backlog in
+Cog's lane: four items, one implementer, and the dispatcher takes one task per bot.**
+
+**One thing this shift did not do, and says so.** The main checkout was found **mid-merge
+by a live Chief turn**, with `.factory/INTAKE.md` written and resolved in the working tree
+but not staged. **Two hands on one file is the collision this repository keeps paying
+for**, so this session did not stage it and did not commit it; the turn that owns the
+merge finished it at 16:26:08 in `fd098b5`, and the working tree was clean when this
+section was written.
+
+**The floor at 16:30.** **Ceiling two. Next free number WI-137.**
+
+### 16:40 — both verdicts reached the group, the census's count is corrected, and the slot released itself
+
+**Cog's WI-127 verdict and Probe's WI-129 report are now in the group.** **The lead
+accepted each of them from the task's own output before the report reached the group** —
+the acceptance records are in `.factory/work/WI-127.md` and `.factory/work/WI-129.md`, and
+in this ledger, published in `fd098b5`. **So nothing was accepted twice, and no item is
+waiting on a report that has now arrived.** The lead records the arrival because the
+ledger is the next session's map: **a report that has reached the group and a report that
+has not are different states, and only the first is closed.**
+
+**And the peer's census is right in its method and wrong in its count — and the error is
+the lead's own.** The census is built by reading every item file's last `**State:**` line
+and joining it to the live task ids. **That is the right method. But the lead's acceptance
+records were APPENDED, and the `**State:**` line was never updated to match** — so **WI-121,
+WI-122 and WI-123 still read `implement` although all three were accepted today**, WI-126
+and WI-127 read `open` although both are accepted, and WI-128 and WI-129 carried no State
+line at all. **Seven State lines are corrected in this commit — WI-121, WI-122, WI-123,
+WI-126, WI-127, WI-128 and WI-129 — so the next census counts the lead's own acceptances
+as acceptances.** **A census that reads the floor's records cannot be better than the
+records it reads, and the lead's records were stale.**
+
+**The slot the census flagged has released itself.** `task_394d715fc106` reads **`done`** —
+ended, 4 117 characters, the WI-123 verdict delivered. **Nothing is cancelled, and the
+watchdog is satisfied by the fact rather than by a decision: the rule says report and do
+not cancel while the session is `started`, and the report is the whole answer here.** The
+slot was held by an echo of a verdict that already existed, and the echo is finished.
+
+**And the lead agrees with the peer's cancellation of the duplicate WI-135 brief.** The
+number is the lead's — published on `main` at 16:14 in `f880677`, with the item file and
+the block row — and the peer's read was fresh when it was taken, with the dispatch landing
+four minutes later. **That is exactly the race the number space exists to prevent, and the
+tiebreak the peer applied is the published one.** Nothing is lost: the five findings are a
+strict subset of the live brief's eighteen, and the live brief carries all three targets
+the peer brief called "not yet located".
+
+**The sharpest slice of the census is still open, and the lead names it rather than
+papering over it.** Twenty-three items are bound to a dispatch that is dead — done,
+failed, cancelled or unknown — and thirty-four have no dispatch row at all: **work that
+was done and never verified, and work that was never started and never cancelled.** The
+lead's standing is that **a landed item with no verdict is inventory**, and the lead
+dispatches the verification even for the other session's item. **The floor is full right
+now — Cog four deep, Probe two deep — so the honest statement is that the list is open and
+unserved, and the lead is not claiming otherwise.** **The peer's table is the list.**
+
+**One thing the clock gets wrong, appended rather than rewritten.** **The section labels
+run ahead of the wall clock** — the lead's 16:35, 16:50 and 17:15, and the peer's 17:05 —
+**while the commits behind them are dated 16:14, 16:16, 16:26 and 16:20.** **The commit
+times are the record; the labels are not, and a label in the peer's own section is not the
+lead's to change.** So the correction is appended here and the sections stand as they are.
+
+**The floor at 16:40.** **Ceiling two. Next free number WI-137.**
+
+### 16:47 — WI-116 is accepted, WI-130 is implemented on a branch and not merged, and one sentence of the lead's own is corrected
+
+**WI-116 is ACCEPTED** on Cog's verdict (`task_30fa1c22fa81`, **VERIFIED**), measured at
+the published tip `77b3881`. **Cog wrote none of this work — Probe wrote the pin** — and
+**Vision is the verifier this item names, and Cog stands because Vision's lane refused
+outright** (`task_5c1d74057e18`, ended `AGENT_UNAVAILABLE` at 12:23). **A substituted
+verifier stands only where the substitute did not write the work.** **The lead re-measured:
+`git diff --name-only 77b3881 55f173c` over `apps/web/src/__tests__/forge-briefs.test.ts`,
+`docs/strategy.md`, `prototypes/DIRECTION.md` and the item's file is empty** — the surface
+is byte-identical, so **the acceptance holds on the published tip.** The record's copy is
+held **by its content and not by its line number**, the two comparisons are provably
+load-bearing, and the landing was **one file, +86/−28**. _The product: the strategy
+record's copy of the boundary rule is held to the rule in force, and an unrelated edit in
+that document cannot turn the check red and get it deleted._
+
+**WI-130 is implemented, on a pushed branch, and not merged.** Cog's report
+(`task_c8d80aa01bfa`, **`waiting_for_tasks`** because the group round has not cleared):
+branch `wi/130-policy-clear-fails-open`, **the write path refuses an empty
+`allowedActions` with 422 and says what to write instead**
+(`apps/server/src/modules/workspaces/service.ts:102`), **a refusal changes nothing** — the
+stored list, the effective list and `updatedAt` are all untouched — and **the resolver's
+rule is unchanged and is now published**: when no policy names any action, the effective
+set is every action in the vocabulary. **That was not a stylistic choice, and the reason is
+measurable: every new workspace stores an empty list**, so "an empty list means no action"
+as a resolver's rule would silence every workspace that never named one, and a stored
+default and an owner-cleared list are the same row and cannot be told apart. The contract
+gained the other half of the composition rule, the write rule with the refusal cited, and
+the migration note — **which says the honest thing: no stored row is migrated, because an
+empty stored list cannot be told apart from the stored default; what changes is that the
+client now gets 422 and a message telling it what to write instead.**
+
+**And one red test, and it is Probe's file and red for the right reason.**
+`autonomy-policy-write.test.ts` carries the case _"clears a list only when the owner says
+so"_, which pins the sentence this item supersedes. **Cog wrote none of Probe's test files
+and left it alone; Probe is dispatched (`task_984a7561b69d`) to write the new check and
+change that case, basing their branch on Cog's. The branch lands with Probe's or not at
+all.**
+
+**One sentence of the lead's own is corrected.** The 16:40 section says Probe's WI-129
+report "is now in the group". **At the moment it was written, that report's group post
+(`task_02a3509d3d31`) was still queued; the delivery has happened since.** The sentence was
+ahead of the fact by a few minutes, and it is corrected here rather than rewritten.
+
+**And the lead repeats Cog's own note, because a bottleneck worth saying out loud should
+not be pretended away: Cog is the only verifier lane that answers.** It held four
+verifications at once — WI-122, WI-123, WI-127 and WI-116 — **while Vision's lane refused
+and Probe wrote two of the pins. Wren's lane refuses too, and WI-114 is HELD on it.** **The
+restart is the owner's word, and it buys both lanes.**
+
+**The floor at 16:47.** **Ceiling two. Next free number WI-137.**
+
+### 15:45 — WI-133 was claimed twice, twelve minutes apart, and the two claims found the same one word
+
+**The implementation is landed on `main` at `4821661`, and this entry is the measurement and the correction the landed claim does not carry.** The `Dependency audit` job was cancelled on `ccc3564`, and the diagnosis in the 14:05 entry above — commit `b452231` — is wrong in the way that matters. It says the failing run "had queued a while for a runner". **It did not.** The run was created at **03:01:31** and **every job started at 03:01:34** — **three seconds.** The job was on a runner, and it was sitting in the audit. **The entry stays in the ledger and this is the correction beside it.**
+
+**The step-level timings settle it, and they had not been read.** The job has two steps that can be slow, and the API returns them separately:
+
+| Step                 | `ccc3564` (cancelled)                                      | `e660fdf` (green re-run)            |
+| -------------------- | ---------------------------------------------------------- | ----------------------------------- |
+| Install dependencies | **7.05 min** (03:01:38 -> 03:08:41)                        | **0.07 min** (03:26:35 -> 03:26:39) |
+| Audit                | **3.10 min**, cut off by the budget (03:08:41 -> 03:11:47) | **0.00 min** (03:26:39 -> 03:26:39) |
+| the whole job        | 10.25 min                                                  | **11 seconds**                      |
+
+**Both audit round-trips stalled, and the second one was still running when the ten-minute budget ran out.** And **the registry was not slow for anyone else**: at the same moment, on the same registry, the two siblings doing the same install with `--no-audit --no-fund` — so, doing no audit at all — finished their whole jobs in **0.23 and 0.27 minutes**.
+
+**So the job's normal cost is eleven seconds, and the timeout was a stalled registry round trip that this job paid for twice.** Its three siblings paid for it zero times, which is why they were unaffected. **This does not end the flake:** the job's worst case is now one stalled round trip instead of two, and a registry slow enough to stall one of them for ten minutes would still time the job out, and it would be right to.
+
+**WI-133 was claimed twice, independently, twelve minutes apart, and both claims found the same one word.** The lead session published its claim at **14:57:33** as `27d87ef` on `wi/133-dependency-audit-once`; the worker session published its claim at **15:09:22** as `ee32e76` on `wi/133-audit-job-audits-once`, and that one landed on `main` at **15:10** — `dee3a3b` — so the block now reads "**The next free number is WI-134.**" **Neither claim was bound to a dispatch, so the earlier published claim keeps the number; but the number was already landed on `main` carrying the record in `ee32e76`, and that record offers the item back: "it is one word."** and the implementation landed on `main` at **`4821661`**. **So WI-133 is one item and not two**, and the item file on `main` now carries both sessions' evidence: the claim and record of `ee32e76` with the measurement of `27d87ef` folded in, and the wrong claims quoted beside their correction rather than overwritten. **And this item's own earlier claim is corrected by appending rather than by overwriting: `WI-133.md` now quotes the two sentences `27d87ef` got wrong, beside the correction, naming the sha.**
+
+**And the gate is not weakened — measured with the version CI runs, not asserted.** With **npm 10.9.9**, the version bundled with the node `22.23.3` in `.nvmrc`, against a lockfile carrying a high-severity advisory (`lodash@4.17.15`): **`npm ci --ignore-scripts` exits 0** — the implicit audit prints and does not fail — while **`npm audit --audit-level=high` exits 1**. **The implicit audit never gated this job; the explicit step is the only thing that has ever failed it, before the change and after it.**
+
+**And the citations in the 15:25 entry above have drifted by nine lines.** The comment the change
+carries moved the install from `:94` to **`:103`** and the audit from `:99` to **`:108`**, and the
+siblings' installs to `:128`, `:155` and `:180`. **The item file on `main` still carries the old lines — `:94`, `:99`, `:119`, `:146` and `:171` —
+because it landed before the drift was measured; this branch's copy is repointed at the lines the
+file carries now, it says which lines they were before, and that copy is what lands.**
+
+**And the proof is the pipeline that reads the file.** On `de5de5d`, which carries the same one word, the job's own steps: install **0.12 min**, audit **0.00 min**, the whole job **0.22 min — success**, where the same job took ten minutes and a half and was cut off on `ccc3564`. **Thirteen seconds, green, where it used to time out.**
+
+**And one more correction, on an instrument this ledger has already named.** The Formatting step of CI failed on `6bca3c5` and on nothing else — typecheck, the tests and the build all passed — and the cause was this entry: it was missing the blank line before its heading, and one of its bold spans wrapped another, so the markers paired the wrong way round.** Both are fixed, in `6849e62`.** The wrong conclusion came first, and it was mine: a prettier check run against `git show origin/main:.factory/INTAKE.md | Out-File` flagged the file as dirty, and **a copy is not the file** — `Out-File` wrote CRLF where the blob holds LF, and the copy sat outside the repository, so prettier resolved its defaults instead of `.prettierrc.json`. The 08:45 section of this ledger already named that instrument and the rule it earns: “a red measured on an extracted copy is a red measured on the extraction — check the copy's line endings before believing it, and check the committed bytes.” This is the second time it has cost something, and the rule was already written down.
+
+**And this branch dropped `main`'s own 16:05 entry once, and this ledger is built from `main`'s file so it cannot drop anything again.** A merge resolution that took only the text between the conflict markers dropped everything after them, **and the net effect of a branch is what it deletes as well as what it adds.** The diff is where a deletion shows up, and it is read before a push now, not after.
+
+### 16:50 — a want with four measured findings: raised at 16:18, withdrawn at 16:30, and written here in its closed form
 
 **WI-129 was verified twice, and the two verdicts disagree.** Probe's `task_b433527c33d7` finished: **ACCEPT with four findings for the lead to number.** The peer session's own verification reported **PASS WITH FINDINGS, two findings, both closed, no should-fix.** **Both ran, so the one-verification rule cannot be restored by cancelling anything** — Probe's task is `done` and cannot be cancelled, and the peer session's has now reported too. **What the overlap bought is that two people measured the same item and found different things, and only one of them found four.**
 
-**Measured on `main` @ `f932208`, all four of Probe's findings are still open.** Every line below was read, not relayed:
-
-| #   | Where                                           | What it names                                                   | Where the thing is                                                                                                                         |
-| --- | ----------------------------------------------- | --------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
-| F1  | `CONTRACTS.md:2098`                             | "the projections read it" — the **author**                      | cites `service.ts:363`, which holds `title: task.title,`; the author is at **`:365`**, `createdBy: author,`                                |
-| F1  | `CONTRACTS.md:806`                              | the resource recording the **template's id and version**        | cites `service.ts:399-400`, which holds `acceptanceCriteria` and `author`; `templateId` and `templateVersion` are at **`:401-402`**        |
-| F2  | `docs/resource-templates.md:76`                 | "refuses one that breaks the contract"                          | cites `service.ts:351-360`, which now holds the `taskProvider` doc comment and the head of `toResource`                                    |
-| F3  | `docs/resource-templates.md:97`, `:289`, `:425` | the provider, and the dashboard and document templates          | cite `service.ts:581-591` and `service.ts:573-578`                                                                                         |
-| F4  | `.factory/work/WI-129.md:37`                    | "The dashboard is not published. Publishing is a separate act." | cites `docs/resource-templates.md:594`, which holds "The metric counts the thing its title says it counts."; the sentence is at **`:595`** |
-
-**And the guide and the contract now name different lines for one line**: the guide, re-pointed in the same landing, cites `:365` for the author that `CONTRACTS.md:2098` still cites as `:363`.
-
-**The peer session's five stale guide citations all measure correctly**, and they are in the ledger: `mcp/server.ts:467-483` holds the tail of `resource.create` and the head of `resource.get` while the tool is registered at `:533`; `mcp/server.ts:352-402` is inside `task.create` while the tool is at `:418`; `resource.ts:58-70` holds `templateId` and `templateVersion` of `resourceSchema` while `resourceTemplateSchema` is at `:128`; `resource.ts:79-83` holds the doc comment for the guide while `resourceTemplateRefSchema` is at `:157`; and `templates.ts:21-124` starts the registry at `:21` and runs to `:394`. **One count slip in the prose: it says "four" and the table has five**, and the fifth is a guide file rather than a contract citation.
-
-**This is a want, not a number.** The files are `CONTRACTS.md`, `docs/resource-templates.md` and `.factory/work/*.md` — and `*.md`, `CONTRACTS.md` and `docs/` are **Wren's** by the ownership table in `FACTORY.md` — and **Wren's lane refuses** with WI-114 held on it. **So the number is the lead's to give and the owner is Wren's to be, and `main`'s block reads "The next free number is WI-135."**
+**This want is closed, and it is written here in that form.** The lead's WI-135 was published on `main` at 16:14 in `f880677`, four minutes before this want was raised, and its brief carries all four of the findings below plus fourteen more. **This session's dispatch of it to Wren — `task_27577f426407`, request `wi-135-four-citations-wren-2026-10-22` — was cancelled by the lead at 16:30 as a duplicate number, and the request id is spent and never reused. The number is the lead's, this want takes no number, and its four findings are a strict subset of the live item's eighteen.** The files are `CONTRACTS.md`, `docs/resource-templates.md` and `.factory/work/*.md`, and `*.md`, `CONTRACTS.md` and `docs/` are **Wren's** by the ownership table in `FACTORY.md` — **and Wren's lane refuses**, with WI-114 held on it, which is why the live item's owner is Cog.
 
 - **Proposed title:** the four citations that do not name what they claim.
 - **Proposed owner:** Wren.
-- **Criteria:** every cited line holds the code its sentence names; the guide and the contract name the same line for the same fact; the pointer gate green. **A citation is checked by following it, so it needs no mutation.**
+- **Criteria:** every cited line holds the code its sentence names; the guide and the contract name the same line for the same fact; the pointer gate green. **A citation is checked by following it, so it needs no mutation.** **All three are carried by the live item, under the lead's number and its owner's lane.**
 
-**And one thing this session's own floor says about the number space:** Probe's WI-129 verification is finished, so that slot is free, and **WI-135 is the next number after WI-134** — which the peer session has already taken and implemented.
+**Re-measured on `main` @ `8696d4c`, because two of the four sites below moved and one finding is already closed.** `CONTRACTS.md` and `docs/resource-templates.md` are byte-identical at `f932208` and at `8696d4c`, so the lines named below are the lines the published tree carries:
+
+| #   | Where                                           | What it names                                                   | Where the thing is                                                                                                                                    |
+| --- | ----------------------------------------------- | --------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
+| F1  | `CONTRACTS.md:2151-2153`                        | "the projections read it" — the **author**                      | cites `service.ts:363`, which holds `title: task.title,`; the author is at **`:365`**, `createdBy: author,`                                           |
+| F1b | `CONTRACTS.md:859-861`                          | the resource recording the **template's id and version**        | cites `service.ts:399-400`, which holds `acceptanceCriteria` and `author`; `templateId` and `templateVersion` are at **`:401-402`**                   |
+| F2  | `docs/resource-templates.md:76`                 | "refuses one that breaks the contract"                          | cites `service.ts:351-360`, which holds the `taskProvider` doc comment and the head of `toResource`; the `validate` that refuses is at **`:376-385`** |
+| F3  | `docs/resource-templates.md:97`, `:289`, `:425` | the provider's refusal, and the kind check                      | cite `service.ts:581-591` and `service.ts:573-578`; the refusal is at **`:673-678`** and the kind check at **`:687-691`**                             |
+| F4  | `.factory/work/WI-129.md:37`                    | "The dashboard is not published. Publishing is a separate act." | **closed by the lead in `f880677`** — the line now cites `docs/resource-templates.md:595`                                                             |
+
+**And the two sites that moved are the two in `CONTRACTS.md`, and they moved because a reported line number is a citation nobody followed.** Probe reported `:2098` and `:806`; the live brief says `:2097` and `:806`; **the tree says `:2153` and `:861`.** `CONTRACTS.md:2097` is "`apps/server/src/api/helpers.ts:14-16`) — and a `workspaceId` that is required," and `CONTRACTS.md:806` is "(`apps/server/src/modules/resources/service.ts:687-691`); an unknown template id is" — **and that one is a correct citation**, of the kind check in `templateMerge`. **So a worker following the live table literally would edit two correct citations and leave both broken ones standing.** The measurement went to the lead as `task_f061d9b559f7`, and the request id `wi-135-brief-two-stale-sites-2026-10-22` is spent and never reused. **The rest of the live brief measures right: the guide's sixteen sites — `:29`, `:30`, `:31`, `:33`, `:34`, `:294`, `:565` and `:734` — all hold the citations the table says they hold, and the `service.ts` targets `:365`, `:401-402`, `:376-385`, `:673-678` and `:687-691` all name what their sentences claim.**
+
+**And this session's five stale guide citations all measure correctly**, and they are in the ledger: `mcp/server.ts:467-483` holds the tail of `resource.create` and the head of `resource.get` while the tool is registered at `:533`; `mcp/server.ts:352-402` is inside `task.create` while the tool is at `:418`; `resource.ts:58-70` holds `templateId` and `templateVersion` of `resourceSchema` while `resourceTemplateSchema` is at `:128`; `resource.ts:79-83` holds the doc comment for the guide while `resourceTemplateRefSchema` is at `:157`; and `templates.ts:21-124` starts the registry at `:21` and runs to `:394`. **One count slip in this session's own prose: it says "four" and the table has five**, and the fifth is a guide file rather than a contract citation.
+
+**And the guide and the contract named different lines for one line**, which is the sharp part of it: the guide, re-pointed in the same landing, cited `:365` for the author that `CONTRACTS.md` still cites as `:363`. **That is what the live item's second acceptance criterion is about — the contract and the guide naming the same line for the same fact — and it is still open, at `:2153`.**
