@@ -1,7 +1,9 @@
 import { useEffect, useMemo, useRef, useState, type KeyboardEvent } from 'react';
-import { AtSign, Paperclip, Send, X } from 'lucide-react';
+import { AtSign, Paperclip, Send, Upload, X } from 'lucide-react';
 import { Button, Textarea, cn } from '@personal-os/ui';
 import type { MessageDelivery, Participant, Resource, RoutingMode } from '@personal-os/contracts';
+import { errorMessage, readFileAsBase64, uploadResourceFile } from '../lib/api';
+import { useWorkspace } from '../state/workspace';
 
 interface MentionQuery {
   start: number;
@@ -13,6 +15,15 @@ export interface ComposerAttachment {
   resourceId: string;
   displayName: string;
   mimeType?: string;
+}
+
+/** How an upload is going. */
+interface UploadState {
+  /** The name of the file, so the owner can see which one this is about. */
+  name: string;
+  state: 'uploading' | 'uploaded' | 'failed';
+  /** The server's sentence, when the upload failed. */
+  message?: string;
 }
 
 /** What a message is sent with. */
@@ -72,6 +83,9 @@ function mentionAt(text: string, caret: number): MentionQuery | null {
  *   owner picks. It is never turned into the other one behind their back.
  * - The **budgets** are beside the composer: the routing mode, the depth and
  *   the turn limit, so the limits are visible while the owner types.
+ *
+ * A file the owner chooses is uploaded, and the resource it becomes is
+ * attached exactly as a resource they picked from the workspace would be.
  */
 export function Composer({
   participants,
@@ -92,7 +106,10 @@ export function Composer({
   const [busy, setBusy] = useState(false);
   const [attachments, setAttachments] = useState<ComposerAttachment[]>([]);
   const [pickerOpen, setPickerOpen] = useState(false);
+  const [upload, setUpload] = useState<UploadState | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const { activeWorkspaceId } = useWorkspace();
 
   const candidates = useMemo(() => {
     const agents = participants.filter(
@@ -132,6 +149,43 @@ export function Composer({
       node.focus();
       node.setSelectionRange(position, position);
     });
+  };
+
+  /**
+   * Upload a file, and attach the resource it becomes.
+   *
+   * The file is read in the browser, sent as base64, and the resource the
+   * server answers with is attached exactly as a resource the owner picked
+   * from the workspace would be.
+   */
+  const handleFile = async (file: File): Promise<void> => {
+    setUpload({ name: file.name, state: 'uploading' });
+    try {
+      const contentBase64 = await readFileAsBase64(file);
+      const resource = await uploadResourceFile({
+        workspaceId: activeWorkspaceId ?? '',
+        filename: file.name,
+        mimeType: file.type || 'application/octet-stream',
+        contentBase64,
+      });
+      setAttachments((current) =>
+        current.some((item) => item.resourceId === resource.id)
+          ? current
+          : [
+              ...current,
+              {
+                resourceId: resource.id,
+                displayName: resource.title,
+                mimeType: file.type,
+              },
+            ],
+      );
+      setUpload({ name: file.name, state: 'uploaded' });
+    } catch (error) {
+      // The server's sentence, as it is. A client that reworded it would be
+      // telling the owner something the server knows better.
+      setUpload({ name: file.name, state: 'failed', message: errorMessage(error) });
+    }
   };
 
   const submit = async (): Promise<void> => {
@@ -222,7 +276,7 @@ export function Composer({
           </div>
           {attachable.length === 0 ? (
             <p className="px-2.5 py-2 text-[11px] text-slate-400">
-              There is no resource to attach. Attachments point at a resource that already exists.
+              There is no resource to attach yet. You can upload a file instead.
             </p>
           ) : (
             <ul className="max-h-56 overflow-y-auto py-1">
@@ -285,6 +339,19 @@ export function Composer({
         </ul>
       ) : null}
 
+      {upload ? (
+        <p
+          className={cn(
+            'mb-2 text-[11px]',
+            upload.state === 'failed' ? 'text-red-300' : 'text-slate-500',
+          )}
+        >
+          {upload.state === 'uploading' ? `Uploading ${upload.name}…` : null}
+          {upload.state === 'uploaded' ? `Uploaded ${upload.name}.` : null}
+          {upload.state === 'failed' ? upload.message : null}
+        </p>
+      ) : null}
+
       <div className="flex items-end gap-2">
         <Textarea
           ref={textareaRef}
@@ -322,6 +389,27 @@ export function Composer({
           disabled={disabled}
         >
           <Paperclip className="h-4 w-4" />
+        </Button>
+        <input
+          ref={fileInputRef}
+          type="file"
+          className="hidden"
+          aria-label="Choose a file to upload"
+          onChange={(event) => {
+            const file = event.target.files?.[0];
+            // The input is cleared, so the same file can be chosen again.
+            event.target.value = '';
+            if (file) void handleFile(file);
+          }}
+        />
+        <Button
+          variant="outline"
+          onClick={() => fileInputRef.current?.click()}
+          aria-label="Upload a file"
+          title="Upload a file from this machine"
+          disabled={disabled || !activeWorkspaceId || upload?.state === 'uploading'}
+        >
+          <Upload className="h-4 w-4" />
         </Button>
       </div>
 

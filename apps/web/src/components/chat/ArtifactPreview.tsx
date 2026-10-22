@@ -1,6 +1,7 @@
 import { FileText, Image as ImageIcon } from 'lucide-react';
 import { cn } from '@personal-os/ui';
 import type { Resource } from '@personal-os/contracts';
+import { resourceContentUrl } from '../../lib/api';
 import { plainText } from './markdownBlocks';
 
 /**
@@ -33,6 +34,12 @@ function when(value: string | undefined): string {
   return date.toLocaleString();
 }
 
+/** Whether a resource is a file the owner uploaded. */
+function isFileResource(resource: Resource | null | undefined): boolean {
+  const data = resource?.data as { kind?: unknown } | undefined;
+  return data?.kind === 'file';
+}
+
 export function ArtifactPreview({
   resource,
   displayName,
@@ -49,6 +56,16 @@ export function ArtifactPreview({
   ].filter((part): part is string => Boolean(part));
 
   const isImage = kind === 'image' || (resource?.type ?? '').includes('image');
+
+  /**
+   * A file is something the owner can open.
+   *
+   * The bytes are served by the API, and the link points at that route — the
+   * browser never learns where the server keeps them. Only a resource that is
+   * a file gets the link: a document that is text has no bytes to open.
+   */
+  const isFile = isFileResource(resource);
+  const contentUrl = resource ? resourceContentUrl(resource.id) : null;
 
   return (
     <div
@@ -68,6 +85,17 @@ export function ArtifactPreview({
 
         {isImage && url ? (
           <img src={url} alt={title} className="mt-2 max-h-64 rounded border border-slate-800" />
+        ) : null}
+
+        {isFile && contentUrl ? (
+          <a
+            href={contentUrl}
+            target="_blank"
+            rel="noreferrer"
+            className="mt-1.5 inline-block text-[11px] text-slate-400 underline underline-offset-2 hover:text-slate-200"
+          >
+            Open {title}
+          </a>
         ) : null}
 
         {preview && resource ? (
