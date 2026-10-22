@@ -4957,3 +4957,24 @@ still queued when this landed, **so it reads the new tip.**
 **The commit also brings the item file's own record of the eight citations this item adds,
 each read by hand on the tree that was pushed** — so Probe has something to re-read, and
 not only a gate to satisfy.
+
+### 13:55 — one dead slot cleared, and why WI-129 is not pushed into the queue
+
+**One dead task cancelled: `task_e33a476f252f`** — Probe's WI-127 pin dispatch, queued since
+12:48 with its work landed (`8ff041e`, merged `8a97178`) and its report already in the
+group. **It was addressed to Probe's own chat, which is the route that does not run, so it
+would have sat there forever; cancelling it clears the lane's queue and costs nothing,
+because the report is in the group and the work is on `main`.** Its request id
+`wi-127-front-page-pin-probe-2026-10-22` is spent.
+
+**And WI-129 stays idle, and that is the lead's choice.** The peer session has published
+nothing since 13:10 and Cog's report to it died `AGENT_UNAVAILABLE`, **so nothing is moving
+WI-129.** It could go to Cog — the item is a worker item, Cog is a worker under Chief, and
+the scope is measured to the line — **but the owner's standing line is "when a slot frees,
+lean on verification", and four verifications are queued ahead of it.** Verifications turn
+landed work into product; a new item does not. **So the lead is not putting WI-129 in front
+of the accept queue: it waits for the peer's session, or for the owner's restart.**
+
+**The floor at 13:52.** **Running:** Probe's WI-128 verification (`task_55ff886ce54c`, 32
+minutes) and this round. **Queued:** Cog's WI-122, WI-123, WI-127 and WI-116; Probe's
+WI-121 (`task_122e0e2e02bf`). **Ceiling two. Next free number WI-130.**
