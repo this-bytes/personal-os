@@ -90,15 +90,15 @@ jobs:
           node-version-file: .nvmrc
           cache: npm
 
-      # The audit below is this job's gate, so the install must not audit as
-      # well. `npm ci` runs its own post-install audit against the registry
-      # unless `--no-audit` is passed, and this job was the only one in the
-      # pipeline that let it: it paid for the registry round-trip twice, and
-      # when the registry stalled it spent seven minutes on the install's
-      # audit and was still waiting on the second one when its ten-minute
-      # budget ran out. Its siblings took no audit in their install and were
-      # unaffected. The explicit audit below is the one that decides whether
-      # this job passes.
+      # The install must not audit. `npm ci` audits by default, so without this
+      # flag the job pays for the registry round-trip twice: once inside the
+      # install, at npm's own default level, and once in the step below, at the
+      # level this job names. The step below is the audit this job is named for.
+      #
+      # The three jobs that do the same install inside the same budget all carry
+      # these two flags. This job was the only one that did not, and it is the
+      # one whose job GitHub reported as `cancelled` when it ran out of its ten
+      # minutes — which is how a timeout is reported.
       - name: Install dependencies
         run: npm ci --ignore-scripts --no-audit --no-fund
 

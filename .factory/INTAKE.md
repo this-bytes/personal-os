@@ -5387,9 +5387,65 @@ fails if a domain file ever reaches for the adapters package again.**
 
 **The floor at 15:05.** **Ceiling two. Next free number WI-134.**
 
-### 15:15 — WI-133 was claimed twice, twelve minutes apart, and the two claims found the same one word
+### 15:25 — WI-133 is implemented: one word, and the install line its three siblings already carry
 
-**The `Dependency audit` job was cancelled on `ccc3564`, and the diagnosis in the 14:05 entry above — commit `b452231`, "Record WI-129's landing, the claim-first protocol working, and the timed-out job that looked cancelled" — is wrong in the way that matters.** It says the failing run "had queued a while for a runner". **It did not.** The run was created at **03:01:31** and **every job started at 03:01:34** — **three seconds.** The job was on a runner, and it was sitting in the audit. **The entry stays in the ledger and this is the correction beside it.**
+**The change is one word, and it is in `.github/workflows/ci.yml`.** The audit job's
+install at `:94` was the only one in the file that did not say it would not audit:
+
+```diff
+-      - name: Install dependencies
+-        run: npm ci --ignore-scripts
++      - name: Install dependencies
++        run: npm ci --ignore-scripts --no-audit --no-fund
+```
+
+**The gate does not weaken.** The explicit `npm audit --audit-level=high` at `:99` is
+untouched, so the job still fails on a high-severity finding. **The job audits once, at
+the level the job names, instead of twice at two levels** — and the audit that decides is
+the one the job was always named for.
+
+**The install line is now byte-identical to its three siblings'** (`:119`, `:146`,
+`:171`), which do the same install inside the same budget and **passed on the very run
+the audit job timed out on.** That is what the one word removes: the only difference
+between the job that ran out of its ten minutes and the three that did not.
+
+**The comment in the file says what was observed and not what was inferred.** It states
+that the install must not audit because `npm ci` audits by default; that the three
+sibling jobs carry the same flags; and that this job's job was the one GitHub reported
+as `cancelled` when it ran out of time. **It does not say the flags caused the timeout,
+because that was not measured** — see below.
+
+**The measurement, and its limit, stated in the item's own file.** Two installs of this
+repository's own `package.json` and `package-lock.json` into scratch directories: with the
+flags, **the install does not audit** ("added 90 packages in 10s", no audit line);
+without them, **the install audits** ("found 0 vulnerabilities" in its own output). And
+`npm audit --audit-level=high` in a directory holding a `package-lock.json` and no
+`node_modules` prints "found 0 vulnerabilities" and exits 0 — the same answer it gives
+against the installed tree, so the installed tree is not what the audit reads.
+
+**But the local measurement is on a warm cache** — 11.9s against 10.1s — **and that is not
+CI's cost.** CI installs cold, and the number that matters is the one the timed-out run
+measured, which this item did not reproduce. **So the item does not claim to have found
+the timeout's exact cause. It claims to have removed the only difference between the job
+that timed out and the three that did not.** If the flake recurs, the next lever is
+known: the check-run's own `started_at` → `completed_at` on `ccc3564`.
+
+**The stronger fix is measured and is deliberately not in this item.** Deleting the install
+outright removes the failure mode rather than one of its two audits — and it changes the
+shape of a vulnerability gate, so **it waits for the owner's word.** The one-word change
+buys the same headroom without changing what the job is: it still installs, and it still
+audits at the level it names.
+
+**The nine local gates are green on this tree** — typecheck, test, build, format,
+contract-status, contract-pointers, smoke, compiled-build, bundle-size — and the claim
+that preceded it landed on `main` at `dee3a3b`, so **the number was on `main` before the
+word was changed.** That is WI-129's claim-first discipline, used a second time, and it
+worked a second time.
+
+**The floor at 15:25.** **Ceiling two. Next free number WI-134.**
+### 15:45 — WI-133 was claimed twice, twelve minutes apart, and the two claims found the same one word
+
+**The implementation is landed on `main` at `4821661`, and this entry is the measurement and the correction the landed claim does not carry.** The `Dependency audit` job was cancelled on `ccc3564`, and the diagnosis in the 14:05 entry above — commit `b452231`, "Record WI-129's landing, the claim-first protocol working, and the timed-out job that looked cancelled" — is wrong in the way that matters.** It says the failing run "had queued a while for a runner". **It did not.** The run was created at **03:01:31** and **every job started at 03:01:34** — **three seconds.** The job was on a runner, and it was sitting in the audit. **The entry stays in the ledger and this is the correction beside it.**
 
 **The step-level timings settle it, and they had not been read.** The job has two steps that can be slow, and the API returns them separately:
 
@@ -5403,8 +5459,8 @@ fails if a domain file ever reaches for the adapters package again.**
 
 **So the job's normal cost is eleven seconds, and the timeout was a stalled registry round trip that this job paid for twice.** Its three siblings paid for it zero times, which is why they were unaffected. **This does not end the flake:** the job's worst case is now one stalled round trip instead of two, and a registry slow enough to stall one of them for ten minutes would still time the job out, and it would be right to.
 
-**WI-133 was claimed twice, independently, twelve minutes apart, and both claims found the same one word.** The lead session published its claim at **14:57:33** as `27d87ef` on `wi/133-dependency-audit-once`; the worker session published its claim at **15:09:22** as `ee32e76` on `wi/133-audit-job-audits-once`, and that one landed on `main` at **15:10** — `dee3a3b` — so the block now reads "**The next free number is WI-134.**" **Neither claim was bound to a dispatch, so the earlier published claim keeps the number; but the number was already landed on `main` carrying the record in `ee32e76`, and that record offers the item back: "it is one word."** **So WI-133 is one item and not two**, the item file on `main` now carries both sessions' evidence, and the implementation lands on `wi/133-dependency-audit-once`. **And this item's own earlier claim is corrected by appending rather than by overwriting: `WI-133.md` now quotes the two sentences `27d87ef` got wrong, beside the correction, naming the sha.**
+**WI-133 was claimed twice, independently, twelve minutes apart, and both claims found the same one word.** The lead session published its claim at **14:57:33** as `27d87ef` on `wi/133-dependency-audit-once`; the worker session published its claim at **15:09:22** as `ee32e76` on `wi/133-audit-job-audits-once`, and that one landed on `main` at **15:10** — `dee3a3b` — so the block now reads "**The next free number is WI-134.**" **Neither claim was bound to a dispatch, so the earlier published claim keeps the number; but the number was already landed on `main` carrying the record in `ee32e76`, and that record offers the item back: "it is one word."** and the implementation landed on `main` at **`4821661`**. **So WI-133 is one item and not two**, and the item file on `main` now carries both sessions' evidence: the claim and record of `ee32e76` with the measurement of `27d87ef` folded in, and the wrong claims quoted beside their correction rather than overwritten. **And this item's own earlier claim is corrected by appending rather than by overwriting: `WI-133.md` now quotes the two sentences `27d87ef` got wrong, beside the correction, naming the sha.**
 
 **And the gate is not weakened — measured with the version CI runs, not asserted.** With **npm 10.9.9**, the version bundled with the node `22.23.3` in `.nvmrc`, against a lockfile carrying a high-severity advisory (`lodash@4.17.15`): **`npm ci --ignore-scripts` exits 0** — the implicit audit prints and does not fail — while **`npm audit --audit-level=high` exits 1**. **The implicit audit never gated this job; the explicit step is the only thing that has ever failed it, before the change and after it.**
 
-**And the proof is the pipeline that reads the file.** On the branch tip `de5de5d`, the job's own steps: install **0.12 min**, audit **0.00 min**, the whole job **0.22 min — success**, where the same job took ten minutes and a half and was cut off on `ccc3564`. **Thirteen seconds, green, where it used to time out.**
+**And the proof is the pipeline that reads the file.** On `de5de5d`, which carries the same one word, the job's own steps: install **0.12 min**, audit **0.00 min**, the whole job **0.22 min — success**, where the same job took ten minutes and a half and was cut off on `ccc3564`. **Thirteen seconds, green, where it used to time out.**
