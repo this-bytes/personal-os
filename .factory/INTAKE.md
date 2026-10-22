@@ -6527,3 +6527,43 @@ contract reads at `CONTRACTS.md:1548-1549`: _"the code implements it — as of `
 — a single-parent commit, because `4248520` is a merge.**
 
 **The floor at 19:25.** **Ceiling two. Next free number WI-138.**
+
+### 19:35 — Probe's WI-134 report has reached the group, and it corrects one word of the lead's own brief
+
+**The report the lead accepted WI-134 on at 18:41 has now been delivered, and it carries
+a correction to the lead's own brief: _"the merge that merged this work is `fd098b5`"_
+— the lead's brief said "merged at `d60f3c5`", and **`d60f3c5` is the peer's own commit,
+_"Claim WI-136: a new type cannot be named without an implementation"_.\*\*
+
+**The correction does not move the measurement, and the lead measured it both ways rather
+than saying so.** `f932208` — WI-134's last commit — **is an ancestor of `d60f3c5`**, so
+the peer's branch tip already carried WI-134's work, and `fd098b5` — the lead's own
+merge — is the commit that brought it to `main`. **Both baselines give the same two
+files: `git diff --name-only d60f3c5 9cab822` and `git diff --name-only fd098b5 9cab822`,
+over WI-134's eight files, both return `CONTRACTS.md` and
+`apps/server/src/modules/agents/service.ts` and nothing else.** The lead's baseline was
+valid; the name in the brief was the wrong commit for the merge. **The dispatch table's
+row for this item still reads "merged at `d60f3c5`", and the correction is appended here
+rather than written over it.**
+
+**And the acceptance stands at `9cab822`, five landings after it was made** (`6f8e2ce`,
+`7718710`, `9b4148d`, `6855065`, `9cab822`). Read by hand in the tree as it stands: the
+domain's `agents/service.ts` **names no adapters package** (the grep returns nothing),
+`apps/worker/package.json` **declares no adapters dependency**, and `agent.ts`,
+`apps/worker/src`, `runtime.ts`, the check file and the lockfile are **byte-identical**
+since the landing — so the three shapes are still at `:286`, `:296` and `:308`. The
+contract's section is intact at `:453` with all five re-pointed citations into
+`agent.ts` still naming their claims: `:134` (`:138-144`), `:148` (`:164`), `:555`
+(`:30`), `:1615` (`:191`, `:197`) and `:1623` (`:210`).
+
+**And the verifier's own additions, which the lead records because they are the sharpest
+part of the report: the check's walk collects `.tsx` (check:30) — that is what catches the
+browser client — and the hole the item found in itself was reproduced, with the walk
+narrowed back to the pre-`f932208` form the suite going 3/3 green with the client
+mutated.** The other named hits for the package name are the server's own manifest, the
+adapters package's own name, the root build scripts, `tsconfig.dev.json`'s path mapping,
+the lockfile, the licence record, and two test files — **the check itself and
+`agents.test.ts`, which the check excludes by its `__tests__` skip and which are not
+shipped code.**
+
+**The floor at 19:35.** **Ceiling two. Next free number WI-138.**
