@@ -26,15 +26,16 @@ The first delivery round ran five slices in parallel, each on its own branch in
 its own worktree, and each was merged into `main` with its contract published in
 `CONTRACTS.md` and its own record in `docs/contract-*.md`.
 
-| Slice                              | Outcome                                                                                                                                                                                           |
-| ---------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **WI-145** — the adapter lifecycle | Every adapter has `connect` → `send` → `close`. A turn on an unconnected instance is refused with a message that says what to do. The capability probe closes what it opened.                     |
-| **WI-142** — the adapter presets   | A preset per adapter type and per approved runtime: a default configuration validated against the real schema, a leader persona, and the honest notes. Every runtime preset is marked unverified. |
-| **WI-143** — the factory's goals   | A goal has a rollup and a task has dependencies, with cycle rejection, as pure functions over the existing service. The migration adds a column and drops nothing.                                |
-| **WI-141** — the rich chat surface | Markdown and code, a turn activity trace, artifact previews and a stop control that says what it did — in the Forge visual language.                                                              |
-| **WI-144** — the team room         | A coordinator dispatches to a worker, the worker runs, the result returns, and the handoff is visible. See the slice's own record for what is partial.                                            |
-| **WI-152** — the steer             | A steer goes into the turn that is running, for a connection that reported it can take input mid-turn, and a steer that cannot be delivered waits for the next turn and says why.                 |
-| **WI-151** — the attachment upload | The composer uploads a file, the server stores the bytes beside the workspace, and the transcript opens it. See the slice's own record for the limits that remain.                                |
+| Slice                              | Outcome                                                                                                                                                                                                        |
+| ---------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **WI-145** — the adapter lifecycle | Every adapter has `connect` → `send` → `close`. A turn on an unconnected instance is refused with a message that says what to do. The capability probe closes what it opened.                                  |
+| **WI-142** — the adapter presets   | A preset per adapter type and per approved runtime: a default configuration validated against the real schema, a leader persona, and the honest notes. Every runtime preset is marked unverified.              |
+| **WI-143** — the factory's goals   | A goal has a rollup and a task has dependencies, with cycle rejection, as pure functions over the existing service. The migration adds a column and drops nothing.                                             |
+| **WI-141** — the rich chat surface | Markdown and code, a turn activity trace, artifact previews and a stop control that says what it did — in the Forge visual language.                                                                           |
+| **WI-144** — the team room         | A coordinator dispatches to a worker, the worker runs, the result returns, and the handoff is visible. See the slice's own record for what is partial.                                                         |
+| **WI-152** — the steer             | A steer goes into the turn that is running, for a connection that reported it can take input mid-turn, and a steer that cannot be delivered waits for the next turn and says why.                              |
+| **WI-151** — the attachment upload | The composer uploads a file, the server stores the bytes beside the workspace, and the transcript opens it. See the slice's own record for the limits that remain.                                             |
+| **WI-153** — the Hermes preset     | The catalogue carries the surface the installed Hermes publishes, and a script proves a runtime through the product's own adapter. The handshake answered; the turn needs a provider this machine has not set. |
 
 **R0's first slice is landed.** The adapter lifecycle gives every adapter an
 explicit `connect` → `send` → `close`, the worker connects the instance the
@@ -54,9 +55,13 @@ why. **The chat is now proved end to end in a browser**: the suite runs the
 worker, the owner's message reaches it, the adapter runs, and the answer lands
 in the room as the agent's own message, marked with the adapter that wrote it —
 and a steer into a running turn comes back as the agent's answer to the steer.
-The acceptance demonstration still needs one of the five named runtimes — the
-adapter the browser proves is the built-in `echo` one, which is a product
-adapter and not a runtime.
+The acceptance demonstration still needs a named runtime to complete a turn —
+the adapter the browser proves is the built-in `echo` one, which is a product
+adapter and not a runtime. **The Hermes ACP surface has answered the
+handshake**: the installed Hermes 0.21.0 answered `initialize` with
+`loadSession: true`, and the product's own adapter reported what it said. The
+turn was refused, because this machine's Hermes has no provider configured —
+and the refusal now says exactly that, instead of "internal error".
 
 **R2 has templates, not integrations.** The presets are starting points for the
 five named runtimes. No runtime has been demonstrated in this repository yet, and

@@ -440,6 +440,18 @@ its session and prompts the agent, with or without a prior `connect()`. ACP's
 reports are the ones the agent answered with; it is a probe, not a runtime the
 turn borrows, so it releases the agent it started.
 
+**A session is opened with the working directory and the MCP servers.** The
+protocol asks for both, and an agent that checks them refuses a request that
+leaves them out — Hermes refuses it as `invalid params`, and the turn never
+starts. The adapter sends the directory the connection was configured with, and
+no MCP servers, because it grants no client-side capability.
+
+**A refusal carries its reason.** A runtime that refuses a request usually
+says why in the error's data, and the reason is the part the owner needs:
+"no provider configured" is actionable and "internal error" is not. The
+adapter's failure carries the reason through, so the panel can say what is
+wrong and what to do about it.
+
 **A turn that ends, fails or is abandoned must not leave a child process
 behind.** The caller closes the adapter when the turn is over, and a capability
 probe closes the instance it opened.
@@ -676,11 +688,18 @@ interface AdapterPreset {
 ```
 
 **A preset is not an integration.** The five approved target runtimes are
-integration _candidates_: none has been demonstrated in this repository. Every
-preset that names a runtime carries `verified: false` and says so in the copy the
-owner reads. The difference between "here is the command line we believe this
-runtime uses" and "this integration is proven" is visible in the data and in the
-panel, not only in a changelog.
+integration _candidates_: no runtime has completed a turn in this repository,
+so every preset that names a runtime carries `verified: false` and says so in
+the copy the owner reads. The difference between "here is the command line we
+believe this runtime uses" and "this integration is proven" is visible in the
+data and in the panel, not only in a changelog.
+
+**A handshake is worth something, and it is not a turn.** The ACP surface of an
+installed Hermes answered the handshake this repository ran against it, and
+reported that it can restore a session — which is what `connect()` asks and
+what the panel shows beside a connection. **A runtime that answers the
+handshake and then refuses the turn has still not demonstrated an
+integration**, and the copy keeps saying so.
 
 **A preset carries the persona whole.** The schema requires both `role` and
 `instructions`, because [the persona](#the-persona) is resolved by
@@ -713,17 +732,24 @@ validates the merged configuration with the existing `parseAdapterConfig` path,
 and takes the preset's persona as the base persona when the owner wrote none.
 The owner's own persona wins.
 
-The runtime mapping — each preset picks **one** surface and names the
-alternative in its copy, so the owner chooses the surface rather than having
-one hidden from them:
+Each preset picks **one** surface and names the alternative in its copy, so the
+owner chooses the surface rather than having one hidden from them:
 
-| Runtime  | Adapter type | The surface the preset uses         | The alternative it names                        |
-| -------- | ------------ | ----------------------------------- | ----------------------------------------------- |
-| Codex    | `cli`        | the command line                    | the native App Server and ACP surfaces          |
-| OpenCode | `acp`        | an ACP-compatible session           | the native HTTP server and its SSE event stream |
-| Pi       | `cli`        | the long-lived JSONL RPC subprocess | —                                               |
-| Hermes   | `http`       | the HTTP run API                    | ACP and the programmatic gateway                |
-| OpenClaw | `http`       | the HTTP gateway surface            | the gateway WebSocket and the ACP bridge        |
+| Preset          | Runtime  | Adapter type | The surface the preset uses         | The alternative it names                        |
+| --------------- | -------- | ------------ | ----------------------------------- | ----------------------------------------------- |
+| `codex-cli`     | Codex    | `cli`        | the command line                    | the native App Server and ACP surfaces          |
+| `opencode-acp`  | OpenCode | `acp`        | an ACP-compatible session           | the native HTTP server and its SSE event stream |
+| `pi-cli`        | Pi       | `cli`        | the long-lived JSONL RPC subprocess | —                                               |
+| `hermes-http`   | Hermes   | `http`       | the HTTP run API                    | ACP and the programmatic gateway                |
+| `hermes-acp`    | Hermes   | `acp`        | an ACP-compatible session           | the HTTP run API and the programmatic gateway   |
+| `openclaw-http` | OpenClaw | `http`       | the HTTP gateway surface            | the gateway WebSocket and the ACP bridge        |
+
+**A runtime is proved by running it.** `scripts/verify-runtime.ts` takes a
+preset, builds the adapter the worker would build for it, and asks the runtime
+two questions through the product's own code: does it answer the handshake,
+and does it answer a turn. It runs a real agent and spends the runtime's
+tokens, and it refuses a preset that needs a credential it cannot supply
+rather than half-running it.
 
 This entry is the contract for **WI-142**, and the code implements it — as of
 `0c7c1f5` — the catalogue is `packages/contracts/src/adapter-presets.ts`, the

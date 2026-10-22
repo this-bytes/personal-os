@@ -111,6 +111,21 @@ describe('the runtime presets', () => {
     expect(codex?.adapterType).toBe('cli');
     expect(codex?.description).toContain('App Server');
   });
+
+  it('carries the surface an installed runtime publishes', () => {
+    // Hermes publishes ACP as well as a gateway, and an owner with the
+    // command on PATH should not have to remember the command line.
+    const hermes = getAdapterPreset('hermes-acp');
+
+    expect(hermes?.adapterType).toBe('acp');
+    expect(hermes?.runtime).toBe('Hermes');
+    expect((hermes?.config as { command?: string }).command).toBe('hermes');
+    expect((hermes?.config as { args?: string[] }).args).toEqual(['acp']);
+    // It names the other surface, so the owner chooses rather than guessing.
+    expect(hermes?.description).toContain('HTTP run API');
+    // The credential stays in Hermes, where the runtime keeps it.
+    expect(hermes?.requires.join(' ')).toContain('provider');
+  });
 });
 
 describe('a preset that cannot be used', () => {

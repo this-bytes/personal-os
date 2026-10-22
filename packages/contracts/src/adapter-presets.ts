@@ -569,6 +569,40 @@ const RAW_PRESETS = [
     verified: false,
   },
   {
+    id: 'hermes-acp',
+    adapterType: 'acp',
+    runtime: 'Hermes',
+    name: 'Hermes (ACP session)',
+    description:
+      'Hermes over an ACP-compatible session: the panel keeps one session across the conversation, ' +
+      'the runtime streams its work, and its own permission and question requests come back to the ' +
+      'owner instead of being decided for them. Hermes also publishes an HTTP run API and a ' +
+      'programmatic gateway — this template is the ACP surface. This integration has not been ' +
+      'demonstrated in this repository.',
+    config: {
+      adapterType: 'acp',
+      command: 'hermes',
+      args: ['acp'],
+      timeoutSeconds: 900,
+    },
+    persona: {
+      role: 'Hermes lead',
+      instructions:
+        'You lead this room with Hermes over an ACP session. Keep the session alive across turns so ' +
+        'the work continues where it left off, and surface the runtime’s own permission and ' +
+        'question requests to the owner rather than deciding them yourself. Report what the ' +
+        'runtime did and what it left running, and never call a turn finished while the runtime ' +
+        'still has work in flight.',
+    },
+    capabilities: CAPABILITIES.acp,
+    requires: [
+      'An installed `hermes` binary on PATH that can be started in ACP mode.',
+      'The directory Hermes should work in.',
+      'A provider and a model configured in Hermes itself — the runtime refuses to open a session until it has one, and the credential stays in Hermes rather than in this panel.',
+    ],
+    verified: false,
+  },
+  {
     id: 'openclaw-http',
     adapterType: 'http',
     runtime: 'OpenClaw',

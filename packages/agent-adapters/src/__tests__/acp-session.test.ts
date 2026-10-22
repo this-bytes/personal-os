@@ -33,20 +33,28 @@ const connection: AgentConnection = {
 
 let storePath = '';
 
-function createAdapter(): AcpAdapter {
+function createAdapter(env: Record<string, string> = {}): AcpAdapter {
   const config = parseAdapterConfig({
     adapterType: 'acp',
     command: process.execPath,
     args: [agentPath],
     cwd: here,
-    env: { FAKE_ACP_SESSIONS: storePath },
+    env: { FAKE_ACP_SESSIONS: storePath, ...env },
     timeoutSeconds: 30,
   });
   return new AcpAdapter(config as never, ctx);
 }
 
-function store(): { sessions: string[]; loaded: string[] } {
-  return JSON.parse(fs.readFileSync(storePath, 'utf8')) as { sessions: string[]; loaded: string[] };
+function store(): {
+  sessions: string[];
+  loaded: string[];
+  opened: Array<{ cwd: string; mcpServers: unknown[] }>;
+} {
+  return JSON.parse(fs.readFileSync(storePath, 'utf8')) as {
+    sessions: string[];
+    loaded: string[];
+    opened: Array<{ cwd: string; mcpServers: unknown[] }>;
+  };
 }
 
 beforeEach(() => {
@@ -59,6 +67,47 @@ afterEach(() => {
 });
 
 describe('the ACP adapter', () => {
+  it('opens the session with the working directory and the MCP servers', async () => {
+    const adapter = createAdapter();
+
+    for await (const event of adapter.send({
+      conversationId: 'cnv_1',
+      message: 'Do the thing',
+      context: '',
+      executionId: 'exe_1',
+    })) {
+      void event;
+    }
+
+    // The protocol asks for both, and an agent that checks them refuses a
+    // request that leaves them out.
+    const opened = store().opened[0];
+    expect(opened?.cwd).toBe(here);
+    expect(opened?.mcpServers).toEqual([]);
+  });
+
+  it('carries the reason a runtime refused into the failure', async () => {
+    // The agent refuses, the way a runtime refuses when it has no provider.
+    const adapter = createAdapter({ FAKE_ACP_REFUSE_SESSION: '1' });
+
+    const events = [];
+    for await (const event of adapter.send({
+      conversationId: 'cnv_1',
+      message: 'Do the thing',
+      context: '',
+      executionId: 'exe_1',
+    })) {
+      events.push(event);
+    }
+
+    const failure = events.find((event) => event.type === 'execution.error');
+    expect(failure).toBeDefined();
+    // "Internal error" on its own says nothing the owner can act on.
+    expect(failure?.type === 'execution.error' ? failure.message : '').toContain(
+      'No LLM provider configured',
+    );
+  });
+
   it('creates a session and keeps it with the execution', async () => {
     const adapter = createAdapter();
 

@@ -283,7 +283,17 @@ export class AcpAdapter implements AgentAdapter {
 
   /** Create a session and return its id. */
   private async newSession(client: JsonRpcStdioClient): Promise<string> {
-    const session = (await client.request('session/new', {}, 30_000)) as AcpSession;
+    // The protocol asks for the working directory and the MCP servers of the
+    // session. An agent that checks them — Hermes does — refuses a request
+    // that leaves them out, and the refusal reads as "invalid params".
+    const session = (await client.request(
+      'session/new',
+      {
+        cwd: this.config.cwd ?? process.cwd(),
+        mcpServers: [],
+      },
+      30_000,
+    )) as AcpSession;
     const sessionId = session?.sessionId;
     if (!sessionId) throw new Error('ACP agent did not return a session id.');
     return sessionId;

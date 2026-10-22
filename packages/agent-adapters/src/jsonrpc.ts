@@ -161,7 +161,9 @@ export class JsonRpcStdioClient {
       if (!entry) return;
       this.pending.delete(Number(message.id));
       if (message.error) {
-        entry.reject(new Error(`${message.error.message} (code ${message.error.code})`));
+        const summary = `${message.error.message} (code ${message.error.code})`;
+        const detail = describeErrorData(message.error.data);
+        entry.reject(new Error(detail ? `${summary} — ${detail}` : summary));
       } else {
         entry.resolve(message.result);
       }
@@ -189,4 +191,40 @@ export class JsonRpcStdioClient {
       `Method "${message.method}" is not supported by this Personal OS adapter.`,
     );
   }
+}
+
+/**
+ * What an error's `data` says, in a sentence.
+ *
+ * An agent that refuses a request usually says why in `data`, and the reason
+ * is the part the owner needs: "no provider configured" is actionable, while
+ * "internal error" is not. The detail is capped, because a runtime is allowed
+ * to send a large payload and a refusal message is not the place for it.
+ */
+function describeErrorData(data: unknown): string | undefined {
+  if (data === undefined || data === null) return undefined;
+
+  if (typeof data === 'string') return cap(data);
+  if (typeof data === 'number' || typeof data === 'boolean') return cap(String(data));
+
+  if (typeof data === 'object') {
+    const record = data as Record<string, unknown>;
+    for (const key of ['details', 'detail', 'message', 'reason']) {
+      const value = record[key];
+      if (typeof value === 'string' && value.trim().length > 0) return cap(value.trim());
+    }
+    try {
+      return cap(JSON.stringify(data));
+    } catch {
+      return undefined;
+    }
+  }
+
+  return undefined;
+}
+
+/** A detail, no longer than a message should be. */
+function cap(text: string): string {
+  const limit = 400;
+  return text.length <= limit ? text : `${text.slice(0, limit)}…`;
 }
