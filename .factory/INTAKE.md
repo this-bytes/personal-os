@@ -4795,3 +4795,119 @@ re-based pin.
 WI-120 group post. **Queued:** Cog's WI-122 verification (`task_d374c36981e7`), Cog's
 WI-123 verification (`task_017a543cd28d`), Probe's WI-127 (`task_e33a476f252f`), Probe's
 WI-126 verification (`task_74ee53b2ab2d`). **Ceiling two. Next free number WI-128.**
+
+## 2026-10-22 12:07 — the branch pile-up, re-measured at `359a76e`: the chain landed, and what is left is 21 branches and one decision
+
+**One — the pile-up is smaller, and the verdicts did not move.** Measured at
+`origin/main` = `359a76e`: **84 remote `wi/*` branches, 63 merged, 21
+unlanded.** The whole table was re-measured at **ten** different tips of `main`
+— `115d226`, `d4c12c1`, `20ce58e`, `2806f72`, `db6a29b`, `def2079`, `cc31edb`,
+`5465bd4` and `359a76e` among them — and **every verdict came out the same at
+every one**: the same branches merge clean, the same branches conflict, the
+same four must not be merged. Only the counts move, because the peer is
+landing work while the measurement runs.
+
+**Two — the branches that looked like rival directions were one direction, and
+it has landed.** Measured pairwise with `git merge-base --is-ancestor`, the
+unlanded set contained a chain:
+
+```
+wi/085  →  wi/095  →  wi/122  →  wi/124
+```
+
+Each arrow is real: `085` is an ancestor of `095`, `095` of `122`, `122` of
+`124`. **Four branches, one line of work.** The peer landed `wi/124` at
+`5465bd4`, and **all four are now ancestors of `main`** — one merge closed the
+whole cluster, `WI-124.md` and `WI-125.md` came with it, and the WI-122
+collision that put it there (two sessions took WI-122 off the same published
+block) is **closed rather than argued**.
+
+**This is the answer to the question that opened this item.** _"Each branch
+might be a different direction"_ was right about the branch **names** and wrong
+about the code: the worst-looking cluster in the pile-up was one direction with
+four branches hanging off it, and it landed as one merge.
+
+**Three — what can be landed today.** Five branches, every one of them clean
+and every one of them green on the platform:
+
+| Branch                               | Net landing effect | CI  |
+| ------------------------------------ | ------------------ | --- |
+| `wi/092-bundle-budget-timeout`       | +84/−44, 1 file    | 5/5 |
+| `wi/106-record-four-loose-sentences` | +47/−1, 1 file     | 7/7 |
+| `wi/116-strategy-record-rule-pin`    | +86/−28, 1 file    | 7/7 |
+| `wi/119-strategy-record-prose`       | +126, 1 file       | 7/7 |
+| `wi/117-branch-pileup-verdict`       | +655, 2 files      | 7/7 |
+
+**"Net landing effect" is `git diff origin/main <the merge tree>`, not the
+branch's own diff.** The branch's own diff is measured from the merge-base, so
+it reports the whole history of a divergence, including changes `main` already
+has by another route.
+
+**Four — what must not be merged, and the numbers are worse than they looked.**
+Four branches, and merging any one of them moves `main`'s records backwards:
+
+- **`wi/103-contract-pointers-after-wi-080`** — `main`'s `.factory/work/WI-103.md`
+  is **219 lines** against the branch's **135**. **Merging it deletes 84 lines
+  of the record** — the record that says the item was dispatched, died `BUSY`,
+  and was re-measured. The item file is not the item; the item has landed.
+- **`wi/062-measures-citation-refresh`** — its `CONTRACTS.md` is **971 lines
+  shorter** than `main`'s (two-dot diff **+177/−971**), and it conflicts on the
+  very pointers it was written to fix. `main`'s pointers are now at
+  `mcp/server.ts:532-576`, `:428`, `:217` and `:181`; the branch's are at
+  `:393` and `:153`. Keep `main`'s side.
+- **`wi/042-product-record-closed-questions`** — **+52/−104** on `PRODUCT.md`,
+  and the branch's text says **"The third half of that is not built yet"**
+  where `main` now says **"The third half of that is built"**, with the
+  template surface named. **It is a revert of shipped prose, not stale prose.**
+- **`wi/046-merge-rehearsal`** — a pre-split ledger. Merging it re-imports
+  **9,966 lines** of process history into the state file, and every patch on it
+  has already landed.
+
+**Five — the method, because it is the part that is reusable.** Three questions
+per branch: **is it merged** (`merge-base --is-ancestor`); **what does merging
+it _do_** (`merge-tree --write-tree`, then `diff` against the result tree); and
+**where does it conflict** — **read the `CONFLICT` lines, because the exit code
+alone is not enough**: a merge that conflicts still returns a tree, and that
+tree has the conflicted content written into it with `<<<<<<<` markers. Two more
+questions decide the order: `git cherry` (is this patch already on `main`), and
+pairwise `is-ancestor` (does `a`'s work already live inside `b`).
+
+**And one trap worth writing down, because it nearly cost this item its
+verdict.** A `node_modules` junction in a scratch worktree makes
+`node_modules/@personal-os/contracts` resolve to the **main checkout's**
+`packages/contracts`, not the scratch worktree's. A branch that changes a
+published contract is then tested against the _old_ contract and goes red for
+the wrong reason — which is exactly what this session's first local run showed:
+**four failures on a branch whose CI was green.** **The platform's verdict on
+the pushed tip is the measurement that counts.** A local run is not evidence
+unless the workspace packages resolve to the tree under test.
+
+**Six — the number space, and the one decision left.** `main`'s block now reads
+**"Next free number WI-128"**, and `WI-126.md` and `WI-127.md` are on `main`.
+**Ten** numbers are each claimed by more than one branch. **Eight are closed
+or close on a landing in the table above, and one — WI-122 — has been closed by
+the landing.** **Exactly one decision is left: WI-077.**
+`077-agent-adapter-domain` (the worker agent probe, still absent from `main`)
+and `077-author-shape-house-form` (contract prose) are two different pieces of
+work under one number, both unlanded, both needing a rebase. **They need
+different numbers, and that is a ledger edit, not a code one.** Nothing else in
+the pile-up needs anybody's decision.
+
+**Seven — the rest of it, briefly.** **No pull request is missing.**
+`FACTORY.md` defines the landing model as branch-plus-fast-forward-plus-push,
+CI runs on every branch push (`.github/workflows/ci.yml:12`, `branches:
+['**']`), and `pulls?state=all` returns **zero** for the life of the
+repository — open or closed, ever. **No agent failed to open a pull request; no
+agent was ever supposed to open one.** The `wi/072-queue-index` work that
+existed in exactly one uncommitted working tree is on the remote as `ad184b4`,
+and its verdict is recorded honestly: **two of its fourteen tests are red**,
+and its `package.json` would take `verify:contracts`, `gates` and `dev:stack`
+with it, one of which CI calls. **40 merged worktrees were removed** through
+the repo's own `work-item.ts remove` (78 → 38, **18.3 GB → 8.2 GB**); **no
+branch was deleted, nothing was force-pushed, and nothing was landed on `main`
+by this item.**
+
+**And this branch is `main` plus this item.** `git merge-tree --write-tree
+origin/main wi/117-branch-pileup-verdict` is **clean**, and the net is **+655
+over two files** — `.factory/INTAKE.md` and `.factory/work/WI-117.md`, and
+nothing else. **The lead can land it with a fast-forward.**
