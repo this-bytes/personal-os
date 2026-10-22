@@ -795,11 +795,11 @@ at `packages/contracts/src/mcp.ts:21-22`, inside the range
 default agent grant list at `packages/contracts/src/mcp.ts:47-48`. The server
 registers both tools only where
 the connection is granted them, the way every other tool on that surface is
-(`apps/server/src/modules/mcp/server.ts:532-576`). `resource.create` takes the
-`template` input at `apps/server/src/modules/mcp/server.ts:428`, merges the caller's
+(`apps/server/src/modules/mcp/server.ts:533-577`). `resource.create` takes the
+`template` input at `apps/server/src/modules/mcp/server.ts:429`, merges the caller's
 values into the template's spec at
-`apps/server/src/modules/mcp/server.ts:446-448`, and passes the template's id and
-version on at `apps/server/src/modules/mcp/server.ts:458`. The merge rules
+`apps/server/src/modules/mcp/server.ts:447-449`, and passes the template's id and
+version on at `apps/server/src/modules/mcp/server.ts:459`. The merge rules
 themselves are at `apps/server/src/modules/resources/templates.ts:509-522`, and the
 resource records them at
 `apps/server/src/modules/resources/service.ts:191-192` and
@@ -889,12 +889,12 @@ memories in the turn context.
 owner's ruling of 2026-10-21 at 07:07 was that an agent's own memory is private
 to it, on reads as well as on writes, and the sentence above now says so. The rule
 is one call — `assertOwnMemory` at
-`apps/server/src/modules/mcp/server.ts:217`, with `memoryOwner` at
-`apps/server/src/modules/mcp/server.ts:181` — and it
+`apps/server/src/modules/mcp/server.ts:218`, with `memoryOwner` at
+`apps/server/src/modules/mcp/server.ts:182` — and it
 answers the same way for the three resource tools: `resource.create` at
-`apps/server/src/modules/mcp/server.ts:450`,
-`resource.update` at `apps/server/src/modules/mcp/server.ts:514` and `resource.get`
-at `apps/server/src/modules/mcp/server.ts:484`. A memory's owner is
+`apps/server/src/modules/mcp/server.ts:451`,
+`resource.update` at `apps/server/src/modules/mcp/server.ts:515` and `resource.get`
+at `apps/server/src/modules/mcp/server.ts:485`. A memory's owner is
 `memoryOwner`'s answer, and an agent that is not that owner is refused with
 `forbidden` and the message "An agent may only reach its own memory."
 
@@ -958,7 +958,7 @@ workspace gets its own.
 **Reading the policy is not one of the actions the policy governs.** The tool
 answers even when the policy refuses that agent's other actions, because an agent
 that cannot see why it was refused cannot do anything sensible about it
-(`apps/server/src/modules/mcp/server.ts:110`).
+(`apps/server/src/modules/mcp/server.ts:111`).
 
 **`resource.template.get` is in the default grant list, so every agent connection
 gets it.** The same default set carries it beside `resource.template.list`
@@ -968,6 +968,15 @@ wrong — without the owner granting anything else. A connection whose grants we
 narrowed explicitly keeps the list it was given, and the owner has it too, because
 the owner's grant list is every tool.
 
+**A tool the agent was not granted is a dead end for the agent and a silence for
+the owner.** A tool the connection was not granted is never registered on its MCP
+server, so a call for it is answered with "not found" and the agent is stopped by a
+refusal it cannot appeal and cannot show the owner. **The refusal is recorded, and
+the owner finds the agent on the waiting list** ([the waiting list](#the-waiting-list)):
+the row names the agent and the tool it needed, and the owner's action on it is
+`POST /api/agents/:id/grants`, which widens that one grant. The answer the agent
+gets is not changed by any of this.
+
 **A refusal on the MCP surface is not the HTTP envelope.** A tool that refuses
 answers with `isError: true`, and the result's text is a **flat** `{ code, message,
 details }` — the code, the message and the details side by side, with **no `error`
@@ -976,12 +985,12 @@ published for the HTTP surface, and it is not the shape an MCP refusal carries: 
 client written against the HTTP envelope finds no `error` key in an MCP refusal and
 has to read `code` and `message` off the top level. `details` is there when the
 refusal has details and absent when it does not
-(`apps/server/src/modules/mcp/server.ts:52-59`).
+(`apps/server/src/modules/mcp/server.ts:53-60`).
 
 **The refusal names the action; the rest of its wording is not fixed.** A refusal
 the autonomy policy makes says which action was refused, in a sentence the owner can
 act on, and it carries the action and the allowed actions in `details`
-(`apps/server/src/modules/mcp/server.ts:116-120`). **The wording itself is not part
+(`apps/server/src/modules/mcp/server.ts:117-121`). **The wording itself is not part
 of the contract**: the sentence is composed from the policy in force, so it changes
 when the policy changes, and a client must not match on it. A client matches on the
 `code` — a refused action is `forbidden` — and on the `action` in `details`. The one
@@ -1302,7 +1311,7 @@ list, so the client asks for one thing instead of fetching three and joining the
 answers itself.
 
 ```ts
-type WaitingKind = 'approval' | 'task' | 'turn';
+type WaitingKind = 'approval' | 'task' | 'turn' | 'capability';
 type WaitingReason = 'pending' | 'review' | 'blocked' | 'unknown';
 
 interface WaitingItem {
@@ -1315,12 +1324,13 @@ interface WaitingItem {
   conversationId: string | null;
   taskId: string | null;
   agentConnectionId: string | null;
+  toolName: string | null; // the tool the agent was refused, when it waits for a grant
 }
 ```
 
 `id` is the kind and the underlying id, joined by a colon — `approval:apr_1`,
-`task:tsk_1` — so one list can be keyed without the client having to pair the
-id with the kind.
+`task:tsk_1`, `capability:cap_1` — so one list can be keyed without the client
+having to pair the id with the kind.
 
 **`unknown` is a reason of its own.** An item whose outcome could not be
 confirmed is on this list because there is something to check, not because a
@@ -1329,7 +1339,7 @@ defined in [The unknown outcome](#the-unknown-outcome); this entry publishes the
 list's use of it, and the two are not two definitions. The published type
 carries `pending | review | blocked | unknown`, member for member with
 `apps/server/src/api/waiting.ts:17`, and the route takes the reason straight
-from the task's status (`apps/server/src/api/waiting.ts:95`), so a task that cannot be confirmed
+from the task's status (`apps/server/src/api/waiting.ts:104`), so a task that cannot be confirmed
 arrives as `reason: 'unknown'` and the published type cannot drift away from
 what the route returns.
 
@@ -1368,6 +1378,51 @@ outcome could not be confirmed. A turn that a pending approval already
 accounts for is not drawn again beside that approval, the way a task that a
 pending approval already accounts for is not.
 
+**`capability` is its own kind.** A capability an agent was refused is waiting on
+the owner: the agent called a tool it was not granted, and it cannot go on until
+the owner widens that grant. It is not an approval and not a task, so it is not
+spelled as either. The published kind carries
+`approval | task | turn | capability`, member for member with
+`apps/server/src/api/waiting.ts:8`.
+
+**The row carries which agent wanted it and what it needed.** `agentConnectionId`
+names the agent that was refused, and `toolName` names the MCP tool it was
+refused. `toolName` is `null` on every other kind, because a capability is the
+only thing on this list that is named by a tool.
+
+**One row per agent and capability.** A refusal that repeats is the same thing
+waiting, not another thing, so the row is counted rather than duplicated
+(`apps/server/src/modules/agents/blocked.ts:69`): the count is on the row, and
+the owner sees one thing to act on, not a count of how many times the agent
+tried.
+
+**The owner widens the grant from the list.** The action for a capability row is
+`POST /api/agents/:id/grants` with the row's `toolName`. It widens that agent's
+grant to include the one tool and leaves the rest of the grant as it was, so the
+action that unblocks an agent cannot take anything away.
+
+**The row leaves when the grant is widened.** A capability the agent holds is not
+waiting on the owner any more, so the row leaves the list as soon as the grant
+includes it. Whichever route widened the grant, the row leaves: both go through
+the one write that changes a grant (`apps/server/src/modules/agents/service.ts:261`).
+A list that keeps the row is a list that lies about what is waiting.
+
+**Migration.** The kind grows by one member and the item grows by one field, and
+nothing is reclassified. A client that matched on three kinds has a fourth case
+to handle, and a capability is none of the three it knew: a client that groups
+its list by kind has to decide where a capability sits in its own interface
+rather than filing it under a task. A client that matches on the reason is
+unaffected — the reasons did not change with this entry, and a capability
+carries `pending`, the band an approval carries, because both are an agent that
+cannot go on. The new field is `null` on every kind that is not a capability, so
+a client that reads the fields it knows keeps working; a client that switches
+exhaustively on the item's fields has one more field to read.
+
+The blocked capability is the contract for **WI-121**, and the code implements it —
+the refusal is recorded at `apps/server/src/modules/mcp/server.ts:711`, the list
+draws it as its own kind at `apps/server/src/api/waiting.ts:159`, and the owner's
+action is `POST /api/agents/:id/grants`.
+
 **The order of the list is over reasons, not kinds.** A turn carries the reason
 its outcome earned, so an unknown turn sorts where an unknown task sorts. The
 published order below is not changed by this entry.
@@ -1381,7 +1436,7 @@ with this entry. A row recorded before this change keeps the kind it was
 recorded with: no approval becomes a turn, and no task becomes a turn.
 
 The order is the order of urgency, and it is the order the code assembles the
-list in (`apps/server/src/api/waiting.ts:144`): an agent that cannot
+list in (`apps/server/src/api/waiting.ts:179`): an agent that cannot
 continue comes first, then the work whose outcome could not be confirmed, then
 the work waiting for an acceptance decision, then the work that is stuck.
 
@@ -1777,6 +1832,7 @@ is not left deleting the database.
 | `GET/POST`         | `/api/agents`                                        | List and create agent connections.                                                      |
 | `GET/PATCH/DELETE` | `/api/agents/:id`                                    | Read, update, remove a connection. `PATCH` accepts `toolGrants`.                        |
 | `POST`             | `/api/agents/:id/probe`                              | Re-run capability discovery.                                                            |
+| `POST`             | `/api/agents/:id/grants`                             | Widen one tool grant. The action a blocked agent needs.                                 |
 | `GET/POST`         | `/api/agents/:id/tokens`                             | Issue and list MCP tokens.                                                              |
 | `DELETE`           | `/api/agents/:id/tokens/:tokenId`                    | Revoke an MCP token.                                                                    |
 | `GET`              | `/api/secrets`                                       | List the secret configurations. Metadata only — a value never leaves the server.        |
@@ -1955,8 +2011,8 @@ projections read it
 `apps/server/src/modules/resources/service.ts:338`). An agent-created
 automation or task is recorded as authored by the agent that made it.
 
-**Every mutating route writes an audit entry.** Of the 36 mutating routes in
-`apps/server/src/api/`, 33 write an audit entry at the route level, and three more
+**Every mutating route writes an audit entry.** Of the 37 mutating routes in
+`apps/server/src/api/`, 34 write an audit entry at the route level, and three more
 write one from the service layer — `POST /api/approvals/:id/decide` and `POST
 /api/agui/runs/:runId/resume`, both at
 `apps/server/src/modules/approvals/resume.ts:55`, and `PATCH /api/tasks/:id` at

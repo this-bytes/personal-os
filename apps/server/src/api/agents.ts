@@ -3,6 +3,7 @@ import { z } from 'zod';
 import {
   adapterTypeSchema,
   buildAgentMemoryBrief,
+  mcpToolNameSchema,
   personaSchema,
   toolGrantListSchema,
 } from '@personal-os/contracts';
@@ -32,6 +33,11 @@ const updateSchema = z.object({
   toolGrants: toolGrantListSchema.optional(),
   /** The base persona. `null` clears it. */
   persona: personaSchema.nullable().optional(),
+});
+
+const widenGrantSchema = z.object({
+  /** The one MCP tool the connection may call from now on. */
+  tool: mcpToolNameSchema,
 });
 
 export function registerAgentRoutes(app: FastifyInstance): void {
@@ -73,6 +79,26 @@ export function registerAgentRoutes(app: FastifyInstance): void {
     const body = parseBody(updateSchema, request.body);
     const agent = app.services.agents.update(id, body);
     audit(request, 'agent.updated', { type: 'agent', id, workspaceId: agent.workspaceId });
+    return { agent };
+  });
+
+  app.post('/api/agents/:id/grants', { preHandler: requireAuth }, async (request) => {
+    const { id } = request.params as { id: string };
+    const body = parseBody(widenGrantSchema, request.body);
+    // The grant is widened and never narrowed. The owner takes one capability
+    // out of the wait and the rest of the grant stays as it was, so the
+    // action a blocked agent needs is one that cannot take anything away.
+    const granted = app.services.agents.toolGrants(id);
+    const toolGrants = granted.includes(body.tool) ? granted : [...granted, body.tool];
+    const agent = app.services.agents.update(id, { toolGrants });
+    audit(
+      request,
+      'agent.grant.widened',
+      { type: 'agent', id, workspaceId: agent.workspaceId },
+      {
+        tool: body.tool,
+      },
+    );
     return { agent };
   });
 

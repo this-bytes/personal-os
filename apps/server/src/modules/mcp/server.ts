@@ -6,6 +6,7 @@ import {
   actionNeedsApproval,
   autonomyActionRefusal,
   isActionAllowed,
+  mcpToolNames,
   ownerToolGrants,
   memorySpecSchema,
   resourceTemplateRefSchema,
@@ -676,6 +677,53 @@ export async function createMcpServer(options: McpServerOptions): Promise<McpSer
 }
 
 /**
+ * The tool an agent asked for, when the request is a call for one.
+ *
+ * A name that is not one of the published tools is not a capability the agent
+ * was refused: it is a tool that does not exist, and there is nothing there
+ * for the owner to grant.
+ */
+function calledToolName(body: unknown): McpToolName | null {
+  if (typeof body !== 'object' || body === null) return null;
+  const call = body as { method?: unknown; params?: { name?: unknown } | undefined };
+  if (call.method !== 'tools/call') return null;
+  const name = call.params?.name;
+  if (typeof name !== 'string') return null;
+  if (!(mcpToolNames as readonly string[]).includes(name)) return null;
+  return name as McpToolName;
+}
+
+/**
+ * Record a call for a tool the agent was not granted.
+ *
+ * A tool an agent was not granted is never registered, so the server answers
+ * the call with "not found" and the agent is stopped by a refusal it cannot
+ * appeal and cannot show the owner. The owner hears nothing about it, and
+ * the grant that is in the way has no route to the surface where the owner
+ * exercises authority. The refusal is recorded here, where the tool's name
+ * is known: the store reads the caller's grants and writes the row only when
+ * the capability is still out of the agent's reach, so the owner finds the
+ * agent on the waiting list.
+ *
+ * The answer the agent gets is not changed. What changes is that the owner
+ * can now see the refusal and act on it.
+ */
+function noteUngrantedCall(
+  body: unknown,
+  actor: Actor,
+  options: Omit<McpServerOptions, 'actor'>,
+): void {
+  // The owner is not gated at all, so the owner is never blocked.
+  if (actor.kind !== 'agent') return;
+  const toolName = calledToolName(body);
+  if (!toolName) return;
+  options.capabilities.recordBlockedCapability({
+    agentConnectionId: actor.agentConnectionId as string,
+    toolName,
+  });
+}
+
+/**
  * Handle one MCP HTTP request. A fresh server and transport are created per
  * request, which keeps the endpoint stateless and horizontally safe.
  */
@@ -693,6 +741,10 @@ export async function handleMcpRequest(
     });
     return;
   }
+
+  // The refusal is noted before the call is answered, so the owner sees the
+  // agent even though the call itself is refused.
+  noteUngrantedCall(request.body, actor, options);
 
   const server = await createMcpServer({ ...options, actor });
   const transport = new StreamableHTTPServerTransport({
