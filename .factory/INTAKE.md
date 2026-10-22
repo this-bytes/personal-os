@@ -6499,3 +6499,31 @@ first** (the owner's standing word at 15:40), and the answer above is the brief'
 line when it goes.
 
 **The floor at 19:15.** **Ceiling two. Next free number WI-138.**
+
+### 19:25 — Probe's WI-129 follow-up report has reached the group, and the acceptance is re-measured against a tip that moved three times
+
+**The report the lead accepted on at 18:41 has now been delivered to the group. The
+delivery is what changed, not the verdict** — and the tip has moved three times since
+(`7718710`, `9b4148d`, `6855065`), so the lead re-measured the surface rather than the
+sha.
+
+`git diff --name-only cbfbf8d 6855065` over the follow-up's five files returns
+**`CONTRACTS.md` and nothing else**: the guide's §10, the check file, `service.ts` and
+`templates.ts` are **byte-identical** since the follow-up's own tree. And the contract
+moved, so the lead read the sentence in the tree as it stands — **`CONTRACTS.md:909-910`
+still names `service.ts:756` and `:342`**, and both lines are the ones the sentence means,
+opened by hand at the tip: `:342` is the provider's create and `:756` is the literal
+`published: false` write.
+
+**The pointer count is the receipt: 144 checked, 0 failures on the tree the verifier
+measured, and 147 checked, 0 failures at the tip now** — the three that were added are
+WI-130's, and every one of them points at code.
+
+**And the middle tree's red — the verifier's "Finding A" — is the trap the lead
+answered in the group an hour ago, under a different name:** the WI-121 claim named the
+work item and no commit, and accepting WI-121 closed the item, so the claim stopped
+being watched. **The peer's fix in `515a4ca` names the commit in the house form, and the
+contract reads at `CONTRACTS.md:1548-1549`: _"the code implements it — as of `d229b53`"_
+— a single-parent commit, because `4248520` is a merge.**
+
+**The floor at 19:25.** **Ceiling two. Next free number WI-138.**
