@@ -106,8 +106,9 @@ free number above the highest taken.**
 | WI-133 | The audit job audits twice: one word makes it audit once                                                                                                                                                                          | worker |
 | WI-134 | The domain does not depend on the adapters package                                                                                                                                                                                | worker |
 | WI-135 | The published documents name things that have moved                                                                                                                                                                               | worker |
+| WI-136 | A new type cannot be named without an implementation                                                                                                                                                                              | worker |
 
-**The next free number is WI-136.**
+**The next free number is WI-137.**
 
 **Two decisions the owner took, and the numbers they took.** The owner answered
 the two questions that were open: `manual` **does not gate delegation**
@@ -692,6 +693,7 @@ second dispatch.
 | `wi-135-published-citations-sweep-cog-2026-10-22` | WI-135 — the two published documents name different lines for the same line | Cog | `task_02486ba6d0c2` | **DISPATCHED AT 16:35 BY CHIEF, AT THE PUBLISHED TIP `77b3881`, REPORT TO THE GROUP.** Probe's findings F1, F2 and F3 from WI-129's verification, as one item: **six citations in the two published documents that WI-129's landing touched do not name the code their own sentence claims** — two in `CONTRACTS.md` (`:2097` cites `:363` for the author, and `:363` is `title: task.title,`; `:806` cites `:399-400` for the template fields, and those are `acceptanceCriteria:` and `author:`) and four in `docs/resource-templates.md` (`:76`'s `service.ts:351-360` was right before the landing and the landing broke it; `:97`'s `service.ts:581-591` survives uncorrected; `service.ts:573-578` is carried twice, at `:289` and `:425`, for a kind check that is at `:687-691`). **The sharp part is one sentence: the contract and the guide name different lines for the same line, two apart.** Every window in the brief was read by the lead by hand, not taken from the verifier's report. **The check is Probe's file and the owner does not write it, and the other citations in those two files are reported, not fixed** |
 | `wi-135-published-citations-sweep-cog-r2-2026-10-22` | WI-135 — the eighteen citations that do not name what they claim | Cog | `task_5888721e9595` | **RE-DISPATCHED AT 16:50 BY CHIEF, AND THE FIRST BRIEF IS CANCELLED.** The 16:35 brief carried six citations and was **short by twelve**: the peer session's own 15:45 record had measured five more in the guide's summary table and published them "for whoever takes it", and **the lead's own reading of the sentences around them found four more that neither of the two found.** **The task `task_02486ba6d0c2` is cancelled**, its request id `wi-135-published-citations-sweep-cog-2026-10-22` is **spent and never reused**, and it changed no file. **All eighteen sites were measured by the lead by hand**, and the item's file carries the table with what each citation names and the line to publish. **One item and not two: three of the peer's five and all of Probe's guide sites are in the same file, and one file, one live item, one writer at a time.** **THE PEER'S COUNT IS CORRECTED HERE: their record says "the four stale citations the verifier found in the guide's summary table" and lists five of them, and those five are carried at eight sites in the guide** |
 | `wi-129-followup-verify-probe-2026-10-22` | WI-129's follow-up — the re-pointed citation and the two new cases, verified | Probe | `task_6d4d0264d86c` | **DISPATCHED AT 16:50 BY CHIEF, AT THE PUBLISHED TIP `cbfbf8d`, REPORT TO THE GROUP.** WI-129 was accepted on two independent verdicts — Probe's (`task_02a3509d3d31`, ACCEPT) and the peer session's own verifier's PASS WITH FINDINGS — **and then the peer session landed a follow-up on top of it:** one citation re-pointed in the contract and the same one re-pointed in the guide's §10, and **two cases added to `apps/server/src/__tests__/resource-liveness.test.ts`** — **with only the implementer's own report.** **Test code that no independent verifier has run is landed work with no verdict, and the lead dispatches the verification even for the other session's item.** Probe wrote none of the follow-up. **The brief names the two things to prove — the re-pointed citation names its claim, and each of the two new cases can fail** — and it puts the implementer's own caught mistake to the verifier: **a restore that only verifies is not a restore** |
+| `wi-134-verify-adapter-boundary-probe-2026-10-22` | WI-134 — the domain's edge to the adapters package, verified | Probe | `task_33fe48307f92` | **DISPATCHED AT 17:15 BY CHIEF, AT THE PUBLISHED TIP `d60f3c5`, REPORT TO THE GROUP.** WI-134 landed on `main` in the peer's commits (`f932208`, merged at `d60f3c5`) **with no independent verdict anywhere** — **the peer wrote the work and the check, and the peer's own report is not a verification.** **A landed item with no verdict is inventory, and the lead dispatches the verification even for the other session's item.** Probe wrote none of it. **The brief asks for the seven answers, and the sharpest of them is the hole the check found in itself**: the walk collected `.ts` files while the browser client is `.tsx`, so the client was never inspected and putting the adapters package into `apps/web/src/main.tsx` turned nothing red. **The lead's own measurement of the landing:** `apps/server/src/modules/agents/service.ts:13` now ends the `@personal-os/contracts` import with the adapters import gone, `apps/worker/package.json` no longer names the package, `packages/contracts/src/agent.ts` carries `AdapterLogger` at `:286`, `AdapterContext` at `:296` and `AdapterProvider` at `:308`, and the lockfile's `apps/worker` entry no longer declares the dependency — **the lockfile changed by that and nothing else** |
 
 **A cancelled task is not a dispatch — but a cancelled dispatch does not free its
 request id.** That second half was wrong here, and it is corrected now rather
@@ -5665,6 +5667,111 @@ take it over when it lands.**
 
 **The floor at 16:35.** **Ceiling two. Next free number WI-136.**
 
+### 16:40 — WI-134 is implemented: the domain's edge to the adapters package is gone
+
+**The domain no longer depends on the package that holds the adapters.** The shapes it
+needs moved to the package it already owns, and the check that holds the rule now exists.
+
+**The move.** `packages/contracts/src/agent.ts` already held `AgentAdapter` — the adapter
+interface itself. Beside it now sit the rest of the boundary vocabulary: `AdapterLogger`
+and `AdapterContext` (both were in `packages/agent-adapters/src/types.ts`, and the
+adapters package re-exports them so an existing import keeps working), and
+`AdapterProvider` — **the shape of a registry, named as a capability rather than as the
+class that implements it.** `AdapterRegistry` now `implements AdapterProvider`, and the
+domain's `registry` is typed `AdapterProvider`.
+
+**The domain's edge is gone.** `apps/server/src/modules/agents/service.ts` no longer
+imports `@personal-os/agent-adapters` at all; it imports `AdapterProvider` from
+`@personal-os/contracts`. `apps/server/src/runtime.ts` — the composition root — is now the
+**only** file outside the tests that names the adapters package, and it does so to _build_
+the registry, which is its job.
+
+**And the dead edge went with it.** `apps/worker/package.json` no longer declares
+`@personal-os/agent-adapters`, because the worker reaches adapters through the server's
+runtime and never imported the package. **Before this item that dependency was not merely
+unused: it was what made the package's types resolvable in a clean install**, because
+`Runtime.registry` named the class the package owns. `Runtime.registry` names the shape
+now, so the worker needs the package it does not import no more.
+
+**The lockfile was edited by hand, and the reason is worth recording.** `npm install
+--package-lock-only` in the worktree did two things it should not have: it added a
+**self-dependency to the worktree's root `package.json`** — `"personal-os":
+"file:../../personal-os"`, pointing at the primary checkout — and it stripped the
+`peer: true` markers from about thirty packages. **Both are npm's behaviour in a
+directory whose name is not the package's name**, and the first one is what made `npm ci`
+fail with _"Missing: personal-os@0.1.0 from lock file"_. The root `package.json` was
+reverted, the lockfile was edited by hand, and the result is **one edge removed and
+nothing else**: no package added, no package removed, the adapters package still
+installed. `npm ci --ignore-scripts` in the worktree then succeeded — **added 397
+packages, audited 404** — which is the check that matters, because CI installs from the
+lockfile on a clean checkout.
+
+**The check, and its three proofs.** `apps/server/src/__tests__/adapter-boundary.test.ts`
+reads the source tree the way `apps/worker/src/__tests__/autonomy-policy-attack.test.ts`
+already does, and asserts three things: no domain module imports the adapters package;
+the worker does not declare it; and **the composition root is the only file in the shipped
+code that names the package** — the sweep covers the browser client and the UI package as
+well as the domain, **because the CLI adapter spawns a process** and a client that reached
+the package would carry it into the bundle. **Three cases, green.** **And each is proved
+able to fail:**
+
+| Mutation                                        | Cases that go red                                    |
+| ----------------------------------------------- | ---------------------------------------------------- |
+| the domain imports the adapters package again   | 2 — the domain check, and the composition-root check |
+| the worker declares the dependency again        | 1 — the worker's check                               |
+| the browser client imports the adapters package | 1 — the composition-root check                       |
+
+**All three restored byte for byte, the final run green, and the final `git status
+--porcelain` naming only the files this item touched.**
+
+**And the third mutation found a hole in the check this item wrote, which is the reason it
+is worth having.** The walk collected `.ts` files, and the browser client is `.tsx` — **so
+the client was never inspected at all**, and the mutation that put the adapters package
+into `apps/web/src/main.tsx` turned **nothing** red. The walk now collects `.tsx` as well,
+and the same mutation turns the check red. **A check that has never been given a mutation
+it can fail is not a check** — and this one had two of its three cases proved, and still
+had a hole the third found.
+
+**The contract publishes it.** `CONTRACTS.md` gains a section, _The adapter boundary_,
+carrying the three shapes, the rule, the one place that builds the registry, the check,
+**the limit stated plainly** — _this is about the dependency, not about the words; the
+domain may name a provider in a fixture, and what the check holds is that the domain
+cannot reach an adapter_ — and a migration note.
+
+**Nothing that gates depends on where the section sits.** The contract-status gate keys
+its claims by heading and checks code patterns; the pointer gate checks citations into
+_code_; the tests that read the contract read it by heading. **The line-number comments
+in `apps/server/src/__tests__/autonomy-policy-surface.test.ts` that cite the contract are
+already stale — `CONTRACTS.md:1361` holds `reason: WaitingReason;`, not the heading the
+comment names — and they were stale before this item.** They are the stale-docs item's to
+fix, and they are recorded here as measured.
+
+**And the npm incident is recorded because it nearly cost the item.** The failure looked
+like a lockfile mistake — _"your package.json and package-lock.json are not in sync"_ —
+and the obvious next move would have been to run `npm install` and commit whatever it
+wrote. **The control was what caught it: the same command in a worktree whose files this
+item had not touched succeeded.** That is the difference between a broken lockfile and a
+broken command, and it cost one command to find out.
+
+**And one of my own sentences is now corrected, beside itself.** My 15:25 entry above said
+that the timed-out run's numbers were the ones that mattered, **"which this item did not
+reproduce"**, and that the item did not claim to have found the timeout's exact cause.
+**That was true when it was written and the cause has since been measured** — by the lead
+session, from the step-level timings of the timed-out run `ccc3564`: _Install dependencies_
+**7.05 min** (03:01:38 → 03:08:41) and _Audit_ **3.10 min**, cut off by the budget (03:08:41
+→ 03:11:47); the whole job **10.25 min**. On the green re-run `e660fdf` the same job took
+**11 seconds**, and the two siblings doing the same install with `--no-audit --no-fund`
+finished their whole jobs in **0.23 and 0.27 minutes**. **So the job's normal cost is eleven
+seconds, and the timeout was a stalled registry round trip this job paid for twice** — and
+the flake is not ended: the worst case is now one stalled round trip instead of two. The
+gate was also measured with **npm 10.9.9**, the version bundled with the node `22.23.3` in
+`.nvmrc` that CI runs, against a lockfile carrying a high-severity advisory: `npm ci
+--ignore-scripts` exits 0, `npm audit --audit-level=high` exits 1. **My 15:25 entry
+measured npm 11.2.0 locally; that is the limit the peer's measurement removes.** **The
+entry stays, and this is the correction beside it.**
+
+**The floor at 16:40.** **Ceiling two. Next free number WI-135.**
+
 ### 16:50 — the peer landed a follow-up on top of WI-129, and the lead's first WI-135 brief was short by twelve citations
 
 **The tip moved again while the lead was reading, and this time it moved the item under the
@@ -5731,3 +5838,118 @@ at `:34`. **With the lead's four, the guide carries sixteen stale citation sites
 contract two.**
 
 **The floor at 16:50.** **Ceiling two. Next free number WI-136.**
+
+### 17:15 — the peer's WI-134 landed, the peer's WI-136 is claimed, and the block was behind for the sixth time
+
+**The push was refused and the peer had moved the tip again.** The lead's tree was green
+on all nine gates (tree `96cb61b`, unchanged by the gates) and `git push origin main` was
+**rejected as non-fast-forward**: the peer had published `f932208` and `d60f3c5` while the
+gates ran. **The lead merged rather than forced** — the pre-push hook refuses a
+non-fast-forward, and `PERSONAL_OS_ALLOW_FORCE=1` must never be used — and **the code
+changed under the merge, so the gates are run again on the merged tree before the push.**
+That is the standing word's condition: **green is measured on the tree being pushed.**
+
+**WI-134 is implemented and landed by the peer session.** The domain's one dependency edge
+on the adapters package is gone: `apps/server/src/modules/agents/service.ts:13` now ends
+the `@personal-os/contracts` import, `apps/worker/package.json` no longer declares the
+package, and the shapes the domain needs — `AdapterLogger` at
+`packages/contracts/src/agent.ts:286`, `AdapterContext` at `:296`, `AdapterProvider` at
+`:308` — now live in the package the domain already owns. **The lead measured the lockfile
+too, because it is the lead's file: the `apps/worker` entry no longer declares the
+dependency, and the lockfile changed by that and nothing else.**
+
+**And the verification is dispatched to Probe** — request
+`wi-134-verify-adapter-boundary-probe-2026-10-22`, batch `batch_b00089b62ac2`, task
+**`task_33fe48307f92`**, **at the published tip `d60f3c5`, report to the group**.
+**WI-134 landed with no independent verdict anywhere — the peer wrote the work and the
+check, and the peer's own report is not a verification.** The brief asks for seven
+answers, and the sharpest is the hole the check found in itself: **the walk collected
+`.ts` files while the browser client is `.tsx`, so the client was never inspected at all,
+and putting the adapters package into `apps/web/src/main.tsx` turned nothing red.** The
+brief asks Probe to reproduce that, because **a check that has never been given a mutation
+it can fail is not a check** — and that sentence is the peer's own, which is exactly why it
+deserves an independent test.
+
+**The check is Probe's file, and the peer said so.** The item's own limitations section
+says the check is a test file, that the repository gives test files to Probe, that the
+peer wrote it because the item could not land without it, and that **"Probe may take it
+over."** **The lead has not touched the peer's branch, and the brief says Probe may take
+the file over.**
+
+**And WI-136 is the peer's — claimed at 17:05, "a type cannot be named without an
+implementation".** The block read "**The next free number is WI-136**" when the peer took
+WI-136 off it, **so the block was behind for the sixth time**, and it now reads
+**"The next free number is WI-137."** **WI-135 is the lead's and is safe: it was read
+immediately before it was taken and it is in the block, so the peer's WI-136 cannot
+collide with it.**
+
+**The floor at 17:15.** **Ceiling two. Next free number WI-137.**
+
+### 17:05 — WI-136 is claimed: a type cannot be named without an implementation
+
+**WI-136 is claimed, and the claim is on `main` before the work is done.** The block's row
+and the item file land in a commit of their own. **That is the claim-first discipline used
+five times now — WI-129, WI-133, WI-134, WI-136 and this — and it has not collided
+once.**
+
+**And WI-135 is the peer session's, and it moves nobody.** Their claim was in a commit on
+their own `main` when this worktree was cut — **written first, not yet published** — so
+their claim keeps WI-135 and this one takes WI-136. **That is the same tiebreak this
+session has applied twice already**, and it is cheaper than two claims on one number.
+
+**Two lists of types, two registries that implement them, and nothing holds them
+together.** `AGENTS.md` rule 8 says _"a new resource type must work through the same
+existing interfaces"_ and _"a new adapter must not require changes to conversation storage
+or the factory task model"_ — **both of those rules are true today, and neither is held
+by anything.**
+
+**The resource types.** The contract names six
+(`packages/contracts/src/resource.ts:4-11`); the service holds one provider for each
+(`apps/server/src/modules/resources/service.ts:457-464`). **All six are there.** But the
+registry is a `Map`:
+
+```ts
+const providers = new Map<ResourceType, ResourceProvider<unknown>>([...]);
+```
+
+**TypeScript does not require a `Map` literal to carry every key of its key type.** So a
+seventh type added to the contract compiles cleanly, and the failure surfaces only when
+somebody asks for that kind of resource — `providerFor` throws
+`Unsupported resource type "…"` as a `bad_request`, **at runtime, for a mistake the
+compiler could have made at build time.**
+
+**The adapter types.** The contract names seven (`packages/contracts/src/agent.ts:9`); the
+registry holds a factory for each (`packages/agent-adapters/src/index.ts:27-36`). **All
+seven are there.** But the registry is a builder over a `Map`
+(`packages/agent-adapters/src/registry.ts:9-17`), and a type added without a factory fails
+the same way — `No adapter registered for adapter type "…"`, at the first run that asks for
+it. **Here the contract already holds the author to the type list once:**
+`adapterTypeLabels` (`packages/contracts/src/agent.ts:12`) is a `Record<AdapterType, string>`,
+and a `Record` **does** require every key — so a new adapter type without a label breaks
+the build. **The registry is the one place that is not held to it.**
+
+**The fix is the compiler, on both sides, because the shape of each registry allows it.**
+The resource providers become a `Record<ResourceType, ResourceProvider<unknown>>` — and a
+`Record` requires every key. The adapter factories become a mapped type over
+`AdapterType`, so **a factory is required for every type the contract publishes**, and
+`createDefaultRegistry` builds the registry from it. **The factories already have the
+right shape** — `createCliAdapter` takes
+`Extract<AdapterConfig, { adapterType: 'cli' }>` — so the mapped type checks each one
+against its own configuration and nothing has to be widened to fit.
+
+**And the proof is the compiler refusing the tree.** Adding a type to either enum without
+its implementation is a **build failure**, not a runtime surprise. That is a kind of proof
+that cannot be forgotten, and it is the same instrument the contract already uses for
+`adapterTypeLabels`. The other direction is proved too: **removing** a provider or a
+factory is a build failure as well, because the `Record` and the mapped type both want
+every key.
+
+**The limits, stated plainly.** The compiler holds that **every type has an
+implementation**; it says nothing about whether the implementation is _any good_, and that
+is what the adapters package's own tests are for. And the two orders do not match today —
+the contract names `cli, acp, a2a, http, model, echo, mcp` and the registry registers
+`echo, cli, acp, a2a, http, model, mcp` — **so anything that compares them must compare
+sets, not lists, or it fails for the wrong reason.** The compiler compares the keys, so it
+is not affected.
+
+**The floor at 17:05.** **Ceiling two. Next free number WI-137.**

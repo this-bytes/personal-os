@@ -1,19 +1,17 @@
-import type { AdapterConfig, AdapterType, AgentAdapter } from '@personal-os/contracts';
-
-export interface AdapterLogger {
-  info(message: string, meta?: unknown): void;
-  warn(message: string, meta?: unknown): void;
-  error(message: string, meta?: unknown): void;
-}
+import type {
+  AdapterConfig,
+  AdapterContext,
+  AdapterType,
+  AgentAdapter,
+} from '@personal-os/contracts';
 
 /**
- * Context handed to every adapter factory. Secrets are resolved through the
- * server-held secret store and never travel through the browser client.
+ * The boundary's shapes live in `@personal-os/contracts`, beside the
+ * `AgentAdapter` they belong with, so that the domain can depend on them
+ * without depending on this package. They are re-exported here because this
+ * package is where an adapter meets them.
  */
-export interface AdapterContext {
-  resolveSecret(ref: string): Promise<string | undefined>;
-  logger: AdapterLogger;
-}
+export type { AdapterContext, AdapterLogger } from '@personal-os/contracts';
 
 export type AdapterFactory = (config: AdapterConfig, ctx: AdapterContext) => AgentAdapter;
 
