@@ -5472,6 +5472,8 @@ the file carries now, and it says which lines they were before.**
 
 **And the proof is the pipeline that reads the file.** On `de5de5d`, which carries the same one word, the job's own steps: install **0.12 min**, audit **0.00 min**, the whole job **0.22 min — success**, where the same job took ten minutes and a half and was cut off on `ccc3564`. **Thirteen seconds, green, where it used to time out.**
 
+**And one more correction, on an instrument this ledger has already named.** The Formatting step of CI failed on `6bca3c5` and on nothing else — typecheck, the tests and the build all passed — and the cause was this entry: it was missing the blank line before its heading, and one of its bold spans wrapped another, so the markers paired the wrong way round.** Both are fixed, in `6849e62`.** The wrong conclusion came first, and it was mine: a prettier check run against `git show origin/main:.factory/INTAKE.md | Out-File` flagged the file as dirty, and **a copy is not the file** — `Out-File` wrote CRLF where the blob holds LF, and the copy sat outside the repository, so prettier resolved its defaults instead of `.prettierrc.json`. The 08:45 section of this ledger already named that instrument and the rule it earns: “a red measured on an extracted copy is a red measured on the extraction — check the copy's line endings before believing it, and check the committed bytes.” This is the second time it has cost something, and the rule was already written down.
+
 ### 16:05 — WI-134 is claimed: the domain must not depend on the adapters package
 
 **WI-134 is claimed, and the claim is on `main` before the work is done.** The block's row
