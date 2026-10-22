@@ -804,6 +804,60 @@
           "value": "export const resourceTemplates: ResourceTemplate\\[\\] = \\["
         }
       ]
+    },
+    {
+      "id": "the-prompts-of-an-empty-room",
+      "section": "The chat surface",
+      "note": "This entry is the contract for the prompts an empty room offers, and the code implements it",
+      "claim": "implemented",
+      "why": "The prompts an empty room offers: upstream's composition kept whole, the two utilities upstream asks for written in this repository's tokens, the prompts chosen from the room's own participants, and the press sent as the message it is, with the delivery mode the owner has chosen. This claim names no work item, because it is a promise about the product rather than a claim about one slice.",
+      "expect": [
+        {
+          "kind": "present-pattern",
+          "path": "packages/ui/src/suggestion.tsx",
+          "value": "export function Suggestions"
+        },
+        {
+          "kind": "present-pattern",
+          "path": "packages/ui/src/suggestion.tsx",
+          "value": "variant=\"outline\"\\s+size=\"sm\""
+        },
+        {
+          "kind": "present-pattern",
+          "path": "packages/ui/src/suggestion.tsx",
+          "value": "className=\"shrink-0\""
+        },
+        {
+          "kind": "present-pattern",
+          "path": "apps/web/src/index.css",
+          "value": "@utility scroll-fade-x"
+        },
+        {
+          "kind": "present-pattern",
+          "path": "apps/web/src/index.css",
+          "value": "@utility scrollbar-none"
+        },
+        {
+          "kind": "present-pattern",
+          "path": "apps/web/src/lib/suggestions.ts",
+          "value": "export function starterSuggestions"
+        },
+        {
+          "kind": "present-pattern",
+          "path": "apps/web/src/lib/suggestions.ts",
+          "value": "what can you do in this room"
+        },
+        {
+          "kind": "present-pattern",
+          "path": "apps/web/src/pages/ConversationDetail.tsx",
+          "value": "options: \\{ delivery, attachments: \\[\\] \\}"
+        },
+        {
+          "kind": "present-pattern",
+          "path": "apps/web/src/pages/ConversationDetail.tsx",
+          "value": "\\(messages\\.data \\?\\? \\[\\]\\)\\.length === 0"
+        }
+      ]
     }
   ]
 }

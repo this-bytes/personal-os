@@ -2480,6 +2480,22 @@ read model is `apps/server/src/modules/executions/activity.ts`, and the surface
 is `apps/web/src/components/chat/`. The slice's own record is
 [docs/contract-chat-rich-client.md](docs/contract-chat-rich-client.md).
 
+**A prompt the owner presses is a message.** An empty room offers a row of
+prompts, and pressing one sends that prompt as the message it is: through the
+same path a typed message takes, with the delivery mode the owner has chosen,
+and under the same routing rules. It is not a second kind of request that
+bypasses what the room is governed by, and it is not turned into another
+delivery behind the owner's back. **The prompts are openings, not claims.**
+None of them asserts that an agent can read a file or run a command, because
+an agent may not be able to; what an agent does with a prompt is the agent's
+answer and the owner's to read. The row is offered while the transcript is
+empty, and it is gone once the transcript is not.
+
+This entry is the contract for the prompts an empty room offers, and the code
+implements it — as of `0f53acb`. The row is `packages/ui/src/suggestion.tsx:47`,
+the prompts are `apps/web/src/lib/suggestions.ts:22`, and the surface that
+shows them is `apps/web/src/pages/ConversationDetail.tsx:540`.
+
 ### The attachment upload
 
 A file the owner wants to send does not have to be a resource already.
