@@ -5445,6 +5445,70 @@ worked a second time.
 
 **The floor at 15:25.** **Ceiling two. Next free number WI-134.**
 
+### 15:45 — WI-129's verification asked for two things, and both are closed
+
+**WI-129 was verified independently, and the verdict is PASS WITH FINDINGS** — no blocker,
+no should-fix. The three mutation proofs in the item's own file reproduced row for row (2
+red, 1 red, 2 red), the pointer gate was green at 143 pointers with 0 failures, the server
+suite was 46 files and 480 tests with 0 failures, and the tree was restored byte for byte
+after every mutation. **Two of the findings were about the item's own claims, and both
+are closed in a follow-up on the item's branch.**
+
+**1. The contract's dashboard citation pointed at the provider, not at the write.** The
+contract said _"the dashboard's writes `published: false`"_ and cited
+`apps/server/src/modules/resources/service.ts:337-345` — the `dashboardProvider` function.
+**That range holds the provider's create, which calls `asDraft`; the literal
+`published: false` is at `:756`.** The citation was legal — the pointer gate wants a cited
+line to hold code, and both ends of the range did — **but a reader following it landed on
+`asDraft(input.data)` rather than on the write the sentence names.** It is re-pointed, and
+the provider's call is cited with it:
+
+```
+(`apps/server/src/modules/resources/service.ts:756`, reached from the provider's
+create at `apps/server/src/modules/resources/service.ts:342`)
+```
+
+**The guide's §10 carried the same range and is re-pointed the same way.** The pointer
+gate is green at **144 pointers, 0 failures** — one more than before, because the sentence
+now names two places instead of one.
+
+**2. The contract asserted two things the proof file did not pin.** The contract says an
+update that names `published: true` **or `enabled: true`** still makes a resource live —
+**the dashboard's half was pinned and the automation's half was not** — and it says a spec
+that is not an object is passed on untouched so the schema refuses it, which was true and
+unpinned. **Two cases are added, and each is proved able to fail:**
+
+| Case                                                                         | Mutation that turns it red                                            | Red |
+| ---------------------------------------------------------------------------- | --------------------------------------------------------------------- | --- |
+| still lets an update make an automation live, because that is deliberate too | the automation's update writes `enabled: false` instead of the spec's | 1   |
+| still refuses a spec that is not an object, exactly as it always did         | `asDraft` stops passing a non-object through untouched                | 1   |
+
+**Seven cases, green; the file restored byte for byte after each mutation, the final
+`git status --porcelain` naming only the four files this follow-up touched.**
+
+**One thing that went wrong and was caught by the hash, not by the eye.** The mutation
+script's `restore()` checked the file's hash and reported a mismatch — **because it only
+checked and never wrote the file back.** The file was restored from the committed version
+(the item does not change it, so the committed version _is_ the baseline) and the hash
+matched exactly; the script was then fixed to write the original text back, and the two
+mutations were re-run from a clean baseline. **A restore that only verifies is not a
+restore**, and the hash check is what turned that into a caught mistake rather than a
+mutated file that quietly shipped.
+
+**The four stale citations the verifier found in the guide's summary table were not swept
+here.** WI-129 declined to sweep them and said so, and they belong to the stale-docs item
+with its own measurements. **They are recorded for whoever takes it, exactly as measured:**
+
+| The guide's table row cites                | What that range actually holds                               | Where the thing is                                                          |
+| ------------------------------------------ | ------------------------------------------------------------ | --------------------------------------------------------------------------- |
+| `mcp/server.ts:467-483`                    | the tail of `resource.create` and the head of `resource.get` | the tool is at `mcp/server.ts:533-551`                                      |
+| `mcp/server.ts:352-402`                    | inside `task.create`                                         | the tool is at `mcp/server.ts:418-468`                                      |
+| `packages/contracts/src/resource.ts:58-70` | `templateId` / `templateVersion` of `resourceSchema`         | the template shape is `resourceTemplateSchema` at `resource.ts:128-148`     |
+| `packages/contracts/src/resource.ts:79-83` | the doc comment for the guide                                | the reference shape is `resourceTemplateRefSchema` at `resource.ts:157-160` |
+| `resources/templates.ts:21-124`            | `dashboard.metrics` and part of `document.brief`             | the registry runs to `templates.ts:394`                                     |
+
+**The floor at 15:45.** **Ceiling two. Next free number WI-134.**
+
 ### 16:05 — WI-134 is claimed: the domain must not depend on the adapters package
 
 **WI-134 is claimed, and the claim is on `main` before the work is done.** The block's row

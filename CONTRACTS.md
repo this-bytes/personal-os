@@ -906,7 +906,8 @@ publishing or enabling it is a separate, deliberate act.
   that arrived whole (`apps/server/src/modules/resources/templates.ts:534`). The
   automation's provider writes `enabled: false` on create
   (`apps/server/src/modules/resources/service.ts:276`); the dashboard's writes
-  `published: false` (`apps/server/src/modules/resources/service.ts:337-345`).
+  `published: false` (`apps/server/src/modules/resources/service.ts:756`, reached
+  from the provider's create at `apps/server/src/modules/resources/service.ts:342`).
 - **Creation is the only place the rule bites.** An update that names `published: true` or
   `enabled: true` still makes a resource live, because an update is a deliberate act on a
   resource that already exists. **The two kinds behave the same way here**: the generic
