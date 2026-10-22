@@ -1,6 +1,6 @@
 # Engineering recovery review — 2026-10-23
 
-Review in progress on `recovery/engineering-foundation`, based on
+Review implemented on `recovery/engineering-foundation`, based on
 `644d33f48d71844d49eeb728615b9f8ed10cdddc`. This is an out-of-band engineering
 review, not acceptance of roadmap stages R0–R4.
 
@@ -57,39 +57,74 @@ review, not acceptance of roadmap stages R0–R4.
   drizzle-kit version with `--package-lock-only --save-exact`. The second clean
   install succeeded (411 packages). No package manager change is warranted.
 
-## Changes under verification
+## Remediation
 
 The existing work-item helper now refuses pre-existing target directories,
 ambiguous item IDs, unreadable statuses, unmerged/unpublished work, force deletion,
 and ignored files other than generated output. Paths are based on Git's common
 directory, avoiding nested worktree roots. Native npm install scripts are enabled
-for SQLite. Seven temporary-repository regression tests passed.
+for SQLite. Nine temporary-repository regression tests passed.
 
 Dependency validation now checks manifest/lock consistency and npm's complete
 installed dependency tree. CI and root development commands invoke it. Manifest
 changes drain the running source stack and require explicit `npm ci` and restart;
 the stack never installs imports automatically.
 
-## Validation so far
+## Verification evidence
 
-- Initial clean install: passed.
-- Typecheck across all workspaces and scripts: passed before later dependency
-  gate/dev watcher changes; must rerun on the final tree.
-- Worktree lifecycle tests: 7 passed.
-- Second clean install with repaired lockfile: passed.
-- Full test/build/smoke/browser/deployment checks: still pending.
-- License evidence record must be refreshed for the restored transitive packages.
+The clean Linux checkout `/tmp/personal-os-engineering-verify-IlNZtl` tested
+`b497f48`, including integration with the independently advanced main. Subsequent
+`0d2317f` changes align README/source-launcher diagnostics and add the already
+passing dependency check to the Docker build. The container build exercised that
+Docker change. Documentation-only evidence updates follow these revisions.
 
-## Architectural observations to finish validating
+- Clean `npm ci --no-audit --no-fund`: passed, 411 packages. Each checkout has
+  its own installation; no borrowed dependencies or compiled output.
+- `npm run gates`: all ten gates passed: dependencies, typecheck, tests, build,
+  format, contract status, contract pointers, smoke, compiled boot and bundle size.
+- Tests: server 669, web 186, worker 99, adapters 37, contracts 48; total 1,039.
+  This includes nine temporary-repository lifecycle regressions, four push-hook
+  deletion cases and three dependency-gate cases.
+- Chromium E2E: 35 passed against compiled output and an actual worker, using port
+  24319 and private temporary data. The inherited directory's sentinel survived.
+- `npm audit --audit-level=high`: passed; zero vulnerabilities at all severities.
+- Source `dev:stack`: dependency preflight passed, API health and Vite returned
+  200, and Vite transformed `packages/ui/src/collapsible.tsx`. A lockfile timestamp
+  change drained the worker and stopped the stack with exit 0.
+- Isolated Docker Compose build/start: passed with separate image tags, project,
+  volume and port 24318. `verify:stack` proved actual worker dispatch/reply, beyond
+  a health response. Existing deployment containers and volumes were not used.
+- Git bundle verification passed; original unmerged/dirty work was preserved.
+- Licence evidence refreshed for the restored transitive closure, with exact
+  package coverage and regression checks retained. Deprecated esm-loader/core-utils
+  come from the existing drizzle-kit version; they are not new product abstractions.
+
+Logs are `/tmp/personal-os-linux-gates-verified.log`,
+`/tmp/personal-os-browser-review.log`, `/tmp/personal-os-docker-review.log`,
+`/tmp/personal-os-container-stack-review.log` and `/tmp/personal-os-dev-review.log`.
+These are local fixture/echo validations, not real Codex/OpenCode acceptance or a
+production database restore demonstration. CI on the published branch must judge
+the final commit before landing; no earlier green commit substitutes for it.
+
+## Architectural assessment
 
 The modular monolith, worker queue, persisted events, typed contracts, resource
 revisions and explicit owner acceptance are useful foundations. Worker source now
 connects and closes adapters; ARCHITECTURE.md still describes the earlier MCP
 initialization defect as current. Bot Mode already connects to factory tasks via
 `DelegatedTaskLedger` and exposes grant-controlled `bot.dispatch` through MCP.
-It is not an isolated chat implementation. Review native runtime/session support,
-cancel/recovery semantics, workspace authority, and deployment recovery against
-source before declaring the larger architecture complete.
+It is integrated with product capabilities. Keep the existing conversation,
+execution, autonomy and resource seams within the modular monolith. Protocol-native
+extensions already have a contract (`AgentAdapterExtras`); their negotiation and
+projection into the product remain incomplete. Provider-specific capability details
+belong there rather than in conversation or task storage.
+
+The foundation can grow without a new service or scheduler, but current runtime
+session continuity, restart semantics, capability projection and execution authority
+do not yet meet the full mission. CLI cwd/environment sanitization is not a
+filesystem sandbox. Worker lease expiry can replay side effects before an unknown
+outcome was recorded; Bot dispatch lacks a caller idempotency key. Address these
+through the active roadmap's bounded follow-ups, with real-runtime demonstrations.
 
 ## Source references
 
@@ -122,7 +157,10 @@ reasons not to delete dependencies based only on static non-use.
 
 The first full test run failed under concurrent startup: three server timing
 failures and twelve web fork-start failures. Server and web pools are now bounded
-to two workers and the full gate run is in progress; no assertions were removed.
+to one and two workers respectively, per checkout, while independent checkouts can
+still run concurrently. A two-worker Linux server run hit one setup timeout; that
+file passed all six cases in isolation and the complete one-worker run passed.
+No assertions were removed and existing timeout checks remain in force.
 The E2E harness also recursively removed an inherited data directory. It now
 creates a fresh private temporary directory and never deletes that inherited path.
 
@@ -132,3 +170,21 @@ execution isolation/restore proof, and persistent Bot instruction migration. The
 architecture's stale MCP lifecycle statement has been corrected against worker
 source. Existing provider-neutral extension contracts and Bot-to-product tools
 are preserved; no new scheduler, queue service or adapter framework was added.
+
+The shared repository used `merge.conflictStyle=zdiff3`, which its Linux Git 2.34.1
+rejects even during otherwise conflict-free merges. Changed that local setting to
+`diff3`, supported by both Git installations, and integrated updated remote main in
+the isolated recovery branch. Main's active checkout was left alone.
+
+Persistent MiniMax Bot settings were inspected, not rewritten through their live
+state file. No supported authenticated management connection is exposed to this
+review. The roadmap records the exact stale-role migration and its acceptance
+criteria. Until applied through Bot settings/API, those persistent prompts can
+still recreate avoidable handoffs despite the corrected repository instructions.
+
+Static non-use candidates include the web utility trio (`class-variance-authority`,
+`clsx`, `tailwind-merge`), adapters' `zod`, worker's direct `better-sqlite3`, and four
+unused Radix primitives in UI. They remain installed: source-only absence does not
+prove config/export consumers have no need for them. Remove them in a separate
+dependency slice after consumer/build checks, rather than combining speculative
+pruning with recovery.
