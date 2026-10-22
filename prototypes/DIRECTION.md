@@ -1,3 +1,9 @@
+> **Direction update — 2026-10-22.** The owner retains Forge styling and makes
+> conversations the primary working surface. The map, board and dashboards support
+> chat. Earlier instructions below making the map the hero or separating decisions
+> from the conversation are superseded by [the recovery](../docs/recovery.md).
+> These prototypes are references, not implementation status or a dispatch queue.
+
 # Direction — Forge (D)
 
 **Written by:** Vision, for [WI-010](../.factory/work/WI-010.md).

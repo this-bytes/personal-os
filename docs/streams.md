@@ -1,6 +1,13 @@
+> **Historical plan — superseded on 2026-10-22.** The owner approved the
+> [chat-first recovery](recovery.md). Use [the roadmap](roadmap.md) for work
+> selection. Retained below for provenance; its priorities, staffing rules and
+> time-window instructions do not dispatch new work. Existing implementations
+> and work-item evidence remain available.
+
 # The three-day window — the streams
 
-For a fresh agent with no memory of this repository. Read [AGENTS.md](../AGENTS.md) first, then [FACTORY.md](../FACTORY.md), then this file, then your work item.
+For current onboarding read [AGENTS.md](../AGENTS.md), [FACTORY.md](../FACTORY.md)
+and [the roadmap](roadmap.md). The former window instructions below are historical.
 
 ## What this window is for
 

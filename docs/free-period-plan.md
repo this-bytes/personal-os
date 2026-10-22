@@ -1,3 +1,9 @@
+> **Historical plan — superseded on 2026-10-22.** The owner approved the
+> [chat-first recovery](recovery.md). Use [the roadmap](roadmap.md) for work
+> selection. Retained below for provenance; its priorities, staffing rules and
+> time-window instructions do not dispatch new work. Existing implementations
+> and work-item evidence remain available.
+
 # The free period — a plan for four days of unlimited MiniMax Code
 
 **What this is.** A plan for the window in which MiniMax Code is unlimited. It

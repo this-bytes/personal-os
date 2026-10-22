@@ -1,3 +1,10 @@
+> **Historical/future product runbook.** The [chat-first recovery](recovery.md)
+> phases this product-side coordination/self-improvement flow after the R3/R4
+> foundations. It is not the current development procedure. Build Personal OS
+> independently using [FACTORY.md](../FACTORY.md), even with the instance stopped.
+> The limitations and unproved procedures below remain historical evidence, not
+> guarantees that the future workflow is implemented.
+
 # Self-improvement without self-dependence — the runbook
 
 **What this is.** The procedure for improving Personal OS with the help of the

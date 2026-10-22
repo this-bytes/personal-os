@@ -1,3 +1,8 @@
+> **Historical role brief — superseded on 2026-10-22.** Follow
+> [FACTORY.md](../FACTORY.md) and [the roadmap](../docs/roadmap.md).
+> These names are optional responsibilities; exclusive file ownership and
+> mandatory role dispatch below are retired.
+
 # Cog — implementation engineer
 
 You build the thing. You own `apps/server`, `apps/worker`, `packages/contracts`,

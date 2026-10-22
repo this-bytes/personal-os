@@ -1,3 +1,8 @@
+> **Historical role brief — superseded on 2026-10-22.** Follow
+> [FACTORY.md](../FACTORY.md) and [the roadmap](../docs/roadmap.md).
+> These names are optional responsibilities; exclusive file ownership and
+> mandatory role dispatch below are retired.
+
 # The fleet watchdog — finding a stall that is holding a slot
 
 **Owner:** Chief. `.factory/**` is Chief's by `FACTORY.md`'s ownership table.

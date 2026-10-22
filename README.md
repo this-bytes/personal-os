@@ -2,6 +2,11 @@
 
 **The environment one person's agents operate and extend.**
 
+**Current build direction:** rich chat across independent agent harnesses, then
+autonomous teams and the product factory. See the [recovery decisions](docs/recovery.md)
+and [delivery sequence](docs/roadmap.md). These are approved targets, not a claim
+that the features already work.
+
 Personal OS is a single, self-hosted instance that gives you one place to talk to
 agents, run group conversations, and let agents build the things you need —
 dashboards, documents, automations, data sources, tasks and memory.
@@ -42,9 +47,9 @@ npm run dev -w @personal-os/web
 
 Open <http://localhost:5173>. The first run asks you to create the owner account.
 
-The built-in **Echo** agent works without any external setup, so you can exercise the
-whole loop — mention an agent in a conversation, watch it reply — before connecting a
-real agent.
+The built-in **Echo** agent works without external setup and exercises basic
+messaging/execution plumbing: mention an agent and watch it reply. It does not
+prove real-harness tool use or delivery of a requested artifact.
 
 ### One command for all three
 
@@ -60,9 +65,11 @@ instance instead of waiting for a rebuild. It watches the server, the worker, th
 contracts and the adapters, and restarts only what a change affects. The web
 client reloads in place.
 
-**The worker is never stopped in the middle of a turn.** A turn that is killed
-leaves a job whose lease expires, and the queue runs that turn a second time — so
-the worker is asked to stop, finishes the turn it is running, and exits.
+The development launcher requests graceful worker shutdown so the current turn
+can finish. A crash or forced termination can still interrupt it. Lease expiry
+alone does not prove that an external side effect stopped: restart reconciliation
+and uncertain-outcome handling must be verified per runtime. The R0 recovery stage
+closes remaining gaps rather than promising safe replay.
 
 `PERSONAL_OS_PORT` and `PERSONAL_OS_WEB_PORT` move the stack off the default
 ports, which is how it runs beside a deployment that already holds them:
@@ -132,10 +139,10 @@ directory (`./data`) holds the SQLite database, generated files and the secret k
 they must always be given the same value. Generate one with
 `openssl rand -base64 32`.
 
-**Replacing the stack does not re-run an agent turn.** The worker is given
-fifteen minutes to finish the turn it is running before it is stopped, because a
-turn that is killed leaves a job whose lease expires — and the queue runs that
-turn a second time.
+Compose gives the worker fifteen minutes to finish its current turn during a
+graceful stop. A timeout or crash can still interrupt it; this grace period is not
+a guarantee against duplicate remote side effects. Per-runtime restart
+reconciliation and uncertain outcomes are part of the R0 acceptance checks.
 
 #### Running the stack from WSL
 
@@ -240,31 +247,23 @@ personal-os/
 - [ARCHITECTURE.md](ARCHITECTURE.md) — components, data flow and design decisions
 - [CONTRACTS.md](CONTRACTS.md) — the conversation, connection, resource and factory contracts
 - [AGENTS.md](AGENTS.md) — the development contract for coding agents
-- [FACTORY.md](FACTORY.md) — how the software factory works, and who owns what
+- [FACTORY.md](FACTORY.md) — the independent development workflow
 - [CONTRIBUTING.md](CONTRIBUTING.md) — how to contribute
 - [SECURITY.md](SECURITY.md) — how to report a vulnerability
 - [docs/decisions](docs/decisions) — architecture decision records
 
-## The software factory
+## Development and the product factory
 
-Personal OS is built by a small team of agents with separate, non-overlapping
-mandates, coordinated by a factory lead:
+Personal OS is built out of band using coding tools, the repository, CI and an
+independent release path. That workflow works with the product stopped. One
+implementer delivers code, tests and documentation for a slice; independent review
+checks the result. Fixed bot names and exclusive test-file ownership are optional
+historical practices, not required dispatch gates.
 
-| Role               | Owns                                                | Answers                                       |
-| ------------------ | --------------------------------------------------- | --------------------------------------------- |
-| Factory lead       | Triage, dispatch, acceptance, CI, releases          | Should this be built, and is it done?         |
-| Implementation     | The server, the worker, the contracts, the adapters | Does it work?                                 |
-| Verification       | Every test, the browser suite, the smoke test       | Does it _keep_ working, and can it be broken? |
-| Contracts and docs | The published surface, the ADRs, the release notes  | Is what we publish still true?                |
-
-The doctrine lives in the repository, in [FACTORY.md](FACTORY.md) and
-[`.factory/`](.factory/), not in a chat window. An agent — human or
-autonomous — reads the same rules from the same version-controlled place.
-
-The split is the point. The person who writes a change is not the person who
-decides whether it is correct. It is the same separation the product itself
-enforces on conversations: a message that wakes every participant is an
-infinite loop, not a conversation.
+The product's factory is a later feature built on rich chat and durable execution.
+It coordinates the owner's goals and tasks through connected agents; it is not the
+system required to build Personal OS itself. Follow [FACTORY.md](FACTORY.md) for
+development and [the roadmap](docs/roadmap.md) for the delivery sequence.
 
 ## Development
 

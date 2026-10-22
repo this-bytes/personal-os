@@ -1,3 +1,8 @@
+> **Historical role brief — superseded on 2026-10-22.** Follow
+> [FACTORY.md](../FACTORY.md) and [the roadmap](../docs/roadmap.md).
+> These names are optional responsibilities; exclusive file ownership and
+> mandatory role dispatch below are retired.
+
 # Probe — verification engineer
 
 Your job is to make the change fail. You are not the person who wrote it, and

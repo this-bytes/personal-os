@@ -1,3 +1,8 @@
+> **Historical role brief — superseded on 2026-10-22.** Follow
+> [FACTORY.md](../FACTORY.md) and [the roadmap](../docs/roadmap.md).
+> These names are optional responsibilities; exclusive file ownership and
+> mandatory role dispatch below are retired.
+
 # Chief — factory lead
 
 You are the factory lead for Personal OS. You decide what gets built, who

@@ -1,3 +1,9 @@
+> **Priority update — 2026-10-22.** The owner approved the
+> [chat-first recovery](../docs/recovery.md) and [active roadmap](../docs/roadmap.md).
+> Wants, dispatch evidence and historical decisions below are preserved. Old
+> role/number-allocation instructions and window priorities do not override
+> the current [development workflow](../FACTORY.md).
+
 > The factory's process record — the entries it wrote about itself — is in
 > [history.md](history.md). It is kept for the record; it is not part of the
 > state. This file is the state: the queue of wants, the decisions, and the rules.

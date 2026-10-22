@@ -1,6 +1,12 @@
 # 7. The product is an environment agents operate and extend
 
-**Status:** accepted
+**Status:** accepted historically; partially superseded on 2026-10-22.
+
+The owner-approved [chat-first recovery](../recovery.md) supersedes the map-first
+UX/build priorities and stale open-question list below. The broader environment
+identity, single-owner scope and independent-harness boundary remain. Rich chat is
+now the primary work surface. Historical answers are retained for provenance; use
+the recovery decision table and active roadmap for current requirements.
 
 **Written against:** commit `a186c42` (2026-10-21), clean working tree. The decisions
 this ADR records were made on 2026-10-20 and are kept in `.factory/INTAKE.md`; that

@@ -1,365 +1,198 @@
 # Architecture
 
-This document describes how Personal OS is put together, why, and what the current
-implementation actually does.
+**Target:** owner-approved chat-first recovery, 2026-10-22. The process split and
+technology below already exist. Session lifecycle, workspace isolation and rich
+chat behaviors described as targets are not implementation claims. See
+[recovery status](docs/recovery.md#current-evidence-and-limits) and
+[the delivery sequence](docs/roadmap.md).
 
 ## 1. Shape of the system
 
-```
-Personal OS clients
-        │
-        │  Responsive Web / PWA · Desktop · Mobile
-        ▼
-┌──────────────────────────────────────────────┐
-│ Personal OS server                           │
-│                                              │
-│  Conversations ── Agent connections          │
-│         │                    │              │
-│         └──── Factory & tasks ┘              │
-│                                              │
-│  Automations · Dashboards & docs             │
-│  Workspaces & memory                         │
-│                                              │
-│  Shared capability API                       │
-│  (common operations for humans, agents,      │
-│   automations)                               │
-└──────────────────────────────────────────────┘
-        │                      │
-        ▼                      ▼
-   Execution            Persistence
-   ACP·A2A·CLI·APIs·MCP  SQLite · Files · Execution history
-        │
-        ▼
-┌──────────────────────────────────────────────┐
-│ Personal OS worker (supervised)              │
-└──────────────────────────────────────────────┘
+Personal OS remains a modular monolith with a separately supervised worker.
+
+```text
+Browser: conversation · activity · outputs · decisions
+    ↕ authenticated HTTP commands and persisted SSE updates
+API: validation · authorization · domain services
+    ↕                          ↕
+SQLite/WAL + artifact files ← Worker: queue · execution lifecycle
+                                  ↕ supported runtime protocols
+                     Codex · OpenCode · Pi · Hermes · OpenClaw
+
+Independent development: coding tools → repository → CI → release/recovery
 ```
 
-Personal OS is a **modular monolith with a separate supervised execution process**.
+The server never runs agents. For explicit execution commands it validates intent, records it and enqueues work.
+Creating a task, even with an assignee, is not an execution command.
+The worker owns runtime connections and writes events/state to persistence. It
+never calls the server to notify the browser. The server streams persisted events;
+the browser never holds external agent credentials or directly controls a harness.
 
-That is still a small application, but the split prevents a failing or compromised
-agent CLI from taking down the API server. The API server never runs an agent
-itself: it decides _what_ should run, records the outcome, and streams progress.
-
-### Why the worker is a separate process
-
-Agent execution is the one part of the system that runs untrusted code. A CLI agent
-is a subprocess the owner chose to trust; an MCP server or a gateway may be a remote
-system behaving unexpectedly. Keeping that work out of the API process means:
-
-- a crashed agent cannot take the server with it,
-- a long-running agent cannot block an HTTP request,
-- the server can be restarted without interrupting running work.
-
-The two processes coordinate through the same SQLite database. There is no broker,
-no message bus and no second datastore.
+Independent development and release do not depend on the instance or its factory.
+A future in-product improvement request hands work to that external path; it
+cannot become the only way to repair the product.
 
 ## 2. Technology baseline
 
-| Component            | Decision                                          |
-| -------------------- | ------------------------------------------------- |
-| Runtime              | Node.js LTS                                       |
-| Language             | TypeScript                                        |
-| Backend              | Fastify                                           |
-| Frontend             | React + Vite                                      |
-| UI                   | Tailwind + shadcn-style components                |
-| Database             | SQLite, WAL enabled                               |
-| Database access      | Drizzle ORM                                       |
-| Real-time            | SSE for server-to-client updates                  |
-| Local storage        | Filesystem with database metadata                 |
-| Background execution | SQLite-backed queue and worker                    |
-| Authentication       | Single-owner local authentication                 |
-| Agent runtime        | Adapter registry and supervised subprocesses      |
-| Deployment           | Docker Compose, with a source-run iteration stack |
-| Testing              | Vitest + Playwright                               |
-
-These are implementation defaults. They can change if a proof of concept identifies a
-concrete limitation.
-
-**Not introduced, and not to be introduced without demonstrated need:** Redis,
-Kubernetes, PostgreSQL, microservices, a plugin marketplace, a custom workflow engine.
-
-The whole system should be straightforward for another person to install from an
-open-source repository.
-
-## 3. Processes and their boundaries
-
-### The API server (`apps/server`)
-
-Owns conversations, agent connections, resources, the factory, automations and the
-MCP endpoint. It never executes an agent.
-
-Modules are separated by concern inside one process — `conversations`, `agents`,
-`resources`, `factory`, `automations`, `capabilities`, `events`, `mcp` — but none of
-them is a service in the microservice sense. They are plain modules over one
-database handle.
-
-**The modules belong to five domains, and the map is checked.** Interaction
-(conversations, executions), Work (factory, approvals), Resources (resources,
-automations), Runtime (agents, mcp) and Substrate (auth, workspaces, events,
-audit, capabilities). A domain owns its tables, its contracts and its tests; a
-domain may use Substrate; the shared capability API is the one place that reads
-across. The map is in [docs/domains.md](docs/domains.md), the machine-readable
-truth is `apps/server/src/domains.ts`, and a test fails the build when a module
-reaches into another domain without a declared crossing. It is ADR 0008.
-
-### The worker (`apps/worker`)
-
-Claims jobs from the queue, runs adapters, writes results back. Three job types:
-
-| Job               | What it does                                            |
-| ----------------- | ------------------------------------------------------- |
-| `chat.turn`       | Runs one agent turn for one conversation.               |
-| `factory.execute` | Runs an agent against a factory task, records evidence. |
-| `automation.run`  | Runs a due automation.                                  |
-
-The worker also owns the automation scheduler: every thirty seconds it looks for
-automations whose next run is due and enqueues them. It moves the schedule forward
-_before_ enqueueing, so a slow run cannot cause the same automation to be queued
-twice.
-
-The worker also owns the **event watcher**, which makes event-triggered automations
-work. It tails the persisted event log and enqueues any enabled automation whose
-trigger names the event that just happened. Because it reads the log rather than
-subscribing in-process, an event published by the API server triggers an automation
-exactly like an event published by the worker.
-
-Two guards stop an automation chain from running forever:
-
-- Only allowlisted events can be triggers at all. `execution.event` and `heartbeat`
-  are excluded because they fire constantly and carry no meaning as a trigger.
-- Every event carries the **chain depth** it was produced at. An event at the maximum
-  depth (3) triggers nothing, so at most three automation hops can follow one
-  another.
-
-### The web client (`apps/web`)
-
-A React single-page application. It talks to the API over HTTP and subscribes to
-`/api/events` for live updates. It never holds a credential for an external agent and
-never talks to a database directly.
-
-### The iteration stack
-
-The processes above are the ones that ship: the Compose stack in `deploy/` runs the
-compiled code. There is a second way to run them, for the times when the code is still
-moving — an agent is writing a new adapter, or a contract is being changed, and the
-change has to be exercised rather than described.
-
-`npm run dev:stack` runs the same three processes from source. The shared packages
-resolve to their TypeScript instead of to their compiled output
-(`tsconfig.dev.json`), so a change to a contract or to an adapter reaches the running
-instance rather than waiting for a rebuild. A change restarts only what it affects: the
-web client reloads in place, and the server and the worker restart.
-
-**A restart never runs an agent turn twice.** The queue releases a job whose lease has
-expired, so a worker killed in the middle of a turn leaves work that is run again. The
-worker is therefore asked to stop and finishes the turn it is running, and on a system
-where a child cannot be asked politely it is stopped only while it is idle.
-
-The instance follows the checkout it runs from, and an agent's work is written in a
-worktree beside the repository. An unfinished branch therefore cannot reach the running
-instance — the change has to land first.
-
-This is a development tool. The deployment is the Compose stack, and the gate that
-proves it is the Compose job in CI.
-
-## 4. Data flow of a chat turn
-
-1. The user posts a message to `POST /api/conversations/:id/messages`.
-2. The conversation service stores the message with a **correlation id** and an
-   **origin** (`human`, `agent`, `system` or `automation`).
-3. The routing engine decides who should receive a turn. The decision is pure logic
-   over the conversation, the participants, the message and the current chain state.
-4. For each target agent connection, the server creates an `executions` row and
-   enqueues a `chat.turn` job.
-5. The worker claims the job, builds the adapter, creates the agent's reply message
-   in `streaming` state, and iterates the adapter's event stream.
-6. Every `message.delta` is appended to the reply and published to the event log.
-   The web client renders it live.
-7. On completion the message is marked `complete` and the execution is closed.
-
-The reply message is written to the database _while it streams_. A browser that
-reconnects mid-answer sees the partial answer, and an answer that outlives the
-connection is not lost.
-
-### The echo-loop guard
-
-Three mechanisms work together:
-
-- **Correlation id** — every turn derived from one human request shares it.
-- **Reply link** — an agent's reply records the message it answers.
-- **Duplicate check** — before dispatching, the server looks for an existing reply
-  from that agent, in that chain, to that exact parent message. If one exists, the
-  dispatch is skipped.
-
-On top of that, an agent's message never automatically wakes every other
-participant. In `mentions` mode it wakes nobody unless it mentions somebody. In
-`coordinator` mode only the coordinator may delegate, and only explicitly. In
-`autonomous` mode the same rule applies to agent messages, while a human message
-reaches the full participant scope.
-
-## 5. Persistence
-
-SQLite in WAL mode. The database lives on a local filesystem — **not** a network
-share, because SQLite locking is not reliable there.
-
-| Table                                       | Holds                                                              |
-| ------------------------------------------- | ------------------------------------------------------------------ |
-| `users`, `sessions`                         | The single owner and their sessions.                               |
-| `workspaces`                                | The unit of access scoping, with the autonomy policy.              |
-| `agent_connections`                         | Connections, capabilities, status.                                 |
-| `secret_configs`                            | Encrypted adapter configurations and credentials.                  |
-| `conversations`, `participants`, `messages` | The conversation model.                                            |
-| `executions`, `execution_events`            | What ran, and what it reported.                                    |
-| `queue_jobs`                                | The worker queue.                                                  |
-| `goals`, `tasks`, `evidence`                | The factory.                                                       |
-| `resources`, `resource_files`               | The shared resource store.                                         |
-| `automations`, `automation_runs`            | Scheduling and run history.                                        |
-| `audit_log`                                 | Who requested an action, which agent performed it, and the result. |
-
-Migrations are generated with drizzle-kit and applied at boot by the migrator. The
-schema, the migrations and the runtime share one definition.
-
-### The event log doubles as the stream
-
-Every event the client can see is written to `execution_events` with a monotonic
-sequence number, and the SSE endpoint tails that table. This has two consequences
-worth stating:
-
-- The server can restart without losing the event stream.
-- Events produced by the _worker_ reach the browser through exactly the same path as
-  events produced by the _server_. There is one mechanism, not two.
-
-The SSE endpoint replays the fifty most recent events on connect, so a reconnecting
-client converges on the current state.
-
-## 6. Security posture
-
-| Area              | How it is handled                                                                                                                                                                                                                                                         |
-| ----------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Authentication    | One owner account. scrypt password hashing, opaque session tokens stored as SHA-256 digests.                                                                                                                                                                              |
-| Network           | Private by default. TLS belongs to the reverse proxy in front of the container.                                                                                                                                                                                           |
-| Agent credentials | AES-256-GCM encrypted at rest. The key lives in `PERSONAL_OS_SECRET_KEY` or a generated `data/secret.key`. Never returned to a client.                                                                                                                                    |
-| CLI execution     | Sanitised environment (no server secrets inherited), bounded working directory, hard timeout, cooperative cancellation.                                                                                                                                                   |
-| Workspaces        | Server-enforced scoping. The client never supplies its own scope.                                                                                                                                                                                                         |
-| Agent actions     | Explicit grants per connection. Adding an agent to a conversation does not change its permissions.                                                                                                                                                                        |
-| MCP               | Bearer token required. An agent token is MCP-only — it cannot reach the owner's HTTP API at all. It is scoped to one connection and exposes only the tools that connection was granted; an ungranted tool is not registered, so it does not even appear in the tool list. |
-| Outbound requests | Data sources and `http.request` actions are checked against an SSRF guard: only `http`/`https`, and never a private, loopback or link-local address. Opt out with `PERSONAL_OS_ALLOW_PRIVATE_TARGETS=true` for a trusted LAN deployment.                                  |
-| Data sources      | Read-only, single statement, and restricted to an allowlist of tables. `users`, `sessions`, `secret_configs`, `agent_tokens` and `audit_log` cannot be read by a data source.                                                                                             |
-| Recovery          | Database and files are in one directory and are backed up together. Restore is a file copy.                                                                                                                                                                               |
-
-**One essential rule for a self-hosted open-source product:** never give every
-connected agent unrestricted access to the Personal OS host merely to make
-integrations easier. An agent may be allowed to work on one directory, use one tool,
-or create a dashboard — without receiving authority over the whole server.
-
-The CLI adapter enforces this as far as a portable process can: it drops the server's
-environment, confines the working directory, and caps runtime. **It is not a
-sandbox.** Strong isolation is the deployment's job — run the worker container with a
-read-only root filesystem, no host mounts beyond the agent's own directory, and no
-access to the Personal OS secret key.
-
-## 7. Incremental build plan
-
-Five milestones. Each one has a working demonstration and tests, not just an agent's
-claim of success.
-
-### 01 — Foundation and first agent chat
-
-Web UI, login, workspaces, conversations, persistence, one working agent adapter.
-
-**Acceptance:** chat with an agent, reload or restart the server, and retain the
-conversation. — _implemented_
-
-### 02 — Agent interoperability and group chats
-
-A second, architecturally different adapter, capability discovery, participants,
-mentions and configurable group routing.
-
-**Acceptance:** two different agent types participate in one group conversation
-without modifying conversation storage or the first adapter. — _implemented: six
-adapter types, capability discovery, mentions, coordinator and autonomous routing_
-
-### 03 — Personal software factory
-
-Goals, tasks, assignments, execution status, evidence and a work overview. Support
-for directly managed and externally delegated work.
-
-**Acceptance:** an agent can receive a task, report progress and produce a result
-that persists independently of its conversation. — _implemented, including the
-distinction between an agent reporting completion and acceptance_
-
-### 04 — Agent-built dashboards and automations
-
-Resource API, MCP tools, data-source bindings, dashboard widgets, a persistent
-scheduler.
-
-**Acceptance:** an agent creates a dashboard, configures its refresh, and verifies it
-updates after a server restart. — _implemented: resource API with revision
-semantics, MCP tool surface, dashboard and document providers, cron scheduler_
-
-### 05 — Autonomy and richer applications
-
-Scoped autonomous goals, review workflows, document editing, richer dashboards and
-improved memory.
-
-**Acceptance:** an authorised agent progresses a goal, creates or updates useful
-resources, and exposes evidence for human review. — _partially implemented: scoped
-autonomy policies, review and acceptance workflow, evidence capture_
-
-## 8. How it is tested
-
-Four layers, each answering a different question:
-
-| Layer                | Command                      | What it proves                                                                                                                                                                             |
-| -------------------- | ---------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| Unit and integration | `npm run test`               | 369 tests across contracts, adapters, server and worker — 437 with the web client: routing safeguards, queue leases, resource revisions, the acceptance boundary, guards, MCP grants.      |
-| End-to-end           | `npx tsx scripts/smoke.ts`   | 56 checks against a real server and worker on a throwaway database: setup, a chat turn, concurrency, acceptance, audit, approvals, MCP, and an event-triggered automation actually firing. |
-| Browser              | `npm run test:e2e`           | Playwright drives the built client in headless Chromium: the owner creates the account, narrows an agent's MCP tool grants, and builds an event-triggered automation.                      |
-| Deployment           | `scripts/verify-compose.ps1` | The Compose stack starts, the server becomes healthy, the worker runs, and the client is served.                                                                                           |
-
-The browser tests run against the **built** client that the server serves, not the
-Vite dev server, so they exercise the same bundle that ships.
-
-## 9. Known limitations
-
-These are real, and deliberately not hidden:
-
-- **The CLI adapter is supervised, not sandboxed.** See the security note above.
-- **The event stream polls.** The SSE endpoint tails the event table every 250 ms
-  instead of holding a connection to the worker. The worker's event watcher polls
-  the same table every 500 ms. For a personal instance this is invisible; it would
-  not scale to many clients.
-- **Only the OpenAI-compatible model API shape is implemented.** Other providers need
-  an adapter.
-- **ACP sessions are resumed, and only where the adapter can.** The adapter creates
-  a session per turn, and a turn suspended on an approval re-enters the session it
-  was in: the ACP adapter asks the agent to load that session with the native
-  `session/load` (`packages/agent-adapters/src/acp.ts:213`), and the worker restores
-  it before the turn continues (`apps/worker/src/executor.ts:375`). An adapter that
-  reports `persistentSessions` and has a session to restore gets the turn back; one
-  that does not has its execution closed with the reason on the reply. The published
-  contract and the code agree (WI-007).
-- **Data sources are read-only and table-scoped.** SQLite data sources accept a
-  single `SELECT` over an allowlist of tables. Credentials, sessions and audit
-  records are deliberately not readable.
-- **An approval resumes its execution where the adapter can, and closes it where
-  it cannot.** When an agent asks for approval, the execution is marked `blocked`
-  and the request is recorded. Deciding the approval then takes one of two paths:
-  if the adapter reports `persistentSessions` and the execution carries a session
-  to re-enter, the decision is recorded and the turn is queued to continue in
-  that session (`apps/server/src/modules/approvals/resume.ts:102-124`); if it does
-  not, the execution is finished with the decision's outcome and the reason
-  written on the reply (`apps/server/src/modules/approvals/resume.ts:144-169`).
-  Resuming a blocked adapter turn needs a protocol-level resume that not every
-  adapter supports, so closing is the fallback and not the rule.
-- **A single owner.** No teams, no sharing, no permissions beyond "this workspace".
-- **There is no email delivery, so there is no reset link.** The owner account is
-  created at first run and there are no default credentials. A forgotten password is
-  replaced from the command line (`node apps/server/dist/index.js --reset-password`),
-  which keeps every conversation, resource and task and signs out the sessions the
-  old credential produced. The new password is passed as a command-line argument, so
-  it is visible in the host's process list for as long as the command runs, and
-  another user on the host can read it there.
-- **No native desktop or mobile client.** The web client is responsive and
-  installable as a PWA.
+Keep Node.js LTS, strict TypeScript, Fastify, React/Vite, Tailwind/UI primitives,
+Drizzle, SQLite WAL, filesystem artifacts, SSE, Vitest/Playwright and Docker Compose.
+The SQLite-backed queue needs no new broker. Add infrastructure only for a measured
+requirement. Prefer maintained SDKs for protocol clients; do not build an inference
+engine or an agent harness.
+
+## 3. Responsibilities and existing modules
+
+These responsibilities are seams in the existing application, not new services or
+an instruction to move every table. The existing domain map in docs/domains.md and
+apps/server/src/domains.ts continues to govern current imports. Any change to that
+map requires a focused, reviewed slice.
+
+| Responsibility         | Existing implementation / target seam                                                                                                                                                                                  |
+| ---------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Conversations          | conversations: participants, shared messages, routing, delivery and projection into the transcript.                                                                                                                    |
+| Execution lifecycle    | worker executor, executions module and queue: sessions, runs, transitions, input delivery, interruption and recovery. Ownership of existing execution tables stays as documented until an explicit migration/refactor. |
+| Runtime adapters       | agents, registry and packages/agent-adapters: configuration, capabilities, protocol mapping, authentication and runtime-specific references. Concrete providers stay outside core domain logic.                        |
+| Projects and knowledge | workspaces and resource/memory APIs today; project execution binding, filesystem permissions and isolation remain target additions. A UI workspace is not already a sandbox.                                           |
+| Work                   | factory, approvals and autonomy: goals, tasks, delegation, verification, owner acceptance and authorization.                                                                                                           |
+| Resources              | resources/automations: documents, dashboards, artifacts, templates and validated resource providers.                                                                                                                   |
+| Shared substrate       | contracts, database, events, audit, auth and capability API. Cross-module behavior goes through explicit interfaces; the capability API is an entry point, not a place to accumulate business logic.                   |
+
+Shared boundary shapes live in packages/contracts. Domain services own their
+behavior and persistence; HTTP and MCP adapters validate and call those services.
+The worker orchestration composes permitted services instead of copying domain
+rules or freely updating unrelated tables.
+
+## 4. Connection, session and run
+
+A connection identifies an external runtime configuration and granted authority. A
+session identifies that runtime's continuing context for a project/conversation. A
+run is a bounded execution within a session, associated with the triggering message
+or task. Stable Personal OS identities are separate from native session identifiers.
+
+**Target:** an execution service shared by chat, task and automation callers owns
+adapter initialization, capability discovery, session creation/resumption, prompt
+submission, event consumption, input delivery, cancellation and cleanup. Callers
+provide purpose and authorized context; they do not each implement adapter setup.
+
+Treat current adapter instances as ephemeral until session ownership and cleanup
+are implemented. A successful capability probe on one instance does not initialize
+a later instance. MCP currently exposes this lifecycle gap; the first recovery
+slice reproduces and repairs it through the worker.
+
+Store runtime references and capability snapshots sufficient to interpret a run.
+Unsupported resume, steering, artifacts or approvals remain unsupported, not
+emulated by changing labels. Native details belong in validated adapter metadata;
+adding a runtime must not require provider branches in conversation/task storage.
+
+## 5. One durable execution flow
+
+**Target flow**, introduced in compatibility-preserving slices:
+
+1. Validate the command, actor, project scope, revision and idempotency key.
+2. Atomically record the intent, run and queue job. Duplicate submission returns
+   the existing result instead of starting a second side effect.
+3. The worker claims the job, resolves authority and establishes the runtime
+   connection/session before submitting input.
+4. Persist normalized events, native references and materialized run state with
+   stable identities/order. Replayed remote events do not duplicate transcript
+   entries. Keep only bounded, redacted native metadata useful for diagnosis.
+5. Stream persisted updates through the existing server event surface. Tool output
+   remains distinct from assistant messages and from verified deliverables.
+6. Record real completion/error/stop semantics. Accepted input alone does not
+   establish completion. Store artifacts with durable metadata and provenance.
+7. A verification result is separate from runtime completion. Product work waits
+   for owner acceptance where required.
+
+Proposed states distinguish queued, running, waiting for input/permission,
+completed, failed, cancelled and uncertain outcomes. Existing status enums are not
+renamed by this document. Introduce additive states/events or explicit mappings
+with schemaVersion, migrations and client compatibility in CONTRACTS.md.
+
+## 6. Recovery and interruption
+
+Browser reconnect uses persisted history plus an event cursor; ephemeral token
+state is not canonical history. Define event retention and snapshot fallback so a
+cursor outside retention can recover without missing messages.
+
+A queue lease is not proof that a remote side effect stopped. After worker loss,
+reconcile the external reference/status where supported. If the outcome cannot be
+established, hold it as unknown and offer explicit resolution. Avoid promising
+exactly-once execution across an arbitrary external runtime.
+
+Steering, follow-up queueing, cancellation and hard process termination are
+different. Persist delivery/acknowledgment where observable, explain unsupported
+operations, and never present a local timeout as confirmed remote cancellation.
+Enforce per-session serialization unless the runtime explicitly supports concurrent
+turns; bounded concurrency across isolated sessions is a separate limit.
+
+## 7. Scope, permissions and files
+
+A project execution binding identifies local or remote location, repository/files,
+instructions and permitted capabilities. It is not merely a browser grouping.
+Preserve existing workspaces; add optional bindings with explicit defaults rather
+than assuming all existing paths or projects are executable.
+
+Personal OS enforces its MCP grants, dispatch authority, approval decisions and
+budgets. Native filesystem/shell actions need harness/environment enforcement.
+Do not advertise isolation until tests establish it. Runtime authentication stays
+in encrypted server-held configuration and out of event payloads and browser data.
+An approval has an expiry/decision identity, resumes the intended run and cannot
+be reused to authorize another action.
+
+Artifacts use authenticated storage and validated metadata, size/type limits and
+path containment. Preview untrusted HTML/files with appropriate isolation; do not
+serve arbitrary agent output as trusted application code. Shared local paths and
+remote artifacts have explicit provenance.
+
+## 8. Teams and the factory
+
+Teams are conversation participants with configurable roles. A coordinator is an
+external agent using authorized product tools, not an inference loop implemented
+inside the server. Scheduling records dispatches, results and dependencies using
+the existing queue; it is bounded domain behavior, not a new workflow framework.
+
+The later coordination slice must close the loop from submission to observed
+completion to verification to follow-up. It includes correlation identifiers,
+deduplication, loop/depth/turn limits, bounded concurrency and pause. Every handoff
+links parent and child, states who owns execution, and returns an inspectable
+result. Delegation can narrow but never widen authority.
+
+Externally managed teams retain their scheduler and internal tasks. Store their
+external reference and observed progress, not a second internal reconstruction.
+Core code does not know provider names.
+
+The product factory layers goals/tasks/evidence/acceptance onto this same execution
+service. A text reply is evidence of a response; a claimed deliverable needs a
+resource, artifact, diff, test report or other inspectable output. Owner acceptance
+remains separate from agent completion and independent development review.
+
+## 9. Compatibility and implementation discipline
+
+Preserve existing conversations, agents, tasks, resources, approvals, secrets,
+event readers and migrations. Add nullable/defaulted fields where appropriate;
+backfill only with observed facts. An old execution without a native session
+reference cannot be retroactively made resumable. Keep existing API behavior while
+new commands are introduced. In particular, task creation with an assignee remains
+creation; dispatch is an explicit authorized operation.
+
+Every slice carries contract changes, migrations/snapshots, a feature test,
+failure/restart cases and a user demonstration. Follow
+[the feature guide](docs/feature-guide.md). No large structural refactor is a
+prerequisite for the first worker-lifecycle fix.
+
+## 10. Operating the current build
+
+See README.md for installation and AGENTS.md for gates. The current source stack is
+npm run dev:stack; deploy/compose.yaml runs the compiled server and worker sharing
+a local SQLite volume. A health response does not prove agent execution.
+
+The current owner-password recovery command is npm run reset:owner-password,
+implemented by scripts/reset-owner-password.ts.
+Its password argument is visible in the host process list/command line: another
+user on that host may read it. Use it only on a trusted host and follow the
+README's recovery instructions. This recovery plan does not change that command.
+
+Schema migration on boot and code/schema rollback behavior must be checked before
+a deployment claims safe rollback. Retain the external release/recovery boundary
+from ADR 0010; its historical runbook describes procedures and limitations rather
+than proof that every rollback scenario has been exercised.
