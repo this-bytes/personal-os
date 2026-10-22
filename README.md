@@ -78,8 +78,12 @@ ports, which is how it runs beside a deployment that already holds them:
 PERSONAL_OS_PORT=4318 PERSONAL_OS_WEB_PORT=5174 npm run dev:stack
 ```
 
-This is an iteration tool, not a deployment. The deployment is the Compose stack
-below, and it runs the compiled code.
+This is the same code the deployment runs, started from the checkout rather than
+from an image: a change to it reaches the running instance as it is written.
+The Compose stack below is the deployment — it runs the compiled code, and
+replacing what a running deployment serves means building the images again.
+When the point is to see the current code rather than the shipped artifact,
+run the source stack; see "Running the instance from source" below.
 
 ### There are no default credentials
 
@@ -183,6 +187,81 @@ the setup screen from the person using it.
 The SQLite database lives in a Docker volume on the engine's own filesystem, not
 on a network share, which is what SQLite's locking requires.
 
+### Running the instance from source
+
+The Compose stack runs the compiled code, and bringing new code to a running
+deployment means building the images again. To serve the current code
+instead — a change reaching the running instance as it is written, with no
+image and no build — run the source stack:
+
+```bash
+npm run dev:stack
+```
+
+That is the same three processes the deployment runs, started from the
+checkout. The client is on <http://localhost:5173> and the API on
+<http://localhost:4317>.
+
+`deploy/source-stack.sh` starts the same stack with the parts a long-lived
+instance needs done for it: the secret key and the data directory from
+`deploy/.env`, so the instance opens the same database and decrypts the
+configuration the deployment encrypted; and the stack bound to every
+interface, so the host can reach it.
+
+```bash
+bash deploy/source-stack.sh
+```
+
+#### Reaching it from another machine
+
+The client and the API listen on every interface inside the distribution, so
+anything that can reach the host can reach them — if the host lets it in.
+
+On Linux that is a firewall rule, and it needs an elevated shell:
+
+```bash
+sudo ufw allow 5173/tcp
+sudo ufw allow 4317/tcp
+```
+
+On WSL it is worth being precise, because the two layers answer differently.
+Windows forwards a listener in the distribution to the host's **loopback**
+address, and not to the host's address on the network. The host's firewall
+then refuses traffic that did not originate on the host. So the port has to
+be opened on the host itself, and there are two ways to do that:
+
+- **Publish the port with Docker Desktop.** The publish writes the firewall
+  rule with it, so no elevated shell is needed. The published container
+  forwards to a jump port inside the distribution, because a container cannot
+  target a port the host already publishes to it, and because the container
+  reaches the host through its loopback — the jump port is never exposed to
+  the network.
+- **Forward the port with `netsh interface portproxy`.** This is the
+  documented Windows way to forward a port into WSL. It needs an elevated
+  shell, which a remote owner of the machine does not have.
+
+`deploy/source-stack.sh --publish` takes the first route:
+
+```bash
+bash deploy/source-stack.sh --publish
+```
+
+It publishes the client on 5173 and the instance on 4317. Both addresses
+serve the panel and proxy the API under them, so the instance answers on the
+port the deployment used as well as on the client's own.
+
+A checkout on a Windows filesystem cannot run the source stack: the native
+modules are built for the platform they run on, and SQLite needs a
+filesystem that locks the way SQLite expects. On WSL, clone into the
+distribution:
+
+```bash
+git clone /mnt/g/code/personal-os ~/code/personal-os
+cd ~/code/personal-os
+npm ci
+bash deploy/source-stack.sh --publish
+```
+
 ## Connecting an agent
 
 Agent connections are adapters. Personal OS ships with six:
@@ -232,7 +311,8 @@ personal-os/
 │   ├── feature-guide.md  # How to implement a complete slice
 │   └── decisions/        # Architecture decision records
 ├── deploy/
-│   └── compose.yaml
+│   ├── compose.yaml
+│   └── source-stack.sh
 ├── .factory/             # Current work item and compact contract-status evidence
 ├── PRODUCT.md            # What this is and what it is not
 ├── ARCHITECTURE.md       # How the pieces fit together
