@@ -4799,12 +4799,12 @@ WI-126 verification (`task_74ee53b2ab2d`). **Ceiling two. Next free number WI-12
 ## 2026-10-22 12:07 — the branch pile-up, re-measured at `359a76e`: the chain landed, and what is left is 21 branches and one decision
 
 **One — the pile-up is smaller, and the verdicts did not move.** Measured at
-`origin/main` = `359a76e`: **84 remote `wi/*` branches, 63 merged, 21
-unlanded.** The whole table was re-measured at **ten** different tips of `main`
-— `115d226`, `d4c12c1`, `20ce58e`, `2806f72`, `db6a29b`, `def2079`, `cc31edb`,
-`5465bd4` and `359a76e` among them — and **every verdict came out the same at
-every one**: the same branches merge clean, the same branches conflict, the
-same four must not be merged. Only the counts move, because the peer is
+`origin/main` = `c26f650`: **84 remote `wi/*` branches, 64 merged, 20
+unlanded.** The whole table was re-measured at **eleven** different tips of
+`main` — `115d226`, `d4c12c1`, `20ce58e`, `2806f72`, `db6a29b`, `def2079`,
+`cc31edb`, `5465bd4`, `359a76e` and `c26f650` among them — and **every verdict
+came out the same at every one**: the same branches merge clean, the same
+branches conflict, the same four must not be merged. Only the counts move, because the peer is
 landing work while the measurement runs.
 
 **Two — the branches that looked like rival directions were one direction, and
@@ -4827,14 +4827,13 @@ might be a different direction"_ was right about the branch **names** and wrong
 about the code: the worst-looking cluster in the pile-up was one direction with
 four branches hanging off it, and it landed as one merge.
 
-**Three — what can be landed today.** Five branches, every one of them clean
+**Three — what can be landed today.** Four branches, every one of them clean
 and every one of them green on the platform:
 
 | Branch                               | Net landing effect | CI  |
 | ------------------------------------ | ------------------ | --- |
 | `wi/092-bundle-budget-timeout`       | +84/−44, 1 file    | 5/5 |
 | `wi/106-record-four-loose-sentences` | +47/−1, 1 file     | 7/7 |
-| `wi/116-strategy-record-rule-pin`    | +86/−28, 1 file    | 7/7 |
 | `wi/119-strategy-record-prose`       | +126, 1 file       | 7/7 |
 | `wi/117-branch-pileup-verdict`       | +655, 2 files      | 7/7 |
 
@@ -4884,9 +4883,10 @@ unless the workspace packages resolve to the tree under test.
 
 **Six — the number space, and the one decision left.** `main`'s block now reads
 **"Next free number WI-128"**, and `WI-126.md` and `WI-127.md` are on `main`.
-**Ten** numbers are each claimed by more than one branch. **Eight are closed
-or close on a landing in the table above, and one — WI-122 — has been closed by
-the landing.** **Exactly one decision is left: WI-077.**
+**Ten** numbers are each claimed by more than one branch. **Nine are closed or
+close on a landing in the table above — WI-122 and WI-116 among them, both
+closed by a landing rather than by an argument.** **Exactly one decision is
+left: WI-077.**
 `077-agent-adapter-domain` (the worker agent probe, still absent from `main`)
 and `077-author-shape-house-form` (contract prose) are two different pieces of
 work under one number, both unlanded, both needing a rebase. **They need
@@ -4908,9 +4908,9 @@ branch was deleted, nothing was force-pushed, and nothing was landed on `main`
 by this item.**
 
 **And this branch is `main` plus this item.** `git merge-tree --write-tree
-origin/main wi/117-branch-pileup-verdict` is **clean**, and the net is **+655
-over two files** — `.factory/INTAKE.md` and `.factory/work/WI-117.md`, and
-nothing else. **The lead can land it with a fast-forward.**
+origin/main wi/117-branch-pileup-verdict` is **clean**, and the net is **two
+files** — `.factory/INTAKE.md` and `.factory/work/WI-117.md`, and nothing else. **The lead can land it with a fast-forward.**
+
 ## 2026-10-22 12:10 — Chief: a correction to this session's own 11:55 entry, and the front page's first field is corrected too
 
 **One — and the 11:55 entry's third section was wrong, and the wrongness is named here
