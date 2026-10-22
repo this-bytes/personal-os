@@ -25,7 +25,11 @@ export const autonomyActions: AutonomyAction[] = ['message.send', 'tool.call', '
  *
  * Every field is optional, because a change says what changes: the owner sets
  * the turn limit and the action list they set earlier stays. An absent list is
- * left alone and an empty one clears it, so clearing is still deliberate.
+ * left alone. An empty list names no action, and a policy that names no
+ * action does not restrict the actions — so the write path refuses it and says
+ * what to write instead. The rule lives in the write path rather than in this
+ * shape: the shape says what a patch can carry, and the rule says what it may
+ * mean.
  *
  * The action lists are constrained to the published vocabulary. A policy that
  * names an action the system does not understand allows nothing, and it says
@@ -282,6 +286,13 @@ function strictestBound(
  * set is then every action in the vocabulary, which is what the stored
  * defaults mean. A policy that names actions the vocabulary does not know
  * allows nothing — an unknown action is a refusal, not a pass.
+ *
+ * So when no policy names any action, the effective set is every action in the
+ * vocabulary, and that is published rather than implied. The policies that
+ * reach that state are the ones that never named one: a write that names an
+ * empty list is refused, because an empty list is not a tighter policy but the
+ * absence of one, and a stored empty list cannot be told apart from the stored
+ * default.
  *
  * A stored row is read defensively: a field that is missing or mistyped is no
  * opinion rather than an answer, so a broken row cannot widen the limits the

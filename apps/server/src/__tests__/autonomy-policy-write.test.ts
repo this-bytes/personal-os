@@ -153,12 +153,25 @@ describe('the owner can set the autonomy policy', () => {
     expect(workspace.autonomyPolicy.allowedActions).toEqual(['message.send']);
   });
 
-  it('clears a list only when the owner says so', async () => {
+  it('refuses to clear a list, because clearing it would widen the policy', async () => {
     await patchWorkspace({ autonomyPolicy: { allowedActions: ['message.send'] } });
-    await patchWorkspace({ autonomyPolicy: { allowedActions: [] } });
 
+    const response = await patchWorkspace({ autonomyPolicy: { allowedActions: [] } });
+
+    // An empty list names no action, and a policy that names no action does
+    // not restrict the actions — so writing one would widen the policy to
+    // every action in the vocabulary while looking like a tightening. The
+    // write is refused, and it says what to write instead.
+    expect(response.statusCode).toBe(422);
+    expect(response.json().error.code).toBe('validation_failed');
+    expect(
+      String(response.json().error.message ?? ''),
+      'the refusal says what to write instead',
+    ).toMatch(/name the actions|leave the list out/i);
+
+    // And the policy is untouched: a refused change changes nothing.
     const workspace = await storedWorkspace();
-    expect(workspace.autonomyPolicy.allowedActions).toEqual([]);
+    expect(workspace.autonomyPolicy.allowedActions).toEqual(['message.send']);
   });
 
   it('writes the mode into both of the places it is kept', async () => {
