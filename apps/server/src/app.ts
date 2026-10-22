@@ -39,6 +39,7 @@ import { registerMeasuresRoutes } from './api/measures.js';
 import { registerAutonomyRoutes } from './api/autonomy.js';
 import { registerEventRoutes } from './api/events.js';
 import { registerAgUiRoutes } from './api/agui.js';
+import { createDefaultFeatureRegistry } from './features/index.js';
 
 export interface BuildAppOptions {
   config?: AppConfig;
@@ -230,6 +231,11 @@ export async function buildApp(options: BuildAppOptions = {}): Promise<FastifyIn
   registerAutonomyRoutes(app);
   registerEventRoutes(app);
   registerAgUiRoutes(app);
+
+  // The features come last, so a feature can read anything the runtime has
+  // already put in place. Adding a feature is one line in the registry, not
+  // an edit to this file.
+  createDefaultFeatureRegistry().install(app, services);
 
   // MCP endpoint. The actor is resolved from the bearer token or the
   // session cookie; an agent token is scoped to that agent connection.

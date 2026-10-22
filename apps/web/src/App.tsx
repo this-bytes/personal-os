@@ -9,6 +9,7 @@ import { AppShell } from './components/AppShell';
 import { LoadingState } from './components/ErrorState';
 import { LazyRoute } from './components/LazyRoute';
 import { Login } from './pages/Login';
+import { featureRoutes, landingPath } from './features/registry';
 
 /*
  * One chunk per route.
@@ -26,18 +27,11 @@ import { Login } from './pages/Login';
  * The pages behind the login screen are wrapped in `LazyRoute`, which owns
  * the fallback for a chunk that is still on the wire and the error state for
  * a chunk that never arrives.
+ *
+ * The routes themselves belong to the features: each feature says which
+ * routes it owns, and the panel is built out of those. So a route is added by
+ * adding a feature, and this file does not grow.
  */
-const loadConversations = () =>
-  import('./pages/Conversations').then((page) => ({ default: page.Conversations }));
-const loadConversationDetail = () =>
-  import('./pages/ConversationDetail').then((page) => ({ default: page.ConversationDetail }));
-const loadAgents = () => import('./pages/Agents').then((page) => ({ default: page.Agents }));
-const loadFactory = () => import('./pages/Factory').then((page) => ({ default: page.Factory }));
-const loadResources = () =>
-  import('./pages/Resources').then((page) => ({ default: page.Resources }));
-const loadAutomations = () =>
-  import('./pages/Automations').then((page) => ({ default: page.Automations }));
-const loadSettings = () => import('./pages/Settings').then((page) => ({ default: page.Settings }));
 
 /** Gate that only lets an authenticated owner into the control panel. */
 function RequireAuth(): React.JSX.Element {
@@ -89,19 +83,16 @@ export default function App(): React.JSX.Element {
                 <Routes>
                   <Route path="/login" element={<Login />} />
                   <Route element={<RequireAuth />}>
-                    <Route path="/" element={<Navigate to="/conversations" replace />} />
-                    <Route path="/conversations" element={<LazyRoute load={loadConversations} />} />
-                    <Route
-                      path="/conversations/:conversationId"
-                      element={<LazyRoute load={loadConversationDetail} />}
-                    />
-                    <Route path="/agents" element={<LazyRoute load={loadAgents} />} />
-                    <Route path="/factory" element={<LazyRoute load={loadFactory} />} />
-                    <Route path="/resources" element={<LazyRoute load={loadResources} />} />
-                    <Route path="/automations" element={<LazyRoute load={loadAutomations} />} />
-                    <Route path="/settings" element={<LazyRoute load={loadSettings} />} />
+                    <Route path="/" element={<Navigate to={landingPath} replace />} />
+                    {featureRoutes.map((route) => (
+                      <Route
+                        key={route.path}
+                        path={route.path}
+                        element={<LazyRoute load={route.load} />}
+                      />
+                    ))}
                   </Route>
-                  <Route path="*" element={<Navigate to="/conversations" replace />} />
+                  <Route path="*" element={<Navigate to={landingPath} replace />} />
                 </Routes>
               </Suspense>
             </BrowserRouter>

@@ -237,7 +237,7 @@ This entry is the contract for **WI-031**, and the code implements it — as of
 (`363428e`), and `3dd490b` brought the route to the published shape after it.
 The route is `POST /api/executions/:id/resolve`, at
 `apps/server/src/api/executions.ts:21`, and it is registered at
-`apps/server/src/app.ts:226`. **Only the owner may call it**, under the same
+`apps/server/src/app.ts:227`. **Only the owner may call it**, under the same
 authentication as every other owner-facing route
 (`apps/server/src/api/helpers.ts:14-16`). **The route's own writer is the
 executions service**, which writes the execution's status
@@ -1382,7 +1382,7 @@ route writes an entry, and it lists those twelve, one row each, with the action 
 one records. **A route whose action fails writes an
 entry that says `failed`**: today it writes none, because every route-level entry is
 written after the work and a handler that throws never reaches it, and the error
-handler writes nothing (`apps/server/src/app.ts:193`).
+handler writes nothing (`apps/server/src/app.ts:194`).
 
 **The code does not implement this yet.** The vocabulary is published ahead of its
 implementation, because the contract leads and the code follows: the implementation
@@ -1444,7 +1444,7 @@ defined in [The unknown outcome](#the-unknown-outcome); this entry publishes the
 list's use of it, and the two are not two definitions. The published type
 carries `pending | review | blocked | unknown`, member for member with
 `apps/server/src/api/waiting.ts:17`, and the route takes the reason straight
-from the task's status (`apps/server/src/api/waiting.ts:104`), so a task that cannot be confirmed
+from the task's status (`apps/server/src/api/waiting.ts:108`), so a task that cannot be confirmed
 arrives as `reason: 'unknown'` and the published type cannot drift away from
 what the route returns.
 
@@ -1547,7 +1547,7 @@ exhaustively on the item's fields has one more field to read.
 
 The blocked capability is the contract for **WI-121**, and the code implements it —
 as of `d229b53`: the refusal is recorded at `apps/server/src/modules/mcp/server.ts:720`, the list
-draws it as its own kind at `apps/server/src/api/waiting.ts:159`, and the owner's
+draws it as its own kind at `apps/server/src/api/waiting.ts:163`, and the owner's
 action is `POST /api/agents/:id/grants`.
 
 **The order of the list is over reasons, not kinds.** A turn carries the reason
@@ -1563,7 +1563,7 @@ with this entry. A row recorded before this change keeps the kind it was
 recorded with: no approval becomes a turn, and no task becomes a turn.
 
 The order is the order of urgency, and it is the order the code assembles the
-list in (`apps/server/src/api/waiting.ts:179`): an agent that cannot
+list in (`apps/server/src/api/waiting.ts:183`): an agent that cannot
 continue comes first, then the work whose outcome could not be confirmed, then
 the work waiting for an acceptance decision, then the work that is stuck.
 
@@ -1661,7 +1661,7 @@ never an agent token, which is MCP-only.
 
 This entry is the contract for **WI-039**, and the code implements it — the route
 is `GET /api/approvals/:id/evidence`, at `apps/server/src/api/approvals.ts:37`,
-and it is registered at `apps/server/src/app.ts:225`. The shape it answers is the
+and it is registered at `apps/server/src/app.ts:226`. The shape it answers is the
 one published above, and it lives at `packages/contracts/src/approvals.ts:91`. The
 drawer that reads it is WI-040's, and it waits for this route.
 

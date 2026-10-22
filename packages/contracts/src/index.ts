@@ -18,3 +18,5 @@ export * from './events.js';
 export * from './mcp.js';
 export * from './measures.js';
 export * from './approvals.js';
+export * from './feature.js';
+export * from './forge-map.js';

@@ -2,15 +2,14 @@ import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Badge, Button, Card, CardContent } from '@personal-os/ui';
-import { resolvePersona, type PersonaSource } from '@personal-os/contracts';
+import {
+  resolvePersona,
+  type Participant,
+  type Persona,
+  type PersonaSource,
+} from '@personal-os/contracts';
 import { api, errorMessage } from '../lib/api';
-import type {
-  AgentConnectionDetail,
-  ApprovalDecision,
-  ConversationDetail,
-  ExecutionResolution,
-  WaitingItem,
-} from '../lib/types';
+import type { ApprovalDecision, ExecutionResolution, WaitingItem } from '../lib/types';
 import { useWorkspace } from '../state/workspace';
 import { useServerEvents } from '../state/events';
 import { EmptyState, ErrorState, LoadingState } from './ErrorState';
@@ -36,15 +35,18 @@ interface WaitingListProps {
    * The list says which agent is waiting, and it says it by name when the
    * panel knows the name. These are the agents the panel has already asked
    * for, so naming them costs no extra request.
+   *
+   * Only a name and a persona are needed, so a surface that knows less than
+   * the agents page can still say who is waiting.
    */
-  agents: AgentConnectionDetail[];
+  agents: Array<{ id: string; name: string; persona?: Persona }>;
   /**
    * The conversations the panel already knows.
    *
    * A conversation may replace the persona of an agent for itself, so the
    * list needs the conversation before it can say which persona is in force.
    */
-  conversations: ConversationDetail[];
+  conversations: Array<{ id: string; participants: Participant[] }>;
 }
 
 /**
@@ -273,7 +275,7 @@ function WaitingRow({
   onResolve,
 }: {
   item: WaitingItem;
-  agent?: AgentConnectionDetail;
+  agent?: { name: string };
   persona?: { role?: string; source: PersonaSource } | null;
   busy: boolean;
   onDecide: (approvalId: string, approved: boolean) => void;
