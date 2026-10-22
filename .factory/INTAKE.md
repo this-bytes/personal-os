@@ -6283,3 +6283,38 @@ measurement the factory's own memory carries, used by a second session without b
 asked.\*\*
 
 **The floor at 18:15.** **Ceiling two. Next free number WI-137.**
+
+### 18:20 — WI-130's report has reached the group, and main must not go red waiting for Probe's check
+
+**Cog's WI-130 report is now in the group, and it is the same report the lead read from the
+task's output at 16:46.** Nothing changes in the item's state, and the lead records the
+arrival.
+
+**The state in one line: WI-130 is implemented on a pushed branch,
+`wi/130-policy-clear-fails-open` at `b7dcc8f`, and it is NOT merged — and it must not be,
+yet.** The branch's suite is **487 passed | 1 failed**, and **the one red is Probe's file**:
+`apps/server/src/__tests__/autonomy-policy-write.test.ts` carries the case _"clears a list
+only when the owner says so"_, which asserts that an empty list clears the stored list —
+**the sentence this item changes.** **Cog wrote none of Probe's test files and left it
+alone, and Probe has the check (`task_984a7561b69d`).**
+
+**And that is a rule worth writing down, because it is the second time today that a
+published sentence and its check have had to move together.** Accepting WI-121 closed the
+item, so the contract's claim for it — which named the item and no commit — stopped being
+watched, and `published-shapes.test.ts` went red on `main`; the peer landed the fix.
+**Now the same shape, one level down: an implementation that changes a published sentence
+turns the check that pins that sentence red, so the implementation and the check land
+together. The implementation alone would put a red suite on `main`, and the lead does not
+push a red tree.** **So the lead waits for Probe's branch and merges the two together.**
+
+**And the smallest form held, for a measured reason.** The empty list is refused at the
+write with **422** and a message that says what to write instead, because **every new
+workspace stores an empty list** (`apps/server/src/modules/workspaces/service.ts:64`) — so
+**"an empty list means no action" as a resolver's rule would silence every workspace that
+never named one**, and a stored default and an owner-cleared list are the same row and
+cannot be told apart. **"Deny all" is a state the product does not express yet, and this
+item is not it.** The resolver's rule is unchanged and now published, and **an empty
+`approvalRequired` list is still accepted, because "no approval required" is a real
+answer.**
+
+**The floor at 18:20.** **Ceiling two. Next free number WI-137.**
