@@ -5,12 +5,13 @@ import {
   ChevronDown,
   ChevronRight,
   HelpCircle,
+  Link2,
   ListChecks,
   ShieldCheck,
   X,
 } from 'lucide-react';
 import { Badge, Button, Card, CardContent, Select, Textarea } from '@personal-os/ui';
-import type { FactoryTask, TaskStatus } from '@personal-os/contracts';
+import type { FactoryTask, TaskDependency, TaskStatus } from '@personal-os/contracts';
 import { api, errorMessage } from '../lib/api';
 import type { AgentConnectionDetail, TaskWithEvidence } from '../lib/types';
 
@@ -29,6 +30,8 @@ interface TaskBoardProps {
   tasks: FactoryTask[];
   agents: AgentConnectionDetail[];
   goalTitles: Record<string, string>;
+  /** What the tasks wait on, so the board can say so honestly. */
+  dependencies: TaskDependency[];
   /** The task a link pointed at. It opens expanded, so the owner lands on it. */
   focusedTaskId?: string;
 }
@@ -37,6 +40,7 @@ export function TaskBoard({
   tasks,
   agents,
   goalTitles,
+  dependencies,
   focusedTaskId,
 }: TaskBoardProps): React.JSX.Element {
   const [expanded, setExpanded] = useState<string | null>(focusedTaskId ?? null);
@@ -77,6 +81,8 @@ export function TaskBoard({
                     task={task}
                     agents={agents}
                     goalTitles={goalTitles}
+                    dependencies={dependencies}
+                    candidates={tasks}
                     expanded={expanded === task.id}
                     onToggle={() => setExpanded(expanded === task.id ? null : task.id)}
                   />
@@ -100,6 +106,8 @@ export function TaskBoard({
                 task={task}
                 agents={agents}
                 goalTitles={goalTitles}
+                dependencies={dependencies}
+                candidates={tasks}
                 expanded={expanded === task.id}
                 onToggle={() => setExpanded(expanded === task.id ? null : task.id)}
               />
@@ -115,6 +123,9 @@ interface TaskCardProps {
   task: FactoryTask;
   agents: AgentConnectionDetail[];
   goalTitles: Record<string, string>;
+  dependencies: TaskDependency[];
+  /** The tasks this one could wait on. */
+  candidates: FactoryTask[];
   expanded: boolean;
   onToggle: () => void;
 }
@@ -123,12 +134,15 @@ function TaskCard({
   task,
   agents,
   goalTitles,
+  dependencies,
+  candidates,
   expanded,
   onToggle,
 }: TaskCardProps): React.JSX.Element {
   const queryClient = useQueryClient();
   const [reason, setReason] = useState('');
   const [assignee, setAssignee] = useState(task.assigneeId ?? '');
+  const [dependencyChoice, setDependencyChoice] = useState('');
   const [error, setError] = useState<string | null>(null);
 
   const detail = useQuery<TaskWithEvidence>({
@@ -140,6 +154,9 @@ function TaskCard({
   const invalidate = async (): Promise<void> => {
     await queryClient.invalidateQueries({ queryKey: ['tasks'] });
     await queryClient.invalidateQueries({ queryKey: ['task', task.id] });
+    await queryClient.invalidateQueries({ queryKey: ['task-dependencies'] });
+    await queryClient.invalidateQueries({ queryKey: ['goal-view'] });
+    await queryClient.invalidateQueries({ queryKey: ['goals'] });
   };
 
   const assign = useMutation({
@@ -166,8 +183,31 @@ function TaskCard({
     onError: (cause) => setError(errorMessage(cause)),
   });
 
+  const changeDependencies = useMutation({
+    mutationFn: async (dependsOnTaskIds: string[]) =>
+      api.patch<{ task: FactoryTask }>(`/tasks/${task.id}`, {
+        dependsOnTaskIds,
+        expectedRevision: task.revision,
+      }),
+    onSuccess: async () => {
+      setError(null);
+      setDependencyChoice('');
+      await invalidate();
+    },
+    onError: (cause) => setError(errorMessage(cause)),
+  });
+
   const agent = agents.find((item) => item.id === task.assigneeId);
   const goalTitle = task.goalId ? goalTitles[task.goalId] : undefined;
+  const taskDependencies = dependencies.filter((dependency) => dependency.taskId === task.id);
+  const waitingOn = taskDependencies.filter((dependency) => !dependency.satisfied);
+  // The wait list comes from the server's own read of the dependencies, not
+  // from the card's copy of the task: a card that was patched by an event
+  // carries an older task than the one the server last read.
+  const waitsOnTaskIds = taskDependencies.map((dependency) => dependency.dependsOnTaskId);
+  const waitCandidates = candidates.filter(
+    (candidate) => candidate.id !== task.id && !waitsOnTaskIds.includes(candidate.id),
+  );
 
   return (
     <Card className="border-slate-800">
@@ -208,6 +248,12 @@ function TaskCard({
               outcome unknown
             </Badge>
           ) : null}
+          {waitingOn.map((dependency) => (
+            <Badge key={dependency.dependsOnTaskId} variant="warning">
+              <Link2 className="h-2.5 w-2.5" />
+              waits on {dependency.dependsOnTitle || 'another task'}
+            </Badge>
+          ))}
         </div>
 
         {expanded ? (
@@ -234,6 +280,66 @@ function TaskCard({
                 </ul>
               </div>
             ) : null}
+
+            <div className="space-y-1.5">
+              <p className="pos-field-label">Waits on</p>
+              {taskDependencies.length === 0 ? (
+                <p className="text-[11px] text-slate-500">This task waits on nothing.</p>
+              ) : (
+                <ul className="space-y-1">
+                  {taskDependencies.map((dependency) => (
+                    <li
+                      key={dependency.dependsOnTaskId}
+                      className="flex items-center gap-1.5 text-[11px] text-slate-300"
+                    >
+                      <Link2 className="h-3 w-3 shrink-0 text-slate-500" />
+                      <span className="min-w-0 flex-1 truncate">
+                        {dependency.dependsOnTitle || dependency.dependsOnTaskId}
+                      </span>
+                      <span className="text-slate-600">{dependency.dependsOnStatus}</span>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-6 px-1.5 text-[10px]"
+                        disabled={changeDependencies.isPending}
+                        onClick={() =>
+                          changeDependencies.mutate(
+                            waitsOnTaskIds.filter((id) => id !== dependency.dependsOnTaskId),
+                          )
+                        }
+                      >
+                        <X className="h-3 w-3" />
+                        Remove
+                      </Button>
+                    </li>
+                  ))}
+                </ul>
+              )}
+              <div className="flex items-center gap-1.5">
+                <Select
+                  aria-label="Add a task this one waits on"
+                  className="h-7 text-[11px]"
+                  value={dependencyChoice}
+                  onChange={(event) => setDependencyChoice(event.target.value)}
+                >
+                  <option value="">Choose a task…</option>
+                  {waitCandidates.map((candidate) => (
+                    <option key={candidate.id} value={candidate.id}>
+                      {candidate.title}
+                    </option>
+                  ))}
+                </Select>
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  className="h-7 text-[11px]"
+                  disabled={!dependencyChoice || changeDependencies.isPending}
+                  onClick={() => changeDependencies.mutate([...waitsOnTaskIds, dependencyChoice])}
+                >
+                  Add
+                </Button>
+              </div>
+            </div>
 
             <div>
               <p className="pos-field-label">Evidence</p>

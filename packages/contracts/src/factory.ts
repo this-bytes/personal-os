@@ -51,6 +51,8 @@ export const factoryTaskSchema = z.object({
   status: taskStatusSchema,
   acceptanceCriteria: z.array(z.string()).default([]),
   evidenceResourceIds: z.array(idSchema).default([]),
+  /** The tasks this task waits on. A task never waits on itself. */
+  dependsOnTaskIds: z.array(idSchema).optional(),
   // --- additive extensions ---
   /** Optimistic concurrency revision, shared with the resource API. */
   revision: z.number().int().min(1),
@@ -63,13 +65,11 @@ export const factoryTaskSchema = z.object({
 export type FactoryTask = z.infer<typeof factoryTaskSchema>;
 
 /**
- * The task contract, as a resource spec.
- *
- * A task resource's data is either the fields a caller writes — what a
- * template carries and what a create call overrides — or the whole task the
- * factory holds, which is what an inspection reads back. Both are the task
- * contract, so both are judged by the same schema: the contract with the
- * fields a caller does not write left out, and nothing else allowed in.
+ * The task contract, as a resource spec. A task resource's data is either
+ * the fields a caller writes — what a template carries and what a create
+ * call overrides — or the whole task the factory holds. Both are judged by
+ * the same schema: the fields a caller does not write left out, and
+ * nothing else allowed in.
  */
 export const taskSpecSchema = factoryTaskSchema.partial().strict();
 export type TaskSpec = z.infer<typeof taskSpecSchema>;
@@ -150,3 +150,75 @@ export const createTaskInputSchema = z.object({
   externalRef: z.string().optional(),
 });
 export type CreateTaskInput = z.infer<typeof createTaskInputSchema>;
+
+/**
+ * A dependency between two tasks: this task waits on that task.
+ *
+ * The edge has one direction, because the work that waits is not the work
+ * that is waited on. A task must never wait on itself, directly or through a
+ * chain, so the edge is checked before it is written.
+ *
+ * The task's own `dependsOnTaskIds` is optional, because a task that waits on
+ * nothing is the same task before and after the column that records it
+ * existed. The server always answers with the list it holds.
+ */
+export const taskDependencySchema = z.object({
+  /** The task that is waiting. */
+  taskId: idSchema,
+  /** The task it waits on. */
+  dependsOnTaskId: idSchema,
+  /** What the waited-on task is called, so the board can name it. */
+  dependsOnTitle: z.string(),
+  /** The status the waited-on task is in. */
+  dependsOnStatus: taskStatusSchema,
+  /**
+   * Whether the waited-on task is out of the way: done, or cancelled.
+   *
+   * A task that waits on a task which is neither done nor cancelled is
+   * waiting, and the board says so instead of calling it simply open.
+   */
+  satisfied: z.boolean(),
+});
+export type TaskDependency = z.infer<typeof taskDependencySchema>;
+
+/**
+ * The shape of a goal's work, as counts.
+ *
+ * A counter is a count and never a ratio: the band says how many, and a
+ * share is only shown when there is something to divide by.
+ */
+export const goalRollupSchema = z.object({
+  goalId: idSchema,
+  /** How many tasks the goal holds. */
+  total: z.number().int().min(0),
+  /** How many of them are waiting on the owner: in review, or unknown. */
+  waitingOnOwner: z.number().int().min(0),
+  /** How many of them are waiting on a task that is not out of the way yet. */
+  waitingOnDependency: z.number().int().min(0),
+  /** How many of them there are in each status. */
+  byStatus: z.object({
+    open: z.number().int().min(0),
+    active: z.number().int().min(0),
+    blocked: z.number().int().min(0),
+    review: z.number().int().min(0),
+    done: z.number().int().min(0),
+    cancelled: z.number().int().min(0),
+    unknown: z.number().int().min(0),
+  }),
+});
+export type GoalRollup = z.infer<typeof goalRollupSchema>;
+
+/**
+ * A goal, the work under it, and the shape of that work.
+ *
+ * The goal is the organising structure: the tasks belong to it, the
+ * dependencies say what the work is waiting for, and the rollup says how
+ * much of it there is.
+ */
+export const goalViewSchema = z.object({
+  goal: goalSchema,
+  rollup: goalRollupSchema,
+  tasks: z.array(factoryTaskSchema),
+  dependencies: z.array(taskDependencySchema),
+});
+export type GoalView = z.infer<typeof goalViewSchema>;

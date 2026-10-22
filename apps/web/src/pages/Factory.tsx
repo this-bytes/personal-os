@@ -3,10 +3,10 @@ import { useSearchParams } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Plus, Target } from 'lucide-react';
 import {
-  Badge,
   Button,
   Card,
   CardContent,
+  CounterBand,
   Dialog,
   DialogContent,
   DialogDescription,
@@ -16,9 +16,17 @@ import {
   Input,
   Select,
   Textarea,
+  type Counter,
 } from '@personal-os/ui';
 import { api, errorMessage } from '../lib/api';
-import type { AgentConnectionDetail, FactoryTask, Goal } from '../lib/types';
+import type {
+  AgentConnectionDetail,
+  FactoryTask,
+  Goal,
+  GoalOverview,
+  GoalView,
+  TaskDependency,
+} from '../lib/types';
 import { useWorkspace } from '../state/workspace';
 import { EmptyState, ErrorState, LoadingState } from '../components/ErrorState';
 import { Field } from '../components/Field';
@@ -30,19 +38,29 @@ export function Factory(): React.JSX.Element {
   const [searchParams] = useSearchParams();
   const [taskDialogOpen, setTaskDialogOpen] = useState(false);
   const [goalDialogOpen, setGoalDialogOpen] = useState(false);
+  const [selectedGoalId, setSelectedGoalId] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
 
   // A link from the waiting list points at one task, so the board opens that
   // card instead of making the owner find it.
   const focusedTaskId = searchParams.get('task');
 
-  const goals = useQuery<Goal[]>({
+  const overview = useQuery<GoalOverview>({
     queryKey: ['goals', activeWorkspaceId],
     queryFn: () =>
-      api
-        .get<{ goals: Goal[] }>('/goals', { workspaceId: activeWorkspaceId ?? undefined })
-        .then((r) => r.goals),
+      api.get<GoalOverview>('/goals/overview', {
+        workspaceId: activeWorkspaceId ?? undefined,
+      }),
     enabled: Boolean(activeWorkspaceId),
+  });
+
+  // The board shows one goal's work, or all of it. A goal's work is
+  // assembled by the server, so the panel does not have to know what a goal
+  // is made of.
+  const goalView = useQuery<GoalView>({
+    queryKey: ['goal-view', activeWorkspaceId, selectedGoalId],
+    queryFn: () => api.get<GoalView>(`/goals/${selectedGoalId}/view`),
+    enabled: Boolean(activeWorkspaceId && selectedGoalId),
   });
 
   const tasks = useQuery<FactoryTask[]>({
@@ -51,7 +69,18 @@ export function Factory(): React.JSX.Element {
       api
         .get<{ tasks: FactoryTask[] }>('/tasks', { workspaceId: activeWorkspaceId ?? undefined })
         .then((r) => r.tasks),
-    enabled: Boolean(activeWorkspaceId),
+    enabled: Boolean(activeWorkspaceId) && selectedGoalId === null,
+  });
+
+  const dependencies = useQuery<TaskDependency[]>({
+    queryKey: ['task-dependencies', activeWorkspaceId],
+    queryFn: () =>
+      api
+        .get<{ dependencies: TaskDependency[] }>('/tasks/dependencies', {
+          workspaceId: activeWorkspaceId ?? undefined,
+        })
+        .then((r) => r.dependencies),
+    enabled: Boolean(activeWorkspaceId) && selectedGoalId === null,
   });
 
   const agents = useQuery<AgentConnectionDetail[]>({
@@ -67,9 +96,9 @@ export function Factory(): React.JSX.Element {
 
   const goalTitles = useMemo(() => {
     const map: Record<string, string> = {};
-    for (const goal of goals.data ?? []) map[goal.id] = goal.title;
+    for (const goal of overview.data?.goals ?? []) map[goal.id] = goal.title;
     return map;
-  }, [goals.data]);
+  }, [overview.data]);
 
   const createTask = useMutation({
     mutationFn: async (input: {
@@ -91,6 +120,8 @@ export function Factory(): React.JSX.Element {
       setActionError(null);
       setTaskDialogOpen(false);
       await queryClient.invalidateQueries({ queryKey: ['tasks'] });
+      await queryClient.invalidateQueries({ queryKey: ['goal-view'] });
+      await queryClient.invalidateQueries({ queryKey: ['goals'] });
     },
     onError: (error) => setActionError(errorMessage(error)),
   });
@@ -110,10 +141,43 @@ export function Factory(): React.JSX.Element {
     onError: (error) => setActionError(errorMessage(error)),
   });
 
-  const taskList = tasks.data ?? [];
+  const goals = overview.data?.goals ?? [];
+  const rollups = new Map((overview.data?.rollups ?? []).map((rollup) => [rollup.goalId, rollup]));
+
+  // One goal's work, or all of it. The board is the same either way: the
+  // goals are the organising structure, and what is selected is what it shows.
+  const boardTasks = selectedGoalId ? (goalView.data?.tasks ?? []) : (tasks.data ?? []);
+  const boardDependencies = selectedGoalId
+    ? (goalView.data?.dependencies ?? [])
+    : (dependencies.data ?? []);
+  const boardError = selectedGoalId ? goalView.error : tasks.error;
+  const boardLoading = selectedGoalId ? goalView.isLoading : tasks.isLoading;
+
+  const counters: Counter[] = useMemo(() => {
+    const rollup = selectedGoalId ? goalView.data?.rollup : undefined;
+    if (!rollup) return [];
+    return [
+      { key: 'total', label: 'Tasks', value: rollup.total },
+      { key: 'done', label: 'Done', value: rollup.byStatus.done, tone: 'data' },
+      {
+        key: 'waiting-on-owner',
+        label: 'Waiting on you',
+        value: rollup.waitingOnOwner,
+        // The accent means live work, or work waiting on the owner. A goal
+        // with none of either wears no accent at all.
+        tone: rollup.waitingOnOwner > 0 ? 'live' : 'plain',
+      },
+      { key: 'blocked', label: 'Blocked', value: rollup.byStatus.blocked },
+      {
+        key: 'waiting-on-dependency',
+        label: 'Waiting on a task',
+        value: rollup.waitingOnDependency,
+      },
+    ];
+  }, [goalView.data, selectedGoalId]);
 
   return (
-    <div className="mx-auto flex w-full max-w-6xl flex-col gap-4 p-3 sm:p-4">
+    <div className="mx-auto flex w-full max-w-7xl flex-col gap-4 p-3 sm:p-4">
       <header className="flex flex-wrap items-center justify-between gap-2">
         <div>
           <h1 className="text-lg font-semibold tracking-tight">Factory</h1>
@@ -136,63 +200,95 @@ export function Factory(): React.JSX.Element {
 
       {actionError ? <ErrorState title="The change was not applied" message={actionError} /> : null}
 
-      <Card>
-        <CardContent className="p-3">
-          <p className="pos-field-label">Goals</p>
-          {goals.isError ? (
+      <div className="grid gap-3 lg:grid-cols-[15rem_minmax(0,1fr)]">
+        <aside className="min-w-0">
+          <Card>
+            <CardContent className="space-y-1.5 p-2.5">
+              <p className="pos-field-label">Goals</p>
+              {overview.isError ? (
+                <ErrorState
+                  title="The goals could not be loaded"
+                  message={errorMessage(overview.error)}
+                  onRetry={() => void overview.refetch()}
+                />
+              ) : null}
+              {overview.isLoading ? <LoadingState label="Loading goals…" /> : null}
+              {!overview.isLoading && goals.length === 0 ? (
+                <p className="rounded-md border border-dashed border-slate-800 px-2 py-2 text-center text-[11px] text-slate-500">
+                  No goals yet. A goal outlives any single agent, so it is the durable unit of
+                  intent.
+                </p>
+              ) : null}
+
+              <GoalChoice
+                title="All work"
+                detail="every task in the workspace"
+                selected={selectedGoalId === null}
+                onSelect={() => setSelectedGoalId(null)}
+              />
+
+              {goals.map((goal) => {
+                const rollup = rollups.get(goal.id);
+                return (
+                  <GoalChoice
+                    key={goal.id}
+                    title={goal.title}
+                    detail={
+                      rollup
+                        ? `${rollup.total} tasks · ${rollup.byStatus.done} done` +
+                          (rollup.waitingOnOwner > 0
+                            ? ` · ${rollup.waitingOnOwner} waiting on you`
+                            : '') +
+                          (rollup.byStatus.blocked > 0
+                            ? ` · ${rollup.byStatus.blocked} blocked`
+                            : '')
+                        : goal.status
+                    }
+                    selected={selectedGoalId === goal.id}
+                    onSelect={() => setSelectedGoalId(goal.id)}
+                  />
+                );
+              })}
+            </CardContent>
+          </Card>
+        </aside>
+
+        <section className="min-w-0 space-y-3">
+          {counters.length > 0 ? <CounterBand counters={counters} /> : null}
+
+          {boardError ? (
             <ErrorState
-              title="The goals could not be loaded"
-              message={errorMessage(goals.error)}
-              onRetry={() => void goals.refetch()}
+              title="The tasks could not be loaded"
+              message={errorMessage(boardError)}
+              onRetry={() => void (selectedGoalId ? goalView.refetch() : tasks.refetch())}
             />
           ) : null}
-          {goals.isLoading ? <LoadingState label="Loading goals…" /> : null}
-          {!goals.isLoading && (goals.data ?? []).length === 0 ? (
-            <p className="rounded-md border border-dashed border-slate-800 px-3 py-3 text-center text-[11px] text-slate-500">
-              No goals yet. A goal outlives any single agent, so it is the durable unit of intent.
-            </p>
+
+          {boardLoading ? <LoadingState label="Loading tasks…" /> : null}
+
+          {!boardLoading && !boardError && boardTasks.length === 0 ? (
+            <EmptyState
+              title="No tasks yet"
+              message="Create a task, assign it to an agent, and it will move to review when the agent reports back."
+            />
           ) : null}
-          <div className="flex flex-wrap gap-1.5">
-            {(goals.data ?? []).map((goal) => (
-              <Badge key={goal.id} variant="outline" title={goal.description}>
-                {goal.title}
-                <span className="text-slate-600">{goal.status}</span>
-              </Badge>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
 
-      {tasks.isError ? (
-        <ErrorState
-          title="The tasks could not be loaded"
-          message={errorMessage(tasks.error)}
-          onRetry={() => void tasks.refetch()}
-        />
-      ) : null}
-
-      {tasks.isLoading ? <LoadingState label="Loading tasks…" /> : null}
-
-      {!tasks.isLoading && !tasks.isError && taskList.length === 0 ? (
-        <EmptyState
-          title="No tasks yet"
-          message="Create a task, assign it to an agent, and it will move to review when the agent reports back."
-        />
-      ) : null}
-
-      {taskList.length > 0 ? (
-        <TaskBoard
-          tasks={taskList}
-          agents={agents.data ?? []}
-          goalTitles={goalTitles}
-          focusedTaskId={focusedTaskId ?? undefined}
-        />
-      ) : null}
+          {boardTasks.length > 0 ? (
+            <TaskBoard
+              tasks={boardTasks}
+              agents={agents.data ?? []}
+              goalTitles={goalTitles}
+              dependencies={boardDependencies}
+              focusedTaskId={focusedTaskId ?? undefined}
+            />
+          ) : null}
+        </section>
+      </div>
 
       <CreateTaskDialog
         open={taskDialogOpen}
         onOpenChange={setTaskDialogOpen}
-        goals={goals.data ?? []}
+        goals={goals}
         agents={agents.data ?? []}
         busy={createTask.isPending}
         error={createTask.isError ? errorMessage(createTask.error) : null}
@@ -207,6 +303,38 @@ export function Factory(): React.JSX.Element {
         onSubmit={(input) => createGoal.mutate(input)}
       />
     </div>
+  );
+}
+
+interface GoalChoiceProps {
+  title: string;
+  detail: string;
+  selected: boolean;
+  onSelect: () => void;
+}
+
+/**
+ * One goal in the rail, or the whole workspace.
+ *
+ * The selected one is marked with a border, not with the accent: the accent
+ * means live work or work waiting on the owner, and a goal that is merely
+ * selected is neither.
+ */
+function GoalChoice({ title, detail, selected, onSelect }: GoalChoiceProps): React.JSX.Element {
+  return (
+    <button
+      type="button"
+      onClick={onSelect}
+      aria-pressed={selected}
+      className={`flex w-full flex-col gap-0.5 rounded-md border px-2 py-1.5 text-left ${
+        selected
+          ? 'border-slate-600 bg-slate-800/70'
+          : 'border-slate-800 bg-slate-900/30 hover:border-slate-700'
+      }`}
+    >
+      <span className="truncate text-xs font-medium text-slate-100">{title}</span>
+      <span className="text-[10px] text-slate-500">{detail}</span>
+    </button>
   );
 }
 

@@ -3,7 +3,10 @@ import {
   type Evidence,
   type FactoryTask,
   type Goal,
+  type GoalRollup,
   type GoalStatus,
+  type GoalView,
+  type TaskDependency,
   type TaskStatus,
   type ExecutionOwner,
 } from '@personal-os/contracts';
@@ -15,6 +18,17 @@ import { newId } from '../../lib/ids.js';
 import type { EventsService } from '../events/service.js';
 import type { AuditService } from '../audit/service.js';
 import type { Queue } from '../../queue/client.js';
+import { dependencyStates, rollupGoal, wouldCreateCycle, type DependencyEdge } from './graph.js';
+
+/** How a listing of tasks can be narrowed. */
+export interface TaskFilter {
+  /** Only the tasks under this goal. */
+  goalId?: string;
+  /** Only the tasks in this status. */
+  status?: TaskStatus;
+  /** Only the tasks that wait on a task that is not out of the way yet. */
+  waitingOnDependency?: boolean;
+}
 
 export interface FactoryService {
   listGoals(workspaceId: string): Goal[];
@@ -35,6 +49,19 @@ export interface FactoryService {
     },
   ): Goal;
   listTasks(workspaceId: string, goalId?: string): FactoryTask[];
+  /** The tasks of a workspace, narrowed by goal, status or dependency state. */
+  listTasksWhere(workspaceId: string, filter?: TaskFilter): FactoryTask[];
+  /**
+   * What the tasks of a workspace wait on, and whether that is out of the way.
+   * An edge is one direction: the task that waits, and the task it waits on.
+   */
+  listDependencies(workspaceId: string, filter?: { goalId?: string }): TaskDependency[];
+  /** The counts of a goal's work. */
+  goalRollup(goalId: string): GoalRollup;
+  /** The counts of every goal in a workspace. */
+  listGoalRollups(workspaceId: string): GoalRollup[];
+  /** A goal, the work under it, and the shape of that work. */
+  goalView(goalId: string): GoalView;
   getTask(id: string): FactoryTask;
   /**
    * The author a task records, or undefined when the task is unknown.
@@ -74,6 +101,13 @@ export interface FactoryService {
       acceptanceCriteria?: string[];
       goalId?: string;
       externalRef?: string;
+      /**
+       * The tasks this task waits on.
+       *
+       * A task never waits on itself, directly or through a chain, so a
+       * change that would close a loop is refused rather than written.
+       */
+      dependsOnTaskIds?: string[];
       /**
        * The revision the caller read. When present, a task that changed in
        * the meantime is rejected instead of being overwritten.
@@ -142,6 +176,9 @@ export function createFactoryService(options: FactoryServiceOptions): FactorySer
     status: row.status as TaskStatus,
     acceptanceCriteria: row.acceptanceCriteria,
     evidenceResourceIds: row.evidenceResourceIds,
+    // The rows that predate the column recorded no dependency at all, and a
+    // task that waits on nothing is what they said.
+    dependsOnTaskIds: row.dependsOnTaskIds ?? [],
     revision: row.revision,
     externalRef: row.externalRef ?? undefined,
     templateId: row.templateId ?? undefined,
@@ -158,6 +195,55 @@ export function createFactoryService(options: FactoryServiceOptions): FactorySer
     payload: row.payload,
     createdAt: row.createdAt,
   });
+
+  /**
+   * The dependency edges of a workspace, without the edges of one task.
+   *
+   * The edges of the task being written are left out, because the list that
+   * is being written replaces them.
+   */
+  const workspaceEdges = (
+    workspaceId: string,
+    exceptTaskId?: string,
+  ): { edges: DependencyEdge[]; known: Set<string> } => {
+    const rows = db
+      .select({ id: tasks.id, dependsOnTaskIds: tasks.dependsOnTaskIds })
+      .from(tasks)
+      .where(eq(tasks.workspaceId, workspaceId))
+      .all();
+    const edges: DependencyEdge[] = [];
+    const known = new Set<string>();
+    for (const row of rows) {
+      known.add(row.id);
+      if (row.id === exceptTaskId) continue;
+      for (const dependencyId of row.dependsOnTaskIds ?? []) {
+        edges.push({ taskId: row.id, dependsOnTaskId: dependencyId });
+      }
+    }
+    return { edges, known };
+  };
+
+  /**
+   * Refuse a dependency list that would close a loop.
+   *
+   * A task that waits on a task that waits on it — directly or through a
+   * chain — is work waiting for itself, and a task that waits on a task
+   * that does not exist is a wait on nothing.
+   */
+  const assertDependencies = (row: typeof tasks.$inferSelect, dependsOnTaskIds: string[]): void => {
+    const { edges, known } = workspaceEdges(row.workspaceId, row.id);
+    for (const dependencyId of dependsOnTaskIds) {
+      if (!known.has(dependencyId)) throw errors.notFound('Task');
+      if (dependencyId === row.id) {
+        throw errors.badRequest('A task cannot wait on itself.');
+      }
+      if (wouldCreateCycle(edges, row.id, dependencyId)) {
+        throw errors.badRequest(
+          'A task cannot wait on a task that waits on it: that would be a loop.',
+        );
+      }
+    }
+  };
 
   const service: FactoryService = {
     listGoals(workspaceId): Goal[] {
@@ -262,6 +348,7 @@ export function createFactoryService(options: FactoryServiceOptions): FactorySer
           revision: 1,
           acceptanceCriteria: input.acceptanceCriteria ?? [],
           evidenceResourceIds: [],
+          dependsOnTaskIds: [],
           externalRef: input.externalRef ?? null,
           createdBy: authorOf(input.author),
           templateId: input.templateId ?? null,
@@ -293,6 +380,15 @@ export function createFactoryService(options: FactoryServiceOptions): FactorySer
         );
       }
 
+      // The dependencies are checked before they are written, because a task
+      // that waits on itself — directly or through a chain — is work that
+      // would never move again.
+      const dependsOnTaskIds =
+        patch.dependsOnTaskIds === undefined ? undefined : [...new Set(patch.dependsOnTaskIds)];
+      if (dependsOnTaskIds !== undefined) {
+        assertDependencies(row, dependsOnTaskIds);
+      }
+
       db.update(tasks)
         .set({
           ...(patch.title !== undefined ? { title: patch.title.trim() } : {}),
@@ -305,6 +401,7 @@ export function createFactoryService(options: FactoryServiceOptions): FactorySer
             : {}),
           ...(patch.goalId !== undefined ? { goalId: patch.goalId } : {}),
           ...(patch.externalRef !== undefined ? { externalRef: patch.externalRef } : {}),
+          ...(dependsOnTaskIds !== undefined ? { dependsOnTaskIds } : {}),
           revision: row.revision + 1,
           updatedAt: new Date().toISOString(),
         })
@@ -465,6 +562,70 @@ export function createFactoryService(options: FactoryServiceOptions): FactorySer
       const updated = service.getTask(taskId);
       events.publish({ type: 'task.updated', task: updated }, { workspaceId: task.workspaceId });
       return updated;
+    },
+
+    listTasksWhere(workspaceId, filter): FactoryTask[] {
+      let found = service.listTasks(workspaceId);
+      if (filter?.goalId !== undefined) {
+        found = found.filter((task) => task.goalId === filter.goalId);
+      }
+      if (filter?.status !== undefined) {
+        found = found.filter((task) => task.status === filter.status);
+      }
+      if (filter?.waitingOnDependency !== undefined) {
+        const waiting = new Set(
+          service
+            .listDependencies(workspaceId)
+            .filter((dependency) => !dependency.satisfied)
+            .map((dependency) => dependency.taskId),
+        );
+        found = found.filter((task) =>
+          filter.waitingOnDependency ? waiting.has(task.id) : !waiting.has(task.id),
+        );
+      }
+      return found;
+    },
+
+    listDependencies(workspaceId, filter): TaskDependency[] {
+      const rows = service.listTasks(workspaceId);
+      const targets = new Map(
+        rows.map((task) => [task.id, { status: task.status, title: task.title }]),
+      );
+      const edges: DependencyEdge[] = [];
+      for (const task of rows) {
+        for (const dependencyId of task.dependsOnTaskIds ?? []) {
+          edges.push({ taskId: task.id, dependsOnTaskId: dependencyId });
+        }
+      }
+      const dependencies = dependencyStates(edges, targets);
+      if (filter?.goalId === undefined) return dependencies;
+      const underGoal = new Set(
+        rows.filter((task) => task.goalId === filter.goalId).map((task) => task.id),
+      );
+      return dependencies.filter((dependency) => underGoal.has(dependency.taskId));
+    },
+
+    goalRollup(goalId): GoalRollup {
+      const goal = service.getGoal(goalId);
+      const underGoal = service.listTasks(goal.workspaceId, goalId);
+      const dependencies = service.listDependencies(goal.workspaceId, { goalId });
+      return rollupGoal(goal.id, underGoal, dependencies);
+    },
+
+    listGoalRollups(workspaceId): GoalRollup[] {
+      return service.listGoals(workspaceId).map((goal) => service.goalRollup(goal.id));
+    },
+
+    goalView(goalId): GoalView {
+      const goal = service.getGoal(goalId);
+      const underGoal = service.listTasks(goal.workspaceId, goalId);
+      const dependencies = service.listDependencies(goal.workspaceId, { goalId });
+      return {
+        goal,
+        rollup: rollupGoal(goal.id, underGoal, dependencies),
+        tasks: underGoal,
+        dependencies,
+      };
     },
   };
 
