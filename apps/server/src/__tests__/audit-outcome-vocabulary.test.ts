@@ -233,7 +233,7 @@ describe('the code, as the section describes it', () => {
       },
       {
         file: 'apps/server/src/modules/resources/service.ts',
-        at: [594, 599],
+        at: [619, 624],
         pattern: /queue\.enqueue\(/,
         what: 'the enqueue of an automation run',
       },

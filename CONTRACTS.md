@@ -746,9 +746,9 @@ the template to start from, and its `type` must equal the `type` the call asks f
 `spec` with those values merged into it. **A call that carries both is no longer
 refused — it is answered**, and the values the call did not name are the template's.
 A template whose spec the owning provider refuses is `validation_failed`
-(`apps/server/src/modules/resources/service.ts:648-653`), and a template of another
+(`apps/server/src/modules/resources/service.ts:673-678`), and a template of another
 kind is refused the same way
-(`apps/server/src/modules/resources/service.ts:662-666`); an unknown template id is
+(`apps/server/src/modules/resources/service.ts:687-691`); an unknown template id is
 `not_found`. Those codes are already published in
 [Error envelope](#error-envelope); this entry adds none. The tool's visibility
 follows the same grant rule as every other tool on that surface, published in
@@ -803,7 +803,7 @@ version on at `apps/server/src/modules/mcp/server.ts:458`. The merge rules
 themselves are at `apps/server/src/modules/resources/templates.ts:509-522`, and the
 resource records them at
 `apps/server/src/modules/resources/service.ts:191-192` and
-`apps/server/src/modules/resources/service.ts:374-375`.
+`apps/server/src/modules/resources/service.ts:399-400`.
 
 **The six templates that ship are one for each kind**, authored in the repository
 at `apps/server/src/modules/resources/templates.ts:21`:
@@ -819,7 +819,7 @@ at `apps/server/src/modules/resources/templates.ts:21`:
 
 Each is published at version 1, each carries a guide, and every one is checked
 against the provider that owns its kind when the service is built
-(`apps/server/src/modules/resources/service.ts:461-463`), so a template that drifted
+(`apps/server/src/modules/resources/service.ts:486-488`), so a template that drifted
 is caught at the door rather than by an agent that reached for it.
 
 **A client may now call `resource.template.list` and `resource.template.get`, and may
@@ -839,6 +839,40 @@ refusal**: the two merge, and the merged spec is what the resource carries. A
 client that renders a resource is affected in one place: the resource gained two
 optional fields, `templateId` and `templateVersion`, and a resource written before
 the migration carries neither.
+
+### A resource is never born live
+
+**A resource is never born live.** A dashboard is created unpublished and an automation
+is created disabled, whatever the spec asked for — so **a template creates a draft**, and
+publishing or enabling it is a separate, deliberate act.
+
+- **The judgment is the owning provider's, not the merge's.** The merge never refuses and
+  never judges: it merges, and the provider judges the result exactly as it judges a spec
+  that arrived whole (`apps/server/src/modules/resources/templates.ts:534`). The
+  automation's provider writes `enabled: false` on create
+  (`apps/server/src/modules/resources/service.ts:276`); the dashboard's writes
+  `published: false` (`apps/server/src/modules/resources/service.ts:337-345`).
+- **Creation is the only place the rule bites.** An update that names `published: true` or
+  `enabled: true` still makes a resource live, because an update is a deliberate act on a
+  resource that already exists. **The two kinds behave the same way here**: the generic
+  `PATCH /api/resources/:id` takes a spec, and the automation's provider writes the
+  `enabled` that spec names (`apps/server/src/modules/resources/service.ts:310`) just as
+  the dashboard's writes the `published` it names.
+- **Each kind has its own act.** `POST /api/resources/:id/publish` publishes a dashboard
+  and enables an automation (`apps/server/src/modules/resources/service.ts:578`), and the
+  automation also has `POST /api/automations/:id/enable` and
+  `POST /api/automations/:id/disable` (`apps/server/src/api/automations.ts:61`,
+  `apps/server/src/api/automations.ts:72`).
+
+**Forcing the flag does not make a broken spec acceptable.** A spec that is not an object
+is passed on untouched, so the schema refuses it exactly as it always did.
+
+**Migration.** A client that created a dashboard with `published: true` — from a template
+or on its own — now gets an unpublished one, and has to make the publish act to make it
+live. **The flag was not read by the client**: `apps/web/src/components/ResourceEditor.tsx:37`
+is the only place the web client mentions it, and it writes `published: false` when the
+owner starts a new dashboard — so nothing visible changes, and the contract says so rather
+than leaving it to be found. Nothing is reclassified and no record is rewritten.
 
 ### The agent memory scope
 
@@ -1079,7 +1113,7 @@ publishes as absent.
 **A task is judged by the task contract.** The task provider validates a task
 resource's `data` against `taskSpecSchema` (`packages/contracts/src/factory.ts:74`) —
 the task contract with the fields a caller does not write left out, and nothing else
-allowed in (`apps/server/src/modules/resources/service.ts:349-354`). **A task that
+allowed in (`apps/server/src/modules/resources/service.ts:374-379`). **A task that
 breaks it is refused**, with `validation_failed` and the issues in `details`; and an
 inspection of a task that breaks it reports it as invalid —
 `GET /api/resources/:id/inspect` answers `valid: false` and the issues it found.
@@ -1244,8 +1278,8 @@ result: 'queued' | 'succeeded' | 'failed' | 'unknown';
 
 **`queued` means the action was accepted and has not finished.** `POST
 /api/resources/:id/execute` records `queued` for an automation run it enqueues
-(`apps/server/src/modules/resources/service.ts:596`), and answers `queued: true`
-(`apps/server/src/modules/resources/service.ts:601`): the route accepted the request
+(`apps/server/src/modules/resources/service.ts:621`), and answers `queued: true`
+(`apps/server/src/modules/resources/service.ts:626`): the route accepted the request
 and the run has not happened. The same route runs a data source and a dashboard there
 and then, so **the vocabulary is per action, not per route** — one route can record
 `queued` for one kind and `succeeded` for another. **`succeeded` means the outcome was
@@ -1790,9 +1824,9 @@ is not left deleting the database.
 | `GET/POST`         | `/api/conversations/:id/messages`                    | Read and post messages.                                                                 |
 | `POST`             | `/api/conversations/:id/participants`                | Add a participant.                                                                      |
 | `DELETE`           | `/api/conversations/:id/participants/:participantId` | Remove a participant.                                                                   |
-| `GET/POST`         | `/api/resources`                                     | List and create resources.                                                              |
+| `GET/POST`         | `/api/resources`                                     | List and create resources. A resource is never born live.                               |
 | `GET/PATCH`        | `/api/resources/:id`                                 | Read and update a resource.                                                             |
-| `POST`             | `/api/resources/:id/publish`                         | Publish a resource.                                                                     |
+| `POST`             | `/api/resources/:id/publish`                         | Publish a resource. The act that makes one live.                                        |
 | `POST`             | `/api/resources/:id/execute`                         | Execute a resource.                                                                     |
 | `GET`              | `/api/resources/:id/inspect`                         | Validate without changing.                                                              |
 | `GET/POST`         | `/api/goals`                                         | List and create goals.                                                                  |
@@ -2004,7 +2038,7 @@ author on the row — `created_by` on both tables
 (`apps/server/src/db/schema.ts:330`, `apps/server/src/db/schema.ts:416`) — and the
 projections read it
 (`apps/server/src/modules/resources/service.ts:234`,
-`apps/server/src/modules/resources/service.ts:338`). An agent-created
+`apps/server/src/modules/resources/service.ts:363`). An agent-created
 automation or task is recorded as authored by the agent that made it.
 
 **Every mutating route writes an audit entry.** Of the 36 mutating routes in

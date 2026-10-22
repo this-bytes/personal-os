@@ -4818,3 +4818,68 @@ the act of publishing stays where it is — `POST /api/resources/:id/publish`, a
 that names `published: true`.
 
 **And the guide stops being a false statement in the product's own words.**
+
+### WI-129 — a resource is never born live, and the owner's question is still the owner's
+
+**The owner's open question — _may a template produce a live resource?_ — is answered by
+the code as `no`: a template creates a draft.** But the answer is the code's, not the
+owner's, and the contract says so.
+
+**The two template kinds disagreed, and the disagreement was not a decision.** The
+**automation**'s provider writes `enabled: false` on create whatever the spec said
+(`apps/server/src/modules/resources/service.ts:276`), and its guide says exactly that. The
+**dashboard**'s provider wrote the spec as it arrived, `dashboardSpecSchema` accepted
+`published: true`, and the merge let a caller's `published: true` override the
+template's `published: false` — **so a template-created dashboard could be born
+published, while its own guide said it could not** (`templates.ts:81`, `:93`;
+`docs/resource-templates.md:594`). **The design document's §10 said the implementation had
+made one answer, and it had made two** — one per kind, and neither chosen. **That
+sentence was false of the code, and it is corrected** — the same shape of defect WI-124
+was.
+
+**The rule is now one rule: a resource is never born live.** The dashboard's provider
+judges `published` the way the automation's provider judges `enabled`
+(`apps/server/src/modules/resources/service.ts:337-345`), **and the merge is untouched** —
+it still does not special-case the flags, so §4.2's "the provider is the only judge"
+still holds and answer (1) stays ruled out.
+
+**Three things were measured rather than assumed, and they are what decided the shape.**
+
+- **Creation is the only place the rule bites.** An update that names `published: true` or
+  `enabled: true` still makes a resource live, because an update is a deliberate act on a
+  resource that already exists, **and the two kinds behave the same way** — the generic
+  `PATCH /api/resources/:id` writes the `enabled` the automation's spec names
+  (`:310`) just as it writes the `published` the dashboard's names. **Tightening the rule
+  onto the update path turns two of the five cases red**, because `publish()` is itself an
+  update — so the boundary is pinned, not assumed.
+- **Answer (2) was not available for the automation without more work.** A born-enabled
+  automation would have had **no `nextRunAt`** — the create writes `null` (`:278`) and
+  only the enable act computes one (`:597`) — **so it would have been enabled and never
+  have run.** That is a half-built state, and it is why the automation's behaviour is the
+  one that stands.
+- **The dashboard's guide was a false statement, and the automation's was true.** The
+  answer that makes the templates' own text true is the one the code already carried for
+  one of the two kinds.
+
+**And the owner has not been asked to confirm it.** §10 still carries the question; the
+design document now records the reading the code carries and says plainly what would
+change if the owner picks the other way. **The contract publishes the rule the code
+carries, not a decision the owner has taken.**
+
+**The proof:** five cases in `apps/server/src/__tests__/resource-liveness.test.ts` — the
+MCP path's own merge, not a shape that resembles it — and **three mutation proofs**, each
+restored: the judgment taken away turns the two draft cases red, the publish act taken
+away turns the publish case red, and the judgment widened onto the update path turns two
+cases red.
+
+**And eight citations moved, because the implementation added forty lines to
+`apps/server/src/modules/resources/service.ts`.** **Two gates caught it and were
+corrected rather than weakened** — the contract's own pointer gate, and WI-034's pin in
+`audit-outcome-vocabulary.test.ts`, whose window moved from `594-599` to `619-624`.
+**Three of the design document's own citations were stale before this item** — its
+`service.ts:581-591` pointed at the publish method rather than at the template validation
+it claimed, `templates.ts:522-543` and `:496-510` pointed twelve lines above the merge
+they named, and `service.ts:347` and `:515` pointed at the task provider's declaration
+rather than at the author it claimed. **They are corrected here**, because the paragraphs
+this item's reasoning rests on cited them; **the rest of the guide's citations were not
+swept**, because that is the stale-docs item and not this one.

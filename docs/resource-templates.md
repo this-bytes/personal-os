@@ -29,7 +29,7 @@ those are, what is still missing, and what the missing parts should be.
 | The template shape — `{id, version, type, title, description, spec}` | `packages/contracts/src/resource.ts:58-70`                                                                       | A template is not a resource: no workspace, no revision, no `createdBy`, and not a row in any table (`resource.ts:49-57`).            |
 | The reference shape — `{id, version?}`                               | `packages/contracts/src/resource.ts:79-83`                                                                       | A version names one reviewed spec; without one, the newest published version is meant.                                                |
 | The registry — six templates, one per kind                           | `apps/server/src/modules/resources/templates.ts:21-124`                                                          | Authored in the repository and reviewed like code; the same for every workspace.                                                      |
-| Templates are validated by the owning provider                       | `apps/server/src/modules/resources/templates.ts:176-190`; `apps/server/src/modules/resources/service.ts:581-591` | A drifted template is caught when the server starts, and refused at the point it is read — not found by an agent that reached for it. |
+| Templates are validated by the owning provider                       | `apps/server/src/modules/resources/templates.ts:446-460`; `apps/server/src/modules/resources/service.ts:486-488` | A drifted template is caught when the server starts, and refused at the point it is read — not found by an agent that reached for it. |
 | `resource.template.list` over MCP, grantable per connection          | `packages/contracts/src/mcp.ts:21,45`; `apps/server/src/modules/mcp/server.ts:467-483`                           | A tool that was not granted is not registered at all, so it does not even appear in the tool list.                                    |
 | `resource.create` accepts a template                                 | `apps/server/src/modules/mcp/server.ts:352-402`                                                                  | A resource is created from a spec **or** from a template.                                                                             |
 
@@ -66,10 +66,10 @@ they were._
    closed on the tree this repository carries.** Automations and tasks record the
    author, read from the row: `createdBy: row.createdBy,` at
    `apps/server/src/modules/resources/service.ts:234`, and the task's own author
-   at `service.ts:347` and `service.ts:515`, with `system` only as the fallback
+   at `service.ts:365` and `service.ts:540`, with `system` only as the fallback
    for a resource nobody authored (`RESOURCE_AUTHOR_SYSTEM` at
    `packages/contracts/src/resource.ts:25`). The measure counts those two kinds
-   both ways (`service.ts:671-699`), so the product's own measure of agent
+   both ways (`service.ts:696-725`), so the product's own measure of agent
    authorship is no longer wrong for them. WI-090 (commit `832fae2`) is what
    closed that half. And the task provider's `validate` is no longer
    `(data: unknown) => data`: it judges a task's spec against `taskSpecSchema`
@@ -357,8 +357,8 @@ kinds have six specs, and a generic merge would get some of them wrong.
 
 **Three rules, and they are the whole of it.** **These are the rules the code
 implements** (`mergeTemplateSpec`,
-`apps/server/src/modules/resources/templates.ts:522-543`; the rules per kind at
-`:496-510`), and **two of them differ from the rules this design first wrote.**
+`apps/server/src/modules/resources/templates.ts:534`; the rules per kind at
+`:509-522`), and **two of them differ from the rules this design first wrote.**
 
 1. **Objects merge key by key, recursively.** A key the override does not name
    keeps the template's value.
@@ -584,6 +584,7 @@ the present tense, and no sentence that is only true of the template.
   - `widgets[].binding.field` — _The field the count aggregates._ `id` counts records; name a column to count something else. **mustSet: no**
   - `widgets[].binding.limit` — _How many rows the table shows._ The template sets 20. **mustSet: no**
   - `refreshSeconds` — _How often the dashboard reloads._ Sixty is fine for most. **mustSet: no**
+  - `published` — _False, and the template keeps it false. A dashboard becomes live when it is published, which is a separate act._ **mustSet: no**
 - **mistakes** —
   - An unbound widget renders empty and reads as broken. Bind every widget to a data source that exists.
   - A metric widget counts. It does not show a trend, and a table of twenty rows is not a chart.
@@ -904,10 +905,15 @@ owner's answer on the template concept is recorded in
 
 ## 10. What needs the owner's answer before implementation starts
 
-_The implementation has been made, and it made the second answer below: the merge
-does not special-case the live flags, and the provider is the only judge. The
-question the owner was asked is still the question — the code carries an answer,
-not a decision._
+_The implementation has been made, and it did not make one answer: it made two.
+**The merge does not special-case the live flags, and the provider is the only
+judge** — that part holds, and it rules out (1). **But the two kinds came out
+differently**, and neither difference was chosen: the automation's provider
+wrote `enabled: false` on create, and the dashboard's provider wrote the spec as
+it arrived, so a dashboard could be born published while its own guide said it
+could not. **WI-129 made the dashboard match the automation.** The question the
+owner was asked is still the question — the code carries an answer, not a
+decision — and what it carries is measured below._
 
 **One question, and it is a product question the code cannot answer.**
 
@@ -937,6 +943,31 @@ answers, and they are not the same product:
 judge of a spec, and because a rule the template layer holds alone is a rule
 that will be enforced in one place and forgotten in another.** But (1) is the
 one the templates' own text argues for, and the owner should pick.
+
+**What the code carries now, measured on 2026-10-22 (WI-129).** The two kinds
+now implement the same answer, and it is (3): **a resource is never born live.**
+The dashboard's provider writes `published: false` on create
+(`apps/server/src/modules/resources/service.ts:337-345`), the way the
+automation's writes `enabled: false`
+(`apps/server/src/modules/resources/service.ts:276`), and **the merge is
+untouched** — it still does not special-case the flags, and the provider is
+still the only judge.
+
+**Why the dashboard moved rather than the automation.** (2) was not available
+for the automation without more work: a born-enabled automation would have had
+no `nextRunAt`, because only the enable act computes one
+(`apps/server/src/modules/resources/service.ts:597`), so it would have been
+enabled and never have run. (1) is ruled out by §4.2 — the merge does not
+judge — and **the answer that makes the templates' own guides true is the one
+the code already carried for one of the two kinds.**
+
+**This is the code carrying an answer, not the owner taking a decision.** If the
+owner picks (2), the work is a different shape and the other kind moves: the
+automation's provider would accept `enabled: true` on create, the automation
+would need its `nextRunAt` computed at creation, and **both templates' guides
+would have to stop saying that the template keeps the flag false.** The owner
+has not confirmed this yet, and the contract publishes the rule this code
+carries rather than a decision the owner has taken.
 
 **Three things that are product changes rather than design questions, and are
 flagged rather than decided here:**

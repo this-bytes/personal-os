@@ -320,6 +320,31 @@ export function createResourcesService(options: ResourcesServiceOptions): Resour
   }
 
   /**
+   * The dashboard provider.
+   *
+   * A dashboard is never born live. The automation's provider writes
+   * `enabled: false` on create whatever the spec asked for, and this one
+   * writes `published: false` for the same reason: a dashboard becomes live
+   * when it is published, which is a separate act, and the template's guide
+   * says so in as many words.
+   *
+   * The judgment belongs to the provider because the merge is not a judge: it
+   * merges, and the owning provider judges the result exactly as it judges a
+   * spec that arrived whole. A spec that is not an object is passed on
+   * untouched, so the schema still refuses it rather than this turning it
+   * into one.
+   */
+  function dashboardProvider(): ResourceProvider<unknown> {
+    const base = tableProvider('dashboard', dashboardSpecSchema) as ResourceProvider<unknown>;
+    return {
+      ...base,
+      create(input) {
+        return base.create({ ...input, data: asDraft(input.data) });
+      },
+    };
+  }
+
+  /**
    * The task provider.
    *
    * A task is judged by the task contract, like every other kind: a task
@@ -422,7 +447,7 @@ export function createResourcesService(options: ResourcesServiceOptions): Resour
     };
   }
 
-  const dashboardProvider = tableProvider('dashboard', dashboardSpecSchema);
+  const dashboardResourceProvider = dashboardProvider();
   const documentProvider = tableProvider('document', documentSpecSchema);
   const dataSourceProvider = tableProvider('data-source', dataSourceSpecSchema);
   const memoryResourceProvider = memoryProvider();
@@ -430,7 +455,7 @@ export function createResourcesService(options: ResourcesServiceOptions): Resour
   const taskResourceProvider = taskProvider();
 
   const providers = new Map<ResourceType, ResourceProvider<unknown>>([
-    ['dashboard', dashboardProvider as ResourceProvider<unknown>],
+    ['dashboard', dashboardResourceProvider as ResourceProvider<unknown>],
     ['document', documentProvider as ResourceProvider<unknown>],
     ['data-source', dataSourceProvider as ResourceProvider<unknown>],
     ['memory', memoryResourceProvider as ResourceProvider<unknown>],
@@ -717,6 +742,19 @@ const kindNames: Record<ResourceType, string> = {
   memory: 'memory',
   task: 'task',
 };
+
+/**
+ * A dashboard's spec, made a draft.
+ *
+ * `published` is forced false on a spec that is an object, so a dashboard is
+ * never born live however it was asked for. A spec that is not an object is
+ * left exactly as it arrived, so the schema refuses it rather than this
+ * quietly turning it into one.
+ */
+function asDraft(data: unknown): unknown {
+  if (typeof data !== 'object' || data === null || Array.isArray(data)) return data;
+  return { ...(data as Record<string, unknown>), published: false };
+}
 
 /**
  * Parse a spec against the contract that owns it, and refuse the way the
