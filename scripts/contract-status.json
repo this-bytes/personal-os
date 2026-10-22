@@ -93,6 +93,41 @@
       ]
     },
     {
+      "id": "the-mcp-adapter-wi-053",
+      "section": "The MCP adapter",
+      "note": "This entry is the contract for **WI-053**, and the code implements it",
+      "claim": "implemented",
+      "item": "WI-053",
+      "why": "WI-053's MCP adapter: the adapter itself, the configuration schema it is built from, and the panel's connection form, which is where the owner fills that configuration in.",
+      "expect": [
+        {
+          "kind": "present-pattern",
+          "path": "packages/agent-adapters/src/mcp.ts",
+          "value": "export class McpAdapter implements AgentAdapter"
+        },
+        {
+          "kind": "present-pattern",
+          "path": "packages/agent-adapters/src/index.ts",
+          "value": "\\.register\\('mcp', createMcpAdapter\\)"
+        },
+        {
+          "kind": "present-pattern",
+          "path": "packages/contracts/src/adapter-config.ts",
+          "value": "export const mcpAdapterConfigSchema = z\\.object\\(\\{"
+        },
+        {
+          "kind": "present-pattern",
+          "path": "apps/web/src/components/AgentConnectionForm.tsx",
+          "value": "mcpTransport: 'stdio' \\| 'http';"
+        },
+        {
+          "kind": "present-pattern",
+          "path": "apps/web/src/components/AgentConnectionForm.tsx",
+          "value": "mcpProtocolVersion: string;"
+        }
+      ]
+    },
+    {
       "id": "approvals-and-audit-wi-007",
       "section": "Contract 5 — Approvals and audit",
       "note": "WI-007, and the code implements it",
@@ -245,6 +280,46 @@
           "kind": "absent-pattern",
           "path": "apps/server/src/modules/audit",
           "value": "'queued'"
+        }
+      ]
+    },
+    {
+      "id": "the-resolve-route-wi-031",
+      "section": "Closing an unknown outcome",
+      "note": "This entry is the contract for **WI-031**, and the code implements it",
+      "claim": "implemented",
+      "item": "WI-031",
+      "why": "WI-031's closing route: the owner alone may call it, the executions service writes the execution's outcome and the reply's outcome together, and a second writer — the approval decision path — is published beside it rather than hidden.",
+      "expect": [
+        {
+          "kind": "present-pattern",
+          "path": "apps/server/src/api/executions.ts",
+          "value": "app\\.post\\('/api/executions/:id/resolve', \\{ preHandler: requireAuth \\}"
+        },
+        {
+          "kind": "present-pattern",
+          "path": "apps/server/src/api/helpers.ts",
+          "value": "request\\.actorType !== 'human'"
+        },
+        {
+          "kind": "present-pattern",
+          "path": "apps/server/src/app.ts",
+          "value": "registerExecutionRoutes\\(app\\)"
+        },
+        {
+          "kind": "present-pattern",
+          "path": "apps/server/src/modules/executions/service.ts",
+          "value": "db\\.update\\(executions\\)[\\s\\S]*?status: outcome,[\\s\\S]*?db\\.update\\(messages\\)[\\s\\S]*?status: outcome === 'completed'"
+        },
+        {
+          "kind": "present-pattern",
+          "path": "apps/server/src/modules/approvals/service.ts",
+          "value": "resolveExecution\\(executionId, status, detail\\): void"
+        },
+        {
+          "kind": "present-pattern",
+          "path": "apps/server/src/modules/approvals/resume.ts",
+          "value": "approvals\\.resolveExecution\\(execution\\.id, status, detail\\)"
         }
       ]
     },
@@ -648,6 +723,70 @@
           "kind": "present-pattern",
           "path": "apps/web/src/features/registry.ts",
           "value": "import\\.meta\\.glob"
+        }
+      ]
+    },
+    {
+      "id": "the-template-record",
+      "section": "The template record",
+      "note": "The code implements this — as of `20ca643`",
+      "claim": "implemented",
+      "why": "The template record: the guide and the record it fills, the two published tool names, the server's rule that a tool is registered only where the connection is granted it, and the six templates that ship.",
+      "expect": [
+        {
+          "kind": "present-pattern",
+          "path": "packages/contracts/src/resource.ts",
+          "value": "export const resourceTemplateGuideSchema = z\\.object\\(\\{"
+        },
+        {
+          "kind": "present-pattern",
+          "path": "packages/contracts/src/resource.ts",
+          "value": "export type ResourceTemplateGuide = z\\.infer<typeof resourceTemplateGuideSchema>;"
+        },
+        {
+          "kind": "present-pattern",
+          "path": "packages/contracts/src/resource.ts",
+          "value": "export const resourceTemplateSchema = z\\.object\\(\\{"
+        },
+        {
+          "kind": "present-pattern",
+          "path": "packages/contracts/src/resource.ts",
+          "value": "export type ResourceTemplate = z\\.infer<typeof resourceTemplateSchema>;"
+        },
+        {
+          "kind": "present-pattern",
+          "path": "packages/contracts/src/resource.ts",
+          "value": "export const resourceTemplateRefSchema = z\\.object\\(\\{"
+        },
+        {
+          "kind": "present-pattern",
+          "path": "packages/contracts/src/resource.ts",
+          "value": "export type ResourceTemplateRef = z\\.infer<typeof resourceTemplateRefSchema>;"
+        },
+        {
+          "kind": "present-pattern",
+          "path": "packages/contracts/src/mcp.ts",
+          "value": "'resource\\.template\\.list'"
+        },
+        {
+          "kind": "present-pattern",
+          "path": "packages/contracts/src/mcp.ts",
+          "value": "'resource\\.template\\.get'"
+        },
+        {
+          "kind": "present-pattern",
+          "path": "apps/server/src/modules/mcp/server.ts",
+          "value": "granted\\.has\\('resource\\.template\\.list'\\)"
+        },
+        {
+          "kind": "present-pattern",
+          "path": "apps/server/src/modules/mcp/server.ts",
+          "value": "granted\\.has\\('resource\\.template\\.get'\\)"
+        },
+        {
+          "kind": "present-pattern",
+          "path": "apps/server/src/modules/resources/templates.ts",
+          "value": "export const resourceTemplates: ResourceTemplate\\[\\] = \\["
         }
       ]
     }

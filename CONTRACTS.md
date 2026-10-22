@@ -368,10 +368,11 @@ capabilities shape grows by one optional member, `acceptsSteering`, and absent
 means the connection cannot be steered. A connection recorded before this
 change reports the capabilities it always reported.
 
-This entry is the contract for **WI-053**, and the code implements it — the
-adapter is `packages/agent-adapters/src/mcp.ts`, the configuration schema is
-`packages/contracts/src/adapter-config.ts`, and the panel's connection form
-carries the fields.
+This entry is the contract for **WI-053**, and the code implements it — as of
+`1fb60e7`, the commit that brought the adapter, its configuration schema and the
+panel's fields. The adapter is `packages/agent-adapters/src/mcp.ts`, the
+configuration schema is `packages/contracts/src/adapter-config.ts`, and the
+panel's connection form carries the fields.
 
 ### The adapter lifecycle
 
