@@ -329,6 +329,45 @@
       ]
     },
     {
+      "id": "the-steer-and-queue-wi-152",
+      "section": "Steer and queue",
+      "note": "This entry is the contract for WI-152, and the code implements it",
+      "claim": "implemented",
+      "why": "WI-152's steering: the delivery mode is on the message, the rules that decide whether a steer can be delivered are a pure function, and the worker is the only thing that can put a steer into a turn that is running.",
+      "expect": [
+        {
+          "kind": "present-pattern",
+          "path": "packages/contracts/src/conversation.ts",
+          "value": "export const messageDeliverySchema = z\\.enum\\(\\['steer', 'queue'\\]\\);"
+        },
+        {
+          "kind": "present-pattern",
+          "path": "packages/contracts/src/agent.ts",
+          "value": "steer\\?: AsyncIterable<string>;"
+        },
+        {
+          "kind": "present-pattern",
+          "path": "apps/server/src/modules/conversations/steer.ts",
+          "value": "export function planSteer"
+        },
+        {
+          "kind": "present-pattern",
+          "path": "apps/worker/src/steer.ts",
+          "value": "export async function feedSteers"
+        },
+        {
+          "kind": "present-pattern",
+          "path": "apps/server/src/api/conversations.ts",
+          "value": "delivery: messageDeliverySchema\\.optional\\(\\)"
+        },
+        {
+          "kind": "present-text",
+          "path": "packages/agent-adapters/src/echo.ts",
+          "value": "acceptsSteering: true"
+        }
+      ]
+    },
+    {
       "id": "the-widening-is-not-taken-back-wi-146",
       "section": "The waiting list",
       "note": "The widening is the contract for WI-146, and the code implements it",

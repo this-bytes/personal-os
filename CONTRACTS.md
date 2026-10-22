@@ -2213,6 +2213,13 @@ takes it, and the message waits in the room until that turn takes it.
 consumed is delivered to the next turn, and is recorded as having been
 delivered late.
 
+This entry is the contract for **WI-152**, and the code implements it — as of
+`cee9c69`. The delivery mode is `packages/contracts/src/conversation.ts`, the
+steering channel is `packages/contracts/src/agent.ts`, the rules are
+`apps/server/src/modules/conversations/steer.ts`, and the channel that carries
+a steer into the turn that is running is `apps/worker/src/steer.ts`. The
+slice's own record is `.factory/work/WI-152.md`.
+
 ### The chat surface
 
 The conversation surface renders the turn, the work behind it and the owner's
