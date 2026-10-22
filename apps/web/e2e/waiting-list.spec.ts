@@ -58,6 +58,27 @@ function approvalItem(workspaceId: string) {
   };
 }
 
+/**
+ * One capability, in the shape CONTRACTS.md publishes.
+ *
+ * The row names the agent that was refused and the tool it was refused, so
+ * the owner can widen the grant from the row itself.
+ */
+function capabilityItem(workspaceId: string) {
+  return {
+    id: 'capability:cap_waiting',
+    kind: 'capability',
+    title: 'An agent cannot go on',
+    detail: 'The agent was refused a tool and is waiting for you to widen its grant.',
+    reason: 'pending',
+    workspaceId,
+    conversationId: null,
+    taskId: null,
+    agentConnectionId: 'agt_waiting',
+    toolName: 'task.create',
+  };
+}
+
 async function createTaskWaitingForReview(page: Page, workspaceId: string, title: string) {
   const created = await page.request.post('/api/tasks', {
     data: { workspaceId, title, acceptanceCriteria: [] },
@@ -481,5 +502,56 @@ test.describe('what is waiting on the owner', () => {
       'href',
       '/conversations/cnv_waiting',
     );
+  });
+
+  test('a capability row says what it is, names the tool, and widens the grant from the row', async ({
+    page,
+  }) => {
+    await signIn(page);
+    const workspaceId = await firstWorkspaceId(page);
+    await serveWaitingList(page, [capabilityItem(workspaceId)]);
+
+    // The grant the owner widens is recorded as it is made.
+    const grants: Array<{ url: string; body: string }> = [];
+    page.on('request', (request) => {
+      if (request.method() === 'POST' && request.url().includes('/api/agents/')) {
+        grants.push({ url: request.url(), body: request.postData() ?? '' });
+      }
+    });
+
+    // The route is answered so the panel can say what it did. The point of
+    // the test is the request the panel makes, not what the server does with
+    // it.
+    await page.route(
+      (url) => url.pathname.startsWith('/api/agents/') && url.pathname.endsWith('/grants'),
+      (route) =>
+        route.fulfill({
+          status: 200,
+          contentType: 'application/json',
+          body: JSON.stringify({ agent: { id: 'agt_waiting' } }),
+        }),
+    );
+
+    await page.goto('/conversations');
+
+    const row = page.getByRole('listitem').filter({ hasText: 'An agent cannot go on' });
+    await expect(row).toBeVisible();
+
+    // It says what it is: a grant to widen, not work that is stuck.
+    await expect(row.getByText('Needs a grant')).toBeVisible();
+    await expect(row.getByText('Blocked')).toHaveCount(0);
+
+    // And it names the tool the agent was refused, so the owner does not have
+    // to go and find out which tool it was.
+    await expect(row).toContainText('Tool: task.create');
+
+    // The action is on the row: it widens the grant on the published route,
+    // with the row's own tool.
+    await row.getByRole('button', { name: 'Grant the tool' }).click();
+
+    await expect.poll(() => grants.length).toBe(1);
+    const grant = grants[0]!;
+    expect(new URL(grant.url).pathname).toBe('/api/agents/agt_waiting/grants');
+    expect(JSON.parse(grant.body)).toEqual({ tool: 'task.create' });
   });
 });

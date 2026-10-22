@@ -98,6 +98,7 @@ function item(overrides: Partial<WaitingItem> = {}): WaitingItem {
     conversationId: CONVERSATION_ID,
     taskId: 'tsk_1',
     agentConnectionId: AGENT_ID,
+    toolName: null,
     ...overrides,
   };
 }

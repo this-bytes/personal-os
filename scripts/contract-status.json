@@ -150,6 +150,84 @@
       ]
     },
     {
+      "id": "the-published-waiting-shape-wi-132",
+      "section": "The waiting list",
+      "note": "The published waiting shape is the contract for WI-132, and the code implements it",
+      "claim": "implemented",
+      "why": "WI-132's one declaration: the kind union, the reason union and the item live in the contracts package, and the server and the panel both read them there.",
+      "expect": [
+        {
+          "kind": "present-pattern",
+          "path": "packages/contracts/src/waiting.ts",
+          "value": "export type WaitingKind = 'approval' \\| 'task' \\| 'turn' \\| 'capability';"
+        },
+        {
+          "kind": "present-pattern",
+          "path": "packages/contracts/src/waiting.ts",
+          "value": "export type WaitingReason = 'pending' \\| 'review' \\| 'blocked' \\| 'unknown';"
+        },
+        {
+          "kind": "present-pattern",
+          "path": "packages/contracts/src/waiting.ts",
+          "value": "export interface WaitingItem"
+        },
+        {
+          "kind": "present-text",
+          "path": "packages/contracts/src/waiting.ts",
+          "value": "toolName"
+        },
+        {
+          "kind": "present-pattern",
+          "path": "packages/contracts/src/index.ts",
+          "value": "export \\* from '\\./waiting\\.js';"
+        },
+        {
+          "kind": "present-pattern",
+          "path": "apps/server/src/api/waiting.ts",
+          "value": "import type \\{ WaitingItem, WaitingReason \\} from '@personal-os/contracts';"
+        },
+        {
+          "kind": "present-pattern",
+          "path": "apps/web/src/lib/types.ts",
+          "value": "import type \\{[\\s\\S]*?WaitingItem,[\\s\\S]*?\\} from '@personal-os/contracts';"
+        },
+        {
+          "kind": "present-pattern",
+          "path": "apps/web/src/components/WaitingList.tsx",
+          "value": "import \\{[\\s\\S]*?type WaitingItem,[\\s\\S]*?\\} from '@personal-os/contracts';"
+        }
+      ]
+    },
+    {
+      "id": "the-panel-grant-action-wi-132",
+      "section": "The waiting list",
+      "note": "The panel's capability row is the contract for WI-132, and the code implements it",
+      "claim": "implemented",
+      "why": "WI-132's row action: the panel's capability row says which tool the agent wanted and widens the grant from the row, through the published route.",
+      "expect": [
+        {
+          "kind": "present-text",
+          "path": "apps/web/src/components/WaitingList.tsx",
+          "value": "Needs a grant"
+        },
+        {
+          "kind": "present-pattern",
+          "path": "apps/web/src/components/WaitingList.tsx",
+          "value": "`/agents/\\$\\{input\\.agentConnectionId\\}/grants`"
+        },
+        {
+          "kind": "present-pattern",
+          "path": "apps/web/src/components/WaitingList.tsx",
+          "value": "Tool: <span[^>]*>\\{item\\.toolName\\}</span>"
+        },
+        {
+          "kind": "present-text",
+          "path": "apps/server/src/api/agents.ts",
+          "value": "/api/agents/:id/grants"
+        }
+      ]
+    },
+    {
       "id": "the-audit-outcome-wi-033",
       "section": "The audit outcome",
       "note": "The code does not implement this yet",

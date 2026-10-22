@@ -86,6 +86,7 @@ const RAIL_ITEMS: WaitingItem[] = [
     conversationId: null,
     taskId: null,
     agentConnectionId: null,
+    toolName: null,
   },
   {
     id: 'task:tsk_review',
@@ -97,6 +98,7 @@ const RAIL_ITEMS: WaitingItem[] = [
     conversationId: null,
     taskId: 'tsk_review',
     agentConnectionId: null,
+    toolName: null,
   },
   {
     id: 'task:tsk_unknown',
@@ -108,6 +110,7 @@ const RAIL_ITEMS: WaitingItem[] = [
     conversationId: null,
     taskId: 'tsk_unknown',
     agentConnectionId: null,
+    toolName: null,
   },
   {
     id: 'task:tsk_blocked',
@@ -119,6 +122,7 @@ const RAIL_ITEMS: WaitingItem[] = [
     conversationId: null,
     taskId: 'tsk_blocked',
     agentConnectionId: null,
+    toolName: null,
   },
 ];
 

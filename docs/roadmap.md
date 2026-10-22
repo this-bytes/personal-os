@@ -53,6 +53,13 @@ demonstration still needs a real runtime, not a fixture.
 five named runtimes. No runtime has been demonstrated in this repository yet, and
 the presets say so in the copy the owner reads.
 
+**WI-132 has landed with it.** The waiting list's shape is published once, in the
+contracts package, and the server and the panel both read it there, so a client
+cannot describe a list the server does not send. The panel's capability row now
+says which tool the agent was refused and widens the grant from the row itself,
+through the published route, and it is labelled "Needs a grant" rather than
+"Blocked" — a grant the owner can widen from the row is not work that is stuck.
+
 ## R0 — establish the execution foundation
 
 **First slice to implement: repair MCP initialization through the worker.**
