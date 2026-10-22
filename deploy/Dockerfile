@@ -27,7 +27,8 @@ RUN npm ci --no-audit --no-fund
 COPY . .
 
 # Build every workspace in dependency order.
-RUN npm run build \
+RUN npm run verify:dependencies \
+  && npm run build \
   && npm prune --omit=dev --workspaces --include-workspace-root
 
 

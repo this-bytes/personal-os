@@ -32,17 +32,17 @@ frameworks, or force external agents onto its internal scheduler.
 
 ```bash
 git clone <your-fork> personal-os && cd personal-os
-npm install
+npm ci
 npm run build
 
 # Terminal 1 — the API server
-npm run dev -w @personal-os/server
+npm run dev
 
 # Terminal 2 — the execution worker
-npm run dev -w @personal-os/worker
+npm run dev:worker
 
 # Terminal 3 — the web client
-npm run dev -w @personal-os/web
+npm run dev:web
 ```
 
 Open <http://localhost:5173>. The first run asks you to create the owner account.
@@ -64,6 +64,11 @@ compiled output, so a change to a contract or to an adapter reaches the running
 instance instead of waiting for a rebuild. It watches the server, the worker, the
 contracts and the adapters, and restarts only what a change affects. The web
 client reloads in place.
+
+Development commands validate the installed workspace dependency tree first.
+When dependency manifests or the lockfile change, the combined stack drains and
+stops. Run `npm ci` in that checkout and restart it. Each worktree and operating
+system needs its own installation; share npm's download cache, not `node_modules`.
 
 The development launcher requests graceful worker shutdown so the current turn
 can finish. A crash or forced termination can still interrupt it. Lease expiry
@@ -250,10 +255,10 @@ It publishes the client on 5173 and the instance on 4317. Both addresses
 serve the panel and proxy the API under them, so the instance answers on the
 port the deployment used as well as on the client's own.
 
-A checkout on a Windows filesystem cannot run the source stack: the native
-modules are built for the platform they run on, and SQLite needs a
-filesystem that locks the way SQLite expects. On WSL, clone into the
-distribution:
+The source-stack launcher refuses Windows-mounted checkouts under WSL to keep
+runtime data on a filesystem with suitable SQLite locking. Native dependencies
+must match the Node platform that runs them. Use a separate Linux installation
+and checkout in the distribution:
 
 ```bash
 git clone /mnt/g/code/personal-os ~/code/personal-os
@@ -264,7 +269,7 @@ bash deploy/source-stack.sh --publish
 
 ## Connecting an agent
 
-Agent connections are adapters. Personal OS ships with six:
+Agent connections are adapters. Personal OS ships with seven:
 
 | Adapter | Use it for                                                                           |
 | ------- | ------------------------------------------------------------------------------------ |
@@ -274,6 +279,7 @@ Agent connections are adapters. Personal OS ships with six:
 | `a2a`   | An [A2A](https://a2a-protocol.org)-compatible agent (task oriented).                 |
 | `http`  | Any framework-specific gateway with a JSON or SSE endpoint.                          |
 | `model` | A model API without a full external harness (OpenAI-compatible chat completions).    |
+| `mcp`   | An MCP server exposing an agent tool, initialized before sending a turn.             |
 
 Add one under **Agents**. Credentials are posted once, encrypted at rest on the
 server, and never returned to the browser.

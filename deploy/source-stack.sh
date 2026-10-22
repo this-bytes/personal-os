@@ -95,9 +95,9 @@ if [ -n "${WSL_DISTRO_NAME:-}" ] || grep -qi microsoft /proc/sys/kernel/osreleas
 fi
 
 # The native modules are built for the platform they run on, and a Windows
-# filesystem mounted into the distribution is not that platform's filesystem:
-# SQLite's locking does not work on it, and the install would be a Windows
-# install. The checkout has to live in the distribution's own filesystem.
+# filesystem mounted into the distribution is unsuitable for this launcher's
+# runtime data and SQLite locking. npm installs for the Node platform, so keep
+# a separate Linux installation in the distribution's own filesystem.
 if [ "$is_wsl" = 1 ]; then
   case "$root" in
     /mnt/*)
@@ -129,7 +129,7 @@ if ! command -v node >/dev/null 2>&1; then
 fi
 
 if ! command -v node >/dev/null 2>&1; then
-  echo "node is not on the PATH. Node 20 or newer is needed." >&2
+  echo "node is not on the PATH. Node 22.13 or newer is needed." >&2
   exit 1
 fi
 
