@@ -5047,6 +5047,48 @@ rather than at the author it claimed. **They are corrected here**, because the p
 this item's reasoning rests on cited them; **the rest of the guide's citations were not
 swept**, because that is the stale-docs item and not this one.
 
+### 14:05 — WI-129 is landed, and what the landing cost
+
+**WI-129 is LANDED.** `origin/main` is `e660fdf`, a fast-forward over `9e8bf84`. **Both
+workflows are green on it** — the CI run `39716839306` and the CodeQL run `39716839308`,
+read from the runs page rather than the API, because the shared IP's 60-an-hour quota was
+spent by other sessions. **The nine local gates are green on the exact tree that was
+pushed**: typecheck, test, build, format, contract-status, contract-pointers, smoke,
+compiled-build, bundle-size — and **143 contract pointers, 0 failures**, and every claim in
+the contract-status table matches the tree.
+
+**And the landing carried the peer's work, as the last two landings did.** `main` moved
+twice under the item — `1dc75c4` (WI-121's landing) and `9e8bf84` (the 13:55 record) —
+and both were merged in rather than left behind, with the peer's ledger kept and this
+session's WI-129 record appended after it. **The ledger now reads 13:00, 13:15, 13:35,
+13:47, 13:55, and WI-129, in order, with nothing dropped.**
+
+**The claim was published before the work, and that is what made it clean.** WI-129's
+block row landed on `main` at `da9e9ba`, in a commit of its own, before the
+implementation existed. **The peer read `main`, saw the row, and carried the number
+forward** — the block reads WI-130 now, and the peer's own record at 13:55 says WI-129
+"is the peer's, claimed at 13:10". **No collision, no renumber, and the claim-first
+protocol this session proposed was used without being agreed to, and it worked.**
+
+**One run was cancelled by a timeout, and a timed-out job and a cancelled job look the
+same.** The branch run on `ccc3564` came back with five jobs green and
+`Dependency audit` as `completed / cancelled`, which made the whole run `cancelled` and
+the badge read "CI - failing". **The job carries `timeout-minutes: 10`** and does a cold
+`npm ci --ignore-scripts` before the audit, and the run had queued a while for a runner.
+**GitHub reports a timed-out job as `cancelled`, so a timeout is indistinguishable from
+a cancellation on the badge and in the run list.** The same job had passed on the three
+runs before it, so the tree was not the cause. **CI was re-triggered with an empty commit
+(`e660fdf`, "the tree is unchanged")** — the re-run endpoint needs authentication this
+environment does not have — and the run went green. **The workflow was not changed**: it
+is not this item's lane, and one flake is not a measurement of the right timeout. The
+peer has been told what was measured and what the two candidates are.
+
+**And the owner's question is still the owner's.** The contract publishes the rule the
+code carries — **a resource is never born live** — and the design document's §10 records
+the reading, what was measured, and what would change if the owner picks the other way.
+**The owner's answer has not been asked for, and the code carries an answer rather than a
+decision.**
+
 ### 14:40 — three acceptances, three numbers, and the peer session is back
 
 **Three items are accepted, on three verifier reports, and the lead re-measured each one.**
