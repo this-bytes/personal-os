@@ -4200,10 +4200,14 @@ the measurement over.**
 published tree: **the contract publishes the _status_ (`CONTRACTS.md:748`, `:1083`) and not the
 _message_** — `grep 'does not satisfy the' CONTRACTS.md` returns nothing — **while six
 assertions in two test files repeat the message literally** (`resources.test.ts:183`, `:209`,
-`:231`, `:254`; `resource-templates.test.ts:782`, `:814`), **and the source builds it at
-runtime** (`service.ts:739` is a template string, so there is no constant to import). **So
-the sentence a caller reads is written in five places, the contract says nothing about it, and
-no gate notices.** `.factory/work/WI-113.md` is filed with that measurement, with the scope
+`:231`, `:254`; `resource-templates.test.ts:782`, `:814`), **and the source writes the wording
+five times across three files** — `service.ts:355` and `:416` are literal constants, while
+`service.ts:651`, `service.ts:739` and `templates.ts:455` are template strings, **so for the
+one the tests assert on (`service.ts:739`) there is no constant to import and the contract has
+to publish it.** **So the refusal's wording is written five times in the source, six times in
+the tests' expectations and twice more in the tests' names — thirteen copies across five
+files — the contract says nothing about any of them, and no gate notices.**
+`.factory/work/WI-113.md` is filed with that measurement, with the scope
 split into the contract half (Wren) and the test half (Probe), and with both blockers named:
 **Wren's chat lane refuses, and `CONTRACTS.md` is WI-114's file.** **No request id is spent.**
 
@@ -4270,3 +4274,59 @@ characters. Ceiling two. Next free number WI-124.**
 for the two chat lanes that are refusing, and it is still the owner's to give. **The
 substitution above does not need it, and that is the point of a substitute: the factory's work
 moves on a live lane while the dead ones wait.**
+
+### 11:25 — the floor after the pin landed: WI-120 accepted, WI-123 landed and dispatched, WI-114's table settled
+
+**WI-120 is ACCEPTED** on Probe's verdict (`probe-wi120-verified-chief-2026-10-22`,
+`task_0eaf59cd039f`): the published front page carries the product's own identity
+sentence, byte-identical, compared as bytes and not by eye; the diff is exactly two lines;
+**CI `39698119618` and CodeQL `39698119697` on `db6a29b` are both `completed/success`**.
+_What the product can now do: a stranger who finds the repository reads the product's own
+words on the front page._
+
+**WI-123 is LANDED** — merge `e38d62c`, one file, +438
+(`apps/server/src/__tests__/licenceRecord.test.ts`), published in `42af80d` — and **the
+nine gates were green on the tree that was pushed**: exit 0, "Every gate passed. The tree
+is green.", **64 files, 642 tests, 0 failures**. **Verification dispatched to Cog**
+(`wi-123-verify-licence-record-pin-cog-2026-10-22`, `task_017a543cd28d`) — **Vision first;
+Cog stands because Vision's queue has not drained.** Not accepted. **A stale dispatch was
+cancelled**: `task_a606329a3dc1`, this item's original dispatch to Probe, still queued
+after the work had landed and been reported.
+
+**WI-114's table is settled against the peer's measurement, and a sixth correction is
+found.** The peer measured WI-114 at 11:15 and handed the measurement over. **Twelve of its
+thirteen targets hold; the thirteenth does not, and it is the one this item's row turns
+on.** Its `service.ts:583-593` holds `return updated;` and the resource service's `execute`
+dispatcher — **not the automation provider's `execute`, and not the template refusal the
+guide's row actually claims.** The guide names `assertTemplatesValid` and `templateGet`
+outright, and `templateGet` is at **`service.ts:640-656`**. **And the same row cites a
+second range nobody checked: `templates.ts:176-190`, which held `assertTemplatesValid`
+exactly when the guide was written (`949885c`) and was moved by landing `8b1fd01` — not by
+WI-108's landing, which is why the eleven were thought to be the whole set.** The range
+that carries the claim now is **`templates.ts:446-460`**, and the check that runs when the
+service is built is at **`service.ts:461-463`**. **The row is corrected as a whole, both of
+its citations.** Still HELD on the lane.
+
+**Two corrections to the lead's own published numbers, and both are the same mistake.** The
+change set was published as `+939/−59`; measured, the merge against its first parent is
+**+940/−59** and the branch tip against the merge is **+939/−31** — **the published pair
+mixed two comparisons.** And "73 commits behind" was wrong at every tip it could be read
+at: measured at Probe's own `7ffa4e4` the distance from `d4926f0` is **278**, and it is
+**296** at the tip published now. **A diffstat must name its comparison, and a count of
+commits must name its tree.**
+
+**The lanes, measured again at 11:12.** **Wren's last word was 04:06:42**; five delegations
+since have died with 0 characters. **The peer un-archived two dead sessions at 11:07** —
+Probe's (`mvs_e109a52fca0541f196725ffdedd0d316`) and **Vision's
+(`mvs_1dd69a42fec84f3ca0600075470232a4`, archived by this lead at 09:45)** — and the
+liveboard still mapped Vision's bot onto the archived session, **so WI-122's verification
+was queued onto a lane that could not answer it.** **The peer's correction to this lead is
+taken: un-archiving is a second repair, and the lead said it did not exist.** The peer
+re-routed WI-122's verification to Cog (`task_d374c36981e7`); this lead re-routed WI-123's
+the same way. **The refusal itself is still there, so the restart still stands for Wren's
+lane, and the recommendation is unchanged.**
+
+**The floor at 11:25.** **Running:** Cog's WI-121 (`task_bbf11f83be2b`, a second hour).
+**Queued:** Cog's WI-122 verification (`task_d374c36981e7`), Cog's WI-123 verification
+(`task_017a543cd28d`), Probe's WI-116 (`task_9a4337f73e61`). **Ceiling two. Next free
+number WI-124.**
