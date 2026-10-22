@@ -5463,4 +5463,9 @@ worked a second time.
 
 **And the gate is not weakened — measured with the version CI runs, not asserted.** With **npm 10.9.9**, the version bundled with the node `22.23.3` in `.nvmrc`, against a lockfile carrying a high-severity advisory (`lodash@4.17.15`): **`npm ci --ignore-scripts` exits 0** — the implicit audit prints and does not fail — while **`npm audit --audit-level=high` exits 1**. **The implicit audit never gated this job; the explicit step is the only thing that has ever failed it, before the change and after it.**
 
+**And the citations in the 15:25 entry above have drifted by nine lines.** The comment the change
+carries moved the install from `:94` to **`:103`** and the audit from `:99` to **`:108`**, and the
+siblings' installs to `:128`, `:155` and `:180`. **The item file on `main` is repointed at the lines
+the file carries now, and it says which lines they were before.**
+
 **And the proof is the pipeline that reads the file.** On `de5de5d`, which carries the same one word, the job's own steps: install **0.12 min**, audit **0.00 min**, the whole job **0.22 min — success**, where the same job took ten minutes and a half and was cut off on `ccc3564`. **Thirteen seconds, green, where it used to time out.**
