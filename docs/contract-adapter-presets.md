@@ -13,13 +13,24 @@ A preset is a **starting template** for an agent connection. It carries:
 - the notes the owner reads: what the type is for, what it can and cannot do,
   and what the owner still has to supply.
 
-A preset is **not** an integration. The five approved target runtimes in
-`docs/adapters.md` are integration _candidates_: none has been demonstrated
-in this repository. Every preset that names a runtime carries `verified:
-false` and says in its own copy that the integration has not been demonstrated
-here. The difference between "here is the command line we believe this runtime
-uses" and "this integration is proven" is visible in the data and in the
-panel, not only in a changelog.
+A preset is **not** an integration, and it only claims to be one when it can
+show what it rested on. The five approved target runtimes in `docs/adapters.md`
+are integration _candidates_: a preset that names one carries `verified:
+false` until this repository has run that exact template against that runtime
+and completed a turn with it, and says in its own copy that the integration
+has not been demonstrated here. A preset that claims to have been
+demonstrated carries the evidence — the runtime, the version, the day and what
+was observed — and the schema refuses a claim with nothing behind it. The
+difference between "here is the command line we believe this runtime uses" and
+"this integration is proven" is visible in the data and in the panel, not only
+in a changelog.
+
+**Corrected on 2026-10-23.** This paragraph used to say that none of the five
+runtimes had been demonstrated in this repository and that every preset
+carried `verified: false`. WI-153 ran the Hermes ACP template against the
+installed Hermes 0.21.0 — the handshake answered, and a turn completed with
+the runtime's own answer — so that template now carries `verified: true` and
+its evidence. The other four are still candidates.
 
 ## The published shapes
 
@@ -37,14 +48,22 @@ interface AdapterPreset {
   requires: string[]; // what the owner still has to supply
   credential?: 'apiKey' | 'authToken'; // which secret field belongs here
   verified: boolean; // has this template been run here?
+  evidence?: {
+    runtime: string; // the runtime that answered
+    version?: string; // the version that answered, when it publishes one
+    demonstratedOn: string; // the day, as YYYY-MM-DD
+    observed: string; // what was observed, in a sentence the owner can read
+  };
   runtime?: 'Codex' | 'OpenCode' | 'Pi' | 'Hermes' | 'OpenClaw';
 }
 ```
 
-Two rules the schema enforces, so a broken preset cannot be served:
+Three rules the schema enforces, so a broken preset cannot be served:
 
 - `config.adapterType` must equal `adapterType`;
-- `persona` must carry **both** `role` and `instructions`.
+- `persona` must carry **both** `role` and `instructions`;
+- a preset that claims to have been demonstrated must carry its evidence, and
+  evidence belongs to a preset that claims it.
 
 The second rule exists because the persona is resolved by
 `resolvePersona`: a conversation's override **replaces** the connection's base
@@ -126,9 +145,10 @@ preset that carried a credential would leak it.
 Each preset picks **one** surface and names the alternative in its copy, so
 the owner chooses the surface rather than having one hidden from them.
 
-## The catalogue — twelve presets
+## The catalogue — thirteen presets
 
-One preset per adapter type, plus one per approved runtime.
+One preset per adapter type, plus one per approved runtime, plus the Hermes
+ACP template that WI-153 added.
 
 | id                 | Type    | Name                         | What the template gives the owner                                                                                | The leader persona    |
 | ------------------ | ------- | ---------------------------- | ---------------------------------------------------------------------------------------------------------------- | --------------------- |
@@ -143,6 +163,7 @@ One preset per adapter type, plus one per approved runtime.
 | `opencode-acp`     | `acp`   | OpenCode (ACP session)       | the `opencode` command, a 900s timeout, and that OpenCode also publishes an HTTP/SSE server                      | OpenCode lead         |
 | `pi-cli`           | `cli`   | Pi (command line subprocess) | the `pi` command on stdin, and that Pi's own JSONL RPC lifecycle is not implemented here                         | Pi lead               |
 | `hermes-http`      | `http`  | Hermes (HTTP run API)        | the gateway URL, the run path, the body template, and that a run record is not the reply text                    | Hermes lead           |
+| `hermes-acp`       | `acp`   | Hermes (ACP session)         | the `hermes` command in ACP mode, and that Hermes also publishes an HTTP run API and a gateway                   | Hermes lead           |
 | `openclaw-http`    | `http`  | OpenClaw (HTTP gateway)      | the gateway URL, the path, the body template, and that the WebSocket control plane and the ACP bridge also exist | OpenClaw lead         |
 
 Every preset carries a leader persona with **both** halves: a role on one line,
@@ -165,10 +186,15 @@ merely ends in those letters. The intent of the guard is unchanged.
 
 ## What is not claimed
 
-- No runtime integration is claimed to work. The five runtime presets are
-  templates.
+- No runtime integration is claimed to work without evidence. A preset that
+  names a runtime carries `verified: false` until this repository has run it,
+  and a preset that claims otherwise carries the evidence it rested on.
 - The command lines and paths in the runtime presets are what this repository
-  believes the runtimes use. They are not verified, and each preset says so.
+  believes the runtimes use. The one that has been run says so, and the rest
+  say the opposite.
 - The capabilities of a runtime are not published. They are probed.
-- Nothing here is demonstrated end to end against a real runtime: the
-  repository has not run Codex, OpenCode, Pi, Hermes or OpenClaw.
+- **Corrected on 2026-10-23:** this list once ended with "the repository has
+  not run Codex, OpenCode, Pi, Hermes or OpenClaw". The repository has now run
+  Hermes, over ACP: the handshake answered and a turn completed with the
+  runtime's own answer, through the product's own adapter. The other four are
+  still candidates.

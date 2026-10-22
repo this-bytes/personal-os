@@ -13,3 +13,17 @@ import { defaultAgentToolGrants, type McpToolName } from '@personal-os/contracts
 export function effectiveToolGrants(granted: McpToolName[] | null | undefined): McpToolName[] {
   return granted ?? [...defaultAgentToolGrants];
 }
+
+/**
+ * Whether two grant sets are the same set.
+ *
+ * A grant is a set: the order the tools happen to be stored in is not part of
+ * what the grant means, so two lists holding the same tools are one grant and
+ * not two.
+ */
+export function sameToolGrants(left: McpToolName[], right: McpToolName[]): boolean {
+  if (left.length !== right.length) return false;
+  const a = [...left].sort();
+  const b = [...right].sort();
+  return a.every((tool, index) => tool === b[index]);
+}

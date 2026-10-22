@@ -97,6 +97,41 @@ test.describe('the chat surface', () => {
     await expect(page.getByText(/may finish the current turn/)).toBeVisible();
   });
 
+  test('the panel says what the turn was admitted with', async ({ page }) => {
+    await signIn(page);
+    const workspaceId = await firstWorkspaceId(page);
+    const agentId = await createAgent(page, 'Wren');
+
+    const createdConversation = await page.request.post('/api/conversations', {
+      data: {
+        workspaceId,
+        title: 'What it was admitted with',
+        routingMode: 'mentions',
+        participantAgentConnectionIds: [agentId],
+      },
+    });
+    expect(createdConversation.ok()).toBe(true);
+    const conversationId = (await createdConversation.json()).conversation.id as string;
+
+    await page.goto(`/conversations/${conversationId}`);
+
+    // Before a turn there is no view, and the panel says there is no turn
+    // rather than that the agent could do nothing.
+    await expect(page.getByText(/No turn yet/)).toBeVisible();
+
+    await page.getByPlaceholder(/Write a message/).fill('@Wren hello');
+    await page.getByRole('button', { name: 'Send message' }).click();
+
+    // The turn was admitted, so the view is pinned, and the panel shows it.
+    await expect(page.getByText('Turn capabilities')).toBeVisible();
+    await expect(page.getByText(/revision \d+/)).toBeVisible();
+    await expect(page.getByText('Tools granted')).toBeVisible();
+    await expect(page.getByText('takes input mid-turn')).toBeVisible();
+
+    // The limit is stated rather than implied: the token names the connection.
+    await expect(page.getByText(/scoped to the connection/)).toBeVisible();
+  });
+
   test('the presence list says who is in the room', async ({ page }) => {
     await signIn(page);
     const workspaceId = await firstWorkspaceId(page);

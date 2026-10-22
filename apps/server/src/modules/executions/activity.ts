@@ -1,6 +1,6 @@
 import { and, asc, eq, sql } from 'drizzle-orm';
+import { turnAcceptsSteering as acceptsSteering } from '../capabilities/capability-view.js';
 import type {
-  AgentCapabilities,
   AgentEvent,
   ChatActivity,
   RunControl,
@@ -8,10 +8,11 @@ import type {
   RunState,
   ServerEvent,
   StopTurnOutcome,
+  TurnCapabilityView,
   TurnStatus,
 } from '@personal-os/contracts';
 import type { Database } from '../../db/client.js';
-import { agentConnections, executionEvents, executions, queueJobs } from '../../db/schema.js';
+import { executionEvents, executions, queueJobs } from '../../db/schema.js';
 import { errors } from '../../lib/errors.js';
 
 /**
@@ -434,20 +435,14 @@ export function runControlFor(input: {
 }
 
 /**
- * Whether a connection can take input while its turn is running.
+ * Whether the turn itself can take input while it runs.
  *
- * The capabilities are the ones the adapter reported when the worker
- * connected it, and the worker is what writes them. A connection that has
- * never run a turn reports none, and a connection that reports none cannot
- * be steered: absent means absent.
+ * The rule is the capability module's, because it is a rule about capability
+ * sets: a turn runs against the set it was admitted with. The connection's
+ * own answer is only asked for a turn recorded before the view existed.
  */
-export function connectionAcceptsSteering(db: Database, agentConnectionId: string): boolean {
-  const row = db
-    .select({ capabilities: agentConnections.capabilities })
-    .from(agentConnections)
-    .where(eq(agentConnections.id, agentConnectionId))
-    .get();
-  return (row?.capabilities as AgentCapabilities | null | undefined)?.acceptsSteering === true;
+export function turnAcceptsSteering(db: Database, turn: TurnRow): boolean {
+  return acceptsSteering(db, turn);
 }
 
 /** The turn's own row, as the client reads it. */
@@ -461,6 +456,8 @@ export interface TurnRow {
   spendUnits: number;
   startedAt: string | null;
   finishedAt: string | null;
+  /** What the turn was admitted with, when it was admitted with a view. */
+  capabilityView: TurnCapabilityView | null;
 }
 
 /** Read a turn's row, or null when there is no such turn. */
@@ -477,6 +474,7 @@ export function readTurnRow(db: Database, executionId: string): TurnRow | null {
     spendUnits: row.spendUnits,
     startedAt: row.startedAt,
     finishedAt: row.finishedAt,
+    capabilityView: row.capabilityView,
   };
 }
 

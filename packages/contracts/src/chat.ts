@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import { idSchema, isoDateSchema } from './common.js';
 import { delegatedTaskSchema } from './bot.js';
+import { agentCapabilitiesSchema } from './agent.js';
 
 /**
  * The shapes a rich chat client needs.
@@ -61,6 +62,13 @@ export const turnCapabilityViewSchema = z.object({
   agentConnectionId: idSchema,
   /** The revision of the connection's capability set at admission. */
   capabilitiesRevision: z.number().int().min(0),
+  /**
+   * What the agent was reported to be able to do, at admission.
+   *
+   * Null when the connection had never been probed: the turn was admitted
+   * against an agent whose capabilities nobody had observed yet.
+   */
+  capabilities: agentCapabilitiesSchema.nullable(),
   toolGrants: z.array(z.string()),
   pinnedAt: isoDateSchema,
 });

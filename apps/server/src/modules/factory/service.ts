@@ -17,6 +17,7 @@ import { errors } from '../../lib/errors.js';
 import { newId } from '../../lib/ids.js';
 import type { EventsService } from '../events/service.js';
 import type { AuditService } from '../audit/service.js';
+import { pinCapabilityView } from '../capabilities/capability-view.js';
 import type { Queue } from '../../queue/client.js';
 import { dependencyStates, rollupGoal, wouldCreateCycle, type DependencyEdge } from './graph.js';
 
@@ -464,6 +465,9 @@ export function createFactoryService(options: FactoryServiceOptions): FactorySer
           externalRef: task.externalRef ?? null,
           agentConnectionId,
           executionOwner: 'personal-os',
+          // The turn is admitted with the capability set it runs against, and
+          // the set cannot change underneath it afterwards.
+          capabilityView: pinCapabilityView(db, agentConnectionId),
           status: 'queued',
           error: null,
           spendUnits: 0,

@@ -27,9 +27,9 @@ if (pidFile) {
 function readStore() {
   try {
     const raw = JSON.parse(readFileSync(storePath, 'utf8'));
-    return { sessions: raw.sessions ?? [], loaded: raw.loaded ?? [] };
+    return { sessions: raw.sessions ?? [], loaded: raw.loaded ?? [], opened: raw.opened ?? [] };
   } catch {
-    return { sessions: [], loaded: [] };
+    return { sessions: [], loaded: [], opened: [] };
   }
 }
 
@@ -54,10 +54,10 @@ input.on('line', (line) => {
   const reply = (result) => {
     process.stdout.write(`${JSON.stringify({ jsonrpc: '2.0', id: message.id, result })}\n`);
   };
-  const fail = (code, reason) => {
-    process.stdout.write(
-      `${JSON.stringify({ jsonrpc: '2.0', id: message.id, error: { code, message: reason } })}\n`,
-    );
+  const fail = (code, reason, data) => {
+    const error = { code, message: reason };
+    if (data !== undefined) error.data = data;
+    process.stdout.write(`${JSON.stringify({ jsonrpc: '2.0', id: message.id, error })}\n`);
   };
 
   switch (message.method) {
@@ -65,9 +65,27 @@ input.on('line', (line) => {
       reply({ protocolVersion: 1, agentCapabilities: { loadSession: true } });
       return;
     case 'session/new': {
+      // A real agent checks what the session is opened with: the protocol asks
+      // for the working directory and the MCP servers, and an agent that
+      // checks them refuses a request that leaves them out.
+      const cwd = message.params?.cwd;
+      const mcpServers = message.params?.mcpServers;
+      if (typeof cwd !== 'string' || !Array.isArray(mcpServers)) {
+        fail(-32602, 'Invalid params', {
+          details: 'session/new requires cwd and mcpServers.',
+        });
+        return;
+      }
+      if (process.env.FAKE_ACP_REFUSE_SESSION === '1') {
+        fail(-32603, 'Internal error', {
+          details: 'No LLM provider configured. Run `hermes model` to select a provider.',
+        });
+        return;
+      }
       const store = readStore();
       const sessionId = `sess_${store.sessions.length + 1}`;
       store.sessions.push(sessionId);
+      store.opened.push({ cwd, mcpServers });
       writeStore(store);
       reply({ sessionId });
       return;

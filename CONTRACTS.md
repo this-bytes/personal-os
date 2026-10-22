@@ -90,7 +90,7 @@ turn derived from one human request together. `origin` records who spoke and how
 the delegation chain has travelled — the basis of the echo-loop guard. `executionId`
 names the execution the message belongs to — the execution is the run itself, and
 the message it produced is that run's own record
-(`apps/server/src/modules/conversations/service.ts:72-77`). **`detail` is the
+(`apps/server/src/modules/conversations/service.ts:67-72`). **`detail` is the
 server's own sentence about how the message ended** — a message that did not finish
 says why, in the server's words
 (`packages/contracts/src/conversation.ts:90`), and the client shows it as it is
@@ -440,6 +440,18 @@ its session and prompts the agent, with or without a prior `connect()`. ACP's
 reports are the ones the agent answered with; it is a probe, not a runtime the
 turn borrows, so it releases the agent it started.
 
+**A session is opened with the working directory and the MCP servers.** The
+protocol asks for both, and an agent that checks them refuses a request that
+leaves them out — Hermes refuses it as `invalid params`, and the turn never
+starts. The adapter sends the directory the connection was configured with, and
+no MCP servers, because it grants no client-side capability.
+
+**A refusal carries its reason.** A runtime that refuses a request usually
+says why in the error's data, and the reason is the part the owner needs:
+"no provider configured" is actionable and "internal error" is not. The
+adapter's failure carries the reason through, so the panel can say what is
+wrong and what to do about it.
+
 **A turn that ends, fails or is abandoned must not leave a child process
 behind.** The caller closes the adapter when the turn is over, and a capability
 probe closes the instance it opened.
@@ -671,16 +683,49 @@ interface AdapterPreset {
   requires: string[]; // what the owner still has to supply
   credential?: 'apiKey' | 'authToken'; // which secret field belongs here
   verified: boolean; // has this template been run here?
+  evidence?: {
+    runtime: string; // the runtime that answered
+    version?: string; // the version that answered, when it publishes one
+    demonstratedOn: string; // the day, as YYYY-MM-DD
+    observed: string; // what was observed, in a sentence the owner can read
+  };
   runtime?: 'Codex' | 'OpenCode' | 'Pi' | 'Hermes' | 'OpenClaw';
 }
 ```
 
-**A preset is not an integration.** The five approved target runtimes are
-integration _candidates_: none has been demonstrated in this repository. Every
-preset that names a runtime carries `verified: false` and says so in the copy the
-owner reads. The difference between "here is the command line we believe this
-runtime uses" and "this integration is proven" is visible in the data and in the
-panel, not only in a changelog.
+**A preset claims an integration only when it can show the evidence.** A
+preset that says it has been demonstrated carries the evidence it rests on —
+the runtime, the version, the day and what was observed — and **a preset that
+claims the demonstration without the evidence does not parse**. A preset that
+has not been demonstrated says so in the copy the owner reads, and the panel
+wears the caution treatment beside it.
+
+**What has been demonstrated.** The built-in echo agent is this repository's own
+runtime: the server tests drive it, and the browser suite runs the whole chain
+— server, queue, worker, adapter, event log, stream — against it. **The Hermes
+ACP template has been run against the installed Hermes 0.21.0**: the handshake
+answered, and a turn completed with the runtime's own answer, both through
+this product's adapter. The other four approved runtimes — Codex, OpenCode, Pi
+and OpenClaw — are still candidates: they are not installed here, and their
+presets carry `verified: false`.
+
+**A handshake is worth something, and it is not a turn.** The handshake asks
+whether a runtime is there; the turn asks whether it works. A runtime that
+answers the handshake and then refuses the turn has demonstrated the first and
+not the second. **A preset that names one of the five runtimes carries
+`verified: false` until this repository has run that exact template against
+that runtime and completed a turn with it.**
+
+**A handshake is worth something, and it is not a turn.** The handshake asks
+whether a runtime is there; the turn asks whether it works. A runtime that
+answers the handshake and then refuses the turn has demonstrated the first and
+not the second. **A preset that names one of the five runtimes carries
+`verified: false` until this repository has run that exact template against
+that runtime and completed a turn with it.**
+
+**The ACP surface of an installed Hermes answered the handshake this
+repository ran against it**, and reported that it can restore a session — which
+is what `connect()` asks and what the panel shows beside a connection.
 
 **A preset carries the persona whole.** The schema requires both `role` and
 `instructions`, because [the persona](#the-persona) is resolved by
@@ -713,23 +758,41 @@ validates the merged configuration with the existing `parseAdapterConfig` path,
 and takes the preset's persona as the base persona when the owner wrote none.
 The owner's own persona wins.
 
-The runtime mapping — each preset picks **one** surface and names the
-alternative in its copy, so the owner chooses the surface rather than having
-one hidden from them:
+Each preset picks **one** surface and names the alternative in its copy, so the
+owner chooses the surface rather than having one hidden from them:
 
-| Runtime  | Adapter type | The surface the preset uses         | The alternative it names                        |
-| -------- | ------------ | ----------------------------------- | ----------------------------------------------- |
-| Codex    | `cli`        | the command line                    | the native App Server and ACP surfaces          |
-| OpenCode | `acp`        | an ACP-compatible session           | the native HTTP server and its SSE event stream |
-| Pi       | `cli`        | the long-lived JSONL RPC subprocess | —                                               |
-| Hermes   | `http`       | the HTTP run API                    | ACP and the programmatic gateway                |
-| OpenClaw | `http`       | the HTTP gateway surface            | the gateway WebSocket and the ACP bridge        |
+| Preset          | Runtime  | Adapter type | The surface the preset uses         | The alternative it names                        |
+| --------------- | -------- | ------------ | ----------------------------------- | ----------------------------------------------- |
+| `codex-cli`     | Codex    | `cli`        | the command line                    | the native App Server and ACP surfaces          |
+| `opencode-acp`  | OpenCode | `acp`        | an ACP-compatible session           | the native HTTP server and its SSE event stream |
+| `pi-cli`        | Pi       | `cli`        | the long-lived JSONL RPC subprocess | —                                               |
+| `hermes-http`   | Hermes   | `http`       | the HTTP run API                    | ACP and the programmatic gateway                |
+| `hermes-acp`    | Hermes   | `acp`        | an ACP-compatible session           | the HTTP run API and the programmatic gateway   |
+| `openclaw-http` | OpenClaw | `http`       | the HTTP gateway surface            | the gateway WebSocket and the ACP bridge        |
+
+**A runtime is proved by running it.** `scripts/verify-runtime.ts` takes a
+preset, builds the adapter the worker would build for it, and asks the runtime
+two questions through the product's own code: does it answer the handshake,
+and does it answer a turn. It runs a real agent and spends the runtime's
+tokens, and it refuses a preset that needs a credential it cannot supply
+rather than half-running it. **What it prints is the evidence a preset's
+`verified: true` rests on**, and the script says what it observed and no
+more: a runtime that reports its own failure as its answer has still produced
+an answer, and the text is the only evidence of what happened.
 
 This entry is the contract for **WI-142**, and the code implements it — as of
 `0c7c1f5` — the catalogue is `packages/contracts/src/adapter-presets.ts`, the
 route is `GET /api/agent-presets`, and the panel's connection form carries the
 template picker. The slice's own record is
 [docs/contract-adapter-presets.md](docs/contract-adapter-presets.md).
+
+This entry is the contract for **WI-153**, and the code implements it — as of
+`dcc7fec`. The catalogue is `packages/contracts/src/adapter-presets.ts`, the
+evidence a claim of demonstration rests on is there too, the proof is
+`scripts/verify-runtime.ts`, the session the protocol asks for is
+`packages/agent-adapters/src/acp.ts`, and the reason a refusal carries is
+`packages/agent-adapters/src/jsonrpc.ts`. The slice's own record is
+`.factory/work/WI-153.md`.
 
 ### Important design rules
 
@@ -1528,9 +1591,9 @@ against the execution when the turn ends**: the worker writes one unit for an
 agent turn and none for a turn that never reached the agent
 (`apps/worker/src/executor.ts:1092`, `apps/worker/src/executor.ts:1389`).
 **The row is created with no spend units**, because the cost is not known until
-the turn has run (`apps/server/src/modules/conversations/dispatch.ts:180`,
-`apps/server/src/modules/factory/service.ts:469`), and the column defaults to zero
-(`apps/server/src/db/schema.ts:261`). **So the workspace's spend for the day is
+the turn has run (`apps/server/src/modules/conversations/dispatch.ts:184`,
+`apps/server/src/modules/factory/service.ts:473`), and the column defaults to zero
+(`apps/server/src/db/schema.ts:295`). **So the workspace's spend for the day is
 the sum of what its turns actually cost, and the cap bites.**
 
 **The mode is resolved, readable, and enforced nowhere.** It is carried through the
@@ -1648,7 +1711,7 @@ failure. It is the same word the unknown outcome uses
 the product produces it: the worker writes it when a turn's outcome cannot be
 confirmed (`apps/worker/src/executor.ts:118`), and the conversation dispatch writes it
 when a turn stops for the same reason
-(`apps/server/src/modules/conversations/dispatch.ts:256`). **A vocabulary without
+(`apps/server/src/modules/conversations/dispatch.ts:260`). **A vocabulary without
 `unknown` would leave the unknown outcome unrepresentable in the trail**, and the
 trail is where it is recorded.
 
@@ -1838,11 +1901,11 @@ carries is the published one, so a client that already posts to
 **The row leaves when the grant is widened.** A capability the agent holds is not
 waiting on the owner any more, so the row leaves the list as soon as the grant
 includes it. Whichever route widened the grant, the row leaves: both go through
-the one write that changes a grant (`apps/server/src/modules/agents/service.ts:371`).
+the one write that changes a grant (`apps/server/src/modules/agents/service.ts:412`).
 A list that keeps the row is a list that lies about what is waiting.
 
 **The row leaves and the grant is written in one transaction (WI-131).** The two writes are
-one change and are made together (`apps/server/src/modules/agents/service.ts:320`):
+one change and are made together (`apps/server/src/modules/agents/service.ts:355`):
 the row that says what the agent is waiting on leaves the list, and the grant that
 says what the agent may call is written. **So the guarantee is kept in both
 directions. The row leaves exactly when the grant includes the capability** — and
@@ -1853,9 +1916,9 @@ the row while the agent is still blocked is a list that lies the other way.
 
 **A widening is not taken back (WI-146).** The union that widens the grant is
 computed **inside** the transaction that writes it, from a read taken inside the
-same transaction (`apps/server/src/modules/agents/service.ts:338`), and the
+same transaction (`apps/server/src/modules/agents/service.ts:376`), and the
 transaction takes the write lock before it reads
-(`apps/server/src/modules/agents/service.ts:320`). **So a widening that another
+(`apps/server/src/modules/agents/service.ts:355`). **So a widening that another
 process committed while this one was waiting is not taken back: the grant ends
 up holding both capabilities.** A read taken outside the transaction could be
 stale by the time the write landed, and a union computed from a stale grant
@@ -1979,7 +2042,7 @@ because a cancellation is a decision and not a fault
 **The spend units are recorded, and today they are zero.** A spend unit is an
 abstract cost counter, not currency (`packages/contracts/src/common.ts:58`). The
 execution is created with `spendUnits: 0`
-(`apps/server/src/modules/conversations/dispatch.ts:180`) and nothing writes the
+(`apps/server/src/modules/conversations/dispatch.ts:184`) and nothing writes the
 column afterwards — the turn count the router uses to enforce a spend limit is
 computed in memory and never stored
 (`apps/server/src/modules/conversations/routing.ts:307`). A client that shows
@@ -2119,6 +2182,13 @@ interface TurnCapabilityView {
   agentConnectionId: string;
   /** The revision of the connection's capability set at admission. */
   capabilitiesRevision: number;
+  /**
+   * What the agent was reported to be able to do, at admission.
+   *
+   * Null when the connection had never been probed: the turn was admitted
+   * against an agent whose capabilities nobody had observed yet.
+   */
+  capabilities: AgentCapabilities | null;
   toolGrants: string[];
   pinnedAt: string;
 }
@@ -2127,6 +2197,50 @@ interface TurnCapabilityView {
 A turn recorded before this change has no view, and the API reports it as
 absent rather than as empty. An empty view would say the agent had no tools,
 which is a different claim.
+
+**The view is pinned when the turn is admitted.** Every place that admits a
+turn pins the same view, because there is one rule for it and it lives with
+the capability API, which is the one module that reads across every domain
+(`apps/server/src/modules/capabilities/capability-view.ts:29`). A conversation
+turn and a factory turn are pinned the same way
+(`apps/server/src/modules/conversations/dispatch.ts:181`,
+`apps/server/src/modules/factory/service.ts:470`).
+
+**The turn's own view answers what the turn may do.** Whether a turn can be
+steered is asked of the view the turn was admitted with, and not of the
+connection it runs on
+(`apps/server/src/modules/capabilities/capability-view.ts:62`). A capability
+that changed after the turn started does not change the turn, and takes effect
+on the next one. A turn whose view says the capabilities were never observed
+cannot be steered: nothing was observed. A turn recorded before the view
+existed has none, so the connection answers for it — the same answer it gave
+before the view was captured.
+
+**The revision counts the times the set moved.** A connection's capability set
+has a revision, and it moves when the set moves: the tool grants change, a
+probe reports different capabilities, or the configuration is replaced and the
+capabilities become unknown again
+(`apps/server/src/modules/agents/service.ts:438`). The rule is one comparison
+of the grant before the write and the grant after it
+(`apps/server/src/modules/agents/service.ts:410`), so a grant saved unchanged
+does not move the revision: the revision counts the changes, not the writes.
+
+**The view does not re-scope the MCP token.** The token an agent holds names
+its connection, so a grant the owner widens reaches the agent's next tool call
+as well as its next turn. The view pins the grants for the turn's own
+decisions — whether it can be steered, and what the panel says it may do — and
+it is not a per-turn enforcement of the tool surface. A client that shows the
+view is showing what the turn was admitted with, not a sandbox around it.
+
+This entry is the contract for **WI-154**, and the code implements it — as of
+`573ee57`. The rule is `apps/server/src/modules/capabilities/capability-view.ts`,
+the shape is `packages/contracts/src/chat.ts`, the pinning is
+`apps/server/src/modules/conversations/dispatch.ts` and
+`apps/server/src/modules/factory/service.ts`, the revision is
+`apps/server/src/modules/agents/service.ts`, the read is
+`apps/server/src/api/executions.ts`, and the panel is
+`apps/web/src/components/chat/TurnCapabilityPanel.tsx`. The slice's own record
+is `.factory/work/WI-154.md`.
 
 ### Canonical history
 
@@ -2899,7 +3013,7 @@ automation or task is recorded as authored by the agent that made it.
 write one from the service layer — `POST /api/approvals/:id/decide` and `POST
 /api/agui/runs/:runId/resume`, both at
 `apps/server/src/modules/approvals/resume.ts:55`, and `PATCH /api/tasks/:id` at
-`apps/server/src/modules/factory/service.ts:317`, and that one only when the task
+`apps/server/src/modules/factory/service.ts:415`, and that one only when the task
 leaves `unknown`. **No mutating route writes none.**
 
 The twelve that used to write none write one each, at the route:

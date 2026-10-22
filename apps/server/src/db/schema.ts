@@ -12,6 +12,7 @@ import type {
   MessageDelivery,
   MessageOrigin,
   Persona,
+  TurnCapabilityView,
 } from '@personal-os/contracts';
 
 /**
@@ -96,6 +97,15 @@ export const agentConnections = sqliteTable(
     persona: text('persona', { mode: 'json' }).$type<Persona | null>(),
     enabled: integer('enabled', { mode: 'boolean' }).notNull().default(true),
     capabilities: text('capabilities', { mode: 'json' }).$type<AgentCapabilities | null>(),
+    /**
+     * The revision of this connection's capability set.
+     *
+     * It moves when the set moves — the tool grants change, or a probe
+     * reports different capabilities — and a turn pins the revision it was
+     * admitted with, so the set cannot change underneath a turn that is
+     * already running.
+     */
+    capabilitiesRevision: integer('capabilities_revision').notNull().default(1),
     status: text('status').$type<AgentConnectionStatus>().notNull().default('unknown'),
     lastError: text('last_error'),
     lastConnectedAt: text('last_connected_at'),
@@ -271,6 +281,15 @@ export const executions = sqliteTable(
     externalRef: text('external_ref'),
     agentConnectionId: text('agent_connection_id'),
     executionOwner: text('execution_owner').notNull().default('personal-os'),
+    /**
+     * What this turn was admitted with.
+     *
+     * The view is pinned when the turn is admitted, and does not change
+     * underneath it: a capability or grant change takes effect on the next
+     * turn. Absent means the turn was admitted before the view existed, and
+     * absent is not the same as empty.
+     */
+    capabilityView: text('capability_view', { mode: 'json' }).$type<TurnCapabilityView | null>(),
     status: text('status').$type<ExecutionStatus>().notNull().default('queued'),
     error: text('error'),
     spendUnits: integer('spend_units').notNull().default(0),

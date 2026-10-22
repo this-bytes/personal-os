@@ -4,6 +4,7 @@ import type { Database } from '../../db/client.js';
 import { conversations, executions, messages } from '../../db/schema.js';
 import { newId } from '../../lib/ids.js';
 import type { AuditService } from '../audit/service.js';
+import { pinCapabilityView } from '../capabilities/capability-view.js';
 import type { EventsService } from '../../modules/events/service.js';
 import type { Queue } from '../../queue/client.js';
 import { deriveChainState, planRouting, type RoutingDecision } from './routing.js';
@@ -175,6 +176,9 @@ export function planAndDispatch(input: DispatchInput): DispatchResult {
         externalRef: null,
         agentConnectionId,
         executionOwner: 'personal-os',
+        // The turn is admitted with the capability set it runs against, and
+        // the set cannot change underneath it afterwards.
+        capabilityView: pinCapabilityView(db, agentConnectionId),
         status: 'queued',
         error: null,
         spendUnits: 0,

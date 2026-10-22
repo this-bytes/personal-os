@@ -71,7 +71,7 @@ The response is:
   turn: {
     id, conversationId, agentConnectionId, status, error, spendUnits,
     startedAt, finishedAt,
-    capabilityView: null,      // absent, not empty
+    capabilityView: null,      // the view the turn was admitted with; absent, not empty
     delegatedTasks: null,      // absent, not empty
     committedRevision: null,
   },

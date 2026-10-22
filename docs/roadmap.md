@@ -26,15 +26,17 @@ The first delivery round ran five slices in parallel, each on its own branch in
 its own worktree, and each was merged into `main` with its contract published in
 `CONTRACTS.md` and its own record in `docs/contract-*.md`.
 
-| Slice                              | Outcome                                                                                                                                                                                           |
-| ---------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **WI-145** — the adapter lifecycle | Every adapter has `connect` → `send` → `close`. A turn on an unconnected instance is refused with a message that says what to do. The capability probe closes what it opened.                     |
-| **WI-142** — the adapter presets   | A preset per adapter type and per approved runtime: a default configuration validated against the real schema, a leader persona, and the honest notes. Every runtime preset is marked unverified. |
-| **WI-143** — the factory's goals   | A goal has a rollup and a task has dependencies, with cycle rejection, as pure functions over the existing service. The migration adds a column and drops nothing.                                |
-| **WI-141** — the rich chat surface | Markdown and code, a turn activity trace, artifact previews and a stop control that says what it did — in the Forge visual language.                                                              |
-| **WI-144** — the team room         | A coordinator dispatches to a worker, the worker runs, the result returns, and the handoff is visible. See the slice's own record for what is partial.                                            |
-| **WI-152** — the steer             | A steer goes into the turn that is running, for a connection that reported it can take input mid-turn, and a steer that cannot be delivered waits for the next turn and says why.                 |
-| **WI-151** — the attachment upload | The composer uploads a file, the server stores the bytes beside the workspace, and the transcript opens it. See the slice's own record for the limits that remain.                                |
+| Slice                              | Outcome                                                                                                                                                                                                                                             |
+| ---------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **WI-145** — the adapter lifecycle | Every adapter has `connect` → `send` → `close`. A turn on an unconnected instance is refused with a message that says what to do. The capability probe closes what it opened.                                                                       |
+| **WI-142** — the adapter presets   | A preset per adapter type and per approved runtime: a default configuration validated against the real schema, a leader persona, and the honest notes. Every runtime preset is marked unverified.                                                   |
+| **WI-143** — the factory's goals   | A goal has a rollup and a task has dependencies, with cycle rejection, as pure functions over the existing service. The migration adds a column and drops nothing.                                                                                  |
+| **WI-141** — the rich chat surface | Markdown and code, a turn activity trace, artifact previews and a stop control that says what it did — in the Forge visual language.                                                                                                                |
+| **WI-144** — the team room         | A coordinator dispatches to a worker, the worker runs, the result returns, and the handoff is visible. See the slice's own record for what is partial.                                                                                              |
+| **WI-152** — the steer             | A steer goes into the turn that is running, for a connection that reported it can take input mid-turn, and a steer that cannot be delivered waits for the next turn and says why.                                                                   |
+| **WI-151** — the attachment upload | The composer uploads a file, the server stores the bytes beside the workspace, and the transcript opens it. See the slice's own record for the limits that remain.                                                                                  |
+| **WI-153** — the Hermes preset     | The catalogue carries the surface the installed Hermes publishes, and a script proves a runtime through the product's own adapter. The handshake answered and a turn came back through it.                                                          |
+| **WI-154** — the capability view   | A turn is admitted with the capability set it runs against: the view is pinned at admission, a capability or grant change takes effect on the next turn, and the panel says what the turn was admitted with. The MCP token stays connection-scoped. |
 
 **R0's first slice is landed.** The adapter lifecycle gives every adapter an
 explicit `connect` → `send` → `close`, the worker connects the instance the
@@ -54,13 +56,20 @@ why. **The chat is now proved end to end in a browser**: the suite runs the
 worker, the owner's message reaches it, the adapter runs, and the answer lands
 in the room as the agent's own message, marked with the adapter that wrote it —
 and a steer into a running turn comes back as the agent's answer to the steer.
-The acceptance demonstration still needs one of the five named runtimes — the
-adapter the browser proves is the built-in `echo` one, which is a product
-adapter and not a runtime.
+The acceptance demonstration still needs a named runtime to complete a turn —
+the adapter the browser proves is the built-in `echo` one, which is a product
+adapter and not a runtime. **The Hermes ACP surface has now answered the
+handshake and completed a turn**: the installed Hermes 0.21.0 answered
+`initialize` with `loadSession: true`, and a turn came back with the runtime's
+own answer, both through the product's own adapter. The `hermes-acp` template
+therefore carries the evidence its `verified: true` rests on. The other four
+approved runtimes are still candidates — they are not installed here.
 
-**R2 has templates, not integrations.** The presets are starting points for the
-five named runtimes. No runtime has been demonstrated in this repository yet, and
-the presets say so in the copy the owner reads.
+**R2 has one demonstrated runtime and four templates.** The presets are starting
+points for the five named runtimes. **One runtime has been demonstrated in this
+repository** — Hermes, which answered a handshake and completed a turn through
+the product's own adapter — and the other four are still templates that say
+so in the copy the owner reads.
 
 **WI-132 has landed with it.** The waiting list's shape is published once, in the
 contracts package, and the server and the panel both read it there, so a client
@@ -68,6 +77,17 @@ cannot describe a list the server does not send. The panel's capability row now
 says which tool the agent was refused and widens the grant from the row itself,
 through the published route, and it is labelled "Needs a grant" rather than
 "Blocked" — a grant the owner can widen from the row is not work that is stuck.
+
+**WI-154 has landed with it.** A turn is now admitted with the capability set
+it runs against. The view is pinned when the turn is admitted, so a capability
+or grant change takes effect on the next turn and not underneath the one that
+is running — and the steering decision asks the turn rather than the
+connection, which is the same change seen from the other side. The panel shows
+what the turn was admitted with, and the revision on the agent's own card says
+when that set last moved. **The view is not a sandbox.** The MCP token names
+its connection, so a grant the owner widens reaches the agent's next tool call
+as well as its next turn; the contract says so rather than implying a
+per-turn enforcement that does not exist.
 
 **WI-132's two claims named a commit that did not carry the shape.** They named
 `4d389c7`, and at that commit the published field was the loose

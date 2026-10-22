@@ -30,6 +30,7 @@ import { Composer, type ComposerSendOptions } from '../components/Composer';
 import { ActivityTimeline } from '../components/chat/ActivityTimeline';
 import { PresenceList } from '../components/chat/PresenceList';
 import { RunControls } from '../components/chat/RunControls';
+import { TurnCapabilityPanel } from '../components/chat/TurnCapabilityPanel';
 import { EmptyState, ErrorState, LoadingState } from '../components/ErrorState';
 import { ParticipantManager } from '../components/ParticipantManager';
 import { PersonaBadge } from '../components/PersonaBadge';
@@ -566,6 +567,26 @@ export function ConversationDetail(): React.JSX.Element {
                   }
                 />
               )}
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="pb-1">
+              <CardTitle className="flex items-center justify-between gap-2">
+                <span>Turn capabilities</span>
+                {activeExecutionId ? (
+                  <span className="font-mono text-[10px] font-normal text-slate-600">
+                    {activeExecutionId}
+                  </span>
+                ) : null}
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="pt-1">
+              <TurnCapabilityPanel
+                view={turn.data?.turn.capabilityView ?? null}
+                agents={agents.data ?? []}
+                hasTurn={Boolean(activeExecutionId)}
+              />
             </CardContent>
           </Card>
 

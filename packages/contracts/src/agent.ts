@@ -153,6 +153,14 @@ export const agentConnectionDetailSchema = agentConnectionSchema.extend({
    */
   toolGrants: z.array(mcpToolNameSchema),
   capabilities: agentCapabilitiesSchema.nullable(),
+  /**
+   * The revision of this connection's capability set.
+   *
+   * It moves when the set moves — the tool grants change, or a probe reports
+   * different capabilities — and a turn pins the revision it was admitted
+   * with, so the set cannot change underneath a turn that is running.
+   */
+  capabilitiesRevision: z.number().int().min(1),
   status: agentConnectionStatusSchema,
   lastError: z.string().nullable(),
   lastConnectedAt: isoDateSchema.nullable(),

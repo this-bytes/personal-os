@@ -69,6 +69,12 @@ async function presets(query = ''): Promise<
     requires: string[];
     credential?: string;
     verified: boolean;
+    evidence?: {
+      runtime: string;
+      version?: string;
+      demonstratedOn: string;
+      observed: string;
+    };
     runtime?: string;
   }>
 > {
@@ -140,13 +146,31 @@ describe('the preset catalogue route', () => {
     }
   });
 
-  it('names the runtime presets as not demonstrated', async () => {
+  it('says of every runtime preset whether it has been demonstrated', async () => {
     const runtimePresets = (await presets()).filter((preset) => preset.runtime !== undefined);
 
     expect(runtimePresets.length).toBeGreaterThan(0);
     for (const preset of runtimePresets) {
-      expect(preset.verified).toBe(false);
-      expect(preset.description.toLowerCase()).toContain('not been demonstrated');
+      if (preset.verified) {
+        // A claim of demonstration names what it rested on.
+        expect(
+          preset.evidence,
+          `${preset.id} claims a demonstration and names nothing`,
+        ).toBeDefined();
+        expect(preset.evidence?.runtime).toBeTruthy();
+        expect(preset.evidence?.observed.length ?? 0).toBeGreaterThan(0);
+      } else {
+        expect(preset.description.toLowerCase()).toContain('not been demonstrated');
+      }
+    }
+  });
+
+  it('carries no credential value in a preset’s evidence', async () => {
+    // The evidence says what was observed. It never says with which secret.
+    for (const preset of await presets()) {
+      const evidence = JSON.stringify(preset.evidence ?? {});
+      expect(evidence.toLowerCase()).not.toContain('bearer ');
+      expect(evidence.toLowerCase()).not.toContain('sk-');
     }
   });
 });

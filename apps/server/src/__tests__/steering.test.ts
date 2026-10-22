@@ -150,7 +150,7 @@ describe('the rules of a steer', () => {
     const plan = planSteer({
       participants,
       text: 'do it differently',
-      runningTurns: [{ executionId: 'exe_1', agentConnectionId: 'agt_wren' }],
+      runningTurns: [{ executionId: 'exe_1', agentConnectionId: 'agt_wren', capabilityView: null }],
       acceptsSteering: () => true,
     });
 
@@ -165,8 +165,8 @@ describe('the rules of a steer', () => {
       participants,
       text: '@Other do it differently',
       runningTurns: [
-        { executionId: 'exe_1', agentConnectionId: 'agt_wren' },
-        { executionId: 'exe_2', agentConnectionId: 'agt_other' },
+        { executionId: 'exe_1', agentConnectionId: 'agt_wren', capabilityView: null },
+        { executionId: 'exe_2', agentConnectionId: 'agt_other', capabilityView: null },
       ],
       acceptsSteering: () => true,
     });
@@ -192,7 +192,7 @@ describe('the rules of a steer', () => {
     const plan = planSteer({
       participants,
       text: '@Wren do it differently',
-      runningTurns: [{ executionId: 'exe_1', agentConnectionId: 'agt_wren' }],
+      runningTurns: [{ executionId: 'exe_1', agentConnectionId: 'agt_wren', capabilityView: null }],
       acceptsSteering: () => false,
     });
 
@@ -204,7 +204,7 @@ describe('the rules of a steer', () => {
     const plan = planSteer({
       participants,
       text: '@Wren @Other do it differently',
-      runningTurns: [{ executionId: 'exe_1', agentConnectionId: 'agt_wren' }],
+      runningTurns: [{ executionId: 'exe_1', agentConnectionId: 'agt_wren', capabilityView: null }],
       acceptsSteering: () => true,
     });
 
@@ -217,8 +217,8 @@ describe('the rules of a steer', () => {
       participants,
       text: 'do it differently',
       runningTurns: [
-        { executionId: 'exe_1', agentConnectionId: 'agt_wren' },
-        { executionId: 'exe_2', agentConnectionId: 'agt_other' },
+        { executionId: 'exe_1', agentConnectionId: 'agt_wren', capabilityView: null },
+        { executionId: 'exe_2', agentConnectionId: 'agt_other', capabilityView: null },
       ],
       acceptsSteering: () => true,
     });
