@@ -59,6 +59,7 @@ function approvalItem(): WaitingItem {
     conversationId: 'cnv_1',
     taskId: null,
     agentConnectionId: 'agt_1',
+    toolName: null,
   };
 }
 
