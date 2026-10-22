@@ -60,7 +60,7 @@ the persona work (WI-006). The hues are:
   point and not the answer.
 
 **The agent list becomes the constellation.** The flat roster on the Agents page is
-replaced by the spatial version, because the map *is* the agent list and a roster
+replaced by the spatial version, because the map _is_ the agent list and a roster
 beside it would build the same information twice.
 
 **And the connect decision comes with it.** The owner's answer on Q2 makes
@@ -75,7 +75,7 @@ a decision is taken where the list is. Connecting an agent from the picture of t
 agents needs no round trip to another room.
 
 The alternative — keeping a decision surface for agents in the execution room —
-was rejected, and the reason is on the record: the agent list *is* the map, so a
+was rejected, and the reason is on the record: the agent list _is_ the map, so a
 roster with a connect button somewhere else would build the same information twice
 and put the connect button in a room the owner is not looking at.
 
@@ -125,7 +125,7 @@ outstanding rather than writing it.
 - **A force-directed layout library.** The dependency set is not this direction's
   to change, and a deterministic hand-rolled layout is what the legibility rule
   needs anyway.
-- **The agent list's behaviour.** The map replaces the roster's *shape*, not what
+- **The agent list's behaviour.** The map replaces the roster's _shape_, not what
   the page does.
 - **A persona editor.** The hue rides along with the persona work; it does not
   change it.

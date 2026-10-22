@@ -1,5 +1,6 @@
 import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
 import { z } from 'zod';
+import type { Author } from '../lib/author.js';
 import { errors } from '../lib/errors.js';
 
 /**
@@ -39,6 +40,19 @@ export function parseQuery<T extends z.ZodTypeAny>(schema: T, query: unknown): z
 
 export function notFound(what: string): never {
   throw errors.notFound(what);
+}
+
+/**
+ * The author the request's authenticated identity stands for.
+ *
+ * The identity comes from the token or the session the request carried, so
+ * the author recorded on the write is the one the server authenticated and
+ * never one the request body asked for.
+ */
+export function requestAuthor(request: FastifyRequest): Author {
+  return request.actorType === 'agent'
+    ? { kind: 'agent', agentConnectionId: request.user?.id }
+    : { kind: 'owner', userId: request.user?.id };
 }
 
 /**

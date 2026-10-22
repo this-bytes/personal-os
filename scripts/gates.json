@@ -1,0 +1,58 @@
+{
+  "gates": [
+    {
+      "name": "typecheck",
+      "command": "npm",
+      "args": ["run", "typecheck"],
+      "about": "every workspace typechecks, and the scripts typecheck"
+    },
+    {
+      "name": "test",
+      "command": "npm",
+      "args": ["run", "test"],
+      "about": "every workspace's unit and integration tests"
+    },
+    {
+      "name": "build",
+      "command": "npm",
+      "args": ["run", "build"],
+      "about": "every workspace builds"
+    },
+    {
+      "name": "format",
+      "command": "npm",
+      "args": ["run", "format:check"],
+      "about": "the tree is formatted the way the repository formats it"
+    },
+    {
+      "name": "contract-status",
+      "command": "npm",
+      "args": ["run", "verify:contracts"],
+      "about": "the published contract's implementation notes match the tree"
+    },
+    {
+      "name": "contract-pointers",
+      "command": "npx",
+      "args": ["tsx", "scripts/verify-contract-pointers.ts"],
+      "about": "every citation in the contract points at code"
+    },
+    {
+      "name": "smoke",
+      "command": "npx",
+      "args": ["tsx", "scripts/smoke.ts"],
+      "about": "the server boots against a throwaway database and refuses what it should"
+    },
+    {
+      "name": "compiled-build",
+      "command": "npx",
+      "args": ["tsx", "scripts/verify-build.ts"],
+      "about": "the compiled server boots"
+    },
+    {
+      "name": "bundle-size",
+      "command": "npm",
+      "args": ["run", "verify:bundle"],
+      "about": "the client bundle stays within its budget"
+    }
+  ]
+}

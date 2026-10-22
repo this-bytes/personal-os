@@ -7,7 +7,9 @@ import {
   documentSpecSchema,
   isTriggerableEventType,
   memorySpecSchema,
+  taskSpecSchema,
   triggerableEventTypes,
+  RESOURCE_AUTHOR_SYSTEM,
   type AutomationAction,
   type AutomationTrigger,
   type MemorySpec,
@@ -19,6 +21,7 @@ import {
 import { z } from 'zod';
 import type { Database } from '../../db/client.js';
 import { automations, resources as resourcesTable } from '../../db/schema.js';
+import { authorOf, type Author } from '../../lib/author.js';
 import { errors } from '../../lib/errors.js';
 import { assertSafeUrl, assertReadableQuery } from '../../lib/guards.js';
 import { AGENT_ID_FORM, newId } from '../../lib/ids.js';
@@ -30,6 +33,7 @@ import {
   assertTemplatesValid,
   findTemplate,
   listTemplates,
+  mergeTemplateSpec,
   resourceTemplates,
   templateIssues,
 } from './templates.js';
@@ -45,7 +49,14 @@ export interface ResourceInput<T = unknown> {
   workspaceId: string;
   title: string;
   data: T;
-  createdBy: string;
+  /**
+   * Who made the write. The value stored on the row is derived from it, so
+   * a caller cannot name an author the request did not authenticate.
+   */
+  author: Author;
+  /** The template this resource was made from, and the version of it. */
+  templateId?: string;
+  templateVersion?: number;
 }
 
 export interface ResourceUpdate<T = unknown> {
@@ -70,7 +81,15 @@ export interface ResourceService {
     type: ResourceType;
     title: string;
     data: unknown;
-    createdBy: string;
+    /** Who made the write. Derived into the recorded author, never taken raw. */
+    author: Author;
+    /**
+     * The template this resource was made from.
+     *
+     * The template's spec is already merged into `data`: the merge belongs to
+     * the provider, and the resource records where it came from.
+     */
+    template?: { id: string; version: number };
   }): Resource;
   update(id: string, patch: { expectedRevision: number; title?: string; data?: unknown }): Resource;
   /** Mark a resource live. Dashboards become visible, automations become active. */
@@ -82,22 +101,30 @@ export interface ResourceService {
   /**
    * How many of the workspace's resources record an agent as their author.
    *
-   * The total is every resource in the workspace, across all six kinds. Two of
-   * the kinds — automations and tasks — hardcode `createdBy: 'system'` and have
-   * no column to keep an author in, so they are counted in the total and can
-   * never be counted as agent-authored. The count is therefore a lower bound,
-   * and the total is the honest denominator.
+   * The total is every resource in the workspace, across all six kinds. The
+   * rows written before the author was recorded keep the `system` they were
+   * written with, so they are counted in the total and can never be counted
+   * as agent-authored. The count is therefore a lower bound, and the total is
+   * the honest denominator.
    */
   authorshipCounts(workspaceId: string): { agentAuthored: number; total: number };
-  /** The templates published for one kind, newest version of each. */
-  templateList(type: ResourceType): ResourceTemplate[];
+  /** The templates published for one kind — or for every kind. */
+  templateList(type?: ResourceType): ResourceTemplate[];
   /**
    * One template, by reference.
    *
-   * An unknown template is not found; a template of the wrong kind, and a
-   * template whose spec the owning provider refuses, are refused.
+   * An unknown template is not found; a template whose spec the owning
+   * provider refuses is refused.
    */
-  templateGet(ref: ResourceTemplateRef, type: ResourceType): ResourceTemplate;
+  templateGet(ref: ResourceTemplateRef): ResourceTemplate;
+  /**
+   * The template's spec with the caller's values merged into it.
+   *
+   * A template of the wrong kind is refused: the spec of a document is not a
+   * dashboard. The merge itself never refuses — the owning provider judges
+   * the merged spec, and the guide is the advice.
+   */
+  templateMerge(template: ResourceTemplate, type: ResourceType, override: unknown): unknown;
 }
 
 export interface ResourcesServiceOptions {
@@ -132,6 +159,8 @@ export function createResourcesService(options: ResourcesServiceOptions): Resour
     data: row.data,
     createdBy: row.createdBy,
     updatedAt: row.updatedAt,
+    templateId: row.templateId ?? undefined,
+    templateVersion: row.templateVersion ?? undefined,
   });
 
   const tableRow = (id: string) =>
@@ -144,7 +173,7 @@ export function createResourcesService(options: ResourcesServiceOptions): Resour
   ): ResourceProvider<z.infer<T>> {
     return {
       type,
-      validate: (data: unknown) => schema.parse(data),
+      validate: (data: unknown) => parseSpec(schema, data, type),
       create(input): Resource<z.infer<T>> {
         const id = newId('res');
         const now = new Date().toISOString();
@@ -158,7 +187,9 @@ export function createResourcesService(options: ResourcesServiceOptions): Resour
             revision: 1,
             title: input.title,
             data,
-            createdBy: input.createdBy,
+            createdBy: authorOf(input.author),
+            templateId: input.templateId ?? null,
+            templateVersion: input.templateVersion ?? null,
             createdAt: now,
             updatedAt: now,
           })
@@ -200,8 +231,10 @@ export function createResourcesService(options: ResourcesServiceOptions): Resour
     revision: row.revision,
     title: row.title,
     data: { trigger: row.trigger, action: row.action, enabled: row.enabled },
-    createdBy: 'system',
+    createdBy: row.createdBy,
     updatedAt: row.updatedAt,
+    templateId: row.templateId ?? undefined,
+    templateVersion: row.templateVersion ?? undefined,
   });
 
   function automationProvider(): ResourceProvider<{
@@ -216,13 +249,15 @@ export function createResourcesService(options: ResourcesServiceOptions): Resour
     }> = {
       type: 'automation',
       validate(data: unknown) {
-        const parsed = z
-          .object({
+        const parsed = parseSpec(
+          z.object({
             trigger: automationTriggerSchema,
             action: automationActionSchema,
             enabled: z.boolean().default(false),
-          })
-          .parse(data);
+          }),
+          data,
+          'automation',
+        );
         validateAutomationConfig(parsed.trigger, parsed.action);
         return parsed;
       },
@@ -241,6 +276,9 @@ export function createResourcesService(options: ResourcesServiceOptions): Resour
             enabled: false,
             lastRunAt: null,
             nextRunAt: null,
+            createdBy: authorOf(input.author),
+            templateId: input.templateId ?? null,
+            templateVersion: input.templateVersion ?? null,
             createdAt: now,
             updatedAt: now,
           })
@@ -281,8 +319,42 @@ export function createResourcesService(options: ResourcesServiceOptions): Resour
     return provider;
   }
 
+  /**
+   * The dashboard provider.
+   *
+   * A dashboard is never born live. The automation's provider writes
+   * `enabled: false` on create whatever the spec asked for, and this one
+   * writes `published: false` for the same reason: a dashboard becomes live
+   * when it is published, which is a separate act, and the template's guide
+   * says so in as many words.
+   *
+   * The judgment belongs to the provider because the merge is not a judge: it
+   * merges, and the owning provider judges the result exactly as it judges a
+   * spec that arrived whole. A spec that is not an object is passed on
+   * untouched, so the schema still refuses it rather than this turning it
+   * into one.
+   */
+  function dashboardProvider(): ResourceProvider<unknown> {
+    const base = tableProvider('dashboard', dashboardSpecSchema) as ResourceProvider<unknown>;
+    return {
+      ...base,
+      create(input) {
+        return base.create({ ...input, data: asDraft(input.data) });
+      },
+    };
+  }
+
+  /**
+   * The task provider.
+   *
+   * A task is judged by the task contract, like every other kind: a task
+   * that breaks it is a bad request, not a server fault. The contract is the
+   * one the factory already publishes, so a task template that drifts is
+   * caught when the server starts, and a task resource that does not satisfy
+   * the contract is reported as invalid by an inspection.
+   */
   function taskProvider(): ResourceProvider<unknown> {
-    const toResource = (task: ReturnType<FactoryService['getTask']>): Resource => ({
+    const toResource = (task: ReturnType<FactoryService['getTask']>, author: string): Resource => ({
       id: task.id,
       workspaceId: task.workspaceId,
       type: 'task',
@@ -290,15 +362,29 @@ export function createResourcesService(options: ResourcesServiceOptions): Resour
       revision: task.revision,
       title: task.title,
       data: task,
-      createdBy: 'system',
+      createdBy: author,
       updatedAt: new Date().toISOString(),
+      templateId: task.templateId,
+      templateVersion: task.templateVersion,
     });
 
-    return {
+    /** The author the task row records. A task nobody authored says `system`. */
+    const authorOfTask = (id: string): string => factory.taskAuthor(id) ?? RESOURCE_AUTHOR_SYSTEM;
+
+    const provider: ResourceProvider<unknown> = {
       type: 'task',
-      validate: (data: unknown) => data,
+      validate(data: unknown) {
+        const parsed = taskSpecSchema.safeParse(data);
+        if (!parsed.success) {
+          throw errors.validation(
+            'This task does not satisfy the task contract.',
+            parsed.error.issues,
+          );
+        }
+        return parsed.data;
+      },
       create(input) {
-        const data = (input.data ?? {}) as {
+        const data = provider.validate(input.data) as {
           goalId?: string;
           description?: string;
           assigneeId?: string;
@@ -311,11 +397,14 @@ export function createResourcesService(options: ResourcesServiceOptions): Resour
           goalId: data.goalId,
           assigneeId: data.assigneeId,
           acceptanceCriteria: data.acceptanceCriteria ?? [],
+          author: input.author,
+          templateId: input.templateId,
+          templateVersion: input.templateVersion,
         });
-        return toResource(task);
+        return toResource(task, authorOf(input.author));
       },
       get(id) {
-        return toResource(factory.getTask(id));
+        return toResource(factory.getTask(id), authorOfTask(id));
       },
       update(id, patch) {
         const current = factory.getTask(id);
@@ -328,9 +417,10 @@ export function createResourcesService(options: ResourcesServiceOptions): Resour
           ...(data?.description !== undefined ? { description: data.description } : {}),
           ...(data?.status !== undefined ? { status: data.status as never } : {}),
         });
-        return toResource(updated);
+        return toResource(updated, authorOfTask(id));
       },
     };
+    return provider;
   }
 
   /**
@@ -357,7 +447,7 @@ export function createResourcesService(options: ResourcesServiceOptions): Resour
     };
   }
 
-  const dashboardProvider = tableProvider('dashboard', dashboardSpecSchema);
+  const dashboardResourceProvider = dashboardProvider();
   const documentProvider = tableProvider('document', documentSpecSchema);
   const dataSourceProvider = tableProvider('data-source', dataSourceSpecSchema);
   const memoryResourceProvider = memoryProvider();
@@ -365,7 +455,7 @@ export function createResourcesService(options: ResourcesServiceOptions): Resour
   const taskResourceProvider = taskProvider();
 
   const providers = new Map<ResourceType, ResourceProvider<unknown>>([
-    ['dashboard', dashboardProvider as ResourceProvider<unknown>],
+    ['dashboard', dashboardResourceProvider as ResourceProvider<unknown>],
     ['document', documentProvider as ResourceProvider<unknown>],
     ['data-source', dataSourceProvider as ResourceProvider<unknown>],
     ['memory', memoryResourceProvider as ResourceProvider<unknown>],
@@ -437,17 +527,20 @@ export function createResourcesService(options: ResourcesServiceOptions): Resour
 
       const taskRows =
         type === 'task' || type === undefined
-          ? factory.listTasks(workspaceId).map((task) => ({
-              id: task.id,
-              workspaceId: task.workspaceId,
-              type: 'task' as ResourceType,
-              schemaVersion: 1,
-              revision: task.revision,
-              title: task.title,
-              data: task,
-              createdBy: 'system',
-              updatedAt: new Date().toISOString(),
-            }))
+          ? (() => {
+              const authors = factory.taskAuthors(workspaceId);
+              return factory.listTasks(workspaceId).map((task) => ({
+                id: task.id,
+                workspaceId: task.workspaceId,
+                type: 'task' as ResourceType,
+                schemaVersion: 1,
+                revision: task.revision,
+                title: task.title,
+                data: task,
+                createdBy: authors.get(task.id) ?? RESOURCE_AUTHOR_SYSTEM,
+                updatedAt: new Date().toISOString(),
+              }));
+            })()
           : [];
 
       return [...rows, ...automationRows, ...taskRows];
@@ -463,7 +556,10 @@ export function createResourcesService(options: ResourcesServiceOptions): Resour
         workspaceId: input.workspaceId,
         title: input.title,
         data: input.data,
-        createdBy: input.createdBy,
+        author: input.author,
+        ...(input.template
+          ? { templateId: input.template.id, templateVersion: input.template.version }
+          : {}),
       });
       events.publish({ type: 'resource.updated', resource }, { workspaceId: resource.workspaceId });
       return resource;
@@ -566,17 +662,9 @@ export function createResourcesService(options: ResourcesServiceOptions): Resour
       return listTemplates(templates, type);
     },
 
-    templateGet(ref, type): ResourceTemplate {
+    templateGet(ref): ResourceTemplate {
       const template = findTemplate(templates, ref);
       if (!template) throw errors.notFound('Template');
-
-      // A template starts one kind, and the kind it starts has to be the kind
-      // the caller asked for: the spec of a document is not a dashboard.
-      if (template.type !== type) {
-        throw errors.validation(
-          `The template "${template.id}" starts a ${template.type}, not a ${type}.`,
-        );
-      }
 
       // The owning provider judges the spec, exactly as it judges the spec of
       // a resource. A template that describes something the product would
@@ -593,6 +681,18 @@ export function createResourcesService(options: ResourcesServiceOptions): Resour
       return template;
     },
 
+    templateMerge(template, type, override): unknown {
+      // A template starts one kind, and the kind it starts has to be the kind
+      // the caller asked for: the spec of a document is not a dashboard.
+      if (template.type !== type) {
+        throw errors.validation(
+          `The template "${template.id}" starts a ${template.type}, not a ${type}.`,
+        );
+      }
+
+      return mergeTemplateSpec(type, template.spec, override);
+    },
+
     authorshipCounts(workspaceId): { agentAuthored: number; total: number } {
       const rows = db
         .select({ createdBy: resourcesTable.createdBy })
@@ -602,25 +702,83 @@ export function createResourcesService(options: ResourcesServiceOptions): Resour
 
       // The test is the id form, not a lookup: a connection that has since
       // been removed does not make the resources it authored owner-authored.
-      const agentAuthored = rows.filter((row) => row.createdBy.startsWith(AGENT_ID_FORM)).length;
+      const isAgentAuthored = (createdBy: string): boolean => createdBy.startsWith(AGENT_ID_FORM);
+      const agentAuthored = rows.filter((row) => isAgentAuthored(row.createdBy)).length;
 
-      // Automations and tasks keep no author at all: their projections say
-      // 'system'. They are in the total, and they can never be in the count.
+      // Automations and tasks keep the author they were created with. The rows
+      // written before the author was recorded say `system`, and they are in
+      // the total and never in the count.
       const automationRows = db
-        .select({ id: automations.id })
+        .select({ createdBy: automations.createdBy })
         .from(automations)
         .where(eq(automations.workspaceId, workspaceId))
         .all();
-      const taskRows = factory.listTasks(workspaceId);
+      const taskAuthors = factory.taskAuthors(workspaceId);
 
       return {
-        agentAuthored,
-        total: rows.length + automationRows.length + taskRows.length,
+        agentAuthored:
+          agentAuthored +
+          automationRows.filter((row) => isAgentAuthored(row.createdBy)).length +
+          [...taskAuthors.values()].filter(isAgentAuthored).length,
+        total: rows.length + automationRows.length + taskAuthors.size,
       };
     },
   };
 
   return service;
+}
+
+/**
+ * How a kind is named in a sentence.
+ *
+ * The contract names a kind by its published name, and a sentence needs the
+ * word rather than the slug.
+ */
+const kindNames: Record<ResourceType, string> = {
+  dashboard: 'dashboard',
+  document: 'document',
+  'data-source': 'data source',
+  automation: 'automation',
+  memory: 'memory',
+  task: 'task',
+};
+
+/**
+ * A dashboard's spec, made a draft.
+ *
+ * `published` is forced false on a spec that is an object, so a dashboard is
+ * never born live however it was asked for. A spec that is not an object is
+ * left exactly as it arrived, so the schema refuses it rather than this
+ * quietly turning it into one.
+ */
+function asDraft(data: unknown): unknown {
+  if (typeof data !== 'object' || data === null || Array.isArray(data)) return data;
+  return { ...(data as Record<string, unknown>), published: false };
+}
+
+/**
+ * Parse a spec against the contract that owns it, and refuse the way the
+ * product refuses.
+ *
+ * A spec that breaks its contract is a bad request, not a server fault: the
+ * caller sent something the contract does not allow, so the answer says so
+ * and carries the schema's own issues. The task and the memory provider
+ * already refuse this way, and the four that answered a broken spec with a
+ * server fault are brought into line with them.
+ */
+function parseSpec<T extends z.ZodTypeAny>(
+  schema: T,
+  data: unknown,
+  type: ResourceType,
+): z.infer<T> {
+  const parsed = schema.safeParse(data);
+  if (!parsed.success) {
+    throw errors.validation(
+      `This ${kindNames[type]} does not satisfy the ${type} contract.`,
+      parsed.error.issues,
+    );
+  }
+  return parsed.data;
 }
 
 /** Validate an automation configuration before it can be enabled. */

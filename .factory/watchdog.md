@@ -372,6 +372,34 @@ host is not running, the tasks are not the fault, and restarting the runtime
 fixes it for free.** Cancelling them would have thrown away two tasks that were
 only unmarked.
 
+**And the runtime's own README says what `unknown` means, and it is not a
+state with work in it:** _"After a restart, work that never started stays
+queued. Interrupted executions become `unknown` and are not replayed
+automatically."_ (`.../minimax-bot/README.md:36`.) **So `unknown` is the
+documented end state of an interrupted execution, and cancelling one would
+tidy the board and free nothing** — which is the reason the repair is a
+restart and not a cancellation.
+
+**5. A task marked `failed` may be work that _landed_.** The fleet state is
+not a record of whether the work arrived. Measured on 2026-10-21 at 19:57:
+**six tasks are marked `failed` with `BUSY`** — WI-021 (twice), WI-046,
+WI-043, WI-028 and the two flakes — and **every one of them has two message
+records**: one with `status: done` and the work in it (1,076 to 7,533
+characters), and one with `status: error` and zero characters.
+
+**The delivery succeeded and the reply turn did not.** A group task that
+delivers its report and then fails to complete its turn is recorded as
+`failed`, with `result` empty — so the fleet state reads as loss where
+nothing was lost. **A lead reading only the fleet state would say the work
+is gone, and say it wrongly.**
+
+**So the check reads the chat, not the status, for "did this land".** This is
+the same shape as the first correction — a task's `result` is not its
+output — and it is the same failure as the second: **the fleet state records
+what the engine thought happened, and the engine's account of a turn that
+died at the end is not an account of the work.** Six of them are proof that
+"failed" and "lost" are different words.
+
 ### Silence is ambiguous, so the check always says what it measured
 
 **The first version of this file said "if nothing is over the threshold, do

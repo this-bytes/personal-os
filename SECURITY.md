@@ -51,12 +51,14 @@ model rather than as bugs.
 - **Personal OS is single-owner.** There is one owner account. Anyone who can
   reach the server as the owner can read and change everything, including
   agent credentials. Do not expose it to an untrusted network.
-- **An approval closes its execution; it does not resume it.** Deciding an
-  approval finishes the blocked execution with that outcome. It does not
-  re-enter the adapter and continue the interrupted turn. `CONTRACTS.md` now
-  publishes the opposite as the contract — a decision resumes the turn when the
-  adapter reports `persistentSessions` (WI-007) — and the code still closes the
-  execution.
+- **An approval resumes its execution where the adapter can, and closes it where it
+  cannot.** Deciding an approval re-enters the adapter and continues the
+  interrupted turn when the adapter reports `persistentSessions` and the execution
+  carries a session to re-enter (`apps/server/src/modules/approvals/resume.ts:102-124`).
+  Where it does not, the blocked execution is finished with that outcome and the
+  reason is written on the reply (`apps/server/src/modules/approvals/resume.ts:144-169`).
+  The resumed turn runs as the same agent connection in the same workspace, and
+  continues the message the suspended turn had already started.
 - **Agent autonomy is bounded, not absent.** An autonomous agent can act
   within its policy, which is enforced server-side. Keep the policy tight and
   keep the approval list populated.

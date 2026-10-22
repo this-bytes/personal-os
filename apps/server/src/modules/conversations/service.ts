@@ -473,9 +473,20 @@ export function createConversationsService(
       // a target that is named is a target that is reached — and so the
       // coordinator rule is asked about the delegation rather than answered
       // by a target that was dropped before the rule saw it.
+      //
+      // An id that matches no participant is carried through as it was given.
+      // Dropping it here is what left a delegation that named nobody with a
+      // refusal that named nobody either, and the engine cannot say that the
+      // id matched nobody if the id never reaches it.
       const explicitTargets = (input.targetParticipantIds ?? [])
-        .map((participantId) => people.find((person) => person.id === participantId))
-        .map((person) => person?.agentConnectionId)
+        .map((participantId) => {
+          const person = people.find((p) => p.id === participantId);
+          if (person) return person.agentConnectionId;
+          // A connection id is not a participant id, and the published shape
+          // asks for a participant id, so it is dropped as it always was.
+          if (people.some((p) => p.agentConnectionId === participantId)) return undefined;
+          return participantId;
+        })
         .filter((id): id is string => typeof id === 'string');
 
       const { dispatches, routing } = planAndDispatch({

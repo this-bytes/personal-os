@@ -42,6 +42,16 @@ export class JsonRpcStdioClient {
     this.child.stderr.setEncoding('utf8');
     this.child.stderr.resume();
 
+    this.child.on('error', (error) => {
+      // A command that cannot be started is a failure, not a hang: the
+      // pending requests are rejected so the caller hears about it.
+      this.closed = true;
+      for (const [, entry] of this.pending) {
+        entry.reject(error instanceof Error ? error : new Error(String(error)));
+      }
+      this.pending.clear();
+    });
+
     this.child.on('close', () => {
       this.closed = true;
       for (const [, entry] of this.pending) {

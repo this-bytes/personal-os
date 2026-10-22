@@ -28,6 +28,13 @@ import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import {
+  CLEANUP_BUDGET_MS,
+  STOP_TIMEOUT_MS,
+  TEARDOWN_TIMEOUT_MS,
+  makeRemoveDir,
+  runCleanup,
+} from './support/cleanup.js';
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..', '..', '..');
 const scriptPath = path.join(repoRoot, 'scripts', 'verify-stack.ts');
@@ -109,7 +116,7 @@ async function stop(child: ChildProcess): Promise<void> {
     const timer = setTimeout(() => {
       child.kill('SIGKILL');
       resolve();
-    }, 4_000);
+    }, STOP_TIMEOUT_MS);
     child.on('exit', () => {
       clearTimeout(timer);
       resolve();
@@ -129,9 +136,36 @@ const serverEntry = path.join(repoRoot, 'apps', 'server', 'src', 'index.ts');
 const workerEntry = path.join(repoRoot, 'apps', 'worker', 'src', 'index.ts');
 
 afterAll(async () => {
-  await Promise.all(children.map((child) => stop(child)));
-  for (const dir of dataDirs) fs.rmSync(dir, { recursive: true, force: true });
-}, 30_000);
+  // The teardown cleans up; it does not decide the result of this file. A
+  // directory that is still there because the machine is busy is a fact
+  // about the machine, and it is reported rather than thrown — **a suite
+  // whose every assertion passed must never be reported as failed.**
+  //
+  // The cleanup is bounded as well: stopping the children is bounded by
+  // `STOP_TIMEOUT_MS` and the removal by `CLEANUP_BUDGET_MS`, so the teardown
+  // cannot overrun the `TEARDOWN_TIMEOUT_MS` the hook is given.
+  const report = await runCleanup({
+    children,
+    dataDirs,
+    stop,
+    removeDir: makeRemoveDir(),
+    exists: fs.existsSync,
+    stopTimeoutMs: STOP_TIMEOUT_MS,
+    cleanupBudgetMs: CLEANUP_BUDGET_MS,
+  });
+
+  // The report goes to the process's own stderr, not to `console`: Vitest
+  // drops `console` output from a top-level `afterAll`, which was measured,
+  // and a report that goes nowhere is not a report.
+  for (const problem of report.problems) {
+    process.stderr.write(`[verifyStack.test.ts] ${problem}\n`);
+  }
+  if (report.leftover.length > 0) {
+    process.stderr.write(
+      `[verifyStack.test.ts] temporary directories left behind: ${report.leftover.join(', ')}\n`,
+    );
+  }
+}, TEARDOWN_TIMEOUT_MS);
 
 describe('the remote guard', () => {
   let seen: string[] = [];

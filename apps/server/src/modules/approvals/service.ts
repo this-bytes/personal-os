@@ -1,31 +1,30 @@
 import { and, desc, eq } from 'drizzle-orm';
+import type { Approval, ApprovalEvidence, ApprovalStatus } from '@personal-os/contracts';
 import type { Database } from '../../db/client.js';
 import { approvals, executions } from '../../db/schema.js';
 import { errors } from '../../lib/errors.js';
 import { newId } from '../../lib/ids.js';
+import { readApprovalEvidence } from './evidence.js';
 
-export type ApprovalStatus = 'pending' | 'approved' | 'rejected';
-
-export interface Approval {
-  id: string;
-  workspaceId: string;
-  executionId: string | null;
-  conversationId: string | null;
-  taskId: string | null;
-  agentConnectionId: string | null;
-  summary: string;
-  details: unknown;
-  status: ApprovalStatus;
-  reason: string | null;
-  requestedBy: string | null;
-  decidedBy: string | null;
-  createdAt: string;
-  decidedAt: string | null;
-}
+/**
+ * The shape of an approval is published, because an approval crosses the
+ * server-to-client boundary when it is decided. The types here are the
+ * published ones, not copies of them, so the two cannot drift.
+ */
+export type { Approval, ApprovalStatus };
 
 export interface ApprovalsService {
   list(workspaceId: string, status?: ApprovalStatus): Approval[];
   get(id: string): Approval;
+  /**
+   * The evidence a decision is taken against.
+   *
+   * The execution the approval was raised against, and that execution's own
+   * record: what the agent did, what it produced and what it cost. An
+   * approval that names no execution, or names one that is gone, answers with
+   * no execution.
+   */
+  evidence(id: string): ApprovalEvidence;
   request(input: {
     workspaceId: string;
     executionId?: string;
@@ -95,6 +94,10 @@ export function createApprovalsService(db: Database): ApprovalsService {
       const row = db.select().from(approvals).where(eq(approvals.id, id)).get();
       if (!row) throw errors.notFound('Approval');
       return toApproval(row);
+    },
+
+    evidence(id): ApprovalEvidence {
+      return readApprovalEvidence(db, id);
     },
 
     request(input): Approval {

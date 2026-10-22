@@ -19,10 +19,11 @@ import { PersonaBadge } from './PersonaBadge';
 /**
  * How often the list is refreshed even when nothing announced itself.
  *
- * The event stream carries everything the panel changes itself, but an
- * approval can also be decided outside the panel, and that decision
- * publishes no event. The slow refresh is what keeps the list honest in
- * that case.
+ * The event stream carries everything the panel changes itself — including a
+ * decision on an approval, which publishes `approval.decided`. The slow
+ * refresh is the backstop for the changes the stream does not carry: a
+ * decision taken before this client connected, and a change made by another
+ * surface while the stream was down.
  */
 const SAFETY_NET_REFETCH_MS = 15_000;
 
@@ -75,10 +76,15 @@ export function WaitingList({ agents, conversations }: WaitingListProps): React.
   });
 
   // The list follows the events the panel already has: a task that changed
-  // state, and an agent that asked for an approval.
+  // state, an agent that asked for an approval, and an approval that was
+  // decided — by this panel or by any other surface.
   useEffect(() => {
     return subscribe((event) => {
       if (event.type === 'task.updated') {
+        void queryClient.invalidateQueries({ queryKey: [QUERY_KEY] });
+        return;
+      }
+      if (event.type === 'approval.decided') {
         void queryClient.invalidateQueries({ queryKey: [QUERY_KEY] });
         return;
       }
@@ -301,7 +307,19 @@ function WaitingRow({
         ) : null}
       </div>
       <div className="flex shrink-0 items-center gap-1.5">
-        <Badge variant={variantFor(item)}>{labelFor(item)}</Badge>
+        {/*
+         * Every row of this rail is waiting on the owner, so every row wears
+         * the accent — PRODUCT.md 11 says the accent means live or waiting on
+         * you, and a row in another colour would say the rail is not waiting
+         * on you. The four reasons a row can be here are carried by its
+         * label, not by four different colours: a colour that has to mean
+         * four things is a colour that stops meaning any of them.
+         *
+         * "Blocked" is one of them. A blocked item in this rail is an item
+         * waiting on the owner, not a failure that happened; failures live in
+         * the conversation and in the editor.
+         */}
+        <Badge variant="accent">{labelFor(item)}</Badge>
         {approvalId ? (
           <>
             <Button
@@ -377,11 +395,4 @@ function labelFor(item: WaitingItem): string {
   if (item.reason === 'review') return 'In review';
   if (item.reason === 'unknown') return 'Check this';
   return 'Blocked';
-}
-
-function variantFor(item: WaitingItem): 'warning' | 'info' | 'danger' {
-  if (item.kind === 'approval') return 'warning';
-  if (item.reason === 'review') return 'info';
-  if (item.reason === 'unknown') return 'warning';
-  return 'danger';
 }
