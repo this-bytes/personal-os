@@ -979,12 +979,12 @@ memories in the turn context.
 owner's ruling of 2026-10-21 at 07:07 was that an agent's own memory is private
 to it, on reads as well as on writes, and the sentence above now says so. The rule
 is one call — `assertOwnMemory` at
-`apps/server/src/modules/mcp/server.ts:218`, with `memoryOwner` at
-`apps/server/src/modules/mcp/server.ts:182` — and it
+`apps/server/src/modules/mcp/server.ts:240`, with `memoryOwner` at
+`apps/server/src/modules/mcp/server.ts:204` — and it
 answers the same way for the three resource tools: `resource.create` at
-`apps/server/src/modules/mcp/server.ts:451`,
-`resource.update` at `apps/server/src/modules/mcp/server.ts:515` and `resource.get`
-at `apps/server/src/modules/mcp/server.ts:485`. A memory's owner is
+`apps/server/src/modules/mcp/server.ts:482`,
+`resource.update` at `apps/server/src/modules/mcp/server.ts:551` and `resource.get`
+at `apps/server/src/modules/mcp/server.ts:516`. A memory's owner is
 `memoryOwner`'s answer, and an agent that is not that owner is refused with
 `forbidden` and the message "An agent may only reach its own memory."
 
