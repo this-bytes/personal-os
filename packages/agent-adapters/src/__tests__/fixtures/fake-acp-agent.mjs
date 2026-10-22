@@ -6,12 +6,23 @@
  * that created it — which is what a real agent that can restore a session
  * does.
  *
- * The file is named by FAKE_ACP_SESSIONS.
+ * The file is named by FAKE_ACP_SESSIONS. The agent writes its own process
+ * id to FAKE_ACP_PID_FILE when a test asks for it, and FAKE_ACP_PROMPT_DELAY_MS
+ * holds the prompt open, so a test can watch a turn that is still running.
  */
 import { createInterface } from 'node:readline';
 import { readFileSync, writeFileSync } from 'node:fs';
 
 const storePath = process.env.FAKE_ACP_SESSIONS ?? '';
+
+const pidFile = process.env.FAKE_ACP_PID_FILE;
+if (pidFile) {
+  try {
+    writeFileSync(pidFile, String(process.pid));
+  } catch {
+    // The test notices the missing file.
+  }
+}
 
 function readStore() {
   try {
@@ -73,9 +84,15 @@ input.on('line', (line) => {
       reply({ sessionId, modes: {} });
       return;
     }
-    case 'session/prompt':
+    case 'session/prompt': {
+      const delayMs = Number(process.env.FAKE_ACP_PROMPT_DELAY_MS ?? '0');
+      if (delayMs > 0) {
+        setTimeout(() => reply({ stopReason: 'end_turn' }), delayMs);
+        return;
+      }
       reply({ stopReason: 'end_turn' });
       return;
+    }
     default:
       fail(-32601, `Method not found: ${message.method}`);
   }

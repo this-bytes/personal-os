@@ -5,8 +5,22 @@
  * `tools/list` and `tools/call`. The `env` tool reports the environment the
  * server was started in, so the test can prove that the server's own
  * environment did not leak into the agent's.
+ *
+ * When MCP_FIXTURE_PID_FILE is set, the server writes its own process id
+ * there. A test that has to prove the adapter released the process needs to
+ * know which process it was.
  */
+import { writeFileSync } from 'node:fs';
 import { createInterface } from 'node:readline';
+
+const pidFile = process.env.MCP_FIXTURE_PID_FILE;
+if (pidFile) {
+  try {
+    writeFileSync(pidFile, String(process.pid));
+  } catch {
+    // The test notices the missing file.
+  }
+}
 
 function write(payload) {
   process.stdout.write(`${JSON.stringify(payload)}\n`);

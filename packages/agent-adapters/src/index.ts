@@ -12,6 +12,7 @@ export * from './types.js';
 export * from './registry.js';
 export * from './util.js';
 export * from './jsonrpc.js';
+export * from './lifecycle.js';
 export { AcpAdapter, createAcpAdapter } from './acp.js';
 export { A2aAdapter, createA2aAdapter } from './a2a.js';
 export { CliAdapter, createCliAdapter } from './cli.js';

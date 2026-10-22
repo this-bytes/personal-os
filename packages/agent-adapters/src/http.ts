@@ -15,6 +15,10 @@ import { asText, getByPath, interpolate, parseSseData, readSseEvents } from './u
  * The request body is a template, the reply location is a dotted path and
  * streaming responses are read as SSE. This is the escape hatch for
  * frameworks that do not speak ACP or A2A.
+ *
+ * The lifecycle is explicit. `connect()` reports what the gateway can do;
+ * `send()` makes the request; `close()` releases what the adapter holds —
+ * which, for a gateway that is reached one request at a time, is nothing.
  */
 export class HttpAdapter implements AgentAdapter {
   readonly type = 'http' as const;
@@ -37,6 +41,11 @@ export class HttpAdapter implements AgentAdapter {
       approvals: false,
       artifacts: false,
     };
+  }
+
+  /** Release what the adapter holds. A gateway keeps no connection open. */
+  close(): void {
+    // Nothing to release: the request is made and answered within the turn.
   }
 
   async *send(input: AgentTurnInput): AsyncIterable<AgentEvent> {

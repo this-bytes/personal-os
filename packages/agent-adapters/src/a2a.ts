@@ -42,12 +42,22 @@ const TERMINAL_STATES = new Set([
  * A2A is task oriented: the client discovers an agent card, sends a
  * message and receives either a message or a task with artifacts. Task
  * state is polled until it reaches a terminal state.
+ *
+ * The lifecycle is explicit. `connect()` discovers the agent card and
+ * reports what the agent says it can do; `send()` sends the message and
+ * polls the task; `close()` releases what the adapter holds — which, for a
+ * client that holds no connection between turns, is nothing. The card the
+ * connection discovered is reused by the turn, so a connected turn does not
+ * ask for it twice.
  */
 export class A2aAdapter implements AgentAdapter {
   readonly type = 'a2a' as const;
 
   private readonly config: Extract<AdapterConfig, { adapterType: 'a2a' }>;
   private readonly ctx: AdapterContext;
+  /** The card the connection discovered, if it has been asked for one. */
+  private card: AgentCard | null = null;
+  private cardRequested = false;
 
   constructor(config: Extract<AdapterConfig, { adapterType: 'a2a' }>, ctx: AdapterContext) {
     this.config = config;
@@ -55,7 +65,7 @@ export class A2aAdapter implements AgentAdapter {
   }
 
   async connect(_connection: AgentConnection): Promise<AgentCapabilities> {
-    const card = await this.fetchAgentCard();
+    const card = await this.agentCard();
     if (!card) {
       return {
         chat: false,
@@ -78,12 +88,17 @@ export class A2aAdapter implements AgentAdapter {
     };
   }
 
+  /** Release what the adapter holds. A2A keeps no connection open. */
+  close(): void {
+    // Nothing to release: the adapter holds no connection between turns.
+  }
+
   async *send(input: AgentTurnInput): AsyncIterable<AgentEvent> {
     const { executionId } = input;
     yield { type: 'execution.status', executionId, status: 'running' };
 
     try {
-      const card = await this.fetchAgentCard();
+      const card = await this.agentCard();
       const endpoint =
         card?.url ?? `${this.config.baseUrl.replace(/\/$/, '')}/${this.config.messageUrl}`;
       const headers = await this.buildHeaders();
@@ -218,6 +233,14 @@ export class A2aAdapter implements AgentAdapter {
       }
       await delay(500);
     }
+  }
+
+  /** The agent card, asked for once per adapter. */
+  private async agentCard(): Promise<AgentCard | null> {
+    if (this.cardRequested) return this.card;
+    this.cardRequested = true;
+    this.card = await this.fetchAgentCard();
+    return this.card;
   }
 
   private async fetchAgentCard(): Promise<AgentCard | null> {

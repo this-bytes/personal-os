@@ -8,6 +8,7 @@ import {
   type AdapterConfig,
 } from '@personal-os/contracts';
 import type { AdapterContext } from './types.js';
+import { AdapterLifecycle } from './lifecycle.js';
 import { JsonRpcStdioClient } from './jsonrpc.js';
 import { getByPath } from './util.js';
 
@@ -33,6 +34,13 @@ interface AcpCapabilities {
  * A session outlives a turn when the agent can restore it: the first turn
  * creates the session, and a turn that was suspended on an approval re-enters
  * that same session with the owner's decision as its next input.
+ *
+ * ACP sets its runtime up as part of the turn, and that is kept: a turn
+ * initialises the agent, creates or restores its session and prompts it. The
+ * connection is still a real handshake against a real agent — it reports
+ * what the agent says it can do — but it is a probe, not a runtime the turn
+ * borrows, so it releases the agent it started. `close()` releases whatever
+ * the adapter is still holding, which is the agent of a turn in flight.
  */
 export class AcpAdapter implements AgentAdapter {
   readonly type = 'acp' as const;
@@ -41,6 +49,9 @@ export class AcpAdapter implements AgentAdapter {
   private readonly ctx: AdapterContext;
   /** The session each execution is in, so the worker can persist it. */
   private readonly sessions = new Map<string, string>();
+  private readonly lifecycle = new AdapterLifecycle('ACP');
+  /** The agent of the turn in flight, so `close()` can release it. */
+  private client: JsonRpcStdioClient | null = null;
 
   constructor(config: Extract<AdapterConfig, { adapterType: 'acp' }>, ctx: AdapterContext) {
     this.config = config;
@@ -60,6 +71,7 @@ export class AcpAdapter implements AgentAdapter {
       )) as { agentCapabilities?: AcpCapabilities };
 
       const caps = result?.agentCapabilities ?? {};
+      this.lifecycle.markConnected();
       return {
         chat: true,
         streaming: true,
@@ -69,14 +81,20 @@ export class AcpAdapter implements AgentAdapter {
         approvals: true,
         artifacts: true,
       };
+    } catch (error) {
+      this.lifecycle.markFailed(error instanceof Error ? error.message : String(error));
+      throw error;
     } finally {
-      client.close();
+      // The probe does not keep the agent: a capability probe that leaves a
+      // process behind is a leak, not a capability.
+      await client.close();
     }
   }
 
   async *send(input: AgentTurnInput): AsyncIterable<AgentEvent> {
     const { executionId } = input;
     const client = this.spawn();
+    this.client = client;
     const deltas: string[] = [];
     let finalText = '';
     // Held in an object so the type stays `Error | null` after the
@@ -104,7 +122,7 @@ export class AcpAdapter implements AgentAdapter {
       } catch {
         // best effort
       }
-      client.close();
+      void client.close();
     };
     input.signal?.addEventListener('abort', onAbort, { once: true });
 
@@ -198,7 +216,8 @@ export class AcpAdapter implements AgentAdapter {
       input.signal?.removeEventListener('abort', onAbort);
       offNotification();
       offRequest();
-      client.close();
+      if (this.client === client) this.client = null;
+      await client.close();
     }
   }
 
@@ -223,8 +242,22 @@ export class AcpAdapter implements AgentAdapter {
       );
       return await this.loadSession(client, externalSessionId);
     } finally {
-      client.close();
+      await client.close();
     }
+  }
+
+  /**
+   * Release the agent this adapter is holding.
+   *
+   * A turn in flight owns an agent process; closing the adapter stops it and
+   * waits for it to be gone. It is safe to call more than once, and safe to
+   * call when no turn is running.
+   */
+  async close(): Promise<void> {
+    const client = this.client;
+    this.client = null;
+    if (client) await client.close();
+    this.lifecycle.markClosed();
   }
 
   /**

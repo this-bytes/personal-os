@@ -12,7 +12,8 @@ import {
   type AdapterConfig,
 } from '@personal-os/contracts';
 import type { AdapterContext } from './types.js';
-import { buildSanitizedEnv } from './util.js';
+import { AdapterLifecycle, notConnectedEvent } from './lifecycle.js';
+import { buildSanitizedEnv, terminateChild } from './util.js';
 
 /**
  * Local command-line agents.
@@ -20,12 +21,19 @@ import { buildSanitizedEnv } from './util.js';
  * The child process is supervised: a sanitized environment, a bounded
  * working directory, a hard timeout and cooperative cancellation. The
  * process never inherits server secrets.
+ *
+ * The lifecycle is explicit. `connect()` checks that the command is there
+ * and reports what it can honestly do; `send()` runs the command for one
+ * turn; `close()` stops a command that is still running. A turn that ends,
+ * fails or is abandoned releases its process, so a finished turn never owns a
+ * stray agent.
  */
 export class CliAdapter implements AgentAdapter {
   readonly type = 'cli' as const;
 
   private readonly config: Extract<AdapterConfig, { adapterType: 'cli' }>;
   private readonly ctx: AdapterContext;
+  private readonly lifecycle = new AdapterLifecycle('CLI');
   private readonly running = new Map<string, ChildProcessWithoutNullStreams>();
 
   constructor(config: Extract<AdapterConfig, { adapterType: 'cli' }>, ctx: AdapterContext) {
@@ -36,7 +44,9 @@ export class CliAdapter implements AgentAdapter {
   async connect(_connection: AgentConnection): Promise<AgentCapabilities> {
     const resolved = await resolveExecutable(this.config.command);
     if (!resolved) {
+      const reason = `The command "${this.config.command}" was not found.`;
       this.ctx.logger.warn('CLI executable not found', { command: this.config.command });
+      this.lifecycle.markFailed(reason);
       return {
         chat: false,
         streaming: false,
@@ -47,6 +57,7 @@ export class CliAdapter implements AgentAdapter {
         artifacts: false,
       };
     }
+    this.lifecycle.markConnected();
     return {
       chat: true,
       streaming: true,
@@ -61,6 +72,13 @@ export class CliAdapter implements AgentAdapter {
   async *send(input: AgentTurnInput): AsyncIterable<AgentEvent> {
     const { executionId } = input;
     const prompt = `${input.message}\n\n${input.context}`.trim();
+
+    if (!this.lifecycle.isConnected) {
+      yield { type: 'execution.status', executionId, status: 'running' };
+      yield notConnectedEvent(executionId, this.lifecycle.message());
+      yield { type: 'execution.status', executionId, status: 'failed' };
+      return;
+    }
 
     let args = [...this.config.args];
     let stdinPayload: string | undefined;
@@ -87,6 +105,10 @@ export class CliAdapter implements AgentAdapter {
       }) as ChildProcessWithoutNullStreams;
 
       this.running.set(executionId, child);
+
+      // The agent may exit before it reads the prompt, and a broken pipe is
+      // not a failure of the turn: it is the agent's choice to stop reading.
+      child.stdin.on('error', () => undefined);
 
       if (stdinPayload !== undefined) {
         child.stdin.write(stdinPayload);
@@ -166,6 +188,9 @@ export class CliAdapter implements AgentAdapter {
         clearTimeout(timer);
         input.signal?.removeEventListener('abort', onAbort);
         this.running.delete(executionId);
+        // A turn that ends, fails or is abandoned must not leave a child
+        // process behind. The wait is what makes that true.
+        await terminateChild(child);
       }
 
       if (outcome.failure) {
@@ -214,6 +239,19 @@ export class CliAdapter implements AgentAdapter {
       child.kill('SIGTERM');
       setTimeout(() => child.kill('SIGKILL'), 2_000).unref?.();
     }
+  }
+
+  /**
+   * Stop the commands this adapter is still running.
+   *
+   * A turn normally ends by itself, but an adapter that is closed while a
+   * command is running must not leave it behind.
+   */
+  async close(): Promise<void> {
+    const children = [...this.running.values()];
+    this.running.clear();
+    await Promise.all(children.map((child) => terminateChild(child)));
+    this.lifecycle.markClosed();
   }
 }
 
