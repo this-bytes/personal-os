@@ -1,6 +1,12 @@
 /**
  * The grant editor's save, measured.
  *
+ * **This is a measurement, not a gate.** It runs a scenario against a
+ * throwaway database, prints what it saw, and exits non-zero when a check does
+ * not hold. It is not part of `npm run gates`, it asserts nothing in the test
+ * suite, and it is not a gate for anyone: the name says what it is, because a
+ * script in `scripts/` that is named like a gate will be read as one.
+ *
  * The grant editor shows the grant the page read, and the owner turns some of
  * it. The editor used to save the whole list it was given, so a widening
  * another writer committed after the page read was taken back by the save —
@@ -17,7 +23,7 @@
  * computed by the web's `grantChange`, so what is measured is what the editor
  * sends.
  *
- *   npx tsx scripts/probe-grant-editor-widening.ts
+ *   npx tsx scripts/measure-grant-editor-widening.ts
  *
  * The exit code is 0 when every check holds and 1 when one does not.
  */
@@ -375,9 +381,9 @@ async function main(): Promise<void> {
  * to run into it.
  *
  * It prints `locked` the moment it holds the lock and `committed` when it lets
- * go. The lock is held for a fixed time rather than until the probe says so,
- * because the save blocks the event loop while it waits for the lock: a
- * holder that waited for a signal from this process would deadlock.
+ * go. The lock is held for a fixed time rather than until this measurement
+ * says so, because the save blocks the event loop while it waits for the lock:
+ * a holder that waited for a signal from this process would deadlock.
  */
 function spawnOtherWriter(
   dbPath: string,
