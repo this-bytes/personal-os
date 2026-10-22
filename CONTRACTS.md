@@ -1915,38 +1915,39 @@ configuration that is gone, a constraint the owner cannot meet — leaves both a
 were: the row is still on the list, and the grant was not widened. A list that drops
 the row while the agent is still blocked is a list that lies the other way.
 
-**A widening is not taken back (WI-146).** **The guarantee is the widening
-route** — `POST /api/agents/:id/grants` with one tool to widen — and it is not a
-statement about every way a grant is written. The union that widens the grant
-is computed **inside** the transaction that writes it, from a read taken inside
-the same transaction (`apps/server/src/modules/agents/service.ts:376`), and the
+**A widening is not taken back (WI-146).** **The guarantee is general.** The
+widening route — `POST /api/agents/:id/grants` with one tool to widen — computes
+the union **inside** the transaction that writes it, from a read taken inside the
+same transaction (`apps/server/src/modules/agents/service.ts:411`), and the
 transaction takes the write lock before it reads
-(`apps/server/src/modules/agents/service.ts:344`,
-`apps/server/src/modules/agents/service.ts:432`). **So a widening that another
+(`apps/server/src/modules/agents/service.ts:353`,
+`apps/server/src/modules/agents/service.ts:474`). The grant editor's save is
+covered the same way: it sends **the change the owner made** — what they turned
+on and what they turned off — and not the list the page read
+(`apps/web/src/components/ToolGrantPanel.tsx:57-60`), so the change is applied to
+what the grant is now, from a read taken inside the same transaction
+(`apps/server/src/modules/agents/service.ts:397`). **So a widening that another
 process committed while this one was waiting is not taken back: the grant ends
 up holding both capabilities.** A read taken outside the transaction could be
-stale by the time the write landed, and a union computed from a stale grant
-narrows the grant back to what it was — the owner's other action is lost, and
-the list goes on showing the capability as waiting. The lock is taken first
-because a deferred transaction that reads and then writes cannot wait: once
-another process has committed, SQLite refuses to turn its read lock into a
-write lock and answers `SQLITE_BUSY` at once rather than waiting, so the write
-is lost instead of delayed.
+stale by the time the write landed, and a change applied to a stale grant takes
+the other process's widening back — the owner's other action is lost, and the
+list goes on showing the capability as waiting. The lock is taken first because
+a deferred transaction that reads and then writes cannot wait: once another
+process has committed, SQLite refuses to turn its read lock into a write lock and
+answers `SQLITE_BUSY` at once rather than waiting, so the write is lost instead
+of delayed.
 
-**The grant editor's save is not covered by it yet.** The editor seeds its
-selection from the grant the page read and writes that list back
-(`apps/web/src/components/ToolGrantPanel.tsx:43`,
-`apps/web/src/components/ToolGrantPanel.tsx:48`), so a widening committed
-between the page's read and the owner's save is overwritten by the save. The
-owner never chose to narrow it, and the list goes on saying the capability is
-not waiting while the agent is still blocked by it. That path is being fixed;
-when it is, this guarantee is general again, and the claim below is re-stated
-to bind it. The citations in this paragraph move with that fix.
+**The one way a grant is still written that is not covered is the legacy list
+body.** `PATCH /api/agents/:id` with a whole `toolGrants` list writes the list it
+was sent (`apps/server/src/modules/agents/service.ts:417-418`), so a widening
+committed between the read and that write is taken back by it, and the shipped
+smoke check still sends that body. The guarantee covers the widening route and
+the editor's change; the list body is the open path.
 
-The widening route is the contract for **WI-146**, and the code implements it — as
-of `3154819`. The guarantee is the union path: the route widens one tool, the
-union is computed inside the transaction that writes it, and that transaction
-takes the write lock before it reads.
+The widening guarantee is the contract for **WI-146**, and the code implements it —
+as of `e9c7d95`. The route widens one tool and the editor sends only what the
+owner changed, and both compute against a grant read inside the transaction that
+writes it, and that transaction takes the write lock before it reads.
 
 A transaction is also what holds across processes. The worker is a second process on
 the same database, and the refusal it records there is written in a transaction of its
@@ -2236,9 +2237,9 @@ before the view was captured.
 has a revision, and it moves when the set moves: the tool grants change, a
 probe reports different capabilities, or the configuration is replaced and the
 capabilities become unknown again
-(`apps/server/src/modules/agents/service.ts:438`). The rule is one comparison
+(`apps/server/src/modules/agents/service.ts:465-469`). The rule is one comparison
 of the grant before the write and the grant after it
-(`apps/server/src/modules/agents/service.ts:410`), so a grant saved unchanged
+(`apps/server/src/modules/agents/service.ts:436-441`), so a grant saved unchanged
 does not move the revision: the revision counts the changes, not the writes.
 
 **The view does not re-scope the MCP token.** The token an agent holds names

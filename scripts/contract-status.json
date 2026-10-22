@@ -525,10 +525,10 @@
     {
       "id": "the-widening-is-not-taken-back-wi-146",
       "section": "The waiting list",
-      "note": "The widening route is the contract for WI-146, and the code implements it",
+      "note": "The widening guarantee is the contract for WI-146, and the code implements it",
       "claim": "implemented",
       "item": "WI-146",
-      "why": "WI-146's guarantee, on the path it holds: the widening route widens one tool, the union that widens the grant is computed inside the transaction that writes it, and that transaction takes the write lock before it reads, so a widening another process committed is not overwritten by a stale union. The claim is about the route. The grant editor's save writes the list it read and is not covered by it; when that path is fixed, the guarantee is general again and this row binds both.",
+      "why": "WI-146's guarantee, on both paths it holds: the widening route widens one tool and the grant editor sends only the change the owner made, and both compute against a grant read inside the transaction that writes it, which takes the write lock before it reads. So a widening another process committed is not overwritten by a stale read. The legacy list body, which writes the list it was sent, is the path the guarantee does not cover.",
       "expect": [
         {
           "kind": "present-pattern",
@@ -544,6 +544,26 @@
           "kind": "present-pattern",
           "path": "apps/server/src/modules/agents/service.ts",
           "value": "behavior: 'immediate'"
+        },
+        {
+          "kind": "present-pattern",
+          "path": "apps/web/src/components/ToolGrantPanel.tsx",
+          "value": "toolGrantChange: grantChange\\(change\\.base, change\\.selected\\)"
+        },
+        {
+          "kind": "present-pattern",
+          "path": "apps/web/src/lib/grantChange.ts",
+          "value": "export function grantChange"
+        },
+        {
+          "kind": "present-pattern",
+          "path": "apps/server/src/modules/agents/service.ts",
+          "value": "patch\\.toolGrantChange\\.disable"
+        },
+        {
+          "kind": "present-pattern",
+          "path": "apps/server/src/modules/agents/service.ts",
+          "value": "patch\\.widenToolGrant !== undefined"
         }
       ]
     },
