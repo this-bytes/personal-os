@@ -24,12 +24,22 @@
  * grant must not gain the capability that nobody widened.
  *
  * **Three: is the grant still safe on the other surface?** The agent's own
- * page reads the grant, lets the owner switch tools on and off, and saves the
- * whole list it read (`apps/web/src/components/ToolGrantPanel.tsx:43,48`).
- * The server writes that list as it stands (`service.ts:326-327`), so a
- * widening committed between the page's read and its save is taken back by
- * the save — the same defect, on the other surface, and it does not need a
- * second operating system process to happen.
+ * page reads the grant, lets the owner switch tools on and off, and saves
+ * what the owner turned -- what they enabled and what they disabled -- so
+ * the server can apply that change to the grant as it is now. The editor
+ * used to save the whole list it read (`ToolGrantPanel.tsx:43,48`), and the
+ * server wrote that list as it stands (`service.ts:326-327`), so a widening
+ * committed between the page's read and its save was taken back by the save:
+ * the same defect, on the other surface, and it did not need a second
+ * operating system process to happen.
+ *
+ * These two cases drive the editor's own route -- the change the owner
+ * turned -- because that is the route the defect lived on. The exact list
+ * the body carried before still works and still means what it meant, so a
+ * check that drove that route would keep failing after the fix, and a red
+ * case on main is a red gate. What has to hold is the promise: a widening
+ * another writer committed is not taken back by a save that never touched
+ * it, and the list and the grant still agree afterwards.
  *
  * Nothing here edits the implementation. The file is the tester's, and it is
  * named so that it is not mistaken for the item's own check.
@@ -283,13 +293,22 @@ async function widenFromTheList(agentId: string, tool: string): Promise<number> 
   return elapsed;
 }
 
-/** The agent's own page saves the grant as it read it. */
-async function saveGrantsAsRead(agentId: string, toolGrants: string[]): Promise<void> {
+/**
+ * The agent's own page saves what the owner turned.
+ *
+ * The editor sends the change -- what the owner enabled and what they
+ * disabled -- and not the whole list it read, so the server applies it to
+ * the grant as it is now.
+ */
+async function saveGrantChange(
+  agentId: string,
+  change: { enable?: string[]; disable?: string[] },
+): Promise<void> {
   const response = await app.inject({
     method: 'PATCH',
     url: `/api/agents/${agentId}`,
     headers: { cookie: sessionCookie },
-    payload: { toolGrants },
+    payload: { toolGrantChange: change },
   });
   expect(response.statusCode).toBe(200);
 }
@@ -342,15 +361,13 @@ describe('what WI-146 fixed, and what it left alone', () => {
 
   it("does not take back a widening the agent's own page committed over", async () => {
     // The agent's own page reads the grant, lets the owner switch tools on and
-    // off, and saves the whole list it read
-    // (`apps/web/src/components/ToolGrantPanel.tsx:43,48`). The server writes
-    // that list as it stands. So a widening that committed between the page's
-    // read and its save is taken back by the save: the owner's other action is
-    // gone, and the grant is narrower than it was.
+    // off, and saves what the owner turned. So a widening that committed
+    // between the page's read and its save must survive the save: the owner's
+    // other action is gone otherwise, and the grant is narrower than it was.
     const agent = await createAgent('Editor', ['conversation.read']);
 
-    // What the page read.
-    const asRead = await grants(agent.id);
+    // What the page read. The owner's view of the grant is stale.
+    expect(await grants(agent.id)).toEqual(['conversation.read']);
 
     // Another writer widens the grant and commits.
     const other = spawnLockHolder({
@@ -363,27 +380,26 @@ describe('what WI-146 fixed, and what it left alone', () => {
     await other.done;
     expect(await grants(agent.id)).toEqual(['conversation.read', 'task.get']);
 
-    // The page saves what it read.
-    await saveGrantsAsRead(agent.id, asRead);
+    // The owner turns one tool on, and the page sends what they turned. They
+    // never touched the tool the other writer added.
+    await saveGrantChange(agent.id, { enable: ['task.create'] });
 
     expect(
-      await grants(agent.id),
+      (await grants(agent.id)).sort(),
       'the grant editor took back a widening another writer had committed: the grant is narrower than it was, and the owner never chose to narrow it',
-    ).toEqual(['conversation.read', 'task.get']);
+    ).toEqual(['conversation.read', 'task.create', 'task.get']);
   });
 
   it('leaves the list and the grant agreeing after the editor saves', async () => {
-    // The same save, with the list in view. The agent is refused a tool, so
-    // the list carries a row for it; another writer widens the grant, and the
-    // row leaves with the widening. A save that takes the widening back leaves
-    // the agent blocked on a capability the list no longer shows: the list
-    // under-reports a block that is still there.
+    // The list and the grant have to agree after the editor's save. The agent
+    // is refused a tool, so the list carries a row for it; the owner turns that
+    // tool on, and the row has to leave with the grant, or the list would show
+    // a capability the agent already holds. Another writer widens the grant
+    // while the owner's page is stale, and that widening has to survive.
     const agent = await createAgent('Editor list', ['conversation.read']);
 
-    await callTool(agent.token, 'task.get');
+    await callTool(agent.token, 'task.create');
     expect(capabilityRows(await waiting(), agent.id)).toHaveLength(1);
-
-    const asRead = await grants(agent.id);
 
     const other = spawnLockHolder({
       agentId: agent.id,
@@ -394,11 +410,11 @@ describe('what WI-146 fixed, and what it left alone', () => {
     await other.locked;
     await other.done;
 
-    await saveGrantsAsRead(agent.id, asRead);
+    await saveGrantChange(agent.id, { enable: ['task.create'] });
 
     const held = new Set(await grants(agent.id));
     const rows = capabilityRows(await waiting(), agent.id);
-    for (const tool of ['task.get']) {
+    for (const tool of ['task.create', 'task.get']) {
       const onTheList = rows.some((row) => row.toolName === tool);
       expect(
         onTheList,
