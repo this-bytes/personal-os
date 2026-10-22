@@ -86,6 +86,25 @@ export function createWorkspaceService(db: Database): WorkspaceService {
       const current = this.get(id);
       const now = new Date().toISOString();
 
+      // A list that names no action is refused, not written.
+      //
+      // An empty list is not a tighter policy — it is the absence of one. The
+      // resolver reads a policy that names no action as no opinion, and the
+      // effective set is then every action in the vocabulary, which is what
+      // the stored autonomy defaults mean. So writing an empty list would
+      // widen the policy to everything while looking like a tightening, and
+      // there is no "no action is allowed" state for the owner to write yet.
+      //
+      // So the write is refused, and it says what to write instead. The
+      // refusal is loud because it is the only signal the owner gets: a write
+      // that was refused says so, rather than accepting a value that grants
+      // everything and saying so only by silence.
+      if (patch.autonomyPolicy?.allowedActions?.length === 0) {
+        throw errors.validation(
+          'An empty allowedActions list cannot be written: it names no action, and a policy that names no action does not restrict the actions, so the effective set would be every action in the vocabulary. Name the actions the agent may take, or leave the list out to keep the one the policy already carries.',
+        );
+      }
+
       // The mode the owner sets is the mode that is in force.
       //
       // A workspace carries the mode twice: the column the panel shows, and
@@ -102,8 +121,9 @@ export function createWorkspaceService(db: Database): WorkspaceService {
       // A policy change says what changes. The owner sets the turn limit and
       // the action list they set earlier stays, so a patch is merged into the
       // policy the workspace already carries rather than written over it. An
-      // absent field is left alone; an explicit empty list clears that list, so
-      // clearing is still deliberate.
+      // absent field is left alone. An explicit empty list never reaches this
+      // line: it is refused above, because clearing a list would widen the
+      // policy rather than tighten it.
       const policy =
         patch.autonomyPolicy !== undefined
           ? { ...current.autonomyPolicy, ...patch.autonomyPolicy }
