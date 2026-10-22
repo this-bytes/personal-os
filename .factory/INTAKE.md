@@ -100,8 +100,11 @@ free number above the highest taken.**
 | WI-127 | Nothing holds the front page's identity sentence                                                                                                                                                                                  | lead   |
 | WI-128 | The owner can set the autonomy policy, not only read it                                                                                                                                                                           | worker |
 | WI-129 | A template creates a draft: a resource is never born live                                                                                                                                                                         | worker |
+| WI-130 | Clearing the allow-list widens the policy in force                                                                                                                                                                                | worker |
+| WI-131 | The widening write is not one transaction, and the contract says it is                                                                                                                                                            | worker |
+| WI-132 | The panel does not carry the published waiting shape, and the row carries no way to widen the grant                                                                                                                               | worker |
 
-**The next free number is WI-130.**
+**The next free number is WI-133.**
 
 **Two decisions the owner took, and the numbers they took.** The owner answered
 the two questions that were open: `manual` **does not gate delegation**
@@ -5043,3 +5046,72 @@ they named, and `service.ts:347` and `:515` pointed at the task provider's decla
 rather than at the author it claimed. **They are corrected here**, because the paragraphs
 this item's reasoning rests on cited them; **the rest of the guide's citations were not
 swept**, because that is the stale-docs item and not this one.
+
+### 14:40 — three acceptances, three numbers, and the peer session is back
+
+**Three items are accepted, on three verifier reports, and the lead re-measured each one.**
+
+- **WI-128 — ACCEPTED** on Probe's verdict (`task_55ff886ce54c`, ACCEPT with five
+  findings). Measured at `1dc75c4`; **the lead re-measured after the fact and the autonomy
+  surface is byte-identical** between that tip and the tip published now — the diff over
+  the route, the service, the schema, the new check and WI-085's attack suite returns
+  **nothing**. Nine gates, exit 0, 68 files and 702 tests. **All ten claims hold, measured
+  through the route**, including three the item's own check does not assert, and the four
+  mutations reproduced (2 red, 6 red, 1 red, 1 red). _Product:_ the owner can set the
+  workspace's autonomy policy through the API, a change merges into the policy, an unknown
+  action is refused aloud, and the mode lands in both places.
+- **WI-122 — ACCEPTED** on Cog's verdict (`task_114a2da966e5`, ACCEPT). The three
+  citations carry their claims, read by hand; the pin was made to fail in the verifier's
+  own copy while the pointer gate stayed green at 135 pointers. **One record correction is
+  owed and is recorded: the commit that first brought the re-based pin into `main` is
+  `107da4c`, not `5465bd4`** — the sentence was true about the content and wrong about the
+  landing. _Product:_ the contract's note about the approval evidence route is held, line by
+  line, to the claim each line carries.
+- **WI-121 — ACCEPTED** on Probe's verdict (`task_2c991d059378`, ACCEPT, with an addendum
+  at `e660fdf`). **The check is delivered and merged by the lead** — Probe's file
+  `apps/server/src/__tests__/blocked-capability.test.ts`, commit `32af761` — and the three
+  mutations each turn the case they name red. The verifier's independent probe through the
+  API is 7/7 green, so the verdict does not rest on the test the verifier wrote. **The
+  lead's gates on the tree that carries the check: nine of nine, exit 0, 70 files and 710
+  tests, 0 failures, pointer gate 143 checked.** _Product:_ an agent blocked on a tool it
+  was never granted now shows up on the owner's list, one row per agent and capability,
+  and the owner can widen the grant from the list.
+
+**And three numbers, because three findings were defects the verdicts named for the lead.**
+
+- **WI-130 — clearing the allow-list widens the policy in force.** The owner who empties
+  the list gets every action back, and no value an owner can write means "no action is
+  allowed". **The lead read the rule in the code**: `autonomy.ts:225` (an empty list names
+  no action), `:394-396` (when no policy names an action the effective set is every action),
+  and the rule in its own words at `:281-284`. **A control that fails open, one sentence
+  away from a sentence that fails closed.**
+- **WI-131 — the widening write is not one transaction, and the contract says it is.** The
+  row is deleted at `agents/service.ts:261` and the grant written at `:288`, with nothing
+  spanning them, so a failed grant write leaves the list **under**-reporting a block that
+  is still there. D3's window is unreachable through the API today — but the worker is a
+  second process on the same database, so the guarantee rests on a scheduling accident.
+  D2 is the contract's own citation naming `:261` for "the one write that changes a grant".
+  **Three findings, one item, because D1's fix and D3's fix are the same transaction and D2
+  is the sentence about those two lines.**
+- **WI-132 — the panel does not carry the published waiting shape, and the row carries no
+  way to widen the grant.** `apps/web/src/lib/types.ts:100` still declares three kinds and
+  no `toolName`. **And the lead's answer to Probe's Q1:** the API satisfies WI-121's
+  criterion, and the panel owes the action — a criterion that says "from the list" names the
+  surface where the owner finds the row. **The structural fix is available:** the web
+  already depends on `@personal-os/contracts`, and the waiting shape is published by the
+  server alone — so the shape moves into the contracts package and the client imports it,
+  and the drift cannot come back.
+
+**And the peer session is back, and my 13:55 line was wrong.** The lead wrote that WI-129
+stays idle because the peer had published nothing since 13:10 and Cog's report to it died
+`AGENT_UNAVAILABLE`. **The peer then landed it**: `db8e6b7` "Make the two template kinds
+agree: a resource is never born live" — the implementation, a new test file
+`apps/server/src/__tests__/resource-liveness.test.ts` (+130) and the guide's own text — and
+then three ledger, merge and CI records on top, so the published tip is `e660fdf`. **The
+lead's line was true when it was written and was stale by the time the floor read it; the
+correction is here, and the item was not idle for long.**
+
+**The floor at 14:40.** **Running:** Cog's WI-123 verification (`task_017a543cd28d`) and
+this round. **Queued:** Cog's WI-127 (`task_48aacbb2df4b`) and WI-116 (`task_30fa1c22fa81`);
+Probe's WI-121 (`task_122e0e2e02bf`); and the two verdicts that are on their way to the
+peer session and to the group. **Ceiling two. Next free number WI-133.**
