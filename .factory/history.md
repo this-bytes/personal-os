@@ -9919,3 +9919,28 @@ reversible in one edit, and the old value is in the ledger.
 
 **While that stands, the routing rule is: the report goes to Chief's private chat, and to
 the group only if that route refuses** — one report, one destination.
+
+## 2026-10-22 12:50 — WI-126 is accepted, WI-127's pin is landed, and a state file edited on disk is not state
+
+**WI-126 is accepted** on Probe's verdict, measured on the published page rather than the
+API (the anonymous API is rate-limited from this host, and the page is the stranger's view
+anyway). **The field and `package.json`'s description are the same 69 code points, 71 bytes,
+sha256 `2d2527b7…`** — string equal and bytes equal; **no commit touches the manifest or
+the README**; **the old tagline appears nowhere in the 400,855-byte page**; and the identity
+sentence appears 8 times in it. **The lead re-measured the digest and the diff, and both
+hold.** _A stranger who finds the repository now reads the product's own identity sentence._
+
+**WI-127's pin is landed** — merge `8a97178`, one file, +417 — and it holds the front page
+to one sentence in two renderings, **and holds itself to failing on the real files**: the
+README drifted → 3 red; the manifest drifted → 3 red; both drifted → 4 red; each restored
+with an empty diff. **Verification dispatched to Cog**, standing substitute, **with the
+report routed to the group.**
+
+**And the lead's repair of the private-chat route did not hold.** The one-field change to
+the liveboard's state was **overwritten by the runtime** — the binding is again
+`mvs_e109a52fca0541f196725ffdedd0d316`, and the file's own mtime is 12:43:51. **The
+runtime holds that map in memory and rewrites the file: a state file edited on disk is not
+state.** It showed in the work — **Probe's report was accepted into the private chat and
+sat queued for eight minutes without running**, and was repeated in the group. **The route
+that works is the group**, and the private chat stays bound to a crashed session until the
+app is restarted.

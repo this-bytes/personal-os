@@ -99,8 +99,9 @@ free number above the highest taken.**
 | WI-126 | The repository's own description still publishes the sentence the owner replaced                                                                                                                                                  | lead   |
 | WI-127 | Nothing holds the front page's identity sentence                                                                                                                                                                                  | lead   |
 | WI-128 | The owner can set the autonomy policy, not only read it                                                                                                                                                                           | worker |
+| WI-129 | A template creates a draft: a resource is never born live                                                                                                                                                                         | worker |
 
-**The next free number is WI-129.**
+**The next free number is WI-130.**
 
 **Two decisions the owner took, and the numbers they took.** The owner answered
 the two questions that were open: `manual` **does not gate delegation**
@@ -4703,3 +4704,150 @@ written beside it. **The substance of the gate is unchanged** — a file that re
 column would still be an offender, and the suite's other thirty-two cases are untouched.
 **Recorded here rather than left to be found, because it changes a test another session
 wrote, and that session has been told.**
+
+### 12:50 — WI-126 is accepted, WI-127's pin is landed, and the private-chat repair did not hold
+
+**WI-126 is ACCEPTED** on Probe's verdict (`wi-126-verify-repository-description-probe-2026-10-22`,
+`task_74ee53b2ab2d`): measured at published tip `c26f650`, the field is **69 code points,
+71 bytes, sha256 `2d2527b7…`** — **the same digest as `package.json`'s description**, string
+equal and bytes equal; **no commit between `ce51521` and `c26f650` touches `package.json` or
+`README.md`**; **"agent-native control panel": 0 occurrences** in the whole 400,855-byte
+public page; and the identity sentence appears 8 times in it. **The lead re-measured the
+digest and the diff itself, and both hold.** _What the product can now do: a stranger who
+finds the repository — in a search result, a shared link, or a social preview — reads the
+product's own identity sentence._
+
+**WI-127's pin is LANDED** — merge `8a97178`, one file, +417
+(`apps/server/src/__tests__/frontPage.test.ts`), from branch `wi/127-front-page-pin`,
+commit `8ff041e`. **Three findings held by name** — `README.md`'s third line, the
+manifest's `description`, and the two agreeing on one sentence in two renderings — **and it
+holds itself to failing on the real files**: the README drifted → **3 red**; the manifest
+drifted → **3 red**; both drifted → **4 red**; each restored with `git checkout` and an
+empty diff. **The nine gates were green on the tree that was pushed: 67 files, 690 tests,
+0 failures.** **Verification dispatched to Cog**
+(`wi-127-verify-front-page-pin-cog-2026-10-22`, `task_48aacbb2df4b`) — **Vision is the
+verifier this item names, and Cog stands because Vision's queue has not drained** — **and
+the report goes to the group, because the private chat does not run.**
+
+**And the lead's repair of the private-chat route did not hold, and that is measured.** The
+one-field change to the liveboard's state — re-pointing Chief's private chat at the live
+session — **was overwritten by the runtime.** Measured at 12:45: the binding is again
+`mvs_e109a52fca0541f196725ffdedd0d316`, and the file's own mtime is 12:43:51. **The runtime
+holds that map in memory and rewrites the file: a state file edited on disk is not state.**
+And it showed in the work: **Probe's WI-127 report was accepted into the private chat and
+left queued for eight minutes without running**, and Probe repeated it in the group,
+exactly as the brief instructed. **The route that works is the group.**
+
+**The floor at 12:50.** **Running:** Cog's WI-121 (`task_bbf11f83be2b`, a third hour), and
+Probe's WI-126 verdict group post. **Queued:** Cog's WI-122 verification (`task_d374c36981e7`),
+Cog's WI-123 verification (`task_017a543cd28d`), Cog's WI-127 verification
+(`task_48aacbb2df4b`), Vision's WI-116 verification (`task_5c1d74057e18`). **Ceiling two.
+Next free number WI-128.**
+
+### 13:00 — Vision's lane refused the WI-116 verification, and the substitute takes it
+
+**`task_5c1d74057e18` ended `AGENT_UNAVAILABLE` at 12:23** — Vision's lane refused the
+WI-116 verification. **The standing substitute stands: the verification is re-dispatched to
+Cog** (`wi-116-verify-strategy-copy-pin-cog-2026-10-22`, `task_30fa1c22fa81`), **with a new
+request id and a new title; the spent Vision id is not reused.**
+
+**And the load is now stated rather than hidden: Cog holds four verifications** — WI-122,
+WI-123, WI-127, WI-116 — **because Vision's lane refuses and Probe wrote two of the pins.
+Cog is the only verifier lane that answers.** That is the bottleneck, and it is the restart
+the owner has been asked for.
+
+**One stale copy cancelled:** `task_cac389dbf50d` — Probe's WI-126 verdict addressed to
+Chief's private chat, a route that never runs. **WI-126 is accepted and on the record**,
+so the copy was a duplicate and a queue slot.
+
+### 13:15 — the published tip moved under the lead, and the merge was redone against it
+
+**The tip the lead was merging against was stale.** At 13:00 `git ls-remote origin refs/heads/main`
+read `c6ba728`; at 13:07 the same command reads **`3eca489`** — **the peer's tip moved while
+the lead was gating a merge.** And `3eca489` is the peer's `wi/128-policy-write-path` tip,
+published to `main`, **and it already carries the lead's own `8a97178`** — the peer merged
+the lead's WI-127 landing into their branch and published both. **The merge base of the
+lead's `022a261` and `3eca489` is `8a97178`.**
+
+**So the lead's in-progress merge was aimed at the wrong commit.** It targeted `c6ba728`,
+which is an ancestor of the published tip and not the tip: it would have landed the peer's
+WI-075 check and **none** of WI-128. **The lead quit it and redid it against `3eca489`** —
+`git merge --quit`, `git reset --mixed HEAD`, `git checkout --` the three files the stale
+merge had staged, then `git merge --no-ff --no-commit 3eca489`. **The tree handed to the
+gates: `819ee26`.**
+
+**One conflict, and it was the ledger.** `.factory/INTAKE.md` — both sides appended at the
+end. **Both sides' sections are kept, in order**: the peer's 12:20 section, the lead's 12:51
+landing record, the lead's 13:00 record. **Nothing dropped, nothing overwritten.**
+
+**What the merge carries:** WI-128's implementation, **9 files, +503/−15** —
+`packages/contracts/src/autonomy.ts` (+22), `apps/server/src/api/workspaces.ts` (+19),
+`apps/server/src/modules/workspaces/service.ts` (+16), `CONTRACTS.md` (+54),
+`apps/server/src/__tests__/autonomy-policy-write.test.ts` (+226, new), and WI-085's attack
+suite's allowed set (+6).
+
+**And WI-128 is landed and unverified.** The peer is the worker under Chief and wrote every
+line of it; the item names "a verifier who wrote none of this". **So it is inventory until
+a verifier reports, and the lead dispatches it now.**
+
+**The number block moved twice while the lead was working, and the second move left the
+block wrong.** The peer's `1a00d52` (13:07) merged the lead's own `022a261` into their WI-129
+branch and published it, and `da9e9ba` (13:10) **claimed WI-129** — _"A template creates a
+draft: a resource is never born live"_, owner `worker`, item file
+`.factory/work/WI-129.md`. **The published block carried the `WI-128` row and still read
+"**The next free number is WI-129.**" — a block that names a taken number free, for the
+fourth time.** **The lead fixed it in place, which is what the block is for:** the `WI-129`
+row is added and the block now reads "**The next free number is WI-130.**"
+
+**And the tip moved a second time under the lead, to `da9e9ba` — and this one is safe to
+merge.** `git diff --name-only 3eca489 da9e9ba -- apps/ packages/ scripts/ '*.ts' '*.tsx'`
+returns **nothing**: the peer's two new commits touched `.factory/**` only. **So the source
+the lead gated is the source that is published**, and only the gates that read what moved
+were re-run on the final tree — `format:check` exit 0, `contract-status` exit 0 ("Every
+claim in the table matches the tree"), `contract-pointers` exit 0 (**130 pointers checked**,
+0 failures — four more than the 126 before, which are WI-128's new contract entries).
+
+**The lead's own 13:05 and 13:10 labels were ahead of the clock, and neither section was
+ever published.** They were written at 12:56 and appended at 12:59, and the labels read
+13:05 and 13:10. **This section replaces them, because a record whose timestamps are not
+the clock is not a record.** The measurement they described — the nine gates on a merged
+tree at 13:05 — was taken on a tree that lacked WI-128 entirely, and the gates below are
+the ones that count.
+
+**The sweep, corrected by count.** The 13:10 fragment said "45 rows". Measured exactly:
+**the published number block is 42 rows** (WI-087 … WI-129, with WI-089 absent) **and the
+file holds 47 WI-nnn table rows in all** — five older rows, WI-024 … WI-028, live in an
+earlier table at lines 829-866. **124 item files.** **Four block numbers have no item file:
+WI-100, WI-101, WI-117, WI-119** — WI-117 and WI-119 are the peer's, in flight. **WI-100 and
+WI-101 have pushed branches whose trees are already in `main`** —
+`origin/wi/100-published-shapes-claim-guard` at `7c85c0d` and
+`origin/wi/101-integration-landing` at `2e4981e` — **and WI-100's subject is the file the
+peer landed and accepted under WI-075.** A number with a block line, no scope file, and
+work that landed under another number: **the peer's to reconcile.**
+
+**Cog's WI-121 is working, not stuck.** `task_bbf11f83be2b` has run 233 minutes (started
+09:08 local) and the worktree holds **13 modified files and 3 new ones** — a migration
+`0010_blocked_capabilities.sql`, `agents/blocked.ts`, `agents/grants.ts` — **and no commits
+yet**: the branch tip is still `840380c`, which is already in `main`. **Watchdog doctrine:
+report, do not cancel.** It is the fourth hour of a real implementation, and it is what the
+queue behind it is waiting on.
+
+**One stale copy cancelled:** `task_19f1eafcf63d`, the WI-126 group post. **WI-126's item
+file records `task_74ee53b2ab2d` as the verdict of record**, so the group post duplicated a
+verdict already acted on and held a slot — 35 minutes from creation, 28 of them running.
+**Its request id `wi-126-verify-repository-description-probe-report-2026-10-22` is spent.**
+
+**And Probe's WI-127 report is in the group**, with its own route note: the private-chat
+copy (`task_dcf9e4c95ccb`, batch `094abdeaf19c`) was accepted and left queued for eight
+minutes without running, and the report was repeated in the group. **The route that works
+is the group, and the report says so itself.**
+
+**And the nine gates on that tree: green.** `npm run gates` on the merged tree `819ee26`,
+whole log captured — **the tree hash was the same before the run and after it, so this is
+a measurement and not a guess.** typecheck 27824ms, test 79717ms, build 16984ms, format
+13284ms, contract-status 744ms, contract-pointers 1397ms, smoke 10898ms, compiled-build
+2614ms, bundle-size 722ms — **"Every gate passed. The tree is green."**, exit 0.
+**68 files, 702 tests, 0 failures** (server 45/475, web 9/84, worker 7/92, adapters 3/23,
+contracts 4/28). **The one file and the eight tests that arrived over the lead's own 13:05
+count are WI-128's new check** — the peer's eight cases, **which the verifier has to break
+itself before any of it is accepted.**
