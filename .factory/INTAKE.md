@@ -6567,3 +6567,38 @@ the lockfile, the licence record, and two test files — **the check itself and
 shipped code.**
 
 **The floor at 19:35.** **Ceiling two. Next free number WI-138.**
+
+### 19:40 — the lead's own sentence about the files that name the adapters package was too broad, and is corrected
+
+**The lead's acceptance of WI-134 said _"the only shipped files naming the package are
+the composition root, the server's own manifest, the adapters package's own manifest, one
+comment in `packages/contracts/src/agent.ts:279` that names the directory rather than the
+package, and two test files."_ **The lead has swept the tree and the list was
+incomplete.\*\*
+
+**Measured over every `.ts`, `.tsx`, `.json`, `.md`, `.yml`, `.yaml`, `.mjs` and `.js`
+file outside `node_modules`, `dist` and `.git`, the files naming
+`@personal-os/agent-adapters` are:** `apps/server/src/runtime.ts` (the composition root),
+`apps/server/package.json`, the two test files, `packages/agent-adapters/package.json`
+(the package's own name), **the root `package.json`**, **`tsconfig.dev.json`'s path
+mapping**, **`package-lock.json`**, **`docs/dependency-licences.json`** (the licence
+record), **`CONTRACTS.md`**, and the factory's own records — `.factory/INTAKE.md` and
+the item files WI-083, WI-134 and WI-137. **The verifier's sweep named the root build
+scripts, the path mapping, the lockfile and the licence record; the lead's sweep adds
+the contract and the factory's own records, which its file-type filter did not reach.**
+
+**The sentence was wrong in its breadth, and the item's claim is not.** The item claims
+that **the domain, the worker, the web client and the UI name the package nowhere** —
+and that holds: nothing under `apps/server/src/modules/**`, `apps/worker/src/**`,
+`apps/web/src/**` or `packages/ui/src/**` names it, and `apps/worker/package.json`
+declares no dependency on it. **The correct sentence is: _in the shipped code, the only
+file that names the package is `apps/server/src/runtime.ts:1`; outside the shipped code
+it is named in the manifests, the path mapping, the lockfile, the licence record, the
+contract and the factory's own records — and in none of the domain._**
+
+**And the lesson is the factory's own, said once more: a sweep that reads a list is a
+sweep of the list.** The lead measured the domain, the worker, the UI and the web, and
+then wrote a sentence about _all_ the files. **The sentence had to be widened until it
+was true, and the lead says so here rather than leaving it in the record.**
+
+**The floor at 19:40.** **Ceiling two. Next free number WI-138.**
