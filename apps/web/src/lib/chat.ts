@@ -18,9 +18,9 @@ import type { TraceStatus } from '@personal-os/ui';
  * a queued message is a lie the owner did not agree to, and the server can
  * only say so if the mode reaches it.
  *
- * An attachment is a reference to a resource that already exists. There is no
- * upload path through the resource API, so the message points at the resource
- * rather than carrying its bytes.
+ * An attachment is a reference to a resource. A file the owner chooses is
+ * uploaded first and becomes a resource, and the message points at that
+ * resource rather than carrying the bytes.
  */
 export function messageRequest(
   text: string,

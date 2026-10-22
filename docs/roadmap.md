@@ -34,6 +34,7 @@ its own worktree, and each was merged into `main` with its contract published in
 | **WI-141** — the rich chat surface | Markdown and code, a turn activity trace, artifact previews and a stop control that says what it did — in the Forge visual language.                                                              |
 | **WI-144** — the team room         | A coordinator dispatches to a worker, the worker runs, the result returns, and the handoff is visible. See the slice's own record for what is partial.                                            |
 | **WI-152** — the steer             | A steer goes into the turn that is running, for a connection that reported it can take input mid-turn, and a steer that cannot be delivered waits for the next turn and says why.                 |
+| **WI-151** — the attachment upload | The composer uploads a file, the server stores the bytes beside the workspace, and the transcript opens it. See the slice's own record for the limits that remain.                                |
 
 **R0's first slice is landed.** The adapter lifecycle gives every adapter an
 explicit `connect` → `send` → `close`, the worker connects the instance the

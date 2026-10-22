@@ -284,14 +284,13 @@ approved set, or a count that drifts, fails the build.
 These are the surfaces in the brief that this repository does not have, or has
 only in part. Each says what is missing and what it would cost.
 
-| Gap                                | What is missing                                                                                                                                                                                                                                                                                                                               | What it would take                                                                                                                                                                                   |
-| ---------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **An upload path for attachments** | the composer has the attachment surface — a picker over the workspace's resources, chips on the message with a way to take one off, and the attached resource drawn in the transcript — and the one thing it does not have is a way to attach a file that is not already a resource. The resource API takes a payload; it has no binary path. | shadcn's `Attachment` base component and the AI Elements `Attachments` pattern as the vocabulary, and a file route that stores bytes in the data directory and makes a resource that points at them. |
-| **A branching conversation**       | the contract publishes `origin.depth` and the delegation tree, and the forked turn is a turn; the client has no branch view and no way back.                                                                                                                                                                                                  | the `MessageBranch` idea and the canonical history the contract already publishes. The server side of a fork is WI-055's.                                                                            |
-| **Suggestions**                    | an empty transcript says "No events yet." and stops.                                                                                                                                                                                                                                                                                          | shadcn's `Suggestion` pattern. Small.                                                                                                                                                                |
-| **A committed turn**               | `TurnStatus` publishes `committed` beside `completed`, and only `completed` is ever written.                                                                                                                                                                                                                                                  | WI-055's five-step commit. The vocabulary is published; the transaction is not.                                                                                                                      |
-| **Five native runtimes**           | Codex, OpenCode, Pi, Hermes and OpenClaw have presets — a configuration, a leader persona, capabilities — and **no runtime has been demonstrated**. Every preset is marked `verified: false`.                                                                                                                                                 | the adapters themselves. This is the largest gap in the product and it is not a chat-surface gap.                                                                                                    |
-| **A real runtime demonstration**   | the roadmap's R1 acceptance needs one of the named runtimes running, and none has been. The browser suite proves the whole chain — server, queue, worker, adapter, event log, stream — with the built-in `echo` adapter, which is a product adapter and not a runtime.                                                                        | one runtime, one deployment, one recorded round trip.                                                                                                                                                |
+| Gap                              | What is missing                                                                                                                                                                                                                                                        | What it would take                                                                                                        |
+| -------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------- |
+| **A branching conversation**     | the contract publishes `origin.depth` and the delegation tree, and the forked turn is a turn; the client has no branch view and no way back.                                                                                                                           | the `MessageBranch` idea and the canonical history the contract already publishes. The server side of a fork is WI-055's. |
+| **Suggestions**                  | an empty transcript says "No events yet." and stops.                                                                                                                                                                                                                   | shadcn's `Suggestion` pattern. Small.                                                                                     |
+| **A committed turn**             | `TurnStatus` publishes `committed` beside `completed`, and only `completed` is ever written.                                                                                                                                                                           | WI-055's five-step commit. The vocabulary is published; the transaction is not.                                           |
+| **Five native runtimes**         | Codex, OpenCode, Pi, Hermes and OpenClaw have presets — a configuration, a leader persona, capabilities — and **no runtime has been demonstrated**. Every preset is marked `verified: false`.                                                                          | the adapters themselves. This is the largest gap in the product and it is not a chat-surface gap.                         |
+| **A real runtime demonstration** | the roadmap's R1 acceptance needs one of the named runtimes running, and none has been. The browser suite proves the whole chain — server, queue, worker, adapter, event log, stream — with the built-in `echo` adapter, which is a product adapter and not a runtime. | one runtime, one deployment, one recorded round trip.                                                                     |
 
 ---
 
@@ -307,8 +306,6 @@ runtimes).
 The order that follows from this inventory:
 
 1. **The runtimes.** Templates are not integrations, and the presets say so.
-2. **An upload path.** The composer can attach a resource; it cannot take a
-   file that is not one yet.
 
 And one standing rule, learned from §4: **adopt a component when the product
 needs it, write it in this repository's tokens, and keep the vendor's
@@ -322,11 +319,13 @@ the code has is the same defect as a false note, and it is corrected here
 rather than carried forward.
 
 **And a second correction, measured on the same day:** this inventory listed
-steering as the largest gap between the published contract and the code. WI-152
-closed it — a steer goes into the turn that is running, for a connection whose
-adapter reported that it can take input mid-turn, and a steer that cannot be
-delivered waits for the next turn and says why. The row is struck rather than
-reworded, because the rule the gap asked for is now the rule the code follows.
+steering as the largest gap between the published contract and the code, and an
+upload path as the third. WI-152 closed the first and WI-151 the second — a
+steer goes into the turn that is running, for a connection whose adapter
+reported that it can take input mid-turn, and a file the owner chooses is
+uploaded and becomes a resource the message points at. Both rows are struck
+rather than reworded, because the rules the gaps asked for are now the rules
+the code follows.
 
 ---
 

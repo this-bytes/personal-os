@@ -2280,16 +2280,87 @@ its URL is used. A message cannot run code in the panel that shows it.
 **The limits, stated plainly.** Steering works, and only for a connection that
 reports `acceptsSteering`: a steer for a connection that cannot take input
 mid-turn is a queued message, and the panel says so in the server's words. A
-file the owner attaches is carried by reference to a resource, not uploaded by
-the composer, and the composer offers the reference rather than a picker. The
-trace shows the events the log holds; it is not a complete account of what an
-adapter did inside its own runtime.
+file the owner attaches is uploaded, and the message carries a reference to the
+resource the upload created; the composer also offers the resources that
+already exist, and a message may carry both. The trace shows the events the log
+holds; it is not a complete account of what an adapter did inside its own
+runtime.
 
 This entry is the contract for **WI-141**, and the code implements it — as of
 `dad1801` — the shapes are in `packages/contracts/src/chat.ts`, the activity
 read model is `apps/server/src/modules/executions/activity.ts`, and the surface
 is `apps/web/src/components/chat/`. The slice's own record is
 [docs/contract-chat-rich-client.md](docs/contract-chat-rich-client.md).
+
+### The attachment upload
+
+A file the owner wants to send does not have to be a resource already.
+
+```
+POST /api/resources/upload       // store the bytes, answer with the resource
+GET  /api/resources/:id/content  // the bytes of a resource that is a file
+```
+
+**The bytes travel as base64 in a JSON body.** The server needs no multipart
+parser, and the product needs no new dependency for one.
+
+```ts
+{
+  workspaceId: string;
+  filename: string;
+  mimeType: string;
+  contentBase64: string;
+}
+```
+
+The answer is `201` with the resource, in the same envelope every other
+resource write answers with, and the route writes an audit entry at the route
+level.
+
+**An uploaded file is a `document` resource, told apart by its data.** The
+resource type vocabulary is unchanged — there is no `file` type — and the
+file's data carries the metadata and nothing else:
+
+```ts
+{
+  kind: 'file';
+  filename: string;
+  mimeType: string;
+  size: number;
+}
+```
+
+**The path of the bytes is never in the resource.** The bytes are written under
+the data directory, at `<dataDir>/files/<resourceId>` — the name is the
+resource's id, so nothing the owner sent reaches the path — and the row that
+says where they are goes into `resource_files`, the table the schema already
+declared and nothing read. **The resource row and the `resource_files` row are
+written in one transaction**, so a resource never points at bytes that were not
+stored.
+
+**A file is at most 10 MB.** A file over the cap is refused with the shared
+error envelope and a sentence the owner can act on — before the body is read
+when the request says how big it is, and again after the bytes are decoded.
+Both answers are the same one.
+
+**A client that attaches by reference keeps working.** Nothing about
+`POST /api/resources` changed, and the message a client sends is unchanged: a
+`file` content part with a resource id, which is what it always was.
+
+**The limits that remain.** The bytes live in the data directory of one
+deployment, and two deployments do not share them. **Nothing removes the
+bytes**: `resource_files` cascades on delete, so the row goes when the resource
+goes, but the file on disk stays, and there is no route that deletes a resource
+today. **A file document can exist without bytes** — `POST /api/resources` and
+the MCP `resource.create` tool accept the file shape, and only the upload route
+stores a file. **An agent cannot upload**: the upload is on the owner-facing
+API only. **The bytes are served as they were uploaded**: there is no
+scanning, no rewriting and no preview.
+
+This entry is the contract for **WI-151**, and the code implements it — as of
+`75485dc`. The routes are `apps/server/src/api/resources.ts`, the bytes are
+written by `apps/server/src/modules/resources/files.ts`, and the slice's own
+record is `.factory/work/WI-151.md`.
 
 ### Fork and rewind
 
@@ -2586,6 +2657,8 @@ is not left deleting the database.
 | `POST`             | `/api/resources/:id/publish`                         | Publish a resource. The act that makes one live.                                                                    |
 | `POST`             | `/api/resources/:id/execute`                         | Execute a resource.                                                                                                 |
 | `GET`              | `/api/resources/:id/inspect`                         | Validate without changing.                                                                                          |
+| `POST`             | `/api/resources/upload`                              | Store a file's bytes and answer with the resource that points at them.                                              |
+| `GET`              | `/api/resources/:id/content`                         | The bytes of a resource that is a file.                                                                             |
 | `GET/POST`         | `/api/goals`                                         | List and create goals.                                                                                              |
 | `GET`              | `/api/goals/overview`                                | The goals and the counts under each.                                                                                |
 | `GET`              | `/api/goals/:id`                                     | Read a goal.                                                                                                        |
@@ -2821,8 +2894,8 @@ projections read it
 `apps/server/src/modules/resources/service.ts:365`). An agent-created
 automation or task is recorded as authored by the agent that made it.
 
-**Every mutating route writes an audit entry.** Of the 40 mutating routes in
-`apps/server/src/api/`, 37 write an audit entry at the route level, and three more
+**Every mutating route writes an audit entry.** Of the 41 mutating routes in
+`apps/server/src/api/`, 38 write an audit entry at the route level, and three more
 write one from the service layer — `POST /api/approvals/:id/decide` and `POST
 /api/agui/runs/:runId/resume`, both at
 `apps/server/src/modules/approvals/resume.ts:55`, and `PATCH /api/tasks/:id` at

@@ -12,6 +12,11 @@ import { Composer } from '../Composer';
  * did not agree to. And a control that cannot be used says why.
  */
 
+// The composer reads the active workspace when the owner uploads a file.
+vi.mock('../../state/workspace', () => ({
+  useWorkspace: () => ({ activeWorkspaceId: 'wsp_1' }),
+}));
+
 describe('the request the composer sends', () => {
   it('carries the delivery mode with the message', () => {
     const request = messageRequest('do it differently', {

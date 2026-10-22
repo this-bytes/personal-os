@@ -368,6 +368,40 @@
       ]
     },
     {
+      "id": "the-attachment-upload-wi-151",
+      "section": "The attachment upload",
+      "note": "This entry is the contract for WI-151, and the code implements it",
+      "claim": "implemented",
+      "why": "WI-151's upload path: the route that stores the bytes and answers with the resource, the route that serves them back, and the file's own shape in the resource's data.",
+      "expect": [
+        {
+          "kind": "present-text",
+          "path": "apps/server/src/api/resources.ts",
+          "value": "/api/resources/upload"
+        },
+        {
+          "kind": "present-text",
+          "path": "apps/server/src/api/resources.ts",
+          "value": "/api/resources/:id/content"
+        },
+        {
+          "kind": "present-pattern",
+          "path": "apps/server/src/modules/resources/files.ts",
+          "value": "export function createResourceFilesService"
+        },
+        {
+          "kind": "present-pattern",
+          "path": "apps/server/src/modules/resources/service.ts",
+          "value": "export const fileDocumentSpecSchema = z\\.object\\(\\{"
+        },
+        {
+          "kind": "present-text",
+          "path": "apps/server/src/modules/resources/files.ts",
+          "value": "resourceFiles"
+        }
+      ]
+    },
+    {
       "id": "the-widening-is-not-taken-back-wi-146",
       "section": "The waiting list",
       "note": "The widening is the contract for WI-146, and the code implements it",
