@@ -947,7 +947,8 @@ one the templates' own text argues for, and the owner should pick.
 **What the code carries now, measured on 2026-10-22 (WI-129).** The two kinds
 now implement the same answer, and it is (3): **a resource is never born live.**
 The dashboard's provider writes `published: false` on create
-(`apps/server/src/modules/resources/service.ts:337-345`), the way the
+(`apps/server/src/modules/resources/service.ts:756`, reached from the provider's
+create at `apps/server/src/modules/resources/service.ts:342`), the way the
 automation's writes `enabled: false`
 (`apps/server/src/modules/resources/service.ts:276`), and **the merge is
 untouched** — it still does not special-case the flags, and the provider is
