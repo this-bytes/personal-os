@@ -5386,3 +5386,60 @@ worker source file imports it. **So: the shapes the domain needs move into
 fails if a domain file ever reaches for the adapters package again.**
 
 **The floor at 15:05.** **Ceiling two. Next free number WI-134.**
+
+### 15:25 — WI-133 is implemented: one word, and the install line its three siblings already carry
+
+**The change is one word, and it is in `.github/workflows/ci.yml`.** The audit job's
+install at `:94` was the only one in the file that did not say it would not audit:
+
+```diff
+-      - name: Install dependencies
+-        run: npm ci --ignore-scripts
++      - name: Install dependencies
++        run: npm ci --ignore-scripts --no-audit --no-fund
+```
+
+**The gate does not weaken.** The explicit `npm audit --audit-level=high` at `:99` is
+untouched, so the job still fails on a high-severity finding. **The job audits once, at
+the level the job names, instead of twice at two levels** — and the audit that decides is
+the one the job was always named for.
+
+**The install line is now byte-identical to its three siblings'** (`:119`, `:146`,
+`:171`), which do the same install inside the same budget and **passed on the very run
+the audit job timed out on.** That is what the one word removes: the only difference
+between the job that ran out of its ten minutes and the three that did not.
+
+**The comment in the file says what was observed and not what was inferred.** It states
+that the install must not audit because `npm ci` audits by default; that the three
+sibling jobs carry the same flags; and that this job's job was the one GitHub reported
+as `cancelled` when it ran out of time. **It does not say the flags caused the timeout,
+because that was not measured** — see below.
+
+**The measurement, and its limit, stated in the item's own file.** Two installs of this
+repository's own `package.json` and `package-lock.json` into scratch directories: with the
+flags, **the install does not audit** ("added 90 packages in 10s", no audit line);
+without them, **the install audits** ("found 0 vulnerabilities" in its own output). And
+`npm audit --audit-level=high` in a directory holding a `package-lock.json` and no
+`node_modules` prints "found 0 vulnerabilities" and exits 0 — the same answer it gives
+against the installed tree, so the installed tree is not what the audit reads.
+
+**But the local measurement is on a warm cache** — 11.9s against 10.1s — **and that is not
+CI's cost.** CI installs cold, and the number that matters is the one the timed-out run
+measured, which this item did not reproduce. **So the item does not claim to have found
+the timeout's exact cause. It claims to have removed the only difference between the job
+that timed out and the three that did not.** If the flake recurs, the next lever is
+known: the check-run's own `started_at` → `completed_at` on `ccc3564`.
+
+**The stronger fix is measured and is deliberately not in this item.** Deleting the install
+outright removes the failure mode rather than one of its two audits — and it changes the
+shape of a vulnerability gate, so **it waits for the owner's word.** The one-word change
+buys the same headroom without changing what the job is: it still installs, and it still
+audits at the level it names.
+
+**The nine local gates are green on this tree** — typecheck, test, build, format,
+contract-status, contract-pointers, smoke, compiled-build, bundle-size — and the claim
+that preceded it landed on `main` at `dee3a3b`, so **the number was on `main` before the
+word was changed.** That is WI-129's claim-first discipline, used a second time, and it
+worked a second time.
+
+**The floor at 15:25.** **Ceiling two. Next free number WI-134.**
