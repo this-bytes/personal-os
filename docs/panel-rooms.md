@@ -12,10 +12,10 @@ each part means, and the rules the parts hold to.
 A **room** is a place, not a picture: it is where work is looked at or decided.
 The panel has two, and the switch in the header is the way between them.
 
-| Room  | Path            | What it is for                                                   | Density |
-| ----- | --------------- | ---------------------------------------------------------------- | ------- |
-| Map   | `/map`          | The orientation room. The picture of the system.                  | Airy    |
-| Work  | `/conversations` | The execution room. The threads the owner directs agents in.      | Dense   |
+| Room | Path             | What it is for                                               | Density |
+| ---- | ---------------- | ------------------------------------------------------------ | ------- |
+| Map  | `/map`           | The orientation room. The picture of the system.             | Airy    |
+| Work | `/conversations` | The execution room. The threads the owner directs agents in. | Dense   |
 
 **The panel opens on the Map.** It is the room the owner sees when they have
 not asked for anywhere in particular: everything at a glance, and the thing

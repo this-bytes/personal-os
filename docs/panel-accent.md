@@ -27,6 +27,14 @@ with the same value as `--live`, which is the collision by the back door: a
 token whose value is the accent's, and whose name promises a second meaning.
 A caution is either the neutral scale or the error colour.
 
+**An agent's hue is an identity, never a meaning.** In the Map's picture every
+agent wears a hue from a fixed ring, so a reader can tell two agents apart.
+The ring keeps away from the accent, the ok colour and the error colour, so a
+hue never looks like live work, a success or a failure. The hues are computed
+from the agent's id, so an agent keeps its colour; they are `hsl()` values
+rather than hexes, which keeps the token layer the only place a hex lives. The
+ring is in `apps/web/src/features/map/constellation.ts`.
+
 The neutral scale (`--color-slate-*`) and the structure scale
 (`--color-indigo-*`) keep their names and their values. The `amber-` scale is
 declared in the same file, in hex, because Tailwind's own palette is oklch and
