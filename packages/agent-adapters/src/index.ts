@@ -7,6 +7,7 @@ import { createEchoAdapter } from './echo.js';
 import { createHttpAdapter } from './http.js';
 import { createMcpAdapter } from './mcp.js';
 import { createModelAdapter } from './model.js';
+import type { AdapterFactories } from './types.js';
 
 export * from './types.js';
 export * from './registry.js';
@@ -21,18 +22,27 @@ export { McpAdapter, createMcpAdapter } from './mcp.js';
 export { ModelAdapter, createModelAdapter } from './model.js';
 
 /**
+ * The factories for every adapter type the contract publishes.
+ *
+ * The type is a mapped type over `AdapterType`, so **the compiler requires a factory for
+ * every type** — adding an adapter type without one breaks the build.
+ */
+const defaultFactories: AdapterFactories = {
+  echo: createEchoAdapter,
+  cli: createCliAdapter,
+  acp: createAcpAdapter,
+  a2a: createA2aAdapter,
+  http: createHttpAdapter,
+  model: createModelAdapter,
+  mcp: createMcpAdapter,
+};
+
+/**
  * The registry populated with every built-in adapter. New adapter types are
  * added here; no other module needs to change.
  */
 export function createDefaultRegistry(): AdapterRegistry {
-  return new AdapterRegistry()
-    .register('echo', createEchoAdapter)
-    .register('cli', createCliAdapter)
-    .register('acp', createAcpAdapter)
-    .register('a2a', createA2aAdapter)
-    .register('http', createHttpAdapter)
-    .register('model', createModelAdapter)
-    .register('mcp', createMcpAdapter);
+  return new AdapterRegistry(defaultFactories);
 }
 
 export type { AdapterConfig, AdapterProvider };

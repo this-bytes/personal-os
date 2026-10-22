@@ -29,7 +29,7 @@ those are, what is still missing, and what the missing parts should be.
 | The template shape — `{id, version, type, title, description, spec}` | `packages/contracts/src/resource.ts:58-70`                                                                       | A template is not a resource: no workspace, no revision, no `createdBy`, and not a row in any table (`resource.ts:49-57`).            |
 | The reference shape — `{id, version?}`                               | `packages/contracts/src/resource.ts:79-83`                                                                       | A version names one reviewed spec; without one, the newest published version is meant.                                                |
 | The registry — six templates, one per kind                           | `apps/server/src/modules/resources/templates.ts:21-124`                                                          | Authored in the repository and reviewed like code; the same for every workspace.                                                      |
-| Templates are validated by the owning provider                       | `apps/server/src/modules/resources/templates.ts:446-460`; `apps/server/src/modules/resources/service.ts:486-488` | A drifted template is caught when the server starts, and refused at the point it is read — not found by an agent that reached for it. |
+| Templates are validated by the owning provider                       | `apps/server/src/modules/resources/templates.ts:446-460`; `apps/server/src/modules/resources/service.ts:493-495` | A drifted template is caught when the server starts, and refused at the point it is read — not found by an agent that reached for it. |
 | `resource.template.list` over MCP, grantable per connection          | `packages/contracts/src/mcp.ts:21,45`; `apps/server/src/modules/mcp/server.ts:467-483`                           | A tool that was not granted is not registered at all, so it does not even appear in the tool list.                                    |
 | `resource.create` accepts a template                                 | `apps/server/src/modules/mcp/server.ts:352-402`                                                                  | A resource is created from a spec **or** from a template.                                                                             |
 
@@ -947,7 +947,7 @@ one the templates' own text argues for, and the owner should pick.
 **What the code carries now, measured on 2026-10-22 (WI-129).** The two kinds
 now implement the same answer, and it is (3): **a resource is never born live.**
 The dashboard's provider writes `published: false` on create
-(`apps/server/src/modules/resources/service.ts:756`, reached from the provider's
+(`apps/server/src/modules/resources/service.ts:763`, reached from the provider's
 create at `apps/server/src/modules/resources/service.ts:342`), the way the
 automation's writes `enabled: false`
 (`apps/server/src/modules/resources/service.ts:276`), and **the merge is
@@ -957,7 +957,7 @@ still the only judge.
 **Why the dashboard moved rather than the automation.** (2) was not available
 for the automation without more work: a born-enabled automation would have had
 no `nextRunAt`, because only the enable act computes one
-(`apps/server/src/modules/resources/service.ts:597`), so it would have been
+(`apps/server/src/modules/resources/service.ts:604`), so it would have been
 enabled and never have run. (1) is ruled out by §4.2 — the merge does not
 judge — and **the answer that makes the templates' own guides true is the one
 the code already carried for one of the two kinds.**

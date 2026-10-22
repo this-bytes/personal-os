@@ -5,7 +5,8 @@ import type {
   AdapterType,
   AgentAdapter,
 } from '@personal-os/contracts';
-import type { AdapterFactory, ConfigOf } from './types.js';
+import { adapterTypeSchema } from '@personal-os/contracts';
+import type { AdapterFactories, AdapterFactory, ConfigOf } from './types.js';
 
 /**
  * The adapter registry is the only place that knows which adapter types
@@ -17,6 +18,20 @@ import type { AdapterFactory, ConfigOf } from './types.js';
  */
 export class AdapterRegistry implements AdapterProvider {
   private readonly factories = new Map<AdapterType, AdapterFactory>();
+
+  /**
+   * A registry starts out holding a factory for every adapter type the contract
+   * publishes.
+   *
+   * The argument is a mapped type over `AdapterType`, so **the compiler refuses a
+   * registry that is missing one** — a type added to the contract without a factory
+   * breaks the build here rather than failing at the first run that asks for it.
+   */
+  constructor(factories: AdapterFactories) {
+    for (const type of adapterTypeSchema.options) {
+      this.factories.set(type, factories[type] as AdapterFactory);
+    }
+  }
 
   register<T extends AdapterType>(
     type: T,

@@ -454,17 +454,24 @@ export function createResourcesService(options: ResourcesServiceOptions): Resour
   const automationResourceProvider = automationProvider();
   const taskResourceProvider = taskProvider();
 
-  const providers = new Map<ResourceType, ResourceProvider<unknown>>([
-    ['dashboard', dashboardResourceProvider as ResourceProvider<unknown>],
-    ['document', documentProvider as ResourceProvider<unknown>],
-    ['data-source', dataSourceProvider as ResourceProvider<unknown>],
-    ['memory', memoryResourceProvider as ResourceProvider<unknown>],
-    ['automation', automationResourceProvider as ResourceProvider<unknown>],
-    ['task', taskResourceProvider as ResourceProvider<unknown>],
-  ]);
+  /**
+   * A provider for every resource type the contract publishes.
+   *
+   * The type is a `Record`, so **the compiler refuses a service that is missing one** —
+   * a type added to the contract without a provider breaks the build here, rather than
+   * failing at the door with `Unsupported resource type`.
+   */
+  const providers: Record<ResourceType, ResourceProvider<unknown>> = {
+    dashboard: dashboardResourceProvider as ResourceProvider<unknown>,
+    document: documentProvider as ResourceProvider<unknown>,
+    'data-source': dataSourceProvider as ResourceProvider<unknown>,
+    memory: memoryResourceProvider as ResourceProvider<unknown>,
+    automation: automationResourceProvider as ResourceProvider<unknown>,
+    task: taskResourceProvider as ResourceProvider<unknown>,
+  };
 
   const providerFor = (type: ResourceType): ResourceProvider<unknown> => {
-    const provider = providers.get(type);
+    const provider = providers[type];
     if (!provider) throw errors.badRequest(`Unsupported resource type "${type}".`);
     return provider;
   };

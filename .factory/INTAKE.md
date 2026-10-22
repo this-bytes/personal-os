@@ -5752,3 +5752,153 @@ sets, not lists, or it fails for the wrong reason.** The compiler compares the k
 is not affected.
 
 **The floor at 17:05.** **Ceiling two. Next free number WI-137.**
+
+### 17:35 — WI-136 is implemented: the compiler refuses a type without an implementation
+
+**Two registries that decide whether a type _works_ were the only places the exhaustiveness
+pattern was missing — and the pattern was already the repository's own.**
+
+**What the tree already held.** The resource type list was held twice before this item:
+`kindNames` (`apps/server/src/modules/resources/service.ts:737`) and `mergeRules`
+(`apps/server/src/modules/resources/templates.ts:509`) are both `Record<ResourceType, …>`,
+and a `Record` requires every key. **So a resource type added to the contract without a
+name or a merge rule already broke the build.** The adapter type list was held once, by
+`adapterTypeLabels` (`packages/contracts/src/agent.ts:12`), also a `Record`.
+
+**What was not held was the part that decides whether the type works.** The service holds
+one provider for each of the six resource types and the registry holds a factory for each
+of the seven adapter types — **all of them are there, so nothing was broken.** But both
+registries were `Map`s, and **TypeScript does not require a `Map` literal to carry every
+key of its key type.** So a type could be named in the contract, given a name, given a
+merge rule, given a label — **and the tree would still compile** — and the failure would
+surface only at the first use: `Unsupported resource type "…"` to the caller as a
+`bad_request`, or `No adapter registered for adapter type "…"` at the first run that
+asked for it. **The compiler had already refused to make that mistake twice over for the
+very same list.**
+
+**The fix is one type on each side.** The resource providers become a
+`Record<ResourceType, ResourceProvider<unknown>>` — the same shape as the two Records
+beside them. The adapter factories become `AdapterFactories`, a mapped type over
+`AdapterType`, and `createDefaultRegistry` builds the registry from it. **The factories
+already had the right shape** — `createCliAdapter` takes
+`Extract<AdapterConfig, { adapterType: 'cli' }>` and `ConfigOf<'cli'>` is that — **so
+nothing had to be widened to fit**, and each factory is still checked against its own
+configuration. The registry keeps its `register()` builder; **what cannot happen now is a
+registry that starts out missing a type**, because the constructor takes the complete set.
+
+**And the proof is the compiler refusing the tree.** Four mutations, each restored byte for
+byte, each producing a type error:
+
+| Mutation                                                                             | What the compiler says                                                                                   |
+| ------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------- |
+| the contract names a resource type (`'policy'`)                                      | `Property 'policy' is missing in type '{…}' but required in type 'Record<…, ResourceProvider<unknown>>'` |
+| the service drops the `'task'` provider                                              | `Property 'task' is missing in type '{…}' but required in type 'Record<…, ResourceProvider<unknown>>'`   |
+| the registry drops the `'mcp'` factory                                               | `Property 'mcp' is missing in type '{…}' but required in type 'AdapterFactories'`                        |
+| the contract names an adapter type (`'policy'`) **and** the label it already demands | `Property 'policy' is missing in type '{…}' but required in type 'AdapterFactories'`                     |
+
+**The last row is the one that matters.** The labels already held the adapter type list,
+so naming a new adapter type without a label breaks the build today — **the factory
+obligation is the second hold, and it is the one that was missing.** A developer who adds
+the label and forgets the factory now gets the same refusal.
+
+**And one thing the first row showed that I did not know when the item was written.** The
+resource type list is held in **three** places, not one: the provider registry, the kind
+names (`service.ts:744`) and the merge rules (`templates.ts:509`). **So the `Record` shape
+was the file's own convention and the provider map was the odd one out** — not a new idea
+this item brought, but a place where the convention had been missed.
+
+**The limits, stated plainly.** The compiler holds that **every type has an
+implementation**; it says nothing about whether the implementation is _any good_, and that
+is what the adapters package's own tests are for. The resource service's runtime guard
+stays, because a stored resource can carry a type the contract no longer names.
+
+**And a thing this session got wrong on the way here, recorded because the rule earned it
+twice.** The item was claimed as WI-135 and **renumbered to WI-136**: the peer session's
+WI-135 claim was written first, in a commit on their own `main`, and had not been
+published when this worktree was cut. **And the worktree that was cut was based on their
+`main`, which predated WI-134 — so the branch was rebased onto `origin/main` by hand.**
+Moving the worktree's directory with `git worktree move` **broke the npm workspace
+symlinks, which are absolute paths**, and the build failed with _"Cannot find module
+'@personal-os/contracts'"_ on every file. **A `npm ci` in the worktree puts them back**, and
+the lockfile was unchanged afterwards. **A worktree that was moved is a worktree that needs
+its install again.**
+
+**The floor at 17:35.** **Ceiling two. Next free number WI-137.**
+
+### 18:20 — WI-136 is measured, and the pointer gate said less than it knew
+
+**The change moved a file under the contract's citations, and the gate caught four of the
+seven pointers that moved.** That ratio is the finding, and it is about the gate rather than
+about this item.
+
+**What moved.** The providers became a `Record`, and the doc comment above it is seven lines
+longer than the `Map` literal it replaced — **so every line of
+`apps/server/src/modules/resources/service.ts` below the block moved +7.** The contract holds
+seven pointers into that file below the block, and the guide holds three more.
+
+**What the gate said.** `scripts/verify-contract-pointers.ts` reported four failures —
+`CONTRACTS.md:804`, `:806`, `:877` and `:909` — and the gate's rule is that a citation's
+first and last lines must hold code. **Three of the seven had landed on other code that
+holds code** — `CONTRACTS.md:918` (`:578` → the publish method's body), `:1346` (`:621` → the
+`execute` signature) and `:1347` (`:626` → the row lookup) — **so they passed, pointing at
+the wrong statement.** A gate that asks _is there code here?_ cannot tell _is this the code
+the sentence claims?_ — **and a citation that names the wrong statement is worse than one
+that names nothing, because it reads as true.**
+
+**So the pointers were found by content, not by arithmetic.** A scratch script compared every
+citation into a changed file against the text the cited lines held before the change, and
+searched the new file for that text. **Seven pointers in `CONTRACTS.md` and three in
+`docs/resource-templates.md` had moved**, and every one was re-pointed to the line that
+holds exactly the text it used to name:
+
+| Where                            | Was                  | Now                  |
+| -------------------------------- | -------------------- | -------------------- |
+| `CONTRACTS.md:804`               | `service.ts:673-678` | `service.ts:680-685` |
+| `CONTRACTS.md:806`               | `service.ts:687-691` | `service.ts:694-698` |
+| `CONTRACTS.md:877`               | `service.ts:486-488` | `service.ts:493-495` |
+| `CONTRACTS.md:909`               | `service.ts:756`     | `service.ts:763`     |
+| `CONTRACTS.md:918`               | `service.ts:578`     | `service.ts:585`     |
+| `CONTRACTS.md:1346`              | `service.ts:621`     | `service.ts:628`     |
+| `CONTRACTS.md:1347`              | `service.ts:626`     | `service.ts:633`     |
+| `docs/resource-templates.md:32`  | `service.ts:486-488` | `service.ts:493-495` |
+| `docs/resource-templates.md:950` | `service.ts:756`     | `service.ts:763`     |
+| `docs/resource-templates.md:960` | `service.ts:597`     | `service.ts:604`     |
+
+**And one test pin moved with them.**
+`apps/server/src/__tests__/audit-outcome-vocabulary.test.ts` held the enqueue of an
+automation run at `at: [619, 624]`; it is `[626, 631]` now, and the section's citation is
+`:628` — `queue.enqueue({` — inside it. **The pin is the stronger instrument, because it
+checks the code the citation names and not only that a line holds code.** That is the
+instrument this item's compiler refusals use, and the one WI-134's boundary check uses.
+
+**The ledger and the item files were left alone.** They are records of what was true when
+they were written, and a dated record is not a citation.
+
+**The gate is green again: 144 pointers, 0 failures** — and it was green _before_ this
+item's change too, with three pointers pointing at the wrong statement. **A green gate is
+not the same thing as a correct citation**, and the gap between them is the finding.
+
+**The compiler refusals re-measured on the tree that lands.** Four mutations, each restored
+byte for byte, each producing type errors — and the restore checked the hash:
+
+| Mutation                                                                     | The build said                                                                                                                             |
+| ---------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
+| the contract names a resource type (`'policy'`)                              | **4 type errors** — TS2741 at `service.ts:464`, TS2741 at `service.ts:744`, TS2741 at `templates.ts:509`, TS2322 at `templates.test.ts:18` |
+| the service drops the `'task'` provider                                      | **1 type error** — TS2741 at `service.ts:464`                                                                                              |
+| the registry drops the `'mcp'` factory                                       | **1 type error** — TS2741 at `index.ts:30`, _"but required in type `AdapterFactories`"_                                                    |
+| the contract names an adapter type (`'policy'`) **and** the label it demands | **3 type errors** — TS2741 at `index.ts:30`, TS2344 at `registry.ts:38`, TS2344 at `types.ts:29`                                           |
+
+**The first row is worth reading twice.** Naming a resource type was refused in four places
+at once — the providers, the kind names, the merge rules and a test's own type — **and the
+providers, the registry this item is about, were the first of them.** The rule the contract
+already held twice over now holds the part that decides whether the type works.
+
+**And the repository's own procedure had gone stale, because this item changed it.**
+`AGENTS.md`'s "Adding an agent adapter" step 3 said _"Register it in
+`createDefaultRegistry()`"_ — **and after this change that function registers nothing**:
+it builds the registry from `defaultFactories`. **An instruction that points at a function
+that no longer does the thing is a stale instruction, and this item made it one.** Both
+procedure lists now say where the implementation goes and that **the compiler refuses a tree
+that is missing one.**
+
+**The floor at 18:20.** **Ceiling two. Next free number WI-137.**

@@ -133,7 +133,9 @@ been read as a broken file. Recognise them before you go looking for a defect.
    configuration schema to `packages/contracts/src/adapter-config.ts`.
 2. Implement the adapter in `packages/agent-adapters/src/`, emitting only events you
    can genuinely observe.
-3. Register it in `createDefaultRegistry()`.
+3. Add it to `defaultFactories` in `packages/agent-adapters/src/index.ts`. **The
+   compiler refuses a registry that is missing a type**, so the build fails until
+   you do.
 4. Add tests. A CLI adapter needs a test that proves it does not leak the server's
    environment.
 
@@ -141,7 +143,8 @@ been read as a broken file. Recognise them before you go looking for a defect.
 
 1. Add the type to `resourceTypeSchema` and its payload schema to
    `packages/contracts/src/resource.ts`.
-2. Add a provider in `apps/server/src/modules/resources/service.ts`.
+2. Add a provider in `apps/server/src/modules/resources/service.ts`. **The compiler
+   refuses a service that is missing one**, so the build fails until you do.
 3. Add it to the MCP tool surface only if it is genuinely useful to an external
    agent.
 
