@@ -72,6 +72,15 @@ export interface AgentService {
        * grant gains, and never takes anything away.
        */
       widenToolGrant?: McpToolName;
+      /**
+       * The owner's change to the grant.
+       *
+       * `enable` is what the owner turned on and `disable` is what they turned
+       * off. The change is applied to the grant as it is now, inside the
+       * transaction that writes it, so a widening another writer committed
+       * after the client read the grant survives a save that never touched it.
+       */
+      toolGrantChange?: { enable?: McpToolName[]; disable?: McpToolName[] };
       /** The base persona. `null` clears it. */
       persona?: Persona | null;
     },
@@ -341,6 +350,27 @@ export function createAgentService(options: AgentServiceOptions): AgentService {
               : [...granted, patch.widenToolGrant];
             updates.toolGrants = widened;
             clearGrantedCapabilities(tx, id, widened);
+          } else if (patch.toolGrantChange !== undefined) {
+            // The owner's change, applied to the grant as it is now.
+            //
+            // The grant editor shows the grant the page read, and the owner
+            // turns some of it. What they turned is the change; the rest of
+            // the grant is not theirs to undo. A widening another writer
+            // committed after the page read is still that writer's, and
+            // writing the list the page read would take it back.
+            //
+            // The grant is read inside this transaction, so the change is
+            // applied to what the grant is now and not to what it was when
+            // the client read it.
+            const granted = grantedTools(tx, id);
+            const disabled = new Set(patch.toolGrantChange.disable ?? []);
+            const kept = granted.filter((tool) => !disabled.has(tool));
+            const enabled = (patch.toolGrantChange.enable ?? []).filter(
+              (tool) => !kept.includes(tool),
+            );
+            const changed = [...kept, ...enabled];
+            updates.toolGrants = changed;
+            clearGrantedCapabilities(tx, id, changed);
           }
           if (patch.persona !== undefined) updates.persona = patch.persona;
 
