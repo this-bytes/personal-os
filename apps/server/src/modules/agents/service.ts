@@ -1,6 +1,5 @@
 import { eq } from 'drizzle-orm';
 import {
-  defaultAgentToolGrants,
   parseAdapterConfig,
   type AdapterConfig,
   type AdapterType,
@@ -17,6 +16,13 @@ import { agentConnections, secretConfigs } from '../../db/schema.js';
 import { decryptSecret, encryptSecret } from '../../lib/crypto.js';
 import { errors } from '../../lib/errors.js';
 import { AGENT_ID_PREFIX, newId } from '../../lib/ids.js';
+import {
+  clearGrantedCapabilities,
+  listBlockedCapabilities,
+  recordRefusal,
+  type BlockedCapability,
+} from './blocked.js';
+import { effectiveToolGrants } from './grants.js';
 
 export interface SecretSummary {
   id: string;
@@ -66,6 +72,15 @@ export interface AgentService {
   listSecrets(workspaceId: string): SecretSummary[];
   /** The effective MCP tool grants of a connection. */
   toolGrants(id: string): McpToolName[];
+  /**
+   * Record that an agent called a tool it was not granted.
+   *
+   * The refusal the agent sees is the end of its road: it cannot appeal it
+   * and it cannot see the owner. This is where the owner finds out about it.
+   */
+  recordBlockedCapability(agentConnectionId: string, toolName: McpToolName): void;
+  /** The capabilities the agents in a workspace are blocked on. */
+  blockedCapabilities(workspaceId: string): BlockedCapability[];
 }
 
 export interface AgentServiceOptions {
@@ -94,7 +109,7 @@ export function createAgentService(options: AgentServiceOptions): AgentService {
     enabled: row.enabled,
     persona: row.persona ?? undefined,
     workspaceId: row.workspaceId,
-    toolGrants: row.toolGrants ?? [...defaultAgentToolGrants],
+    toolGrants: effectiveToolGrants(row.toolGrants),
     capabilities: row.capabilities,
     status: row.status as AgentConnectionStatus,
     lastError: row.lastError,
@@ -237,7 +252,14 @@ export function createAgentService(options: AgentServiceOptions): AgentService {
 
       if (patch.name !== undefined) updates.name = patch.name.trim();
       if (patch.enabled !== undefined) updates.enabled = patch.enabled;
-      if (patch.toolGrants !== undefined) updates.toolGrants = patch.toolGrants;
+      if (patch.toolGrants !== undefined) {
+        updates.toolGrants = patch.toolGrants;
+        // A capability the agent may now call is not waiting on the owner any
+        // more, so its row leaves the list here. The grant may be widened
+        // from the list or from the agent's own page, and both go through
+        // this one write, so the row leaves either way.
+        clearGrantedCapabilities(db, id, patch.toolGrants);
+      }
       if (patch.persona !== undefined) updates.persona = patch.persona;
 
       if (patch.config !== undefined || patch.secrets !== undefined) {
@@ -345,7 +367,15 @@ export function createAgentService(options: AgentServiceOptions): AgentService {
     toolGrants(id): McpToolName[] {
       const row = db.select().from(agentConnections).where(eq(agentConnections.id, id)).get();
       if (!row) throw errors.notFound('Agent connection');
-      return row.toolGrants ?? [...defaultAgentToolGrants];
+      return effectiveToolGrants(row.toolGrants);
+    },
+
+    recordBlockedCapability(agentConnectionId, toolName): void {
+      recordRefusal(db, { agentConnectionId, toolName });
+    },
+
+    blockedCapabilities(workspaceId): BlockedCapability[] {
+      return listBlockedCapabilities(db, workspaceId);
     },
   };
 

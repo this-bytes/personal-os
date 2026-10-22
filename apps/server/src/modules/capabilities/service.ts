@@ -8,6 +8,7 @@ import {
   type Evidence,
   type FactoryTask,
   type Goal,
+  type McpToolName,
   type Message,
   type Participant,
   type Resource,
@@ -176,6 +177,16 @@ export interface CapabilitiesService {
     summary: string;
     details: unknown;
   }): { state: 'granted' | 'refused' | 'pending'; approvalId: string | null };
+
+  /**
+   * An agent called a tool it was not granted.
+   *
+   * The refusal the agent sees is the end of its road: it cannot appeal it
+   * and it cannot see the owner. This is where the refusal is recorded, so
+   * the owner finds the agent on the waiting list and can widen the one
+   * grant that is in the way.
+   */
+  recordBlockedCapability(input: { agentConnectionId: string; toolName: McpToolName }): void;
 }
 
 export interface CapabilitiesServiceOptions {
@@ -343,6 +354,10 @@ export function createCapabilitiesService(
         requestedBy: input.agentConnectionId,
       });
       return { state: 'pending', approvalId: requested.id };
+    },
+
+    recordBlockedCapability(input): void {
+      agents.recordBlockedCapability(input.agentConnectionId, input.toolName);
     },
   };
 }

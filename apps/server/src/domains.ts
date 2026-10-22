@@ -98,6 +98,7 @@ export const tableDomains: Record<string, DomainName> = {
   audit_log: 'substrate',
   automation_runs: 'resources',
   automations: 'resources',
+  blocked_capabilities: 'runtime',
   conversations: 'interaction',
   event_sequence: 'substrate',
   evidence: 'work',

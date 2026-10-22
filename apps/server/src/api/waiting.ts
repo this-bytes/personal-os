@@ -5,7 +5,7 @@ import { parseQuery, requireAuth } from './helpers.js';
 const waitingQuerySchema = z.object({ workspaceId: z.string() });
 
 /** What kind of thing is waiting on the owner. */
-export type WaitingKind = 'approval' | 'task' | 'turn';
+export type WaitingKind = 'approval' | 'task' | 'turn' | 'capability';
 
 /**
  * Why the item is on the list.
@@ -33,6 +33,13 @@ export interface WaitingItem {
   taskId: string | null;
   /** The agent that raised it. */
   agentConnectionId: string | null;
+  /**
+   * The capability the agent was refused, when it is waiting for a grant.
+   *
+   * `null` on every other kind: a capability is the only thing on this list
+   * that is named by a tool.
+   */
+  toolName: string | null;
 }
 
 /**
@@ -40,10 +47,11 @@ export interface WaitingItem {
  *
  * The list is assembled on the server so the browser asks for one thing
  * instead of three and joins the answers itself. A pending approval is an
- * agent stopped mid-turn; a task in review is waiting for an acceptance
- * decision; a blocked task is waiting for the owner to unblock it; a task
- * whose outcome is unknown is waiting for the owner to check it; and a turn
- * whose outcome is unknown is waiting for the owner to check that too.
+ * agent stopped mid-turn; a capability an agent was refused is an agent that
+ * cannot call the tool it needs; a task in review is waiting for an
+ * acceptance decision; a blocked task is waiting for the owner to unblock it;
+ * a task whose outcome is unknown is waiting for the owner to check it; and a
+ * turn whose outcome is unknown is waiting for the owner to check that too.
  *
  * The order is the order of urgency: an agent that cannot continue comes
  * first, then the work whose outcome could not be confirmed, then the work
@@ -71,6 +79,7 @@ function listWaiting(app: FastifyInstance, workspaceId: string): WaitingItem[] {
     conversationId: approval.conversationId,
     taskId: approval.taskId,
     agentConnectionId: approval.agentConnectionId,
+    toolName: null,
   }));
 
   // One thing is one entry. A pending approval that belongs to a task is
@@ -109,6 +118,7 @@ function listWaiting(app: FastifyInstance, workspaceId: string): WaitingItem[] {
         conversationId: null,
         taskId: task.id,
         agentConnectionId: task.assigneeId ?? null,
+        toolName: null,
       },
     ];
   });
@@ -133,13 +143,38 @@ function listWaiting(app: FastifyInstance, workspaceId: string): WaitingItem[] {
           conversationId: turn.conversationId,
           taskId: null,
           agentConnectionId: turn.agentConnectionId,
+          toolName: null,
         },
       ];
     });
+
+  // A capability an agent was refused is waiting on the owner too. The agent
+  // cannot act at all until the owner widens its grant, so the row sits in
+  // the first band with the approvals: it is the same thing, an agent that
+  // cannot go on.
+  //
+  // One row per agent and capability. A refusal that repeats is the same
+  // thing waiting, so the list does not fill up with the noise of an agent
+  // trying again.
+  const capabilities: WaitingItem[] = app.services.agents
+    .blockedCapabilities(workspaceId)
+    .map((capability) => ({
+      id: `capability:${capability.id}`,
+      kind: 'capability' as const,
+      title: `The agent needs the "${capability.toolName}" tool`,
+      detail:
+        'This agent called a tool it was not granted and cannot go on until you widen its grant.',
+      reason: 'pending' as const,
+      workspaceId: capability.workspaceId,
+      conversationId: null,
+      taskId: null,
+      agentConnectionId: capability.agentConnectionId,
+      toolName: capability.toolName,
+    }));
 
   const unknown = tasks.filter((task) => task.reason === 'unknown');
   const review = tasks.filter((task) => task.reason === 'review');
   const blocked = tasks.filter((task) => task.reason === 'blocked');
 
-  return [...approvals, ...unknown, ...turns, ...review, ...blocked];
+  return [...approvals, ...capabilities, ...unknown, ...turns, ...review, ...blocked];
 }
