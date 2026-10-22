@@ -4911,3 +4911,88 @@ by this item.**
 origin/main wi/117-branch-pileup-verdict` is **clean**, and the net is **+655
 over two files** — `.factory/INTAKE.md` and `.factory/work/WI-117.md`, and
 nothing else. **The lead can land it with a fast-forward.**
+## 2026-10-22 12:10 — Chief: a correction to this session's own 11:55 entry, and the front page's first field is corrected too
+
+**One — and the 11:55 entry's third section was wrong, and the wrongness is named here
+rather than left standing.** It said: _"the decision C-16/C-22 asks for has been implemented
+by a session that did not have the answer, and it is waiting — not for the owner's word alone,
+but for its own verification."_ **Measured now: the owner answered, and the answer is on the
+record in the item files.** WI-125: _"The owner answered: **Yes — publish it, and the
+contract changes with it.**"_ WI-124: _"The owner was asked what `manual` means... The owner
+answered: **Leave it: `manual` does not gate delegation, and that is stated plainly in
+...**"_ — and the other Chief session's commit `fcbc8d0` is titled **"Take WI-122 and WI-123,
+and record the two decisions the owner made."** **So this session read the owner's silence
+where there was none: it read the item files' numbering and did not read the decisions they
+carry, and it published a claim about a decision the owner had already made.** _The rule that
+replaces it: read the item's whole file before publishing a claim about what the owner
+decided._ **Both items have landed** — WI-124 and WI-125 are on the published tip `359a76e`,
+which is **green on CodeQL (`completed/success`) with CI reading.**
+
+**Two — and WI-126's change was inside the owner's word, not outside it.** The repository's
+own GitHub description still carried the replaced sentence — _"An agent-native control panel
+and personal software factory: talk to agents, run group conversations, and let agents build
+the things you need."_ — and **that field is what GitHub renders into the repository page's
+meta description, its social preview card and its search-result line**, so it is the first
+thing a stranger meets. WI-120 corrected the two files, and WI-120's own problem statement
+said GitHub's meta description was _"derived from these two"_ — **which was wrong, and WI-126
+is the correction of that claim.** The field was changed at 11:58 through the credential the
+pushes already use; it now reads `Personal OS — the environment one person's agents operate
+and extend.`, **byte-identical to `package.json`'s `description`**, and the old tagline
+appears **nowhere** in the served page. **No commit was made for it and no file changed.**
+The full record is in `.factory/work/WI-126.md`; the verification is with **Probe** —
+`wi-126-verify-repository-description-probe-2026-10-22`, `task_74ee53b2ab2d` — **not
+accepted**, and the acceptance is Chief's.
+
+**Three — the floor at 12:10.** **Running:** Cog's WI-121 (`task_bbf11f83be2b`, streaming, no
+artefact in two hours). **Queued:** Cog's WI-122 verification (`task_d374c36981e7`), Cog's
+WI-123 verification (`task_017a543cd28d`), Probe's WI-127 (`task_e33a476f252f`), Probe's
+WI-126 verification (`task_74ee53b2ab2d`). **Ceiling two. Next free number WI-128.**
+
+**Four — the one word the owner owes, and it is two now.** `miniapp restart minimax-bot` is
+the repair for the two chat lanes that refuse **and for Cog's stalled turn**, and it is the
+only thing that unblocks **WI-114 and WI-115** (Wren's items, and `CONTRACTS.md` is on the
+peer's landed branch). **Reversibility (Q4) is still unanswered**, with WI-035 carrying the
+work. **The front-page story needs nothing from the owner now: the README, the manifest, the
+repository's own description, the identity sentence's own pin and the licence record's pin
+are all corrected, published and green.**
+
+### 12:12 — WI-116's pin is landed, and the route into Chief's private chat is found broken and repaired
+
+**WI-116 is LANDED** — merge `dde3cf2`, one file, +86/−28
+(`apps/web/src/__tests__/forge-briefs.test.ts`) — **and it is in the published tip**: the
+ancestor check against `origin/main` exits 0, and the tip has since moved on to `840380c`.
+**The nine gates were green on the tree that was pushed**: exit 0, "Every gate passed. The
+tree is green.", **66 files, 681 tests, 0 failures**, with the web suite going from 83 to
+84 tests — **Probe's new drift case**. **Verification dispatched to Vision**
+(`wi-116-verify-strategy-copy-pin-vision-2026-10-22`, `task_5c1d74057e18`). **Probe wrote
+the pin, so Probe cannot verify it.**
+
+**And the reason Probe's report came to the group instead of to this lead is now measured,
+not guessed.** Probe wrote: _"your private chat session is the one the runtime archived
+after its crash, and the bot route to it is refusing with AGENT_UNAVAILABLE."_ **Measured in
+the liveboard's own state:** the factory group binds Chief to
+**`mvs_da4fd6a55d284724835efedd6434bfcc`** — the session this lead is running in — **and
+Chief's private chat binds to `mvs_e109a52fca0541f196725ffdedd0d316`**, a session the
+runtime crash-recovered at 10:32, which sits `idle` with the message _"This session was
+interrupted because the previous local runtime stopped."_ **So every task addressed to
+Chief's private chat was accepted, reported queued, and never ran** — and this lead has
+been reading those texts out of the dispatcher's state file, **which is why verdicts that
+had not been delivered looked like they had arrived.** Measured: `task_63f92283c867`
+(Probe's WI-123 report) ended **`AGENT_UNAVAILABLE`** on that chat.
+
+**The repair is one field.** The private chat's binding now points at the live session —
+**the same one the group uses for Chief** — **a surgical one-field change to the
+liveboard's state, verified to still parse, identical in length, with a backup taken
+first** (`G:/code/personal-os-worktrees/liveboard-state.backup-1210.json`). **It is
+reversible in one edit, and the old value is recorded here:
+`mvs_e109a52fca0541f196725ffdedd0d316`.**
+
+**And the routing rule while that stands:** **the report goes to Chief's private chat, and
+to the group only if that route refuses** — one report, one destination. Probe did exactly
+that today, and the group's route is the one that is proven.
+
+**The floor at 12:12.** **Running:** Cog's WI-121 (`task_bbf11f83be2b`), and Probe's
+WI-120 group post. **Queued:** Cog's WI-122 verification (`task_d374c36981e7`), Cog's
+WI-123 verification (`task_017a543cd28d`), Vision's WI-116 verification
+(`task_5c1d74057e18`), Probe's WI-127 (`task_e33a476f252f`), Probe's WI-126 verification
+(`task_74ee53b2ab2d`). **Ceiling two. Next free number WI-128.**

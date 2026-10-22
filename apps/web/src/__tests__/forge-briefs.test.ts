@@ -59,9 +59,10 @@
  * phrase was a proxy for the clause itself, and the proxy is what went
  * stale when the lead amended the rule and gave it a second crossing. The
  * clause is read out of `prototypes/DIRECTION.md` now — read once, and
- * never written down here — and the document, briefs 01 and 05, and the
- * index are all held to it. A copy of a rule with no keeper goes stale the
- * way every other copy has, so every copy is held to the document's.
+ * never written down here — and the document, briefs 01 and 05, the index
+ * and the strategy record are all held to it. A copy of a rule with no keeper
+ * goes stale the way every other copy has, so every copy is held to the
+ * document's.
  */
 import { execFileSync } from 'node:child_process';
 import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
@@ -360,6 +361,18 @@ const index = read(path.join(briefsDir, 'README.md'));
 const direction = read(directionPath);
 const briefs = new Map<BriefFile, string>(BRIEF_FILES.map((file) => [file, readBrief(file)]));
 
+/**
+ * The strategy record's copy of the rule.
+ *
+ * `docs/strategy.md` is the product record, and it carries the rule as the
+ * direction document states it. It is read whole and flattened, and its copy
+ * is found by its content — the record is the peer session's live file, so a
+ * check that named a line range would turn red when another item's edit moved
+ * the copy, and a check that breaks on an unrelated edit is a check that gets
+ * deleted.
+ */
+const strategyRecord = flat(read(path.join(repoRoot, 'docs', 'strategy.md')));
+
 /** The commit the index says the numbers were measured at. */
 const measuredAt = /\*\*Written against:\*\* commit `([0-9a-f]{7,40})`/.exec(index)?.[1] ?? null;
 const measuredCommitReachable = measuredAt !== null && hasCommit(measuredAt);
@@ -487,15 +500,58 @@ const rule = publishedRule();
 /**
  * The copies of the rule that live outside the direction document.
  *
- * Brief 01 and brief 05 quote the rule, and the index quotes it too. Each
- * one is a copy that can go stale on its own, and each one is held to the
- * clause the document publishes.
+ * Brief 01 and brief 05 quote the rule, the index quotes it too, and the
+ * strategy record carries it as the direction document states it. Each one is
+ * a copy that can go stale on its own, and each one is held to the clause the
+ * document publishes.
  */
 const RULE_COPIES: ReadonlyArray<readonly [string, string]> = [
   ['01-rooms-and-surfaces.md', flat(briefs.get('01-rooms-and-surfaces.md') ?? '')],
   ['05-needs-you-rail.md', flat(briefs.get('05-needs-you-rail.md') ?? '')],
   ['README.md', flat(index)],
+  ['docs/strategy.md', strategyRecord],
 ];
+
+/**
+ * The pin's holding of one copy of the rule.
+ *
+ * Every copy the pin holds goes through this one function, so that the drift
+ * test below puts these assertions in front of a drifted copy of a document
+ * rather than a second version of them.
+ */
+function expectCopyHeldToRule(name: string, body: string): void {
+  // Every clause the copy carries, and every one of them has to be the
+  // document's clause — a brief that quotes the rule twice and repairs
+  // one of the quotes is still a brief with a stale copy in it.
+  const clauses = exceptionClauses(body);
+  expect(clauses.length, `${name} carries no clause naming the rule's crossings`).toBeGreaterThan(
+    0,
+  );
+  for (const clause of clauses) {
+    expect(clause, `${name} carries a clause of its own, and it is not the rule's clause`).toBe(
+      rule.clause,
+    );
+  }
+  carries(name, body, 'picture of the system');
+  carries(name, body, 'inspected or decided');
+}
+
+/**
+ * The pin's holding of the reason a copy of the rule carries.
+ *
+ * The reason is read out of the document, and every copy that states the rule
+ * in full is held to it — for the same reason as the clause: a copy that
+ * carries its own reason is a copy that has drifted.
+ */
+function expectReasonHeldToRule(name: string, body: string): void {
+  const reasons = reasonsAfterClauses(body);
+  expect(reasons.length, `${name} carries no reason for the crossings`).toBeGreaterThan(0);
+  for (const reason of reasons) {
+    expect(reason, `${name} carries a reason of its own, and it is not the rule's reason`).toBe(
+      rule.reason,
+    );
+  }
+}
 
 describe('the boundary rule', () => {
   it('is the rule in DIRECTION.md, exceptions included, and every copy of it quotes them', () => {
@@ -528,21 +584,7 @@ describe('the boundary rule', () => {
     ).toContain('the constellation');
 
     for (const [name, body] of RULE_COPIES) {
-      // Every clause the copy carries, and every one of them has to be the
-      // document's clause — a brief that quotes the rule twice and repairs
-      // one of the quotes is still a brief with a stale copy in it.
-      const clauses = exceptionClauses(body);
-      expect(
-        clauses.length,
-        `${name} carries no clause naming the rule's crossings`,
-      ).toBeGreaterThan(0);
-      for (const clause of clauses) {
-        expect(clause, `${name} carries a clause of its own, and it is not the rule's clause`).toBe(
-          rule.clause,
-        );
-      }
-      carries(name, body, 'picture of the system');
-      carries(name, body, 'inspected or decided');
+      expectCopyHeldToRule(name, body);
     }
   });
 
@@ -555,14 +597,30 @@ describe('the boundary rule', () => {
       'the direction document publishes no reason for the crossings',
     ).not.toBeNull();
     for (const [name, body] of RULE_COPIES) {
-      const reasons = reasonsAfterClauses(body);
-      expect(reasons.length, `${name} carries no reason for the crossings`).toBeGreaterThan(0);
-      for (const reason of reasons) {
-        expect(reason, `${name} carries a reason of its own, and it is not the rule's reason`).toBe(
-          rule.reason,
-        );
-      }
+      expectReasonHeldToRule(name, body);
     }
+  });
+
+  it("is red when the strategy record's copy drifts", () => {
+    // A copy of the record with the rule's copy drifted: the clause now names
+    // one crossing instead of two. The pin's own holding of a copy is put in
+    // front of it, so the failure shown here is the failure the tree would
+    // give — not an assertion that a failure would happen.
+    const driftedClause = strategyRecord.replace(
+      'two declared exceptions, the Needs-you rail and the constellation',
+      'one declared exception, the Needs-you rail',
+    );
+    expect(driftedClause, 'the drift changed nothing in the copy').not.toBe(strategyRecord);
+    expect(() => expectCopyHeldToRule('docs/strategy.md', driftedClause)).toThrow();
+
+    // And the reason, drifted on its own: a copy that keeps the crossings and
+    // changes why they exist is still a copy that has drifted.
+    const driftedReason = strategyRecord.replace(
+      'which carry decisions in the orientation room because a decision is taken where the list is',
+      'which carry decisions wherever they happen to sit',
+    );
+    expect(driftedReason, 'the second drift changed nothing in the copy').not.toBe(strategyRecord);
+    expect(() => expectReasonHeldToRule('docs/strategy.md', driftedReason)).toThrow();
   });
 
   it('puts every surface in the room the direction document puts it in', () => {
