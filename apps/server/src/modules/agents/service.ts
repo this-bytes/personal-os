@@ -2,6 +2,7 @@ import { eq } from 'drizzle-orm';
 import {
   parseAdapterConfig,
   type AdapterConfig,
+  type AdapterProvider,
   type AdapterType,
   type AgentCapabilities,
   type AgentConnection,
@@ -10,7 +11,6 @@ import {
   type McpToolName,
   type Persona,
 } from '@personal-os/contracts';
-import type { AdapterRegistry } from '@personal-os/agent-adapters';
 import type { Database } from '../../db/client.js';
 import { agentConnections, secretConfigs } from '../../db/schema.js';
 import { decryptSecret, encryptSecret } from '../../lib/crypto.js';
@@ -86,7 +86,7 @@ export interface AgentService {
 export interface AgentServiceOptions {
   db: Database;
   secretKey: Buffer;
-  registry: AdapterRegistry;
+  registry: AdapterProvider;
   resolveSecret(ref: string): Promise<string | undefined>;
 }
 

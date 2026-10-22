@@ -131,7 +131,7 @@ timeout. The owner sees an `unknown` item as **"check this"**, never as **"fix
 this"**.
 
 **A second `unknown`, on a connection.** `AgentConnectionStatus` carries
-`unknown` too (`packages/contracts/src/agent.ts:137-143`), and it means something
+`unknown` too (`packages/contracts/src/agent.ts:138-144`), and it means something
 else: a connection whose state was never checked, which is how a new connection
 starts. This `unknown` is about an outcome that cannot be confirmed; that one
 is about a state that was never looked at. They are different things that
@@ -145,7 +145,7 @@ owner, and only the owner can close it. Every transition into and out of
 This entry is the contract for **WI-008**, and the code implements it — as of
 `9ad4f98`. `messageStatusSchema` carries `'unknown'` at
 `packages/contracts/src/conversation.ts:62`, `executionStatusSchema` at
-`packages/contracts/src/agent.ts:163`, and `taskStatusSchema` at
+`packages/contracts/src/agent.ts:164`, and `taskStatusSchema` at
 `packages/contracts/src/factory.ts:25`.
 
 **Migration.** Nothing is reclassified. Rows recorded as `failed` before this
@@ -450,6 +450,61 @@ This interface deliberately captures the minimum common functionality.
   default agent set. A connection with an empty grant list cannot call Personal OS
   through MCP at all.
 
+### The adapter boundary
+
+**The domain depends on the adapter interface and never on the adapters.** The interface
+and the shapes around it are published here, by `@personal-os/contracts`. The package that
+holds the concrete adapters — `@personal-os/agent-adapters` — is not a dependency of the
+domain.
+
+```ts
+/** What an adapter may say. */
+interface AdapterLogger {
+  info(message: string, meta?: unknown): void;
+  warn(message: string, meta?: unknown): void;
+  error(message: string, meta?: unknown): void;
+}
+
+/** What the server hands an adapter. */
+interface AdapterContext {
+  resolveSecret(ref: string): Promise<string | undefined>;
+  logger: AdapterLogger;
+}
+
+/** A registry of adapters, as the domain needs it. */
+interface AdapterProvider {
+  has(type: AdapterType): boolean;
+  list(): AdapterType[];
+  create(config: AdapterConfig, ctx: AdapterContext): AgentAdapter;
+}
+```
+
+- **The domain names `AdapterProvider`, not the class.** `packages/agent-adapters` holds
+  the class that implements it (`AdapterRegistry`) and every concrete adapter; the domain
+  holds the shape. **So the domain cannot reach an adapter except through this boundary,
+  and adding an adapter type does not touch it.**
+- **One place builds the registry.** `apps/server/src/runtime.ts` is the composition root,
+  and it is the only file outside the tests that names the adapters package.
+- **The worker reaches adapters through the server's runtime**, not through the package,
+  and does not declare the package as a dependency at all.
+
+**This is checked, not promised.** `apps/server/src/__tests__/adapter-boundary.test.ts`
+reads the source tree and fails if a domain module imports the adapters package, if the
+worker declares the dependency, or if any file other than the composition root names the
+package.
+
+**The limit, stated plainly: this is about the dependency, not about the words.** The
+domain may name a provider in a fixture — that is configuration, and
+`docs/decisions/0004-adapter-registry.md` allows it. **What the check holds is that the
+domain cannot reach an adapter.**
+
+**Migration.** The shapes move from `@personal-os/agent-adapters` to
+`@personal-os/contracts`, and the adapters package re-exports them, so an existing import
+of `AdapterContext` or `AdapterLogger` from the adapters package keeps working. The
+domain's own import of `AdapterRegistry` becomes an import of `AdapterProvider` — **a
+change of type, not of behaviour, and nothing outside the domain can tell.**
+`apps/worker` no longer declares the adapters package.
+
 ### The persona
 
 An agent the owner talks to has a persona: a named role with standing instructions.
@@ -497,7 +552,7 @@ system, and it never replaces or duplicates the external runtime's own harness o
 instruction file.
 
 This entry is the contract for **WI-006**, and the code implements it — as of
-`70d042c`. `personaSchema` is at `packages/contracts/src/agent.ts:29`,
+`70d042c`. `personaSchema` is at `packages/contracts/src/agent.ts:30`,
 `resolvePersona` at `:80`, the connection's base persona at `:103`, and the
 participant's override at `packages/contracts/src/conversation.ts:38`.
 
@@ -1535,7 +1590,7 @@ interface ArtifactEvidence {
 **What the agent did** is `toolCalls`: the tool calls of that execution and how
 each ended. The calls are the execution's `tool.started` events and the
 `tool.completed` events that answer them
-(`packages/contracts/src/agent.ts:190`, `:196`). A call that answered has
+(`packages/contracts/src/agent.ts:191`, `:197`). A call that answered has
 `outcome: 'completed'` and a `completedAt`; a call that did not has
 `outcome: 'unfinished'` and a `completedAt` of `null`. The events name the tool
 and not the call, so a call is answered by the next completion for that tool.
@@ -1543,7 +1598,7 @@ and not the call, so a call is answered by the next completion for that tool.
 do not say why a call did not finish, and this entry does not claim a reason.
 
 **What it produced** is `artifacts`: the execution's `artifact.created` events
-(`packages/contracts/src/agent.ts:209`), each with the title it was given and
+(`packages/contracts/src/agent.ts:210`), each with the title it was given and
 the resource it made, when it was given either.
 
 **What it cost** is `spendUnits` and `status`. `status` is the execution's own

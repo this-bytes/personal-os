@@ -105,8 +105,9 @@ free number above the highest taken.**
 | WI-132 | The panel does not carry the published waiting shape, and the row carries no way to widen the grant                                                                                                                               | worker |
 | WI-133 | The audit job audits twice: one word makes it audit once                                                                                                                                                                          | worker |
 | WI-134 | The domain does not depend on the adapters package                                                                                                                                                                                | worker |
+| WI-136 | A new type cannot be named without an implementation                                                                                                                                                                              | worker |
 
-**The next free number is WI-135.**
+**The next free number is WI-137.**
 
 **Two decisions the owner took, and the numbers they took.** The owner answered
 the two questions that were open: `manual` **does not gate delegation**
@@ -5577,3 +5578,177 @@ files to Probe** — this session wrote it because the item could not land witho
 a new file with a new name, and nothing of Probe's is touched. **Probe may take it over.**
 
 **The floor at 16:05.** **Ceiling two. Next free number WI-135.**
+
+### 16:40 — WI-134 is implemented: the domain's edge to the adapters package is gone
+
+**The domain no longer depends on the package that holds the adapters.** The shapes it
+needs moved to the package it already owns, and the check that holds the rule now exists.
+
+**The move.** `packages/contracts/src/agent.ts` already held `AgentAdapter` — the adapter
+interface itself. Beside it now sit the rest of the boundary vocabulary: `AdapterLogger`
+and `AdapterContext` (both were in `packages/agent-adapters/src/types.ts`, and the
+adapters package re-exports them so an existing import keeps working), and
+`AdapterProvider` — **the shape of a registry, named as a capability rather than as the
+class that implements it.** `AdapterRegistry` now `implements AdapterProvider`, and the
+domain's `registry` is typed `AdapterProvider`.
+
+**The domain's edge is gone.** `apps/server/src/modules/agents/service.ts` no longer
+imports `@personal-os/agent-adapters` at all; it imports `AdapterProvider` from
+`@personal-os/contracts`. `apps/server/src/runtime.ts` — the composition root — is now the
+**only** file outside the tests that names the adapters package, and it does so to _build_
+the registry, which is its job.
+
+**And the dead edge went with it.** `apps/worker/package.json` no longer declares
+`@personal-os/agent-adapters`, because the worker reaches adapters through the server's
+runtime and never imported the package. **Before this item that dependency was not merely
+unused: it was what made the package's types resolvable in a clean install**, because
+`Runtime.registry` named the class the package owns. `Runtime.registry` names the shape
+now, so the worker needs the package it does not import no more.
+
+**The lockfile was edited by hand, and the reason is worth recording.** `npm install
+--package-lock-only` in the worktree did two things it should not have: it added a
+**self-dependency to the worktree's root `package.json`** — `"personal-os":
+"file:../../personal-os"`, pointing at the primary checkout — and it stripped the
+`peer: true` markers from about thirty packages. **Both are npm's behaviour in a
+directory whose name is not the package's name**, and the first one is what made `npm ci`
+fail with _"Missing: personal-os@0.1.0 from lock file"_. The root `package.json` was
+reverted, the lockfile was edited by hand, and the result is **one edge removed and
+nothing else**: no package added, no package removed, the adapters package still
+installed. `npm ci --ignore-scripts` in the worktree then succeeded — **added 397
+packages, audited 404** — which is the check that matters, because CI installs from the
+lockfile on a clean checkout.
+
+**The check, and its three proofs.** `apps/server/src/__tests__/adapter-boundary.test.ts`
+reads the source tree the way `apps/worker/src/__tests__/autonomy-policy-attack.test.ts`
+already does, and asserts three things: no domain module imports the adapters package;
+the worker does not declare it; and **the composition root is the only file in the shipped
+code that names the package** — the sweep covers the browser client and the UI package as
+well as the domain, **because the CLI adapter spawns a process** and a client that reached
+the package would carry it into the bundle. **Three cases, green.** **And each is proved
+able to fail:**
+
+| Mutation                                        | Cases that go red                                    |
+| ----------------------------------------------- | ---------------------------------------------------- |
+| the domain imports the adapters package again   | 2 — the domain check, and the composition-root check |
+| the worker declares the dependency again        | 1 — the worker's check                               |
+| the browser client imports the adapters package | 1 — the composition-root check                       |
+
+**All three restored byte for byte, the final run green, and the final `git status
+--porcelain` naming only the files this item touched.**
+
+**And the third mutation found a hole in the check this item wrote, which is the reason it
+is worth having.** The walk collected `.ts` files, and the browser client is `.tsx` — **so
+the client was never inspected at all**, and the mutation that put the adapters package
+into `apps/web/src/main.tsx` turned **nothing** red. The walk now collects `.tsx` as well,
+and the same mutation turns the check red. **A check that has never been given a mutation
+it can fail is not a check** — and this one had two of its three cases proved, and still
+had a hole the third found.
+
+**The contract publishes it.** `CONTRACTS.md` gains a section, _The adapter boundary_,
+carrying the three shapes, the rule, the one place that builds the registry, the check,
+**the limit stated plainly** — _this is about the dependency, not about the words; the
+domain may name a provider in a fixture, and what the check holds is that the domain
+cannot reach an adapter_ — and a migration note.
+
+**Nothing that gates depends on where the section sits.** The contract-status gate keys
+its claims by heading and checks code patterns; the pointer gate checks citations into
+_code_; the tests that read the contract read it by heading. **The line-number comments
+in `apps/server/src/__tests__/autonomy-policy-surface.test.ts` that cite the contract are
+already stale — `CONTRACTS.md:1361` holds `reason: WaitingReason;`, not the heading the
+comment names — and they were stale before this item.** They are the stale-docs item's to
+fix, and they are recorded here as measured.
+
+**And the npm incident is recorded because it nearly cost the item.** The failure looked
+like a lockfile mistake — _"your package.json and package-lock.json are not in sync"_ —
+and the obvious next move would have been to run `npm install` and commit whatever it
+wrote. **The control was what caught it: the same command in a worktree whose files this
+item had not touched succeeded.** That is the difference between a broken lockfile and a
+broken command, and it cost one command to find out.
+
+**And one of my own sentences is now corrected, beside itself.** My 15:25 entry above said
+that the timed-out run's numbers were the ones that mattered, **"which this item did not
+reproduce"**, and that the item did not claim to have found the timeout's exact cause.
+**That was true when it was written and the cause has since been measured** — by the lead
+session, from the step-level timings of the timed-out run `ccc3564`: _Install dependencies_
+**7.05 min** (03:01:38 → 03:08:41) and _Audit_ **3.10 min**, cut off by the budget (03:08:41
+→ 03:11:47); the whole job **10.25 min**. On the green re-run `e660fdf` the same job took
+**11 seconds**, and the two siblings doing the same install with `--no-audit --no-fund`
+finished their whole jobs in **0.23 and 0.27 minutes**. **So the job's normal cost is eleven
+seconds, and the timeout was a stalled registry round trip this job paid for twice** — and
+the flake is not ended: the worst case is now one stalled round trip instead of two. The
+gate was also measured with **npm 10.9.9**, the version bundled with the node `22.23.3` in
+`.nvmrc` that CI runs, against a lockfile carrying a high-severity advisory: `npm ci
+--ignore-scripts` exits 0, `npm audit --audit-level=high` exits 1. **My 15:25 entry
+measured npm 11.2.0 locally; that is the limit the peer's measurement removes.** **The
+entry stays, and this is the correction beside it.**
+
+**The floor at 16:40.** **Ceiling two. Next free number WI-135.**
+
+### 17:05 — WI-136 is claimed: a type cannot be named without an implementation
+
+**WI-136 is claimed, and the claim is on `main` before the work is done.** The block's row
+and the item file land in a commit of their own. **That is the claim-first discipline used
+five times now — WI-129, WI-133, WI-134, WI-136 and this — and it has not collided
+once.**
+
+**And WI-135 is the peer session's, and it moves nobody.** Their claim was in a commit on
+their own `main` when this worktree was cut — **written first, not yet published** — so
+their claim keeps WI-135 and this one takes WI-136. **That is the same tiebreak this
+session has applied twice already**, and it is cheaper than two claims on one number.
+
+**Two lists of types, two registries that implement them, and nothing holds them
+together.** `AGENTS.md` rule 8 says _"a new resource type must work through the same
+existing interfaces"_ and _"a new adapter must not require changes to conversation storage
+or the factory task model"_ — **both of those rules are true today, and neither is held
+by anything.**
+
+**The resource types.** The contract names six
+(`packages/contracts/src/resource.ts:4-11`); the service holds one provider for each
+(`apps/server/src/modules/resources/service.ts:457-464`). **All six are there.** But the
+registry is a `Map`:
+
+```ts
+const providers = new Map<ResourceType, ResourceProvider<unknown>>([...]);
+```
+
+**TypeScript does not require a `Map` literal to carry every key of its key type.** So a
+seventh type added to the contract compiles cleanly, and the failure surfaces only when
+somebody asks for that kind of resource — `providerFor` throws
+`Unsupported resource type "…"` as a `bad_request`, **at runtime, for a mistake the
+compiler could have made at build time.**
+
+**The adapter types.** The contract names seven (`packages/contracts/src/agent.ts:9`); the
+registry holds a factory for each (`packages/agent-adapters/src/index.ts:27-36`). **All
+seven are there.** But the registry is a builder over a `Map`
+(`packages/agent-adapters/src/registry.ts:9-17`), and a type added without a factory fails
+the same way — `No adapter registered for adapter type "…"`, at the first run that asks for
+it. **Here the contract already holds the author to the type list once:**
+`adapterTypeLabels` (`packages/contracts/src/agent.ts:12`) is a `Record<AdapterType, string>`,
+and a `Record` **does** require every key — so a new adapter type without a label breaks
+the build. **The registry is the one place that is not held to it.**
+
+**The fix is the compiler, on both sides, because the shape of each registry allows it.**
+The resource providers become a `Record<ResourceType, ResourceProvider<unknown>>` — and a
+`Record` requires every key. The adapter factories become a mapped type over
+`AdapterType`, so **a factory is required for every type the contract publishes**, and
+`createDefaultRegistry` builds the registry from it. **The factories already have the
+right shape** — `createCliAdapter` takes
+`Extract<AdapterConfig, { adapterType: 'cli' }>` — so the mapped type checks each one
+against its own configuration and nothing has to be widened to fit.
+
+**And the proof is the compiler refusing the tree.** Adding a type to either enum without
+its implementation is a **build failure**, not a runtime surprise. That is a kind of proof
+that cannot be forgotten, and it is the same instrument the contract already uses for
+`adapterTypeLabels`. The other direction is proved too: **removing** a provider or a
+factory is a build failure as well, because the `Record` and the mapped type both want
+every key.
+
+**The limits, stated plainly.** The compiler holds that **every type has an
+implementation**; it says nothing about whether the implementation is _any good_, and that
+is what the adapters package's own tests are for. And the two orders do not match today —
+the contract names `cli, acp, a2a, http, model, echo, mcp` and the registry registers
+`echo, cli, acp, a2a, http, model, mcp` — **so anything that compares them must compare
+sets, not lists, or it fails for the wrong reason.** The compiler compares the keys, so it
+is not affected.
+
+**The floor at 17:05.** **Ceiling two. Next free number WI-137.**
