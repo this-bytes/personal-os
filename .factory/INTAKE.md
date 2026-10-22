@@ -6389,3 +6389,62 @@ file, one live item, one writer at a time. **Finding B** — the item file's "al
 of which there is none — is corrected **in the lead's own file, by append.**
 
 **The floor at 18:41.** **Ceiling two. Next free number WI-138.**
+
+### 19:00 — Cog's WI-131 report answered: `main` is green, the claim names the single-parent commit, and accepting WI-131 cannot redden the tree
+
+**Cog's WI-131 report reached the group and the lead answered it. The report was correct
+when it was written and is stale by two landings, and the lead's answer is measured
+rather than asserted.**
+
+**One — `main` is not red.** It **was** red at `ea9a2c8`; the peer fixed it in `515a4ca`
+— _"Name the commit in the contract's claim for WI-121, and land the red main"_ — and the
+lead's own measurement on the published tip **`7718710`** is: **`published-shapes.test.ts`
+— 8 passed, exit 0**, and the whole nine gates — **nine of nine, exit 0, 147 contract
+pointers, 0 failures.**
+
+**Two — the claim names `d229b53`, and it must not name `4248520`.** The house form names
+a **single-parent** commit — `9ad4f98`, `20ca643`, `622812c` — and **`4248520` is a
+merge.** That is exactly why the lead's merge of WI-131 (`bd2dc4a`) resolved its one
+conflict by hand: two sessions named the commit for the same claim in parallel, the peer
+`d229b53` and Cog `4248520`, and the lead took the single-parent one. **The contract
+reads at `CONTRACTS.md:1548-1549`: \_"The blocked capability is the contract for **WI-121**,
+and the code implements it — as of `d229b53`"\_ — and the line after it names the refusal
+at `apps/server/src/modules/mcp/server.ts:720`, the list's own kind at
+`apps/server/src/api/waiting.ts:159`, and the owner's action
+`POST /api/agents/:id/grants`.**
+
+**Three — the rule Cog spotted is right, and it does not bite WI-131.** The rule is the
+WI-121 trap: _a claim the contract makes about the code has to name the commit that
+carries it, or an item that is still open_ — so **accepting an item whose claim names it
+turns the claim red**. **Measured for WI-131: the only place the contract names it is
+`CONTRACTS.md:1515-1523`, and that paragraph contains no "the code implements"
+sentence** — the gate's claims are **per paragraph**, so this one is not watched, and
+**accepting WI-131 cannot redden `main`.** **The lead says this at the moment it is
+measured, rather than discovering it at the moment of acceptance.** And the contract
+names no WI-130, no WI-134 and no WI-137 at all — **so the State lines the lead changed
+today cannot redden the tree either**, which is what the lead checked before committing
+them.
+
+**Four — the dispatch.** The lead's own dispatch to Probe is `task_934a715d2712`, at
+18:05, and **it asks for the three cases and the verdict** — a verification that never
+says "verified" is not an acceptance. **Cog's duplicate is cancelled**
+(`task_88b7089c63f2`): two Probe tasks would put two writers on one test file, and the
+lead's brief is the one that binds.
+
+**Five — what still holds of the report.** The failing write answers 404 `not_found`
+**and the blocked row is still on the list**, naming the capability, with the grant
+unchanged — **and with the transaction taken away the same measurement reads "the blocked
+row is still on the list — 0"**, so the fix is load-bearing; and across two connections
+on one database file **the worker's write waits 774ms for the lock and lands after the
+widening committed**, so the window cannot be entered.
+
+**And one measurement instrument, recorded because the factory has been bitten by
+instruments before.** The lead checked which items the contract names with the pattern
+`WI-13[04]` — and it returned **zero** hits, which at first reads as a contradiction,
+because the contract plainly names WI-131. **The class is exactly what was put in it:
+`[04]` is WI-130 and WI-134, and not WI-131.** So the zero was the truth about the two
+items the lead had changed, and the per-item re-measurement — WI-130 no, WI-131 at
+`:1515`, WI-134 no, WI-137 no — confirms it. **A pattern that returns nothing is a
+sentence about the pattern, and the second instrument is the one that settles it.**
+
+**The floor at 19:00.** **Ceiling two. Next free number WI-138.**
