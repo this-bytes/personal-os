@@ -1,5 +1,6 @@
 import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
+import { autonomyModeSchema, autonomyPolicyPatchSchema } from '@personal-os/contracts';
 import { audit, parseBody, requireAuth } from './helpers.js';
 
 const createWorkspaceSchema = z.object({
@@ -10,7 +11,8 @@ const createWorkspaceSchema = z.object({
 const updateWorkspaceSchema = z.object({
   name: z.string().min(1).max(200).optional(),
   description: z.string().max(2_000).optional(),
-  autonomyMode: z.enum(['manual', 'assisted', 'autonomous']).optional(),
+  autonomyMode: autonomyModeSchema.optional(),
+  autonomyPolicy: autonomyPolicyPatchSchema.optional(),
 });
 
 export function registerWorkspaceRoutes(app: FastifyInstance): void {
@@ -37,11 +39,16 @@ export function registerWorkspaceRoutes(app: FastifyInstance): void {
     const { id } = request.params as { id: string };
     const body = parseBody(updateWorkspaceSchema, request.body);
     const workspace = app.services.workspaces.update(id, body);
-    audit(request, 'workspace.updated', {
-      type: 'workspace',
-      id,
-      workspaceId: workspace.id,
-    });
+    audit(
+      request,
+      'workspace.updated',
+      {
+        type: 'workspace',
+        id,
+        workspaceId: workspace.id,
+      },
+      body.autonomyPolicy !== undefined ? { autonomyPolicy: body.autonomyPolicy } : undefined,
+    );
     return { workspace };
   });
 }
