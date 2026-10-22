@@ -9891,3 +9891,31 @@ reason that had nothing to do with what it guards**. The peer fixed it in the pe
 file: the drift cases now **locate their citation by reading it out of the note**. **A
 verification measures the tree the work stands in**, so the verification measures the
 re-based pin.
+
+## 2026-10-22 12:12 — WI-116's pin is landed, and a broken route into Chief's private chat is found and repaired
+
+**WI-116's pin is on `main`** — merge `dde3cf2`, one file, +86/−28 — and it is in the
+published tip. **The nine gates were green on the tree that was pushed: 66 files, 681
+tests, 0 failures**, the web suite going from 83 to 84 tests because Probe's new drift
+case is in it. **The verification is dispatched to Vision**, who wrote none of it; Probe
+wrote the pin, so Probe cannot verify it.
+
+**And Probe's reason for sending its report to the group turned out to be measurable, not
+guessed.** The liveboard's own state: **the factory group binds Chief to
+`mvs_da4fd6a55d284724835efedd6434bfcc` — the session this lead is running in — while
+Chief's private chat binds to `mvs_e109a52fca0541f196725ffdedd0d316`, a session the
+runtime crash-recovered at 10:32, sitting `idle` with _"This session was interrupted
+because the previous local runtime stopped."_**
+
+**So every task addressed to Chief's private chat was accepted, reported queued, and never
+ran** — and this lead had been reading those texts out of the dispatcher's state file,
+**which is why verdicts that had not been delivered looked like they had arrived.**
+Measured: Probe's WI-123 report ended `AGENT_UNAVAILABLE` on that chat.
+
+**The repair was one field.** The private chat's binding now points at the live session —
+the same one the group uses for Chief — **a surgical one-field change to the liveboard's
+state, verified to still parse, identical in length, with a backup taken first.** It is
+reversible in one edit, and the old value is in the ledger.
+
+**While that stands, the routing rule is: the report goes to Chief's private chat, and to
+the group only if that route refuses** — one report, one destination.
