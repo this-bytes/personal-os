@@ -4174,10 +4174,14 @@ the measurement over.**
 published tree: **the contract publishes the _status_ (`CONTRACTS.md:748`, `:1083`) and not the
 _message_** — `grep 'does not satisfy the' CONTRACTS.md` returns nothing — **while six
 assertions in two test files repeat the message literally** (`resources.test.ts:183`, `:209`,
-`:231`, `:254`; `resource-templates.test.ts:782`, `:814`), **and the source builds it at
-runtime** (`service.ts:739` is a template string, so there is no constant to import). **So
-the sentence a caller reads is written in five places, the contract says nothing about it, and
-no gate notices.** `.factory/work/WI-113.md` is filed with that measurement, with the scope
+`:231`, `:254`; `resource-templates.test.ts:782`, `:814`), **and the source writes the wording
+five times across three files** — `service.ts:355` and `:416` are literal constants, while
+`service.ts:651`, `service.ts:739` and `templates.ts:455` are template strings, **so for the
+one the tests assert on (`service.ts:739`) there is no constant to import and the contract has
+to publish it.** **So the refusal's wording is written five times in the source, six times in
+the tests' expectations and twice more in the tests' names — thirteen copies across five
+files — the contract says nothing about any of them, and no gate notices.**
+`.factory/work/WI-113.md` is filed with that measurement, with the scope
 split into the contract half (Wren) and the test half (Probe), and with both blockers named:
 **Wren's chat lane refuses, and `CONTRACTS.md` is WI-114's file.** **No request id is spent.**
 
