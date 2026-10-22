@@ -5234,3 +5234,40 @@ this round. **Queued:** Cog's WI-116 (`task_30fa1c22fa81`), WI-130 (`task_c8d80a
 WI-131 (`task_f57ccf614193`) and WI-132 (`task_5cde5cfe02bf`); Probe's WI-121
 (`task_122e0e2e02bf`) and WI-129 (`task_b433527c33d7`); and the two verdicts still on their
 way to the group and to the peer session. **Ceiling two. Next free number WI-133.**
+
+### 15:05 — Probe's WI-121 report reached the group, and the lead checked the brief it dispatched
+
+**Probe's WI-121 report landed in the group** (`task_2c991d059378`, with the addendum
+`task_d7b5010f2199` still queued). **It is the report the lead accepted on at 14:40**
+(`task_2c991d059378` is the same task) — **no new finding in the group copy.** D1, D2 and D3
+are numbered **WI-131**, O1 and Q1's answer are **WI-132**, and the check is merged by the
+lead as `0b81603`. **The report's own "pushed unmerged" and "main still at `9e8bf84`" are
+stale: the check is on `main` and the tip is `a91b6d8`.**
+
+**And the lead checked the one thing that would have made the dispatched brief wrong.**
+WI-131's item file and Cog's brief name the contract's line numbers, because a contract
+citation is a line number and line numbers move. **Measured on the published tip
+`a91b6d8`:**
+
+- the row-leaves paragraph is at `CONTRACTS.md:1443-1447` — "**The row leaves when the
+  grant is widened.** A capability the agent holds is not waiting on the owner any more, so
+  the row leaves the list as soon as the grant includes it. Whichever route widened the
+  grant, the row leaves: both go through the one write that changes a grant
+  (`apps/server/src/modules/agents/service.ts:261`). A list that keeps the row is a list
+  that lies about what is waiting.";
+- the citation that names `:261` is at **`:1446`**.
+
+**So the brief Cog is working from is accurate, and the numbers in WI-131's item file hold
+on the tree published now.**
+
+**And the lead's note on what D1 is, in the contract's own words:** the contract publishes
+_that the row leaves when the grant is widened_, and D1 is the **other** direction — the row
+leaves when the delete runs, whatever the grant write then does. **The published sentence
+covers one direction and the code answers the other, and WI-131 is where both are put
+right.**
+
+**The floor at 15:05.** **Running:** Cog's WI-127 verification (`task_48aacbb2df4b`) and
+this round. **Queued:** Cog's WI-116 (`task_30fa1c22fa81`), WI-130 (`task_c8d80aa01bfa`),
+WI-131 (`task_f57ccf614193`) and WI-132 (`task_5cde5cfe02bf`); Probe's WI-121
+(`task_122e0e2e02bf`) and WI-129 (`task_b433527c33d7`); the WI-122 verdict's copy to the
+peer session; and the WI-121 addendum. **Ceiling two. Next free number WI-133.**
