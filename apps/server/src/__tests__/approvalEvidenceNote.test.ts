@@ -17,6 +17,14 @@
  * The pin holds each of the three to its claim, and it holds itself to
  * failing: the second test points the check at a copy of the tree whose
  * citation has drifted, and holds the check to catching it.
+ *
+ * The drifted citations are located by reading them out of the note, not by
+ * writing the line numbers here. A test that hardcodes the line it is
+ * protecting goes stale the moment the file it names moves — WI-123 published
+ * the approval's shape and moved `approvalEvidenceSchema` from line 55 to
+ * line 91 — and a stale test fails for a reason that has nothing to do with
+ * what it guards. The drift the two cases inject is the same drift either
+ * way: one line below the claim, where the line still holds code.
  */
 import fs from 'node:fs';
 import os from 'node:os';
@@ -59,22 +67,65 @@ function readLine(root: string, relative: string, line: number): string | null {
 }
 
 /**
- * Every claim of the note, and whether the line it cites carries it.
+ * The lines of the note.
  *
  * The note is found by the citation of the route, and the note is the
  * paragraph that citation sits in. The whole contract is not searched: the
  * contract cites `apps/server/src/app.ts` elsewhere, for other claims, and
  * those citations carry other things.
  */
-export function checkNote(root: string, contract: string): Carrier[] {
+export function noteRange(contract: string): { first: number; last: number } | null {
   const lines = contract.split('\n');
   const anchor = lines.findIndex((line) => line.includes('apps/server/src/api/approvals.ts:'));
-  if (anchor < 0) return [];
+  if (anchor < 0) return null;
 
   let first = anchor;
   while (first > 0 && lines[first - 1]!.trim() !== '') first -= 1;
   let last = anchor;
   while (last < lines.length - 1 && lines[last + 1]!.trim() !== '') last += 1;
+  return { first, last };
+}
+
+/**
+ * The note's citation of a file, with its line number changed.
+ *
+ * The line is read out of the note rather than written here, because a test
+ * that hardcodes the line it is protecting goes stale the moment the file it
+ * names moves — and a stale test fails for a reason that has nothing to do
+ * with what it guards. The drift it injects is the same drift either way: one
+ * line below the claim, where the line still holds code.
+ */
+export function recite(
+  contract: string,
+  relative: string,
+  replace: (line: number) => string,
+): { contract: string; from: number; to: number | null } {
+  const range = noteRange(contract);
+  if (!range) throw new Error('the note is not in the contract');
+
+  const lines = contract.split('\n');
+  const pattern = new RegExp(`${relative.replace(/[./]/g, '\\$&')}:(\\d+)`);
+  for (let index = range.first; index <= range.last; index += 1) {
+    const match = pattern.exec(lines[index] ?? '');
+    if (!match) continue;
+    const from = Number.parseInt(match[1] ?? '', 0);
+    const rewritten = lines[index]!.replace(pattern, replace(from));
+    lines[index] = rewritten;
+    const now = Number.parseInt(pattern.exec(rewritten)?.[1] ?? '', 0);
+    return { contract: lines.join('\n'), from, to: Number.isNaN(now) ? null : now };
+  }
+  throw new Error(`the note does not cite ${relative}`);
+}
+
+/**
+ * Every claim of the note, and whether the line it cites carries it.
+ */
+export function checkNote(root: string, contract: string): Carrier[] {
+  const range = noteRange(contract);
+  if (!range) return [];
+
+  const lines = contract.split('\n');
+  const { first, last } = range;
 
   const cited = new Map<string, number>();
   for (let index = first; index <= last; index += 1) {
@@ -148,14 +199,16 @@ describe('the approval evidence note', () => {
     // stopped naming the route.
     const root = scratch('approval-evidence-note-');
     for (const claim of CLAIMS) copyInto(root, claim.path);
-    const contract = fs
-      .readFileSync(path.join(repoRoot, 'CONTRACTS.md'), 'utf8')
-      .replace('apps/server/src/api/approvals.ts:37', 'apps/server/src/api/approvals.ts:38');
+    const { contract, to } = recite(
+      fs.readFileSync(path.join(repoRoot, 'CONTRACTS.md'), 'utf8'),
+      'apps/server/src/api/approvals.ts',
+      (cited) => `apps/server/src/api/approvals.ts:${cited + 1}`,
+    );
 
     const carriers = checkNote(root, contract);
 
     const route = carriers.find((carrier) => carrier.path === 'apps/server/src/api/approvals.ts');
-    expect(route?.cited).toBe(38);
+    expect(route?.cited).toBe(to);
     expect(route?.ok).toBe(false);
     // The other two citations still carry their claims: the drift is the one
     // the note made, and nothing else moved.
@@ -168,9 +221,11 @@ describe('the approval evidence note', () => {
     // says where the shape lives.
     const root = scratch('approval-evidence-note-missing-');
     for (const claim of CLAIMS) copyInto(root, claim.path);
-    const contract = fs
-      .readFileSync(path.join(repoRoot, 'CONTRACTS.md'), 'utf8')
-      .replace('packages/contracts/src/approvals.ts:55', 'packages/contracts/src/approvals.ts');
+    const { contract } = recite(
+      fs.readFileSync(path.join(repoRoot, 'CONTRACTS.md'), 'utf8'),
+      'packages/contracts/src/approvals.ts',
+      () => 'packages/contracts/src/approvals.ts',
+    );
 
     const carriers = checkNote(root, contract);
 
