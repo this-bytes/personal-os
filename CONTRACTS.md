@@ -369,6 +369,74 @@ adapter is `packages/agent-adapters/src/mcp.ts`, the configuration schema is
 `packages/contracts/src/adapter-config.ts`, and the panel's connection form
 carries the fields.
 
+### The adapter lifecycle
+
+Every adapter has the same three steps, and the order matters.
+
+```ts
+interface AgentAdapter {
+  readonly type: AdapterType;
+  connect(connection: AgentConnection): Promise<AgentCapabilities>;
+  send(input: AgentTurnInput): AsyncIterable<AgentEvent>;
+  close?(): void | Promise<void>;
+}
+```
+
+`connect` establishes the runtime and reports the capabilities that are actually
+true. `send` runs one turn on that runtime. `close` releases everything the
+adapter holds — the supervised child process, the transport, the socket.
+
+**A capability probe on one instance does not initialize a later instance.**
+`connect()` on a throwaway instance says nothing about an instance that has not
+been connected, so an instance whose runtime was never established is not
+assumed to be ready.
+
+**A turn asked to run on an unconnected instance is refused, not attempted.** The
+refusal is an `execution.error` event with the code `adapter_not_connected`
+(published as `ADAPTER_NOT_CONNECTED_CODE` in
+`packages/contracts/src/agent.ts`) and a message that says what is wrong and what
+to do about it: _"This MCP adapter was not connected. Call connect() before
+send()."_ When a connection attempt failed, the reason follows the fix, because
+the reason is what the owner acts on.
+
+**The refusal exists where there is a runtime to be missing.** An adapter that
+holds a runtime between the connection and the turn must be connected; an adapter
+whose runtime is the turn itself, or nothing at all, has nothing to be missing.
+
+| Adapter | `connect()` establishes                                                                        | A turn without `connect()`                                 |
+| ------- | ---------------------------------------------------------------------------------------------- | ---------------------------------------------------------- |
+| `mcp`   | the server process and the `initialize` / `notifications/initialized` / `tools/list` handshake | **refused** with `adapter_not_connected`                   |
+| `cli`   | that the command exists                                                                        | **refused** with `adapter_not_connected`                   |
+| `acp`   | a handshake probe against a real agent                                                         | allowed — the turn sets its own session up                 |
+| `a2a`   | the agent card                                                                                 | allowed — the request is made and answered within the turn |
+| `http`  | the gateway's capabilities                                                                     | allowed — the request is made and answered within the turn |
+| `model` | the provider's capabilities                                                                    | allowed — the request is made and answered within the turn |
+| `echo`  | the echo agent's capabilities                                                                  | allowed — there is no runtime to be missing                |
+
+**ACP keeps its send-time setup.** A turn still initialises, creates or restores
+its session and prompts the agent, with or without a prior `connect()`. ACP's
+`connect()` is a real handshake against a real agent, and the capabilities it
+reports are the ones the agent answered with; it is a probe, not a runtime the
+turn borrows, so it releases the agent it started.
+
+**A turn that ends, fails or is abandoned must not leave a child process
+behind.** The caller closes the adapter when the turn is over, and a capability
+probe closes the instance it opened.
+
+**Migration.** The interface grows by one optional member, `close?()`, so every
+existing adapter and every existing caller still compiles; absent means the
+adapter holds nothing to release. No capability flag changed meaning:
+`cancel: false` still means the protocol cannot interrupt a turn, and
+`streaming: false` still means the protocol cannot stream one. The refusal is a
+failure of the _connection_, not of the adapter's abilities.
+
+This entry is the contract for **WI-145**, and the code implements it — the
+lifecycle is `packages/agent-adapters/src/lifecycle.ts`, the refusal is in each
+adapter, and `packages/agent-adapters/src/__tests__/lifecycle.test.ts` drives
+the real fixtures: a real MCP server over stdio, a real ACP agent and real child
+processes. The slice's own record is
+[docs/contract-adapter-lifecycle.md](docs/contract-adapter-lifecycle.md).
+
 ### Common connection contract
 
 ```ts
@@ -1513,11 +1581,11 @@ action that unblocks an agent cannot take anything away.
 **The row leaves when the grant is widened.** A capability the agent holds is not
 waiting on the owner any more, so the row leaves the list as soon as the grant
 includes it. Whichever route widened the grant, the row leaves: both go through
-the one write that changes a grant (`apps/server/src/modules/agents/service.ts:325`).
+the one write that changes a grant (`apps/server/src/modules/agents/service.ts:326`).
 A list that keeps the row is a list that lies about what is waiting.
 
 **The row leaves and the grant is written in one transaction (WI-131).** The two writes are
-one change and are made together (`apps/server/src/modules/agents/service.ts:286`):
+one change and are made together (`apps/server/src/modules/agents/service.ts:287`):
 the row that says what the agent is waiting on leaves the list, and the grant that
 says what the agent may call is written. **So the guarantee is kept in both
 directions. The row leaves exactly when the grant includes the capability** — and
