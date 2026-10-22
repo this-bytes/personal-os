@@ -105,8 +105,9 @@ free number above the highest taken.**
 | WI-132 | The panel does not carry the published waiting shape, and the row carries no way to widen the grant                                                                                                                               | worker |
 | WI-133 | The audit job audits twice: one word makes it audit once                                                                                                                                                                          | worker |
 | WI-134 | The domain does not depend on the adapters package                                                                                                                                                                                | worker |
+| WI-135 | The two published documents name different lines for the same line                                                                                                                                                                | worker |
 
-**The next free number is WI-135.**
+**The next free number is WI-136.**
 
 **Two decisions the owner took, and the numbers they took.** The owner answered
 the two questions that were open: `manual` **does not gate delegation**
@@ -688,6 +689,9 @@ second dispatch.
 | `wi-131-widening-write-one-transaction-cog-2026-10-22` | WI-131 — the widening write is one transaction, and the contract says so | Cog | `task_f57ccf614193` | **DISPATCHED AT 14:45 BY CHIEF, AT THE PUBLISHED TIP `338fef0`, REPORT TO THE GROUP.** D1, D2 and D3 from WI-121's verification, as one item: the delete at `agents/service.ts:261` and the grant write at `:288` span nothing, so a failed grant write leaves the list under-reporting a block that is still there; D3's window is unreachable through the API today but the worker is a second process on the same database; D2 is the contract's own citation naming `:261` for "the one write that changes a grant". **One transaction closes D1 and D3 together, and D2 is the sentence about those two lines.** The cases go in Probe's existing check |
 | `wi-132-panel-waiting-shape-cog-2026-10-22` | WI-132 — the panel carries the published shape and the row's action | Cog | `task_5cde5cfe02bf` | **DISPATCHED AT 14:45 BY CHIEF, AT THE PUBLISHED TIP `338fef0`, REPORT TO THE GROUP.** O1 and Q1 from WI-121's verification: `apps/web/src/lib/types.ts:100` still declares three kinds and no `toolName`, and a capability row carries no way to widen the grant. **The lead's answer to Q1: the API satisfies WI-121's criterion, and the panel owes the action** — a criterion that says "from the list" names the surface where the owner finds the row. The structural fix is available: the web already depends on `@personal-os/contracts`, so the waiting shape moves there and the client imports it, and the drift cannot come back |
 | `wi-129-verify-resource-liveness-probe-2026-10-22` | WI-129 — the resource is never born live: the verification | Probe | `task_b433527c33d7` | **DISPATCHED AT 14:50 BY CHIEF, AT THE PUBLISHED TIP `338fef0`, REPORT TO THE GROUP. WI-129 WAS LANDED AND UNVERIFIED, WITH NO DISPATCH ANYWHERE** — the lead read the floor and the dispatch table and there was none, so the item was inventory. **The peer session owns the item and its claim, and wrote the implementation and the check; Probe wrote none of it.** If the peer has a verification in flight it should say so and the lead will cancel one of the two as a duplicate. **The lead's reading of the brief: the two gates that were corrected rather than weakened are the sharpest thing in this landing, and a moved window is a gate that was moved** |
+| `wi-135-published-citations-sweep-cog-2026-10-22` | WI-135 — the two published documents name different lines for the same line | Cog | `task_02486ba6d0c2` | **DISPATCHED AT 16:35 BY CHIEF, AT THE PUBLISHED TIP `77b3881`, REPORT TO THE GROUP.** Probe's findings F1, F2 and F3 from WI-129's verification, as one item: **six citations in the two published documents that WI-129's landing touched do not name the code their own sentence claims** — two in `CONTRACTS.md` (`:2097` cites `:363` for the author, and `:363` is `title: task.title,`; `:806` cites `:399-400` for the template fields, and those are `acceptanceCriteria:` and `author:`) and four in `docs/resource-templates.md` (`:76`'s `service.ts:351-360` was right before the landing and the landing broke it; `:97`'s `service.ts:581-591` survives uncorrected; `service.ts:573-578` is carried twice, at `:289` and `:425`, for a kind check that is at `:687-691`). **The sharp part is one sentence: the contract and the guide name different lines for the same line, two apart.** Every window in the brief was read by the lead by hand, not taken from the verifier's report. **The check is Probe's file and the owner does not write it, and the other citations in those two files are reported, not fixed** |
+| `wi-135-published-citations-sweep-cog-r2-2026-10-22` | WI-135 — the eighteen citations that do not name what they claim | Cog | `task_5888721e9595` | **RE-DISPATCHED AT 16:50 BY CHIEF, AND THE FIRST BRIEF IS CANCELLED.** The 16:35 brief carried six citations and was **short by twelve**: the peer session's own 15:45 record had measured five more in the guide's summary table and published them "for whoever takes it", and **the lead's own reading of the sentences around them found four more that neither of the two found.** **The task `task_02486ba6d0c2` is cancelled**, its request id `wi-135-published-citations-sweep-cog-2026-10-22` is **spent and never reused**, and it changed no file. **All eighteen sites were measured by the lead by hand**, and the item's file carries the table with what each citation names and the line to publish. **One item and not two: three of the peer's five and all of Probe's guide sites are in the same file, and one file, one live item, one writer at a time.** **THE PEER'S COUNT IS CORRECTED HERE: their record says "the four stale citations the verifier found in the guide's summary table" and lists five of them, and those five are carried at eight sites in the guide** |
+| `wi-129-followup-verify-probe-2026-10-22` | WI-129's follow-up — the re-pointed citation and the two new cases, verified | Probe | `task_6d4d0264d86c` | **DISPATCHED AT 16:50 BY CHIEF, AT THE PUBLISHED TIP `cbfbf8d`, REPORT TO THE GROUP.** WI-129 was accepted on two independent verdicts — Probe's (`task_02a3509d3d31`, ACCEPT) and the peer session's own verifier's PASS WITH FINDINGS — **and then the peer session landed a follow-up on top of it:** one citation re-pointed in the contract and the same one re-pointed in the guide's §10, and **two cases added to `apps/server/src/__tests__/resource-liveness.test.ts`** — **with only the implementer's own report.** **Test code that no independent verifier has run is landed work with no verdict, and the lead dispatches the verification even for the other session's item.** Probe wrote none of the follow-up. **The brief names the two things to prove — the re-pointed citation names its claim, and each of the two new cases can fail** — and it puts the implementer's own caught mistake to the verifier: **a restore that only verifies is not a restore** |
 
 **A cancelled task is not a dispatch — but a cancelled dispatch does not free its
 request id.** That second half was wrong here, and it is corrected now rather
@@ -5513,3 +5517,153 @@ files to Probe** — this session wrote it because the item could not land witho
 a new file with a new name, and nothing of Probe's is touched. **Probe may take it over.**
 
 **The floor at 16:05.** **Ceiling two. Next free number WI-135.**
+
+### 16:35 — WI-127 and WI-129 are accepted, WI-135 is opened, and the tip moved twice under the lead
+
+**The tip moved twice while the lead was reading, and both moves were the peer's.**
+`4821661` — "The audit job audits twice: one word makes it audit once" — and then `77b3881`,
+"Claim WI-134: the domain does not depend on the adapters package". **The lead's local
+branch was behind and was fast-forwarded** (`2b1cb78` → `77b3881`); the merge was a
+fast-forward, not a conflict. **The peer took WI-133 and WI-134 while the lead was
+holding two verdicts, and the published block was right both times** — it read "the next
+free number is WI-135" before either claim landed, and the lead's own number, read
+immediately before it was taken, was **WI-135**.
+
+**The lead's reading of the peer's CI change, because `.github/workflows/**`is the
+lead's file.** The peer's WI-133 changed the audit job's install line to`npm ci --ignore-scripts --no-audit --no-fund` (`:103`). **The gate does not weaken: the
+explicit `npm audit --audit-level=high`at`:107-108`is untouched, so the job still fails
+on a high-severity finding.** What the flags remove is the *second* audit — the one`npm ci` performs at npm's own default level inside the install — and **that one never
+failed an install; it only reported.** The install line is now byte-identical to its
+three siblings' (`:128`, `:155`, `:180`), which do the same install inside the same
+budget and **passed on the very run the audit job timed out on.** **The lead's note for
+the record: the change is the peer's item and the peer's claim, and the lead's gate stands
+as it was.**
+
+**WI-127 is ACCEPTED** on Cog's verdict (`task_9bb1e77f2a86`, **VERDICT: VERIFIED**) —
+**Cog as the standing substitute for Vision**, whose queue had not drained, and **Cog
+wrote none of the work: Probe wrote the pin and the lead landed it.** A substituted
+verifier stands only where the substitute did not write the work. The verifier reproduced
+**Probe's three drift proofs on the real files** — the README drifted → **3 failed | 6
+passed**, the manifest's description drifted → **3 failed | 6 passed**, both drifted to
+different sentences → **4 failed | 5 passed** — each restored with `git checkout` and an
+empty diff, **and two mutations of its own**: removing a finding from the check turned the
+suite red, and making the agreement comparison always agree turned three drift tests
+red, so the comparison is load-bearing. It also read the check's whole file list: it names
+none of `AGENTS.md`, `CONTRIBUTING.md`, `docs/roadmap.md` or `.factory/work/WI-011.md`, so
+**WI-120's decision to leave those four alone is not overturned.** The landing's own diff
+is **exactly one file, 417 insertions**, with no `it.fails`, no `.skip` and no `.only`.
+**The lead re-measured and the surface is byte-identical** — `git diff --name-only
+2b1cb78 77b3881` over `README.md`, `package.json` and
+`apps/server/src/__tests__/frontPage.test.ts` **is empty** — so **the acceptance holds on
+the published tip.** _What the product can now do: the front page says the product's own
+identity sentence, and nothing can change that sentence without a check going red._
+
+**WI-129 is ACCEPTED** on Probe's verdict (`task_02a3509d3d31`, **ACCEPT**) — **Probe
+wrote none of the work: the peer session wrote the implementation and the check.** The
+twelve claims hold under measurement, the check fails exactly the way the item says (three
+mutations, one at a time, each restored with an empty diff), and **both gates were
+corrected rather than weakened.** **The lead re-measured and the surface is byte-identical**
+— `git diff --name-only 2b1cb78 77b3881` over the seven files of WI-129's surface **is
+empty** — so **the acceptance holds on the published tip.** _What the product can now do: a
+resource is never born live — a dashboard made from a template arrives unpublished whatever
+the caller asked for, an automation arrives disabled, and publishing stays a separate,
+deliberate act._
+
+**Four findings, and three of them are WI-135.** **F1**: the contract's two citations do
+not name their claims — `CONTRACTS.md:2097` cites `:363` for the author and `:363` is
+`title: task.title,` (the author is read at `:365`), and `CONTRACTS.md:806` cites
+`:399-400` for the template fields and those are `acceptanceCriteria:` and `author:` (the
+fields are at `:401-402`). **F2, F3**: the guide's `service.ts:351-360` was right before
+WI-129 and the landing broke it; `service.ts:581-591` survives uncorrected at
+`docs/resource-templates.md:97`; and `service.ts:573-578` is carried twice, at `:289` and
+`:425`, for a kind check that is at `:687-691`. **Every one of those windows was read by
+the lead by hand before it went into the brief.** **F4 is the lead's own** —
+`.factory/work/WI-129.md` is `.factory/**` — and **it is corrected in place**: the
+citation named `docs/resource-templates.md:594` for "The dashboard is not published", the
+landing added one line above it, and the sentence is at `:595`. **O1–O4 are observations,
+not defects, and are recorded in the item's file.**
+
+**WI-135 is opened and dispatched to Cog** — request
+`wi-135-published-citations-sweep-cog-2026-10-22`, batch `batch_4555c9055dfa`, task
+**`task_02486ba6d0c2`**, **at the published tip `77b3881`, report to the group**. The
+brief carries the six corrections with the window each one now names, **the check is
+Probe's file and the owner does not write it**, and **the other citations in those two
+files are reported, not fixed** — because WI-129's own file says the rest of the guide's
+citations were not swept and that this is "the stale-docs item, and it is not this one",
+and **a citation which does not name its claim is a defect and an unowned defect is a
+defect.** The lead opens the item from that report, with its own number.
+
+**One thing the lead does not own, and says so.** The peer's WI-134 file states that the
+peer **wrote the check itself**, because "the check is a test file, and the repository
+gives test files to Probe", and offers Probe the file. **The lead's standing is that
+`**/\*.test.ts` is Probe's, and the lead has not touched the peer's branch.\*\* **Probe may
+take it over when it lands.**
+
+**The floor at 16:35.** **Ceiling two. Next free number WI-136.**
+
+### 16:50 — the peer landed a follow-up on top of WI-129, and the lead's first WI-135 brief was short by twelve citations
+
+**The tip moved again while the lead was reading, and this time it moved the item under the
+lead's hands.** `cbfbf8d` — "Merge commit `77b3881` into `wi/129-template-creates-a-draft`" —
+**the peer session landed a follow-up to WI-129 and accepted the item on its own
+verifier's report.** The follow-up changed five files: the contract, the guide, WI-129's own
+check file, the item's file and the ledger.
+
+**What the follow-up did, measured by the lead on the diff.** One citation was re-pointed in
+the contract and the same one in the guide's §10: **the contract's "the dashboard's writes
+`published: false`" cited `service.ts:337-345` — the provider's `create`, which calls
+`asDraft` — and now cites `:756`, reached from the provider's create at `:342`.** The lead
+read both lines: `:754-757` is `asDraft`, whose last line is
+`{ ...(data as Record<string, unknown>), published: false }`, and `:342` is
+`return base.create({ ...input, data: asDraft(input.data) });`. **That is Probe's observation
+O1, closed.** And **two cases were added** to `apps/server/src/__tests__/resource-liveness.test.ts`
+— the automation's half of "an update still makes a resource live", and "a spec that is not
+an object is passed on untouched" — **each with a mutation proof in the implementer's own
+hand.** The pointer gate is green at **144 pointers, 0 failures**, one more than before,
+because the sentence now names two places.
+
+**The lead's re-measurement of WI-129's acceptance, at the moved tip.** The behavioural
+surface — `apps/server/src/modules/resources/service.ts` and
+`apps/server/src/modules/resources/templates.ts` — **is byte-identical** across
+`77b3881 → cbfbf8d`. Four files moved, and **all four moved in the direction of
+strengthening the item**: a citation re-pointed onto the code it names, the same citation
+re-pointed in the guide, two cases added, and the item's own file. **The acceptance holds
+on the published tip, and the lead's record of it in `WI-129.md` — which named the
+measurement at `77b3881` — is corrected by this paragraph rather than left standing.**
+
+**And the follow-up is dispatched for independent verification** — request
+`wi-129-followup-verify-probe-2026-10-22`, batch `batch_4e6a2cfdf0a8`, task
+**`task_6d4d0264d86c`**, **at the published tip `cbfbf8d`, report to the group**. **Test
+code that no independent verifier has run is landed work with no verdict, and the lead
+dispatches the verification even for the other session's item.** Probe wrote none of the
+follow-up. **The brief asks for two proofs — the re-pointed citation names its claim, and
+each of the two new cases can fail** — and it puts the implementer's own caught mistake to
+the verifier: **the mutation script's `restore()` checked the file's hash and reported a
+mismatch, because it only checked and never wrote the file back. A restore that only
+verifies is not a restore.**
+
+**The lead's first WI-135 brief was short by twelve citations, and it is cancelled.** The
+16:35 brief carried the six Probe found. **The peer session's own 15:45 record had
+measured five more in the guide's summary table and published them "for whoever takes
+it"** — and **the lead's reading of the sentences around them found four more that neither
+of the two found**: a citation that names the reverse of its own claim
+(`docs/resource-templates.md:29`'s `resource.ts:49-57` holds the template fields, not the
+resource's `workspaceId`, `revision` and `createdBy`), a second name in a pair that names a
+different tool (`mcp.ts:45` is `resource.get`, not `resource.template.list`), and **two
+stale citations in the same sentence as a third** (the guide's `:134-145` and `:153-165` —
+`listTemplates` is at `:404` and `findTemplate` at `:423`). **The task
+`task_02486ba6d0c2` is cancelled, its request id is spent and never reused, and it changed
+no file. The new brief carries all eighteen: `task_5888721e9595`, request
+`wi-135-published-citations-sweep-cog-r2-2026-10-22`.** **One item and not two, because
+three of the peer's five and all of Probe's guide sites are in the same file, and one file,
+one live item, one writer at a time.**
+
+**The peer's count is corrected here rather than left standing.** Their record says **"the
+four stale citations the verifier found in the guide's summary table"** and then lists
+**five**. **And those five are carried at eight sites in the guide**, not five:
+`resource.ts:58-70` at `:29` and `:734`, `resource.ts:79-83` at `:30`, `templates.ts:21-124`
+at `:31`, `:294` and `:565`, `mcp/server.ts:467-483` at `:33`, and `mcp/server.ts:352-402`
+at `:34`. **With the lead's four, the guide carries sixteen stale citation sites and the
+contract two.**
+
+**The floor at 16:50.** **Ceiling two. Next free number WI-136.**
