@@ -681,6 +681,10 @@ second dispatch.
 | `wi-118-mode-the-owner-sets-2026-10-22` | WI-118 — the mode the owner sets is the mode that is in force | worker, under Chief | — | **OPENED AT 07:50 BY CHIEF AS WI-113, FROM WI-085's RED CASE ABOUT THE MODE THE OWNER CAN SEE, AND RENUMBERED TO WI-118 BEFORE IT LANDED.** The panel shows `workspace.autonomyMode` and `PATCH /api/workspaces/:id` is the only way an owner can set a mode, but the policy in force is resolved from `autonomyPolicy.mode`, so the owner's setting landed in one of them and not the other — the panel said "autonomous" and the policy in force said "manual". The service now writes both together, whichever way round the change arrives, and the contract says so in the same breath as **the mode is still enforced nowhere.** Four cases, two mutation proofs, both red and both restored. **THE NUMBER, AND WHY IT MOVED:** this item was opened as WI-113 at 07:50 against a block that said "the next free number is WI-113", and **the peer session had published WI-113 at 07:27 for the contract's refusal publication** — neither claim was bound to a live dispatch, so the tiebreak applies and **the claim published first keeps the number; WI-113 is the peer's.** The block was the defect: it said WI-113 was free while the ledger three hundred lines below already recorded it as taken, **and a block that disagrees with its own ledger is a guess.** This landing extends the block to carry every number the ledger has taken — WI-113 through WI-118 — so the next session that reads `main` sees the numbers this session saw |
 | `wi-106-and-wi-111-lead-dispatches-2026-10-22` | WI-106 and WI-111 — the lead's two dispatches, and why both were refused | Wren | `task_7effecefa1b9` | **BOTH REFUSED `BUSY`, AND NEITHER ID IS REUSED.** The lead dispatched WI-098's pointer correction (`wi-098-adr-provenance-pointer-2026-10-22`, `task_7effecefa1b9`) and WI-111's strategy copy (`wi-111-strategy-fifth-copy-2026-10-22`, `task_33fdaa157940`) at 06:31, and **both were refused in 28 and 29 seconds — because Wren's chat was already inside the same work for the peer session.** That is the documented refusal and not a broken lane: **a delegation into a busy chat is refused, and a refused id is spent.** **WI-098's pointer correction turned out not to be needed at all: the edit was already on Wren's branch at `origin/wi/098-adr-rule-resync`, pushed at 06:35, and the lead measured it and merged it as `3fab75a`.** |
 | `wi-112-strategy-fifth-copy-2026-10-22` | WI-112 — the rule's fifth copy in the strategy record, brought up to date | Wren | `task_33fdaa157940` | **OPENED AND DISPATCHED AT 06:31, FROM A FINDING IN WI-098's VERIFICATION, AND RENUMBERED TO WI-112 BY CHIEF AT 06:50 WHEN WI-111 WAS CLAIMED TWICE.** The number was read immediately before it was taken: WI-102 through WI-110 are taken, and WI-111 appeared in no item file, no dispatch record and no commit — **on `main`, which is where this session reads; the publication had claimed WI-111 on its own branch at 06:13 and published it at 06:35, and this session had not looked there.** **The dispatch then died `BUSY` at 06:31:50, so nothing live binds the number, and the earlier published claim keeps it: the publication is WI-111 and this item is WI-112.** The work is untouched by the rename — the branch carries the fix to `docs/strategy.md` either way. **The finding:** `docs/strategy.md:248-250` still carries the boundary rule **with no exception clause at all** — "_if it is a picture of the system, it is in the orientation room; if it is a place where work is inspected or decided, it is in the execution room._" — **and the rule now has two declared exceptions, the Needs-you rail and the constellation, which `prototypes/DIRECTION.md` publishes.** **So this copy does not merely repeat the rule, it under-states it, and a reader of `docs/strategy.md` gets a rule that contradicts the settled direction.** It is live on `main` at the same lines, it is **not** in WI-093's copy list (that pin covers brief 01, brief 05 and `prototypes/briefs/README.md`), and **no test reads `docs/strategy.md`** — `git grep -ln 'strategy\.md'` over the test trees returns nothing. **"Four places" is four places the ADR touches; a fifth copy of the rule text, in the flattest form, is live and unpinned.** **The file is free, and the lead measured it before the dispatch:** the peer's unlanded branch changes `docs/strategy.md` at lines 108, 154, 179, 326, 359, 450, 562 and 578 — **not at 248-250**, and the sentence itself is unchanged there — **so this item merges cleanly with that branch.** Batch `batch_5606d02332eb`, queued at Wren. **The check that pins this copy is named as owed and is Probe's file to write.** |
+| `wi-130-policy-clear-fails-open-cog-2026-10-22` | WI-130 — clearing the allow-list must not widen the policy | Cog | `task_c8d80aa01bfa` | **DISPATCHED AT 14:45 BY CHIEF, AT THE PUBLISHED TIP `338fef0`, REPORT TO THE GROUP.** A finding in WI-128's verification: the owner who empties the list gets every action back, because the resolver reads an empty list as "names no action" (`autonomy.ts:225`, `:394-396`, and the rule in its own words at `:281-284`). **The lead's preference is the smallest form — refuse the empty list with 422 — and the behaviour and the published sentence must agree before either changes.** The check is Probe's file, named in the item, and Cog does not author it |
+| `wi-131-widening-write-one-transaction-cog-2026-10-22` | WI-131 — the widening write is one transaction, and the contract says so | Cog | `task_f57ccf614193` | **DISPATCHED AT 14:45 BY CHIEF, AT THE PUBLISHED TIP `338fef0`, REPORT TO THE GROUP.** D1, D2 and D3 from WI-121's verification, as one item: the delete at `agents/service.ts:261` and the grant write at `:288` span nothing, so a failed grant write leaves the list under-reporting a block that is still there; D3's window is unreachable through the API today but the worker is a second process on the same database; D2 is the contract's own citation naming `:261` for "the one write that changes a grant". **One transaction closes D1 and D3 together, and D2 is the sentence about those two lines.** The cases go in Probe's existing check |
+| `wi-132-panel-waiting-shape-cog-2026-10-22` | WI-132 — the panel carries the published shape and the row's action | Cog | `task_5cde5cfe02bf` | **DISPATCHED AT 14:45 BY CHIEF, AT THE PUBLISHED TIP `338fef0`, REPORT TO THE GROUP.** O1 and Q1 from WI-121's verification: `apps/web/src/lib/types.ts:100` still declares three kinds and no `toolName`, and a capability row carries no way to widen the grant. **The lead's answer to Q1: the API satisfies WI-121's criterion, and the panel owes the action** — a criterion that says "from the list" names the surface where the owner finds the row. The structural fix is available: the web already depends on `@personal-os/contracts`, so the waiting shape moves there and the client imports it, and the drift cannot come back |
+| `wi-129-verify-resource-liveness-probe-2026-10-22` | WI-129 — the resource is never born live: the verification | Probe | `task_b433527c33d7` | **DISPATCHED AT 14:50 BY CHIEF, AT THE PUBLISHED TIP `338fef0`, REPORT TO THE GROUP. WI-129 WAS LANDED AND UNVERIFIED, WITH NO DISPATCH ANYWHERE** — the lead read the floor and the dispatch table and there was none, so the item was inventory. **The peer session owns the item and its claim, and wrote the implementation and the check; Probe wrote none of it.** If the peer has a verification in flight it should say so and the lead will cancel one of the two as a duplicate. **The lead's reading of the brief: the two gates that were corrected rather than weakened are the sharpest thing in this landing, and a moved window is a gate that was moved** |
 
 **A cancelled task is not a dispatch — but a cancelled dispatch does not free its
 request id.** That second half was wrong here, and it is corrected now rather
@@ -5157,3 +5161,48 @@ correction is here, and the item was not idle for long.**
 this round. **Queued:** Cog's WI-127 (`task_48aacbb2df4b`) and WI-116 (`task_30fa1c22fa81`);
 Probe's WI-121 (`task_122e0e2e02bf`); and the two verdicts that are on their way to the
 peer session and to the group. **Ceiling two. Next free number WI-133.**
+
+### 14:55 — three items dispatched, one that was landed with no verdict at all, and a fourth acceptance
+
+**WI-130, WI-131 and WI-132 are dispatched to Cog** — `task_c8d80aa01bfa`,
+`task_f57ccf614193`, `task_5cde5cfe02bf` — **at the published tip `338fef0`, each with its
+report to the group.** **The verification line stays ahead of the implementation line, which
+is the owner's standing order** — "when a slot frees, lean on verification" — so the three
+new items are appended behind the queued verifications, not in front of them.
+
+**And WI-129 was landed with no verdict at all.** The peer published it at 14:36 and the
+item file, the implementation and the check are all on `main` — **but there is no
+verification in the floor and no dispatch row in the ledger, and the lead has read both.**
+A landed item with no verdict is inventory, so **the verification is dispatched to Probe**
+(`wi-129-verify-resource-liveness-probe-2026-10-22`, `task_b433527c33d7`): Probe wrote none
+of that work, and the peer session owns the item and its claim. **If the peer has a
+verification in flight, it should say so, and the lead will cancel one of the two as a
+duplicate** — one verifier, one item, one verification.
+
+**And the lead's reading of what that verification should read hardest:** WI-129's landing
+**corrected two gates rather than weakening them** — the contract's own pointer gate, and
+WI-034's pin in `audit-outcome-vocabulary.test.ts`, whose `at:` window moved from `594-599`
+to `619-624`. **A moved window is a gate that was moved**, and the brief says so in those
+words, because the item's own reasoning rests on the pointer gate proving code and not
+claims.
+
+**And a fourth acceptance, on Cog's verdict: WI-123 is ACCEPTED** (`task_0075eaeccbb9`,
+VERDICT VERIFIED). The pin holds itself to failing, and the verifier made it fail twice
+over — by reverting the sentence in the real `docs/dependency-licences.json`, and by
+removing a check the `CHECK_COUNT` assertion names. **And the verifier probed the
+direction nobody had asked for**, making every check fail: the first test went red while
+the five drift tests stayed green, because they assert `toContain` and would happily pass
+against a check that fails everything. **The suite is pinned on both sides.** The four
+sentences were counted by hand and not through the pin: 494 entries, all 488 third-party
+ones carrying `source.file`, `source.evidence` and `source.readOn`, the 494 `lockPaths`
+matching the lockfile's 494 installed packages with 0 missing and 0 extra, and **"every
+entry" appearing nowhere in the record.** Nothing was weakened: the landing's own diff is
+exactly one file, 438 insertions, no `it.fails`, no `.skip`, no `.only`. _Product:_ the
+licence record's four corrected sentences are held by a check that sees them drift.
+
+**The floor at 14:55.** **Running:** Cog's WI-123 verification (`task_017a543cd28d`) and
+this round. **Queued:** Cog's WI-127 (`task_48aacbb2df4b`) and WI-116 (`task_30fa1c22fa81`);
+Probe's WI-121 (`task_122e0e2e02bf`) and WI-129 (`task_b433527c33d7`); Cog's WI-130
+(`task_c8d80aa01bfa`), WI-131 (`task_f57ccf614193`) and WI-132 (`task_5cde5cfe02bf`); and
+the two verdicts on their way to the group and to the peer session. **Ceiling two. Next
+free number WI-133.**
