@@ -129,6 +129,36 @@ describe('EventStream', () => {
     stream.stop();
   });
 
+  it('delivers a decided approval, so the waiting list can follow it', () => {
+    const events: unknown[] = [];
+    const stream = new EventStream({ onEvent: (event) => events.push(event) });
+
+    stream.start();
+    lastSource().emit('approval.decided', {
+      type: 'approval.decided',
+      approval: {
+        id: 'apr_1',
+        workspaceId: 'ws_1',
+        executionId: null,
+        conversationId: null,
+        taskId: null,
+        agentConnectionId: null,
+        summary: 'Delete the production database',
+        details: null,
+        status: 'approved',
+        reason: 'It is my own homelab',
+        requestedBy: null,
+        decidedBy: 'usr_1',
+        createdAt: '2026-01-01T00:00:00.000Z',
+        decidedAt: '2026-01-01T00:01:00.000Z',
+      },
+    });
+
+    expect(events).toHaveLength(1);
+    expect((events[0] as { type: string }).type).toBe('approval.decided');
+    stream.stop();
+  });
+
   it('reports the connection status', () => {
     const statuses: StreamStatus[] = [];
     const stream = new EventStream({

@@ -1,9 +1,12 @@
-import { and, desc, eq, sql } from 'drizzle-orm';
+import { and, desc, eq, gte, sql } from 'drizzle-orm';
 import { z } from 'zod';
 import {
+  actionNeedsApproval,
+  autonomyPolicyLevelPhrase,
   buildAgentMemoryBrief,
   dashboardSpecSchema,
   dataSourceSpecSchema,
+  isActionAllowed,
   parseAdapterConfig,
   resolvePersona,
   type AdapterConfig,
@@ -12,7 +15,10 @@ import {
   type AgentEvent,
   type AgentMemoryBrief,
   type AgentTurnInput,
+  type AutonomyAction,
+  type AutonomyPolicyLevel,
   type ContentPart,
+  type EffectiveAutonomyPolicy,
   type MessageOrigin,
   type Participant,
   type Persona,
@@ -35,6 +41,8 @@ import {
 import {
   assertReadableQuery,
   assertSafeUrl,
+  deriveChainState,
+  loadEffectiveAutonomyPolicy,
   newId,
   planAndDispatch,
   type QueueJob,
@@ -200,6 +208,46 @@ async function executeChatTurn(context: ExecutorContext, job: QueueJob): Promise
     return { status: 'cancelled', error: 'The conversation was paused.' };
   }
 
+  // The policy in force for this turn. The workspace's policy, the goal's
+  // policy and the conversation's own safeguards are resolved in one place,
+  // and the strictest of them is what this turn is held to.
+  const policy = loadEffectiveAutonomyPolicy(db, {
+    workspaceId: conversation.workspaceId,
+    conversationId: conversation.id,
+  });
+
+  // The chain this turn belongs to: the stretch of conversation that follows
+  // the owner's last message. Its turn count and its spend are what the
+  // limits are measured against.
+  const chain = deriveChainState(
+    db
+      .select({ origin: messages.origin, createdAt: messages.createdAt })
+      .from(messages)
+      .where(eq(messages.conversationId, payload.conversationId))
+      .orderBy(desc(messages.createdAt))
+      .limit(200)
+      .all(),
+  );
+
+  // The workspace's spend today, which the daily cap is measured against. It
+  // is counted only when a policy caps it, so the common case costs nothing.
+  const dailySpend =
+    policy.dailySpendUnits > 0 ? dailySpendUnits(db, conversation.workspaceId, new Date()) : 0;
+
+  // A turn with no budget left does not start. The refusal names the limit
+  // and the policy that set it, and it is written to the execution rather
+  // than left as a turn that quietly did not happen.
+  const limit = limitRefusal(policy, chain, dailySpend);
+  if (limit) {
+    recordPolicyRefusal(runtime, {
+      workspaceId: conversation.workspaceId,
+      agentConnectionId: payload.agentConnectionId,
+      executionId: payload.executionId,
+      reason: limit,
+    });
+    return fail(context, payload.executionId, limit);
+  }
+
   const participant = db
     .select()
     .from(participants)
@@ -334,13 +382,18 @@ async function executeChatTurn(context: ExecutorContext, job: QueueJob): Promise
   const controller = new AbortController();
   const adapterConfig = await loadAdapterConfig(context, payload.agentConnectionId);
   const timeoutSeconds = adapterTimeout(adapterConfig);
+  // The deadline for this turn. The adapter's own timeout and the policy's
+  // duration limit are both deadlines, and the earlier one is the one that
+  // applies: a policy may tighten the adapter's budget, and it may never
+  // widen it.
+  const deadlineSeconds = Math.min(timeoutSeconds, policy.maxDurationSeconds);
   // The deadline is the one moment where we stop waiting for an agent that
   // may already be doing something. Past it we cannot confirm the outcome.
   let timedOut = false;
   const timeout = setTimeout(() => {
     timedOut = true;
     controller.abort();
-  }, timeoutSeconds * 1000);
+  }, deadlineSeconds * 1000);
 
   // The reply of a resumed turn continues the reply of the suspended turn,
   // so what came before it is still part of it.
@@ -353,6 +406,7 @@ async function executeChatTurn(context: ExecutorContext, job: QueueJob): Promise
   let failure: string | undefined;
   let adapter: AgentAdapter | null = null;
   let suspended = false;
+  let refusal: string | undefined;
 
   try {
     adapter = runtime.registry.create(adapterConfig, {
@@ -402,14 +456,23 @@ async function executeChatTurn(context: ExecutorContext, job: QueueJob): Promise
         workspaceId: conversation.workspaceId,
         executionId: payload.executionId,
         agentConnectionId: payload.agentConnectionId,
+        policy,
         onText: (text) => {
           accumulated += text;
+        },
+        onRefusal: (reason) => {
+          refusal = reason;
         },
       });
       // The agent is waiting for the owner. The turn stops here and continues
       // in a new turn when the decision arrives.
       if (handled === 'suspended') {
         suspended = true;
+        break;
+      }
+      // The policy refused the action. The turn stops here too, and the
+      // refusal is recorded rather than the agent simply going quiet.
+      if (handled === 'refused') {
         break;
       }
     }
@@ -442,10 +505,25 @@ async function executeChatTurn(context: ExecutorContext, job: QueueJob): Promise
     // The turn is not over. The reply stays unfinished and the execution
     // stays blocked until the owner decides.
     db.update(executions)
-      .set({ status: 'blocked', error: null })
+      .set({
+        status: 'blocked',
+        error: null,
+        // The turn ran, so it cost what a turn costs. It is written here as
+        // well as at the end of the turn, because a turn that waits for the
+        // owner may never be continued.
+        spendUnits: agentTurns(db, payload.executionId),
+      })
       .where(eq(executions.id, payload.executionId))
       .run();
     return { status: 'blocked' };
+  }
+
+  if (refusal !== undefined) {
+    // The policy refused an action the agent took, so the turn is over. The
+    // reason goes on the reply as well as on the execution: the owner reads
+    // the reply, and the execution says why it stopped.
+    failure = refusal;
+    db.update(messages).set({ detail: refusal }).where(eq(messages.id, messageId)).run();
   }
 
   // The deadline passed: the agent may already have had its side effect, so
@@ -458,7 +536,11 @@ async function executeChatTurn(context: ExecutorContext, job: QueueJob): Promise
   const failed = outcome === 'failed';
   const unknown = outcome === 'unknown';
   const explanation = unknown
-    ? `The agent did not finish within ${timeoutSeconds}s. It was stopped, and it may already have had its side effect.`
+    ? `The agent did not finish within ${deadlineSeconds}s.${
+        policy.maxDurationSeconds < timeoutSeconds
+          ? ` The autonomy policy's limit of ${policy.maxDurationSeconds}s is the deadline.`
+          : ''
+      } It was stopped, and it may already have had its side effect.`
     : failure;
   const finalContent: ContentPart[] =
     accumulated.length > 0 ? [{ type: 'text', text: accumulated }] : [];
@@ -476,6 +558,10 @@ async function executeChatTurn(context: ExecutorContext, job: QueueJob): Promise
       status: unknown ? 'unknown' : failed ? 'failed' : 'completed',
       error: explanation ?? null,
       finishedAt: new Date().toISOString(),
+      // What the turn cost. The unit is one agent turn, and the count is over
+      // the execution's own messages, so a turn that was suspended and then
+      // continued is still one turn and is not counted twice.
+      spendUnits: agentTurns(db, payload.executionId),
     })
     .where(eq(executions.id, payload.executionId))
     .run();
@@ -488,7 +574,11 @@ async function executeChatTurn(context: ExecutorContext, job: QueueJob): Promise
       targetType: 'execution',
       targetId: payload.executionId,
       reason: explanation ?? 'The outcome could not be confirmed.',
-      metadata: { messageId, conversationId: payload.conversationId, timeoutSeconds },
+      metadata: {
+        messageId,
+        conversationId: payload.conversationId,
+        timeoutSeconds: deadlineSeconds,
+      },
     });
   }
 
@@ -570,21 +660,82 @@ interface EventContext {
   workspaceId: string;
   executionId: string;
   agentConnectionId: string;
+  /** The policy in force for this turn. */
+  policy: EffectiveAutonomyPolicy;
   onText: (text: string) => void;
+  /** The policy refused the action. The turn stops, and the refusal is kept. */
+  onRefusal: (reason: string) => void;
+}
+
+/**
+ * The action an agent event stands for.
+ *
+ * The vocabulary is about what the agent does, not about how it reports it,
+ * so an event that is not an action is not gated.
+ */
+function actionForEvent(event: AgentEvent): AutonomyAction | undefined {
+  switch (event.type) {
+    case 'message.delta':
+    case 'message.completed':
+      return 'message.send';
+    case 'tool.started':
+    case 'tool.completed':
+      return 'tool.call';
+    case 'artifact.created':
+      return 'artifact.create';
+    default:
+      return undefined;
+  }
 }
 
 /**
  * Handle one event from the agent.
  *
  * Returns `suspended` when the agent is waiting for the owner: the turn stops
- * there and continues in a new turn when the decision arrives.
+ * there and continues in a new turn when the decision arrives. Returns
+ * `refused` when the policy does not allow the action the agent took.
  */
 async function handleAgentEvent(
   context: ExecutorContext,
   event: AgentEvent,
   eventContext: EventContext,
-): Promise<'handled' | 'suspended'> {
+): Promise<'handled' | 'suspended' | 'refused'> {
   const { db, events } = context.runtime;
+
+  // What the agent is about to do, and what the policy says about it. The
+  // check comes first: an action the policy refuses does not happen, and
+  // nothing about it is written.
+  const action = actionForEvent(event);
+  if (action) {
+    if (!isActionAllowed(eventContext.policy, action)) {
+      const reason = actionRefusal(eventContext.policy, action);
+      recordPolicyRefusal(context.runtime, {
+        workspaceId: eventContext.workspaceId,
+        agentConnectionId: eventContext.agentConnectionId,
+        executionId: eventContext.executionId,
+        reason,
+        action,
+      });
+      eventContext.onRefusal(reason);
+      return 'refused';
+    }
+
+    if (actionNeedsApproval(eventContext.policy, action)) {
+      // The policy asks the owner to decide. The turn stops here and
+      // continues when the decision arrives, which is the same shape as the
+      // approval the agent asked for itself.
+      raiseApproval(context, eventContext, {
+        approvalId: newId('apr'),
+        summary: `The agent wants to "${action}", and the autonomy policy requires the owner's decision.`,
+        details: {
+          action,
+          allowedActions: eventContext.policy.allowedActions,
+          approvalRequired: eventContext.policy.approvalRequired,
+        },
+      });
+      return 'suspended';
+    }
+  }
 
   if (event.type === 'message.delta') {
     eventContext.onText(event.text);
@@ -604,43 +755,11 @@ async function handleAgentEvent(
   if (event.type === 'approval.requested') {
     // A sensitive operation needs the owner's decision. The request is
     // recorded and the execution is held until it is resolved.
-    const existing = db.select().from(approvals).where(eq(approvals.id, event.approvalId)).get();
-
-    if (!existing) {
-      db.insert(approvals)
-        .values({
-          id: event.approvalId,
-          workspaceId: eventContext.workspaceId,
-          executionId: eventContext.executionId,
-          conversationId: eventContext.conversationId,
-          taskId: null,
-          agentConnectionId: eventContext.agentConnectionId,
-          summary: event.summary,
-          details: (event.details ?? null) as never,
-          status: 'pending',
-          reason: null,
-          requestedBy: eventContext.agentConnectionId,
-          decidedBy: null,
-          createdAt: new Date().toISOString(),
-          decidedAt: null,
-        })
-        .run();
-    }
-
-    db.update(executions)
-      .set({ status: 'blocked' })
-      .where(eq(executions.id, eventContext.executionId))
-      .run();
-
-    events.publish(
-      {
-        type: 'execution.event',
-        conversationId: eventContext.conversationId,
-        executionId: eventContext.executionId,
-        event,
-      },
-      { workspaceId: eventContext.workspaceId, conversationId: eventContext.conversationId },
-    );
+    raiseApproval(context, eventContext, {
+      approvalId: event.approvalId,
+      summary: event.summary,
+      details: event.details,
+    });
 
     // The agent is waiting for the owner. The turn stops here.
     return 'suspended';
@@ -676,6 +795,14 @@ async function executeFactoryTask(
   const task = db.select().from(tasks).where(eq(tasks.id, payload.taskId)).get();
   if (!task) return fail(context, payload.executionId, 'The task no longer exists.');
 
+  // The policy in force for this task: the workspace's policy and the goal's
+  // policy, and the strictest of them. A goal may tighten its workspace, and
+  // it may never loosen it.
+  const policy = loadEffectiveAutonomyPolicy(db, {
+    workspaceId: task.workspaceId,
+    ...(task.goalId ? { goalId: task.goalId } : {}),
+  });
+
   const now = new Date().toISOString();
   db.update(executions)
     .set({ status: 'running', startedAt: now })
@@ -695,15 +822,21 @@ async function executeFactoryTask(
 
   let output = '';
   let failure: string | undefined;
+  /** Whether the task's turn reached the agent. */
+  let agentTurnRan = false;
 
   const controller = new AbortController();
   const adapterConfig = await loadAdapterConfig(context, payload.agentConnectionId);
   const timeoutSeconds = adapterTimeout(adapterConfig);
+  // The deadline is the earlier of the adapter's own timeout and the policy's
+  // duration limit: a policy may tighten the adapter's budget, and it may
+  // never widen it.
+  const deadlineSeconds = Math.min(timeoutSeconds, policy.maxDurationSeconds);
   let timedOut = false;
   const timeout = setTimeout(() => {
     timedOut = true;
     controller.abort();
-  }, timeoutSeconds * 1000);
+  }, deadlineSeconds * 1000);
 
   try {
     const adapter = runtime.registry.create(adapterConfig, {
@@ -711,6 +844,10 @@ async function executeFactoryTask(
       logger: { info: () => undefined, warn: () => undefined, error: () => undefined },
     });
 
+    // The turn is handed to the agent here. A turn that reaches the agent is
+    // a turn that cost what a turn costs, and a turn that never got this far
+    // cost nothing.
+    agentTurnRan = true;
     for await (const event of adapter.send({
       conversationId: '',
       message: prompt,
@@ -736,7 +873,7 @@ async function executeFactoryTask(
       : 'completed';
   const unknown = outcome === 'unknown';
   const explanation = unknown
-    ? `The agent did not finish within ${timeoutSeconds}s. It was stopped, and it may already have had its side effect.`
+    ? `The agent did not finish within ${deadlineSeconds}s. It was stopped, and it may already have had its side effect.`
     : failure;
 
   db.insert(evidence)
@@ -757,6 +894,9 @@ async function executeFactoryTask(
       status: unknown ? 'unknown' : failure ? 'failed' : 'completed',
       error: explanation ?? null,
       finishedAt: new Date().toISOString(),
+      // What the turn cost: one unit for the agent turn the task ran, and
+      // nothing for a turn that never reached the agent.
+      spendUnits: agentTurnRan ? 1 : 0,
     })
     .where(eq(executions.id, payload.executionId))
     .run();
@@ -781,7 +921,7 @@ async function executeFactoryTask(
       targetType: 'task',
       targetId: task.id,
       reason: explanation ?? 'The outcome could not be confirmed.',
-      metadata: { executionId: payload.executionId, timeoutSeconds },
+      metadata: { executionId: payload.executionId, timeoutSeconds: deadlineSeconds },
     });
   }
 
@@ -848,21 +988,88 @@ async function executeAutomation(
     .get();
   if (!automation) return { status: 'failed', error: 'The automation no longer exists.' };
 
+  // The policy in force for this run: the workspace's policy. An automation
+  // belongs to no goal and to no conversation, so the workspace's policy is
+  // the whole of it.
+  const policy = loadEffectiveAutonomyPolicy(db, { workspaceId: automation.workspaceId });
+
   const startedAt = new Date().toISOString();
   const runId = newId('run');
   let output: unknown = null;
   let failure: string | undefined;
   let timedOut = false;
   let timeoutSeconds = 0;
+  /**
+   * The execution the run's agent turn runs on. An automation's run belongs to
+   * no conversation and to no task, so the worker creates the row itself.
+   */
+  let executionId: string | undefined;
+  /** Whether the run's turn reached the agent. */
+  let agentTurnRan = false;
 
   // An automation that was started by an event produces its own events at
   // the next depth, which is what bounds the chain.
   const depth = payload.trigger?.depth ?? 0;
 
+  // The action the run takes, and what the policy says about it. A run whose
+  // action the policy does not allow does not happen, and the refusal is
+  // recorded on the run rather than left as a run that quietly did nothing.
+  const automationAction = actionForAutomation(automation.action.type);
+  const refusal = automationRefusal(policy, automationAction);
+  if (refusal) {
+    recordPolicyRefusal(context.runtime, {
+      workspaceId: automation.workspaceId,
+      agentConnectionId:
+        automation.action.type === 'agent.prompt'
+          ? (automation.action.agentConnectionId ?? automation.id)
+          : automation.id,
+      executionId: runId,
+      reason: refusal,
+      action: automationAction,
+    });
+    finishAutomationRun(context, {
+      automation,
+      runId,
+      startedAt,
+      status: 'failed',
+      output: null,
+      error: refusal,
+      depth,
+    });
+    return { status: 'failed', error: refusal };
+  }
+
   try {
     const action = automation.action;
     if (action.type === 'agent.prompt') {
       if (!action.agentConnectionId) throw new Error('The action has no agent connection.');
+
+      // An automation's agent turn is an execution like any other: a run of an
+      // agent, with its cost recorded on the row that records the run. The
+      // chat path's execution is created by the server that enqueued the
+      // turn; an automation's run is the worker's own, so the worker creates
+      // the row it writes the cost on. The row belongs to no conversation and
+      // to no task, which is what an automation's turn is.
+      executionId = newId('exe');
+      const runExecutionId = executionId;
+      db.insert(executions)
+        .values({
+          id: runExecutionId,
+          workspaceId: automation.workspaceId,
+          conversationId: null,
+          taskId: null,
+          externalRef: null,
+          agentConnectionId: action.agentConnectionId,
+          executionOwner: 'personal-os',
+          status: 'running',
+          error: null,
+          spendUnits: 0,
+          startedAt,
+          finishedAt: null,
+          createdAt: startedAt,
+        })
+        .run();
+
       const adapter = runtime.registry.create(
         await loadAdapterConfig(context, action.agentConnectionId),
         {
@@ -874,17 +1081,23 @@ async function executeAutomation(
       let text = '';
       const controller = new AbortController();
       const automationConfig = await loadAdapterConfig(context, action.agentConnectionId);
-      timeoutSeconds = adapterTimeout(automationConfig);
+      // The deadline is the earlier of the adapter's own timeout and the
+      // policy's duration limit.
+      timeoutSeconds = Math.min(adapterTimeout(automationConfig), policy.maxDurationSeconds);
       const timeout = setTimeout(() => {
         timedOut = true;
         controller.abort();
       }, timeoutSeconds * 1000);
       try {
+        // The turn is handed to the agent here. A turn that reaches the agent
+        // is a turn that cost what a turn costs, and a turn that never got
+        // this far cost nothing.
+        agentTurnRan = true;
         for await (const event of adapter.send({
           conversationId: '',
           message: renderPrompt(action.prompt ?? '', automation, payload.trigger),
           context: `Automation: ${automation.title}`,
-          executionId: runId,
+          executionId: runExecutionId,
           signal: controller.signal,
         })) {
           if (event.type === 'message.delta') text += event.text;
@@ -956,23 +1169,30 @@ async function executeAutomation(
     ? `The action did not finish within ${timeoutSeconds}s. It was stopped, and it may already have had its side effect.`
     : failure;
 
-  const finishedAt = new Date().toISOString();
-  db.insert(automationRuns)
-    .values({
-      id: runId,
-      automationId: automation.id,
-      status: unknown ? 'unknown' : failure ? 'failed' : 'completed',
-      startedAt,
-      finishedAt,
-      output: output as never,
-      error: explanation ?? null,
-    })
-    .run();
+  finishAutomationRun(context, {
+    automation,
+    runId,
+    startedAt,
+    status: unknown ? 'unknown' : failure ? 'failed' : 'completed',
+    output,
+    error: explanation ?? null,
+    depth,
+  });
 
-  db.update(automations)
-    .set({ lastRunAt: startedAt, updatedAt: finishedAt })
-    .where(eq(automations.id, automation.id))
-    .run();
+  if (executionId) {
+    // The run's execution ends with the run, and it carries what the turn
+    // cost: one unit for the agent turn the run made, and nothing for a run
+    // that never reached the agent.
+    db.update(executions)
+      .set({
+        status: unknown ? 'unknown' : failure ? 'failed' : 'completed',
+        error: explanation ?? null,
+        finishedAt: new Date().toISOString(),
+        spendUnits: agentTurnRan ? 1 : 0,
+      })
+      .where(eq(executions.id, executionId))
+      .run();
+  }
 
   if (unknown) {
     recordUnknownOutcome(runtime, {
@@ -988,22 +1208,6 @@ async function executeAutomation(
       metadata: { runId, timeoutSeconds },
     });
   }
-
-  runtime.events.publish(
-    {
-      type: 'automation.run',
-      run: {
-        id: runId,
-        automationId: automation.id,
-        status: unknown ? 'unknown' : failure ? 'failed' : 'completed',
-        startedAt,
-        finishedAt,
-        output: output ?? null,
-        error: explanation ?? null,
-      },
-    },
-    { workspaceId: automation.workspaceId, depth },
-  );
 
   // The same judgement the run above recorded: a deadline that stopped an
   // action that had already started is an unknown outcome, and the worker
@@ -1047,6 +1251,92 @@ function renderPrompt(
 }
 
 /**
+ * The action an automation's run takes.
+ *
+ * An automation reaches out of the system, so its action is one the policy
+ * governs like any other.
+ */
+function actionForAutomation(type: string): AutonomyAction {
+  return type === 'agent.prompt' ? 'message.send' : 'tool.call';
+}
+
+/**
+ * Why an automation's run may not go ahead, if it may not.
+ *
+ * An action the policy does not allow is refused. An action the policy wants
+ * the owner to approve is refused too: an automation has no turn to suspend
+ * and no session to continue, so it cannot ask for a decision and wait.
+ */
+function automationRefusal(
+  policy: EffectiveAutonomyPolicy,
+  action: AutonomyAction,
+): string | undefined {
+  if (!isActionAllowed(policy, action)) return actionRefusal(policy, action);
+  if (actionNeedsApproval(policy, action)) {
+    return (
+      `The action "${action}" was not performed: the autonomy policy requires the owner's ` +
+      `decision for it, and an automation cannot ask for one.`
+    );
+  }
+  return undefined;
+}
+
+/**
+ * Record the run of an automation and announce it.
+ *
+ * A run the policy refused is recorded the same way as any other run: the
+ * owner sees that it happened and why it ended.
+ */
+function finishAutomationRun(
+  context: ExecutorContext,
+  input: {
+    automation: { id: string; workspaceId: string };
+    runId: string;
+    startedAt: string;
+    status: 'completed' | 'failed' | 'unknown';
+    output: unknown;
+    error: string | null;
+    depth: number;
+  },
+): void {
+  const { db, events } = context.runtime;
+  const finishedAt = new Date().toISOString();
+
+  db.insert(automationRuns)
+    .values({
+      id: input.runId,
+      automationId: input.automation.id,
+      status: input.status,
+      startedAt: input.startedAt,
+      finishedAt,
+      output: input.output as never,
+      error: input.error,
+    })
+    .run();
+
+  db.update(automations)
+    .set({ lastRunAt: input.startedAt, updatedAt: finishedAt })
+    .where(eq(automations.id, input.automation.id))
+    .run();
+
+  events.publish(
+    {
+      type: 'automation.run',
+      run: {
+        id: input.runId,
+        automationId: input.automation.id,
+        status: input.status,
+        startedAt: input.startedAt,
+        finishedAt,
+        output: input.output ?? null,
+        error: input.error,
+      },
+    },
+    { workspaceId: input.automation.workspaceId, depth: input.depth },
+  );
+}
+
+/**
  * Record a turn that never started.
  *
  * This is used when the work cannot begin at all — the connection is gone,
@@ -1060,6 +1350,187 @@ function fail(context: ExecutorContext, executionId: string, message: string): E
     .where(eq(executions.id, executionId))
     .run();
   return { status: 'failed', error: message };
+}
+
+/**
+ * Raise an approval and hold the turn until the owner decides.
+ *
+ * The request is recorded in the approvals table, the execution is held, and
+ * the turn stops. It is the same shape whether the agent asked for the
+ * approval itself or the policy asked for it on the agent's behalf.
+ */
+function raiseApproval(
+  context: ExecutorContext,
+  eventContext: EventContext,
+  input: { approvalId: string; summary: string; details?: unknown },
+): void {
+  const { db, events } = context.runtime;
+
+  const existing = db.select().from(approvals).where(eq(approvals.id, input.approvalId)).get();
+
+  if (!existing) {
+    db.insert(approvals)
+      .values({
+        id: input.approvalId,
+        workspaceId: eventContext.workspaceId,
+        executionId: eventContext.executionId,
+        conversationId: eventContext.conversationId,
+        taskId: null,
+        agentConnectionId: eventContext.agentConnectionId,
+        summary: input.summary,
+        details: (input.details ?? null) as never,
+        status: 'pending',
+        reason: null,
+        requestedBy: eventContext.agentConnectionId,
+        decidedBy: null,
+        createdAt: new Date().toISOString(),
+        decidedAt: null,
+      })
+      .run();
+  }
+
+  db.update(executions)
+    .set({ status: 'blocked' })
+    .where(eq(executions.id, eventContext.executionId))
+    .run();
+
+  events.publish(
+    {
+      type: 'execution.event',
+      conversationId: eventContext.conversationId,
+      executionId: eventContext.executionId,
+      event: {
+        type: 'approval.requested',
+        executionId: eventContext.executionId,
+        approvalId: input.approvalId,
+        summary: input.summary,
+        details: input.details,
+      },
+    },
+    { workspaceId: eventContext.workspaceId, conversationId: eventContext.conversationId },
+  );
+}
+
+/**
+ * The limit this turn has reached, if any.
+ *
+ * A turn that has no budget left does not start. The refusal names the limit
+ * and the policy that set it, so the owner can see which bound was reached
+ * and where it came from.
+ */
+function limitRefusal(
+  policy: EffectiveAutonomyPolicy,
+  chain: { turnCount: number; spendUnits: number },
+  dailySpend: number,
+): string | undefined {
+  if (chain.turnCount >= policy.maxTurns) {
+    return (
+      `The turn did not start: the autonomy policy's turn limit of ${policy.maxTurns} is reached ` +
+      `for this chain. The limit comes from ` +
+      `${autonomyPolicyLevelPhrase(policy.sources.maxTurns)}.`
+    );
+  }
+  if (policy.maxSpendUnits > 0 && chain.spendUnits >= policy.maxSpendUnits) {
+    return (
+      `The turn did not start: the autonomy policy's spend limit of ${policy.maxSpendUnits} units ` +
+      `is reached for this chain. The limit comes from ` +
+      `${autonomyPolicyLevelPhrase(policy.sources.maxSpendUnits)}.`
+    );
+  }
+  if (policy.dailySpendUnits > 0 && dailySpend >= policy.dailySpendUnits) {
+    return (
+      `The turn did not start: the autonomy policy's daily spend limit of ` +
+      `${policy.dailySpendUnits} units is reached for this workspace since 00:00 UTC today. ` +
+      `The limit comes from ${autonomyPolicyLevelPhrase(policy.sources.dailySpendUnits)}.`
+    );
+  }
+  return undefined;
+}
+
+/**
+ * The agent turns an execution has run.
+ *
+ * The unit is the one the chain already uses: one agent turn costs one spend
+ * unit (`apps/server/src/modules/conversations/routing.ts`). A conversation
+ * turn is one agent message, and the count is taken over the execution's own
+ * messages rather than kept as a running total, so a turn that was suspended
+ * on an approval and then continued is one turn and is written once.
+ */
+function agentTurns(db: Database, executionId: string): number {
+  return db
+    .select({ origin: messages.origin })
+    .from(messages)
+    .where(eq(messages.executionId, executionId))
+    .all()
+    .filter((row) => row.origin?.kind === 'agent').length;
+}
+
+/**
+ * The workspace's spend since the start of the UTC day.
+ *
+ * **A day is a UTC day.** The system stores ISO timestamps everywhere and has
+ * no per-workspace timezone, so the boundary is UTC midnight and the day is
+ * the same day for every workspace.
+ *
+ * The spend is a query over the executions the product already keeps, not a
+ * counter incremented on some code path: a measure is a query over the data
+ * the product keeps, and the daily cap is a measure of the workspace's spend.
+ * The executions of every conversation and every goal in the workspace count,
+ * because a daily cap is a cap on the workspace and not on one chain.
+ */
+function dailySpendUnits(db: Database, workspaceId: string, now: Date): number {
+  const dayStart = new Date(
+    Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()),
+  ).toISOString();
+  const row = db
+    .select({ total: sql<number>`coalesce(sum(${executions.spendUnits}), 0)` })
+    .from(executions)
+    .where(and(eq(executions.workspaceId, workspaceId), gte(executions.createdAt, dayStart)))
+    .get();
+  return Number(row?.total ?? 0);
+}
+
+/**
+ * Why an action was refused, in words the owner can act on.
+ */
+function actionRefusal(policy: EffectiveAutonomyPolicy, action: string): string {
+  const allowed = policy.allowedActions.join(', ');
+  return (
+    `The action "${action}" was refused: it is not one of the actions the autonomy policy allows. ` +
+    `Allowed actions: ${allowed}. That list comes from ` +
+    `${autonomyPolicyLevelPhrase(policy.sources.allowedActions)}.`
+  );
+}
+
+/**
+ * Write a refusal to the audit trail.
+ *
+ * The owner has to be able to find these: a turn that a policy stopped did
+ * not happen, and the trail is where the reason is kept.
+ */
+function recordPolicyRefusal(
+  runtime: Runtime,
+  input: {
+    workspaceId: string;
+    agentConnectionId: string;
+    executionId: string;
+    reason: string;
+    action?: string;
+  },
+): void {
+  runtime.audit.record({
+    workspaceId: input.workspaceId,
+    actorType: 'agent',
+    actorId: input.agentConnectionId,
+    action: input.action === undefined ? 'policy.turn.refused' : 'policy.action.refused',
+    targetType: 'execution',
+    targetId: input.executionId,
+    result: 'failure',
+    metadata: {
+      reason: input.reason,
+      ...(input.action === undefined ? {} : { action: input.action }),
+    },
+  });
 }
 
 /**

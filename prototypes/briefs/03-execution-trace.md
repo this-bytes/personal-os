@@ -11,19 +11,25 @@ recommendation and is part of the direction now.
 
 **The Work room's right-hand column** (`prototypes/d-forge/theme.css:954-1000+`): a
 monospace timeline of one execution's events, each row a node on a spine —
-`tool.started`, `tool.completed`, `artifact.created`, `execution.status` — with
-spend as an abstract counter (`spendUnits`), never as money.
+`tool.started`, `tool.completed`, `artifact.created`, `execution.status`. **No
+spend counter:** the events carry no spend. The spend units live on the execution
+row (`apps/server/src/db/schema.ts:231`) and are published by the **approval
+evidence read** (`CONTRACTS.md:1047-1145`), whose code is **WI-086** and which
+answers for one approval — so a trace of an arbitrary execution cannot show a
+cost it was never given.
 
 **Where the events come from: the live stream the panel already holds.** The event
 vocabulary is already in the contracts (`packages/contracts/src/agent.ts:170-210`),
 and the browser is already receiving those events over `GET /api/events`
-(`apps/web/src/api/events.ts`, `apps/web/src/state/events.tsx`). The trace is a
-surface over what already arrives at the browser. **No server change.**
+(`apps/web/src/lib/events.ts:48`, with the API client in
+`apps/web/src/lib/api.ts`). The trace is a surface over what already arrives at
+the browser. **No server change.**
 
 **The honest limit, stated here rather than discovered later.** There is no route
 that reads an execution's events: the only client-visible channel is the stream,
 and the stream primes the browser with the most recent 50 events
-(`apps/server/src/api/events.ts:11,42-48`). So:
+(`apps/server/src/api/events.ts:6`, `:35-41` — `PRIME_LIMIT` and the prime loop;
+the drain that follows it fetches 200 at `:45`). So:
 
 - while an execution is running, its trace fills in live, completely;
 - an execution that finished before the browser connected has the trace the
@@ -55,7 +61,10 @@ its empty state says what it is rather than showing an empty column.
       `execution.status` for the execution the conversation is showing.
 - [ ] It fills in live, over the stream the panel already holds, with no second
       connection and no server change.
-- [ ] Spend is shown as an abstract counter (`spendUnits`), never as money.
+- [ ] **No spend counter.** The trace shows no cost, because the events carry
+      none. Spend is published by the approval evidence read (WI-086), for an
+      approval's own execution, and where it is shown it is an abstract counter
+      (`spendUnits`), never as money.
 - [ ] It shows only events that arrived. It does not infer, summarise away, or
       invent one.
 - [ ] Its empty state says what it is — "no events yet" — rather than showing an
@@ -77,4 +86,6 @@ its empty state says what it is rather than showing an empty column.
   item.
 - **The conversation's behaviour.** The trace is a surface over data the product
   already keeps.
-- **Money.** `spendUnits` is an abstract counter and stays one.
+- **Money, and spend.** No spend counter is shown: the events carry none, and
+  where spend is published — the approval evidence read, WI-086 — `spendUnits` is
+  an abstract counter and stays one.

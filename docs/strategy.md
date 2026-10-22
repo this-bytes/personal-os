@@ -55,20 +55,21 @@ The licence column was read from each repository on **2026-10-21**, not from a
 directory listing. Two of them are not open source at all, and that is the point of
 reading them.
 
-| Project                                                                                | Licence, read from the repository                         | What we took                                                                                                                                 | Where it lands here                                                |
-| -------------------------------------------------------------------------------------- | --------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------ |
-| [Backstage](https://backstage.spotify.com/discover/backstage-101)                      | Apache-2.0                                                | _"A single pane of glass for all your infrastructure"_ — a catalog of what exists, plus a scaffolder that turns a template into a real thing | The template record; the panel's orientation room                  |
-| [Home Assistant](https://www.home-assistant.io)                                        | Apache-2.0                                                | The home as one surface; everything becomes an entity; an automation is trigger → condition → action                                         | The waiting list, the automations, the Needs-you rail              |
-| [n8n](https://github.com/n8n-io/n8n)                                                   | **Sustainable Use — not OSI**                             | Validate-before-deploy, copy-before-edit, a version history per workflow                                                                     | The templates; the acceptance boundary                             |
-| [Temporal](https://github.com/temporalio/temporal)                                     | MIT                                                       | A durable execution that survives the human's wait; the event history _is_ the record; a signal delivers the decision                        | The resume the contract already promises (C-01)                    |
-| [NetBox](https://github.com/netbox-community/netbox)                                   | Apache-2.0                                                | A source of truth deliberately kept separate from the running system; every change logged                                                    | The ledger's revision and audit rules                              |
-| [OpenHands](https://github.com/OpenHands/OpenHands)                                    | MIT                                                       | The event stream as Action/Observation; a sandbox the agent works inside; reusable, trigger-activated skills                                 | The event log (ADR 0005); the skill layer, not built               |
-| [Langfuse](https://github.com/langfuse/langfuse)                                       | MIT, except `ee/`                                         | Traces → evaluations → datasets → a fix, one loop from a production signal                                                                   | Q6's two measures                                                  |
-| [Dify](https://github.com/langgenius/dify)                                             | **Modified Apache-2.0 with additional conditions**        | One collaborative workspace where an agent builds the thing; observability embedded rather than bolted on                                    | The shape of the environment; the licence warning                  |
-| [Windmill](https://github.com/windmill-labs/windmill)                                  | **Apache-2.0 + AGPLv3 + proprietary** enterprise features | Scripts are first-class, and a typed signature generates the form                                                                            | Windmill's AGPL is why it is an inspiration and never a dependency |
-| [Letta](https://github.com/letta-ai/letta)                                             | Apache-2.0                                                | Agent memory the agent owns, kept in files, editable by the human                                                                            | The agent's own memory                                             |
-| [LangGraph](https://github.com/langchain-ai/langgraph)                                 | MIT                                                       | A durable agent with checkpoints and interrupts, so a human can be put in the loop mid-run                                                   | The resume the contract already promises (C-01)                    |
-| [MCP Apps (SEP-1865)](https://blog.modelcontextprotocol.io/posts/2025-11-21-mcp-apps/) | A proposal, not a ratified standard                       | A server ships `ui://` templates the host reviews before execution, and the host's approval gate stays in front of any UI-initiated call     | PRODUCT.md §9                                                      |
+| Project                                                                                | Licence, read from the repository                                             | What we took                                                                                                                                                          | Where it lands here                                                |
+| -------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------ |
+| [Backstage](https://backstage.spotify.com/discover/backstage-101)                      | Apache-2.0                                                                    | _"A single pane of glass for all your infrastructure"_ — a catalog of what exists, plus a scaffolder that turns a template into a real thing                          | The template record; the panel's orientation room                  |
+| [Home Assistant](https://www.home-assistant.io)                                        | Apache-2.0                                                                    | The home as one surface; everything becomes an entity; an automation is trigger → condition → action                                                                  | The waiting list, the automations, the Needs-you rail              |
+| [n8n](https://github.com/n8n-io/n8n)                                                   | **Sustainable Use — not OSI**                                                 | Validate-before-deploy, copy-before-edit, a version history per workflow                                                                                              | The templates; the acceptance boundary                             |
+| [Temporal](https://github.com/temporalio/temporal)                                     | MIT                                                                           | A durable execution that survives the human's wait; the event history _is_ the record; a signal delivers the decision                                                 | The resume the contract already promises (C-01)                    |
+| [NetBox](https://github.com/netbox-community/netbox)                                   | Apache-2.0                                                                    | A source of truth deliberately kept separate from the running system; every change logged                                                                             | The ledger's revision and audit rules                              |
+| [OpenHands](https://github.com/OpenHands/OpenHands)                                    | MIT                                                                           | The event stream as Action/Observation; a sandbox the agent works inside; reusable, trigger-activated skills                                                          | The event log (ADR 0005); the skill layer, not built               |
+| [Langfuse](https://github.com/langfuse/langfuse)                                       | MIT, except `ee/`                                                             | Traces → evaluations → datasets → a fix, one loop from a production signal                                                                                            | Q6's two measures                                                  |
+| [Dify](https://github.com/langgenius/dify)                                             | **Modified Apache-2.0 with additional conditions**                            | One collaborative workspace where an agent builds the thing; observability embedded rather than bolted on                                                             | The shape of the environment; the licence warning                  |
+| [Windmill](https://github.com/windmill-labs/windmill)                                  | **Apache-2.0 + AGPLv3 + proprietary** enterprise features                     | Scripts are first-class, and a typed signature generates the form                                                                                                     | Windmill's AGPL is why it is an inspiration and never a dependency |
+| [Letta](https://github.com/letta-ai/letta)                                             | Apache-2.0                                                                    | Agent memory the agent owns, kept in files, editable by the human                                                                                                     | The agent's own memory                                             |
+| [LangGraph](https://github.com/langchain-ai/langgraph)                                 | MIT                                                                           | A durable agent with checkpoints and interrupts, so a human can be put in the loop mid-run                                                                            | The resume the contract already promises (C-01)                    |
+| [MCP Apps (SEP-1865)](https://blog.modelcontextprotocol.io/posts/2025-11-21-mcp-apps/) | A proposal, not a ratified standard                                           | A server ships `ui://` templates the host reviews before execution, and the host's approval gate stays in front of any UI-initiated call                              | PRODUCT.md §9                                                      |
+| [MiniMax Code](https://github.com/MiniMax-AI/minimax-code)                             | **MIT** for the CLI and harness; the **desktop application is not published** | The harness as a specification: per-turn capability pinning, the context budget, the five-step canonical history commit, delivery versus consumption, steer and queue | Contract 7 (the interaction model); ADR 0009                       |
 
 **The last column names the subject, not the item number.** A work item's number
 is a claim on a space that moves; the subject is what the idea becomes. Where a
@@ -91,6 +92,18 @@ additional conditions". Windmill's says its source is "variously licensed" acros
 Apache-2.0, AGPLv3 and a proprietary enterprise licence. A licence can change what
 the product is.
 
+**The MiniMax Code row carries two facts, and the second is the one that matters.**
+The CLI and harness are MIT — first-party code defaults to MIT, `third_party/
+sandbox-runtime` is Apache-2.0, and the Pi-derived terminal code, the model
+catalog and the bundled assets keep their own declarations. The **desktop
+application is not published at all**: that repository hosts issue reporting for
+it. So the desktop experience can be read and observed and recreated, and there
+is no code to copy from it — which is a licence fact of the same kind as n8n's
+Sustainable Use, and the reason this row says "not published" rather than naming
+a licence. The row was read on **2026-10-21**, the same day as the rest of the
+table, and it is the first row whose boundary moves with an upstream release:
+the record is dated for that reason. The decision it supports is ADR 0009.
+
 **This repository's own licence is settled: MIT.** The owner chose it on
 2026-10-21 at 19:08, the root `LICENSE` file carries the full text, the root
 manifest says `"license": "MIT"`, and the README says the same. **The file was
@@ -108,9 +121,12 @@ gate that reads the dependency set cannot speak to any of it.
 into this repository's own tree changes this project's licence. **A gate over the
 dependency set cannot catch that** — vendored source is not a dependency and is not
 in the lockfile. It needs a separate check over this repository's own sources, which
-is [WI-044](#w8--the-check-that-covers-this-repositorys-own-sources) — funded and
-numbered, and not dispatched. The gate is worth having on its own terms, but naming
-it as the answer to the vendoring question would be a claim the check cannot back.
+is [WI-044](#w8--the-check-that-covers-this-repositorys-own-sources) — **dispatched
+on 2026-10-21 at 19:46, once the deferral condition was met**: the owner chose MIT
+at 19:08 and the repository went public at 19:41. The inventory is written
+(`e8d8fbc`) and the check is in flight. The gate is worth having on its own terms,
+but naming it as the answer to the vendoring question would be a claim the check
+cannot back.
 
 ---
 
@@ -154,10 +170,11 @@ criteria hold**, and the criterion no test met is now met by a test Probe wrote
 every clause** — and that is a separate item, opened because WI-017's implementation
 landed before the contract's statement about it did: the same drift the pipeline
 caught in the published counts. **That item was opened as WI-063 and renumbered to
-WI-065**, because the number was claimed twice at once, and **it is still open**. So
-the template half is finished and accepted, **and the contract's statement about it
-is not yet true** — this pillar's gap is closing, not closed, and this document
-should not be read as saying the pillar is done.
+WI-065**, because the number was claimed twice at once, and **its correction is
+written** (`cf3770f`) and waits on the lead's merge. So the template half is
+finished and accepted, **and the contract's statement about it is not yet true on
+`main`** — this pillar's gap is closing, not closed, and this document should not be
+read as saying the pillar is done.
 
 ### Pillar 2 — One truth, one history, and a way back
 
@@ -179,9 +196,9 @@ because "AI makes a small edit — and something else breaks".
   no audit entry** (PRODUCT.md §4).
 - There is **no history** to look back at and **no way to take something back**
   (C-21).
-- An approval **closes** its execution rather than resuming the interrupted turn,
-  while the published contract promises the resume — a drift the repository already
-  records (ARCHITECTURE.md §9, C-01).
+- An approval **resumes** its execution where the adapter can and closes it where it
+  cannot, which is what the published contract promises — the drift that
+  ARCHITECTURE.md §9 and C-01 recorded is closed.
 - A published entry's **implementation-status note** is prose about the code, and
   nothing checks it against the code — so **two such notes are false today**, both
   found by reading the contract against the code rather than by any gate (C-23).
@@ -245,9 +262,12 @@ There are two panes, and the bridge between them is this document.
 2026-10-21, against the factory's recommendation of B — Desk, and the
 recommendation was the owner's to reject. Forge is an orientation room and an
 execution room held together by one material, with a Needs-you rail that carries
-the decision controls. The rule it settled: _if it is a picture of the system, it
-is in the orientation room; if it is a place where work is inspected or decided, it
-is in the execution room._
+the decision controls. The rule it settled, quoted exactly as the direction
+document states it: _If it is a picture of the system, it is in the orientation
+room. If it is a place where work is inspected or decided, it is in the execution
+room — with two declared exceptions, the Needs-you rail and the constellation,
+which carry decisions in the orientation room because a decision is taken where the
+list is._
 
 **This document is the factory's pane of glass.** The product's identity is spread
 across five files and an intake log of more than three thousand lines, and no reader
@@ -326,9 +346,9 @@ the **dependency set**. The owner's hard case — vendoring AGPL-3.0 code into t
 repository's own tree — is not a dependency, is not in the lockfile, and is outside
 what this gate can see; catching it needs a separate check over this repository's
 own sources, which is [WI-044](#w8--the-check-that-covers-this-repositorys-own-sources)
-— funded, numbered, and not dispatched. A gate is not a proof of the whole borrow
-rule, and calling it one would be exactly the kind of claim this document exists to
-stop.
+— **dispatched on 2026-10-21 at 19:46**, with the inventory written (`e8d8fbc`) and
+the check in flight. A gate is not a proof of the whole borrow rule, and calling it
+one would be exactly the kind of claim this document exists to stop.
 
 ---
 
@@ -359,17 +379,17 @@ came out of this document's own review and was numbered later, as WI-044. **W9 c
 out of the wants' own execution and is not numbered at all** — this document does
 not open an item, so its row carries no item and the lead judges it first.
 
-| Want | Verdict              | Item                                 | Owner | Note                                                                                                                                                                                                                                                                                             |
-| ---- | -------------------- | ------------------------------------ | ----- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| W1   | accepted, resized    | [WI-033](../.factory/work/WI-033.md) | Cog   | The change behind the product's own report. Lands **after** W2 — the contract leads.                                                                                                                                                                                                             |
-| W2   | accepted, rescoped   | [WI-034](../.factory/work/WI-034.md) | Wren  | The published shape for W1. Lands **before** W1. **Rescoped at 11:10** — it publishes the outcome vocabulary and the migration note, not the authorship definition, which WI-030 already published.                                                                                              |
-| W3   | **deferred**         | [WI-035](../.factory/work/WI-035.md) | Cog   | The largest of the seven. Starts after Forge. **The deferral is capacity, not judgement** — Cog's lane is full — and it is numbered so it is not lost.                                                                                                                                           |
-| W4   | **folded**           | [WI-007](../.factory/work/WI-007.md) | Cog   | The same subject under a different name. **The fold is recorded in `.factory/INTAKE.md`, not in WI-007's own file** — that item does not yet name the fold, which is a gap in the item, not in this record.                                                                                      |
-| W5   | **accepted**         | [WI-036](../.factory/work/WI-036.md) | Wren  | The record the gate compares against. **Accepted** — Probe re-derived the numbers its own way rather than trusting the record: 494 packages, one copy, in `docs/dependency-licences.json`. Lands **before** W7.                                                                                  |
-| W6   | **accepted**         | [WI-037](../.factory/work/WI-037.md) | Wren  | The cheapest item in the set and the most overdue. **Accepted** — all four criteria hold and nothing else in the product record changed: the product record now says Forge.                                                                                                                      |
-| W7   | accepted, half done  | [WI-038](../.factory/work/WI-038.md) | Chief | The gate. Lands **after** W5 — a gate that compares against nothing catches nothing — and W5 has landed, so it can. The CI step and manifest entry are written; the gate script is **not written** — its corrected brief was queued at 16:34 and the script is on neither the branch nor `main`. |
-| W8   | **funded, deferred** | [WI-044](../.factory/work/WI-044.md) | Chief | The check over this repository's own sources. Numbered so it is not lost, and **not dispatched** — the inventory is worth writing against a settled repository, and the repository's visibility is the owner's open decision.                                                                    |
-| W9   | **proposed**         | — not numbered —                     | Probe | The check that keeps a published status true. **Raised by the wants' own execution** — two of the wants that ran exposed the same defect class twice (C-23), and no item carries it. **Not numbered: the lead judges it first.**                                                                 |
+| Want | Verdict             | Item                                 | Owner | Note                                                                                                                                                                                                                                                                                             |
+| ---- | ------------------- | ------------------------------------ | ----- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| W1   | accepted, resized   | [WI-033](../.factory/work/WI-033.md) | Cog   | The change behind the product's own report. Lands **after** W2 — the contract leads.                                                                                                                                                                                                             |
+| W2   | accepted, rescoped  | [WI-034](../.factory/work/WI-034.md) | Wren  | The published shape for W1. Lands **before** W1. **Rescoped at 11:10** — it publishes the outcome vocabulary and the migration note, not the authorship definition, which WI-030 already published.                                                                                              |
+| W3   | **deferred**        | [WI-035](../.factory/work/WI-035.md) | Cog   | The largest of the seven. Starts after Forge. **The deferral is capacity, not judgement** — Cog's lane is full — and it is numbered so it is not lost.                                                                                                                                           |
+| W4   | **folded**          | [WI-007](../.factory/work/WI-007.md) | Cog   | The same subject under a different name. **The fold is recorded in `.factory/INTAKE.md`, not in WI-007's own file** — that item does not yet name the fold, which is a gap in the item, not in this record.                                                                                      |
+| W5   | **accepted**        | [WI-036](../.factory/work/WI-036.md) | Wren  | The record the gate compares against. **Accepted** — Probe re-derived the numbers its own way rather than trusting the record: 494 packages, one copy, in `docs/dependency-licences.json`. Lands **before** W7.                                                                                  |
+| W6   | **accepted**        | [WI-037](../.factory/work/WI-037.md) | Wren  | The cheapest item in the set and the most overdue. **Accepted** — all four criteria hold and nothing else in the product record changed: the product record now says Forge.                                                                                                                      |
+| W7   | accepted, half done | [WI-038](../.factory/work/WI-038.md) | Chief | The gate. Lands **after** W5 — a gate that compares against nothing catches nothing — and W5 has landed, so it can. The CI step and manifest entry are written; the gate script is **not written** — its corrected brief was queued at 16:34 and the script is on neither the branch nor `main`. |
+| W8   | **dispatched**      | [WI-044](../.factory/work/WI-044.md) | Chief | The check over this repository's own sources. **Dispatched on 2026-10-21 at 19:46**, once the deferral condition was met — the owner chose MIT at 19:08 and the repository went public at 19:41. The inventory is written (`e8d8fbc`); the check is in flight.                                   |
+| W9   | **proposed**        | — not numbered —                     | Probe | The check that keeps a published status true. **Raised by the wants' own execution** — two of the wants that ran exposed the same defect class twice (C-23), and no item carries it. **Not numbered: the lead judges it first.**                                                                 |
 
 **Two of the lead's decisions are worth carrying here, because they are judgements
 about this direction rather than about the code.** W4 was folded rather than
@@ -450,9 +470,11 @@ it is written up here for the record and must not be built twice. **The fold is
 recorded in `.factory/INTAKE.md`; WI-007's own file does not yet name it.**
 
 CONTRACTS.md already promises that a decision resumes the turn when the adapter
-reports `persistentSessions`. The code closes the execution instead. This item makes
-the code keep the promise, for the adapters that can keep it; for the adapters that
-cannot, the contract's wording is corrected rather than the behaviour faked.
+reports `persistentSessions`. **The code keeps that promise now.** WI-007 landed the
+resume, and the gate is the capability and the session id together: a decision
+re-enters the adapter and the turn continues where the adapter can keep it, and
+where it cannot the execution is closed with the reason on the reply — the
+contract's wording is kept and the behaviour is not faked.
 
 **Acceptance:** for an adapter reporting `persistentSessions`, a decision re-enters
 the adapter and the turn continues; for one that does not, the published wording
@@ -562,10 +584,13 @@ shown in the run.
 and W5 is Wren's; this item is the gate, and the gate is Chief's — the same split
 as W5 and W7.
 
-**It is funded, and numbered — as WI-044, and not dispatched.** The lead's reason
-is recorded in `.factory/INTAKE.md`: _the inventory it needs is worth writing
-against a settled repository, and the repository's visibility is the owner's open
-decision._ So the want is neither lost nor pretended done.
+**It is funded, and numbered — as WI-044 — and dispatched.** The lead's reason for
+the deferral is recorded in `.factory/INTAKE.md`: _the inventory it needs is worth
+writing against a settled repository, and the repository's visibility is the owner's
+open decision._ The owner decided visibility and the licence together at 19:08 on
+2026-10-21, the repository went public at 19:41, and the item was dispatched at
+19:46. The inventory is written (`e8d8fbc`) and the check is in flight. The want is
+neither lost nor pretended done.
 
 ### W9 — A published status is a claim too, and something checks it
 
@@ -578,14 +603,16 @@ a candidate, **C-23**, and no item carries it.
 
 **Both instances, and both are false today.**
 
-- `CONTRACTS.md:578` — the template record's note says _"The code does not
+- `CONTRACTS.md:622` — the template record's note says _"The code does not
   implement this yet... the implementation is WI-017"_ — and WI-017 landed at
   12:41 (`8b1fd01`). The record, the tool name and the registry are all in the tree.
-  **WI-065 carries the correction.**
-- `CONTRACTS.md:197` — the resolve route's entry says _"the code does not implement
+  **WI-065 carries the correction, and it is written** (`cf3770f`) — it waits on the
+  lead's merge.
+- `CONTRACTS.md:235` — the resolve route's entry says _"the code does not implement
   it yet... there is no `/api/executions` route"_ — and the route landed at 11:32
   (`414996c`) and is published at `apps/server/src/api/executions.ts:21`.
-  **WI-031 carries it, attached to the item it blocks.**
+  **WI-031 carries it, attached to the item it blocks. The correction is written**
+  (`2e9c95d`) — it waits on the lead's merge.
 
 **Why a count check cannot catch this and a status check can.** The published counts
 drifted too, and the pipeline caught them — because a count is a number somebody can

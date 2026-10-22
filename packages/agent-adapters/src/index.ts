@@ -5,6 +5,7 @@ import { createA2aAdapter } from './a2a.js';
 import { createCliAdapter } from './cli.js';
 import { createEchoAdapter } from './echo.js';
 import { createHttpAdapter } from './http.js';
+import { createMcpAdapter } from './mcp.js';
 import { createModelAdapter } from './model.js';
 
 export * from './types.js';
@@ -16,6 +17,7 @@ export { A2aAdapter, createA2aAdapter } from './a2a.js';
 export { CliAdapter, createCliAdapter } from './cli.js';
 export { EchoAdapter, createEchoAdapter } from './echo.js';
 export { HttpAdapter, createHttpAdapter } from './http.js';
+export { McpAdapter, createMcpAdapter } from './mcp.js';
 export { ModelAdapter, createModelAdapter } from './model.js';
 
 /**
@@ -29,7 +31,8 @@ export function createDefaultRegistry(): AdapterRegistry {
     .register('acp', createAcpAdapter)
     .register('a2a', createA2aAdapter)
     .register('http', createHttpAdapter)
-    .register('model', createModelAdapter);
+    .register('model', createModelAdapter)
+    .register('mcp', createMcpAdapter);
 }
 
 export type { AdapterConfig };

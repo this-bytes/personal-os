@@ -34,6 +34,11 @@ export function ResourceList({ resources, onOpen }: ResourceListProps): React.JS
                 </span>
                 <Badge variant="outline">{resource.type}</Badge>
                 <Badge variant="default">rev {resource.revision}</Badge>
+                {resource.templateId ? (
+                  <Badge variant="outline">
+                    made from {resource.templateId} v{resource.templateVersion}
+                  </Badge>
+                ) : null}
               </div>
               <pre className="mt-1 max-h-16 overflow-hidden whitespace-pre-wrap break-words font-mono text-[10px] leading-snug text-slate-500">
                 {preview(resource.data)}

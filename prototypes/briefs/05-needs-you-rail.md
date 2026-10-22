@@ -17,8 +17,8 @@ putting an acceptance control on the rail**.
 So the rail says what it can do, and nothing more:
 
 - It carries **Approve** and **Reject** for approvals, in place, on the row.
-- It carries the **two conclusions on a turn** that WI-031 added: *it ran* and *it
-  did not run* (`414996c`).
+- It carries the **two conclusions on a turn** that WI-031 added: _it ran_ and _it
+  did not run_ (`414996c`).
 - It does **not** carry acceptance. A task that is waiting for acceptance says so,
   and the link opens the exact card on the board where the decision is taken.
 
@@ -26,13 +26,7 @@ Building an acceptance control on the rail is a separate item and it needs the
 owner. This brief does not quietly build one, because an unowned decision surface
 is the kind of thing this factory keeps finding.
 
-**The boundary rule the rail is the exception to.** The rule is: _if it is a picture
-of the system, it is in the orientation room; if it is a place where work is
-inspected or decided, it is in the execution room — with one declared exception,
-the Needs-you rail, which carries decisions in the orientation room because a
-decision is taken where the list is._ The rail is not a summary that links away; it
-is the decision surface, and Work is where you go when the rail's summary is not
-enough.
+**The boundary rule the rail is one of the exceptions to.** The rule is quoted exactly as the direction document states it: _If it is a picture of the system, it is in the orientation room. If it is a place where work is inspected or decided, it is in the execution room — with two declared exceptions, the Needs-you rail and the constellation, which carry decisions in the orientation room because a decision is taken where the list is._ The rail is not a summary that links away; it is the decision surface, and Work is where you go when the rail's summary is not enough.
 
 **And the landing page is not the list any more.** The item's rule, as corrected on
 2026-10-21, is that the **root route is the Map room** and the **Needs-you rail
@@ -69,13 +63,16 @@ behaviour, not in shape:
 - **The derived list.** The server decides what is waiting and why. The rail draws
   it.
 - **The event-driven invalidation.** The list still refreshes from the event
-  stream; it does not poll.
+  stream — a task that changed state, and an agent that asked for an approval
+  (`apps/web/src/components/WaitingList.tsx:79-89`) — and it also refetches on a
+  **15-second safety net** (`WaitingList.tsx:27`, `:74`) that covers the case the
+  events miss. It is event-driven with a safety net, and it is not a poller.
 - **One thing is one entry.** A pending approval that belongs to a task is that
   task, and the task does not appear beside it. A turn a pending approval accounts
   for is not drawn again.
-- **The three states.** Loading says what it is loading; empty says *Nothing is
-  waiting on you*; a list that could not be loaded says *The waiting list could not
-  be loaded* and is **not** an empty list.
+- **The three states.** Loading says what it is loading; empty says _Nothing is
+  waiting on you_; a list that could not be loaded says _The waiting list could not
+  be loaded_ and is **not** an empty list.
 - **The row's fields and its copy.** The item's title, its reason and the server's
   detail are shown as they are given. The client does not reword what the server
   said.
@@ -91,15 +88,14 @@ tree at `414996c`; the rail shows what it is given and does not reword it.
 
 - [ ] The rail carries Approve and Reject on an approval row, in place, and the
       decision reaches the server through the same route as before.
-- [ ] The rail carries *it ran* and *it did not run* on a turn row.
+- [ ] The rail carries _it ran_ and _it did not run_ on a turn row.
 - [ ] **The rail does not carry an acceptance control**, and a task waiting for
       acceptance says so and links to the exact card on the board.
-- [ ] The rail's boundary is the direction's declared exception, and the build
-      follows the corrected rule rather than the version the document carried
-      before 2026-10-21.
+- [ ] The rail's boundary is the direction's declared exception, and the rule's exceptions are read as the rule declares them: _with two declared exceptions, the Needs-you rail and the constellation, which carry decisions in the orientation room because a decision is taken where the list is._ The build follows the corrected rule rather than the version the document carried before 2026-10-21.
 - [ ] One request to `GET /api/waiting`, and the list is still derived on the
       server.
-- [ ] The list still refreshes from the event stream.
+- [ ] The list still refreshes from the event stream, and the 15-second
+      safety-net refetch stays.
 - [ ] One thing is one entry: a pending approval that belongs to a task is that
       task, and a turn a pending approval accounts for is not drawn twice.
 - [ ] The loading, empty and error states are all still there, and a list that

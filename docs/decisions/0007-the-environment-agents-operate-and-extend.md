@@ -156,25 +156,32 @@ it does not restate the cost model.
 
 > If it is a picture of the system, it is in the orientation room. If it is a
 > place where work is inspected or decided, it is in the execution room — with
-> one declared exception, the Needs-you rail, which carries decisions in the
-> orientation room because a decision is taken where the list is.
+> two declared exceptions, the Needs-you rail and the constellation, which
+> carry decisions in the orientation room because a decision is taken where
+> the list is.
 
 _Quoted as it stands in
-[`prototypes/DIRECTION.md`](../../prototypes/DIRECTION.md) at `:45-48`, after
-the D1–D6 repair (`e560165`). The repair made the rule state the crossing the
-paragraph below already described, so **the decision did not change** and
-nothing else in this section was touched. The lead re-synced this quote on
-2026-10-21 at 15:00: it had drifted from the document, and a rule quoted
-without its load-bearing exception is what put the landing page in the wrong
-room in WI-024 and WI-040. Probe verifies it as it verifies any lead's edit._
+[`prototypes/DIRECTION.md`](../../prototypes/DIRECTION.md) at `:53-57` as read
+at `95e5165`, after the D1–D6 repair (`e560165`) and the second repair
+(`d3ef0d2`). The first made the rule state the crossing the paragraph below
+already described; the second gave the rule a second declared exception, the
+constellation, so **the decision did not change** and nothing else in this
+section was touched. The lead re-synced this quote on 2026-10-21 at 15:00, and
+it was re-synced again on 2026-10-22 after the second repair: it had drifted
+from the document each time, and a rule quoted without its load-bearing
+exception is what put the landing page in the wrong room in WI-024 and WI-040.
+Probe verifies it as it verifies any lead's edit._
 
 Under that rule: the constellation and the agent list are in the **orientation
 room** — the constellation _is_ the agent list, spatialised, and building it
 twice would build the same information twice; the factory board and the
 automation runs are in the **execution room**; and the dashboards are in the
-**orientation room**. There is one deliberate crossing, and it is
-load-bearing: the Map's **Needs you** rail carries the decision controls, so a
-decision is taken where the list is.
+**orientation room**. There are two deliberate crossings, and they are
+load-bearing: the Map's **Needs you** rail carries the decision controls, and
+the constellation carries the connect decision, because the owner's answer on
+Q2 makes connecting an agent a trust decision, and the constellation _is_ the
+agent list, spatialised. The reason is one reason, given once: **a decision is
+taken where the list is.**
 
 **What was rejected, and why it was rejected.** A decision that does not say
 what it rejected is not a decision, so the record of what was rejected on the
@@ -221,13 +228,15 @@ is. What the adoption re-lays-out is the _layout_ of the list, not the control
 inside it, and the finished control is what Forge's Needs-you rail wraps. The
 owner's top want does not wait on a palette.
 
-**The one consequence the direction leaves open.** The agent list is a picture
-in the orientation room, and by that room's own rule nothing is decided there —
-but connecting an agent is a trust decision (Q2). So the connect decision has
-to live somewhere in place: either the constellation carries it, or the agent
-list keeps a decision surface in the execution room. That is a build decision
-inside the direction rather than an owner decision, because the owner chose the
-direction and this is inside it, and
+**The one consequence the direction left open, and the answer.** The agent
+list is a picture in the orientation room, and by that room's own rule nothing
+is decided there — but connecting an agent is a trust decision (Q2). The
+connect decision had to live somewhere in place, and the direction now says
+where: **the constellation carries it**, because the constellation _is_ the
+agent list, spatialised, so a map that could list an agent and not connect one
+would fail the criterion WI-004 was returned for. That was a build decision
+inside the direction rather than an owner decision, because the owner chose
+the direction and this is inside it, and
 [WI-024](../../.factory/work/WI-024.md) carries it.
 
 **What it costs** is in `prototypes/DIRECTION.md`: a new component (the
@@ -245,14 +254,15 @@ the numbers are in that document.
   [FACTORY.md](../FACTORY.md), and the product record states the product-side
   consequence. Neither forks a protocol, and the boundary between them is the second
   open question.
-- Two of the six answers are half-built, and they say so. The template third of
+- Two of the six answers were half-built, and they said so. The template third of
   Q3 and the counting behind Q6 are both published shapes, so both needed the
-  owner's nod, and the owner gave both on 2026-10-21 at 06:01. They are in build
-  as [WI-017](../../.factory/work/WI-017.md) and
+  owner's nod, and the owner gave both on 2026-10-21 at 06:01. They were built as
+  [WI-017](../../.factory/work/WI-017.md) and
   [WI-020](../../.factory/work/WI-020.md), with their published entries in
-  [WI-030](../../.factory/work/WI-030.md).
-- **The product does not report on itself yet.** Nothing counts the two measures and
-  the panel does not show them.
+  [WI-030](../../.factory/work/WI-030.md) — the templates at `8b1fd01` and the
+  measures at `c2853ac`, both in the tree.
+- **The product reports on itself.** The two measures are counted from the data the
+  product already keeps, and the panel shows them in a band of their own.
 - One licence question is the owner's and not the factory's, and it is recorded
   above rather than left in a candidate table.
 - The open questions stay open, and this ADR does not close them: it records a

@@ -5,6 +5,7 @@ import { messageSchema } from './conversation.js';
 import { factoryTaskSchema } from './factory.js';
 import { resourceSchema } from './resource.js';
 import { automationRunSchema } from './automation.js';
+import { approvalSchema } from './approvals.js';
 
 /**
  * Server-to-client event stream. The web client subscribes once and renders
@@ -43,6 +44,10 @@ export const serverEventSchema = z.discriminatedUnion('type', [
   z.object({
     type: z.literal('automation.run'),
     run: automationRunSchema,
+  }),
+  z.object({
+    type: z.literal('approval.decided'),
+    approval: approvalSchema,
   }),
   z.object({
     type: z.literal('heartbeat'),
