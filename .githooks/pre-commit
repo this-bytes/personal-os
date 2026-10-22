@@ -2,11 +2,9 @@
 #
 # Warn when a commit is about to carry somebody else's work.
 #
-# FACTORY.md's rule is "one file, one live item": a bot that needs a file
-# another bot is working on asks Chief, it does not take it. The rule was
-# broken nine minutes after it was written, because the claim on a file was
-# not enough on its own — so the check belongs at commit time, where it can
-# be acted on.
+# Concurrent editors coordinate overlapping files. Staged and unstaged
+# changes to the same file can indicate mixed ownership, so report them
+# at commit time while the author can still inspect the staged hunks.
 #
 # This is that check. A file that is staged and also changed since it was
 # staged is a file two hands are on. The commit takes the staged version and
@@ -48,7 +46,7 @@ if [ -n "$both" ]; then
   done
   printf 'The commit takes the staged version and leaves the other edit uncommitted.\n'
   printf 'If the other edit is not yours, stage only your own hunks and leave the rest alone.\n'
-  printf 'See FACTORY.md, "The check belongs at commit time".\n'
+  printf 'See FACTORY.md, "Working in parallel".\n'
 fi
 
 exit 0

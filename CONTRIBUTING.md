@@ -68,10 +68,10 @@ npm run dev -w @personal-os/worker   # execution worker
 npm run dev -w @personal-os/web      # client, http://localhost:5173
 ```
 
-The first run asks you to create the owner account. The built-in **Echo**
-agent works with no external setup, so you can exercise the whole loop —
-mention it in a conversation, watch it reply — before connecting a real
-agent.
+The first run asks you to create the owner account. The built-in **Echo** agent
+works with no external setup and checks basic messaging/execution plumbing. Real
+harness tool use and deliverables require the demonstrations in
+[the active roadmap](docs/roadmap.md).
 
 ## The gates
 
@@ -129,15 +129,12 @@ command. It needs Docker:
 
 ## How a change gets reviewed
 
-Personal OS is reviewed by a small team of bots with separate, non-overlapping
-mandates — an implementation engineer, a verification engineer and a contracts
-and documentation engineer — coordinated by a factory lead. The roles and the
-file ownership table are in [FACTORY.md](FACTORY.md).
-
-The point of separating them is simple: the person who writes a change is
-not the person who decides whether it is correct. The verification engineer's
-job is to make your change fail. If it does not fail, you may not have tried
-hard enough — that is a compliment, not a complaint.
+A slice's implementer owns its code, tests, migrations and documentation. An
+independent reviewer checks the outcome, challenges failure cases and verifies
+compatibility. Reviewer responsibilities are flexible; named bot roles and
+exclusive file ownership are not prerequisites. The current workflow is
+[FACTORY.md](FACTORY.md), and the [feature guide](docs/feature-guide.md) describes
+how to deliver a complete slice.
 
 For a human contributor this means:
 
