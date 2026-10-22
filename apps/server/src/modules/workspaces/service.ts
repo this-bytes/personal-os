@@ -3,7 +3,7 @@ import type { Database } from '../../db/client.js';
 import { workspaces } from '../../db/schema.js';
 import { errors } from '../../lib/errors.js';
 import { newId, slugify } from '../../lib/ids.js';
-import type { Workspace } from '@personal-os/contracts';
+import type { AutonomyPolicyPatch, Workspace } from '@personal-os/contracts';
 
 export interface WorkspaceService {
   list(): Workspace[];
@@ -11,7 +11,11 @@ export interface WorkspaceService {
   get(id: string): Workspace;
   update(
     id: string,
-    patch: Partial<Pick<Workspace, 'name' | 'description' | 'autonomyMode' | 'autonomyPolicy'>>,
+    patch: Partial<
+      Pick<Workspace, 'name' | 'description' | 'autonomyMode'> & {
+        autonomyPolicy?: AutonomyPolicyPatch;
+      }
+    >,
   ): Workspace;
   ensureDefault(): Workspace;
 }
@@ -94,9 +98,15 @@ export function createWorkspaceService(db: Database): WorkspaceService {
       // enforced nowhere — `manual` does not gate delegation, because the mode
       // is consulted by nothing. This is about the setting being honest rather
       // than about the mode being in force.
+      //
+      // A policy change says what changes. The owner sets the turn limit and
+      // the action list they set earlier stays, so a patch is merged into the
+      // policy the workspace already carries rather than written over it. An
+      // absent field is left alone; an explicit empty list clears that list, so
+      // clearing is still deliberate.
       const policy =
         patch.autonomyPolicy !== undefined
-          ? patch.autonomyPolicy
+          ? { ...current.autonomyPolicy, ...patch.autonomyPolicy }
           : patch.autonomyMode !== undefined
             ? { ...current.autonomyPolicy, mode: patch.autonomyMode }
             : undefined;

@@ -1163,6 +1163,11 @@ being in force** — the mode is still enforced nowhere.
 `autonomy.read` MCP tool. Its shape is published in
 [the autonomy-policy route](#the-autonomy-policy-route).
 
+**And the workspace's own policy is writable.** `PATCH /api/workspaces/:id` accepts an
+`autonomyPolicy`, so the limits, the allowed actions and the approvals the owner wants
+are set over the API rather than by editing the database. Its shape and the rules of the
+write are published in [the autonomy-policy write](#the-autonomy-policy-write).
+
 **An agent claiming a task is complete is not the same as the task satisfying its
 acceptance criteria.** An agent's completion moves the task to `review`. Only an
 explicit acceptance decision moves it to `done`.
@@ -1773,7 +1778,7 @@ is not left deleting the database.
 | `GET`              | `/api/auth/me`                                       | The current owner.                                                                      |
 | `POST`             | `/api/auth/owner-token`                              | Return the configured owner token. Owner only — an agent token is refused.              |
 | `GET/POST`         | `/api/workspaces`                                    | List and create workspaces.                                                             |
-| `GET/PATCH`        | `/api/workspaces/:id`                                | Read and update a workspace.                                                            |
+| `GET/PATCH`        | `/api/workspaces/:id`                                | Read and update a workspace. `PATCH` accepts `autonomyPolicy`.                          |
 | `GET/POST`         | `/api/agents`                                        | List and create agent connections.                                                      |
 | `GET/PATCH/DELETE` | `/api/agents/:id`                                    | Read, update, remove a connection. `PATCH` accepts `toolGrants`.                        |
 | `POST`             | `/api/agents/:id/probe`                              | Re-run capability discovery.                                                            |
@@ -1889,6 +1894,53 @@ loosen a policy or to tighten one either
 
 **The rules the policy is resolved by are published** in
 [the autonomy policy](#autonomy-policy).
+
+### The autonomy-policy write
+
+`PATCH /api/workspaces/:id` accepts an `autonomyPolicy` beside `name`, `description` and
+`autonomyMode` (`apps/server/src/api/workspaces.ts:15`). **What is written is the
+workspace's own policy, not the policy in force.** The policy in force is composed by the
+resolver out of the workspace's, the goal's and the conversation's, so there is no row
+that is "the effective policy" to write to; the workspace's is the one the owner owns.
+
+```ts
+type AutonomyPolicyPatch = {
+  mode?: AutonomyMode;
+  allowedActions?: AutonomyAction[];
+  approvalRequired?: AutonomyAction[];
+  maxTurns?: number;
+  maxDurationSeconds?: number;
+  maxSpendUnits?: number;
+  dailySpendUnits?: number;
+};
+```
+
+**A change says what changes.** Every field is optional and the ones the owner does not
+name are left as they were, so setting the turn limit does not clear the action list that
+was set before it (`apps/server/src/modules/workspaces/service.ts:109`). **An absent list
+is left alone and an empty list clears it**, so clearing is still deliberate.
+
+**An action the system does not know is refused.** The two lists are constrained to the
+published vocabulary — `message.send`, `tool.call`, `artifact.create`
+(`packages/contracts/src/autonomy.ts:34`) — and a name outside it comes back
+`422 validation_failed` in the shared error envelope. A policy that names an action the
+system does not understand allows nothing, and a write that was accepted would say so
+only by silence.
+
+**The mode is written into both of the places a workspace keeps it.** The mode the owner
+sets is the mode that is in force: a patch that names a mode sets the column the panel
+shows _and_ the policy the resolver reads, and a patch that names no mode leaves both
+alone (`apps/server/src/modules/workspaces/service.ts:113`). The two cannot disagree.
+
+**The goal's policy is still not writable.** Goals have no update route, so the policy a
+goal carries can only be changed by editing the database. This entry is about the
+workspace's own policy and says nothing about the goal's.
+
+**Migration.** There was nothing before this write, so there is nothing to migrate. The
+write is additive — no route changes its shape, no record is reclassified, and a client
+that does not send the field is unaffected. A client that sent `autonomyPolicy` to this
+route before and saw no effect now sees the effect it asked for; that is the point of
+the write, and it is not a promise this contract breaks.
 
 ### The measures route
 

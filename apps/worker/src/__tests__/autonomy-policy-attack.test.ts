@@ -431,6 +431,12 @@ describe('the resolver the decisions describe (decision 1)', () => {
       path.join('apps', 'server', 'src', 'modules', 'autonomy', 'service.ts'),
       path.join('apps', 'server', 'src', 'modules', 'workspaces', 'service.ts'),
       path.join('apps', 'server', 'src', 'modules', 'factory', 'service.ts'),
+      // The route that writes a policy as part of ordinary CRUD — the same
+      // category as the two services above. It names the field of a published
+      // request body, not a row, and it resolves nothing: the service reads
+      // the row and writes it, and the resolver is still the only place a
+      // policy is resolved.
+      path.join('apps', 'server', 'src', 'api', 'workspaces.ts'),
     ]);
 
     const offenders: string[] = [];

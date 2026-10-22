@@ -20,7 +20,7 @@ import type { FastifyInstance } from 'fastify';
 import { buildApp } from '../app.js';
 import { loadConfig } from '../config.js';
 import { defaultAgentToolGrants, mcpToolNames } from '@personal-os/contracts';
-import type { AutonomyPolicy } from '@personal-os/contracts';
+import type { AutonomyPolicyPatch } from '@personal-os/contracts';
 
 /**
  * The policy the contract publishes for a workspace whose stored policy is
@@ -337,7 +337,7 @@ async function createWorkspace(name: string): Promise<string> {
  */
 async function createWorkspaceWithPolicy(
   name: string,
-  autonomyPolicy: AutonomyPolicy,
+  autonomyPolicy: AutonomyPolicyPatch,
 ): Promise<string> {
   const id = await createWorkspace(name);
   app.services.workspaces.update(id, { autonomyPolicy });
@@ -350,7 +350,7 @@ async function createWorkspaceWithPolicy(
  * `tool.call` is what every MCP tool other than `conversation.post` stands
  * for, so a policy that does not allow it refuses those calls.
  */
-const RESTRICTED_POLICY: AutonomyPolicy = {
+const RESTRICTED_POLICY: AutonomyPolicyPatch = {
   mode: 'manual',
   allowedActions: ['message.send'],
   approvalRequired: [],
@@ -364,7 +364,7 @@ const RESTRICTED_POLICY: AutonomyPolicy = {
  * A policy that allows every action, and wants the owner to approve one of
  * them before an agent may take it.
  */
-const APPROVAL_POLICY: AutonomyPolicy = {
+const APPROVAL_POLICY: AutonomyPolicyPatch = {
   mode: 'manual',
   allowedActions: ['message.send', 'tool.call', 'artifact.create'],
   approvalRequired: ['tool.call'],
