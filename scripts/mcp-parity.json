@@ -386,15 +386,13 @@
     },
     {
       "route": "POST /api/resources/:id/execute",
-      "kind": "listed",
-      "reason": "Running a resource now. The route runs what the kind can run and refuses the kinds that have no run; the agent path is SPEC-S2's question.",
-      "spec": "SPEC-S2+"
+      "kind": "paired",
+      "tool": "resource.execute"
     },
     {
       "route": "POST /api/resources/:id/publish",
-      "kind": "listed",
-      "reason": "Publishing makes a resource visible to everyone; it is the owner's own act. The route publishes the kinds that have a publish act and refuses the rest; the agent path is SPEC-S2's question.",
-      "spec": "SPEC-S2+"
+      "kind": "paired",
+      "tool": "resource.publish"
     },
     {
       "route": "POST /api/resources/upload",

@@ -32,6 +32,21 @@ export const mcpToolNames = [
   'resource.create',
   'resource.get',
   'resource.update',
+  /**
+   * The two acts a resource may have: publish it, or run it.
+   *
+   * Neither is in the default grant set, and the coverage table gives the
+   * reason for each. Publishing makes a resource visible to everyone: it is
+   * the act of the owner, and publishing an automation is what makes it
+   * active, so an active automation runs the work of the owner. Running a
+   * resource is running it now: an automation run is enqueued for the worker
+   * and its action may prompt an agent, and a data source query makes the
+   * outbound request that the configuration of the owner describes. Both
+   * spend an authority the owner holds, so the owner grants each of them by
+   * name.
+   */
+  'resource.publish',
+  'resource.execute',
   'resource.template.list',
   'resource.template.get',
   'automation.create',
@@ -89,9 +104,9 @@ export const mcpToolNameSchema = z.enum(mcpToolNames);
  * workspace it was granted, not across all of them.
  *
  * The destructive verbs are not here either: `bot.dispatch`,
- * `approval.decide`, `execution.stop`, `execution.resolve` and `task.accept`
- * are the owner's to grant, one by one, because each of them spends an
- * authority the owner holds.
+ * `approval.decide`, `execution.stop`, `execution.resolve`, `task.accept`,
+ * `resource.publish` and `resource.execute` are the owner's to grant, one by
+ * one, because each of them spends an authority the owner holds.
  */
 export const defaultAgentToolGrants: McpToolName[] = [
   'conversation.read',
