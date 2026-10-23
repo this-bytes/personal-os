@@ -181,16 +181,20 @@ claimed, it does not say a queued run ran, and it shows a refusal as a refusal
 fails if it declares the support again instead of reading the published one.
 
 **The audit's rows.** _Publish a resource_ and _execute a resource_ were
-**human-only** when this slice landed: the owner path told the truth, and no
-agent path existed — `mcpToolNames` published no `resource.publish` and no
-`resource.execute`. The audit's record then read **23 exposed-paired, 43
-human-only, 0 broken-window, 17 exempt — 83 rows over 82 routes**, and the two
-rows were re-measured in the audit with the evidence of both readings.
+**human-only** before this slice: the owner path told the truth, and no agent
+path existed — `mcpToolNames` published no `resource.publish` and no
+`resource.execute`. The audit's record read **23 exposed-paired, 43
+human-only, 0 broken-window, 17 exempt — 83 rows over 82 routes** at that
+baseline, and the two rows were re-measured in the audit with the evidence of
+both readings.
 `scripts/mcp-parity.json` kept both routes `listed` against `SPEC-S2+`, with the
 reasons restated: the route runs or publishes what the kind can do and refuses
 the rest, and the agent path is SPEC-S2's question. **SPEC-S2 batch 2 has since
 answered that question**: `mcpToolNames` publishes both names, the two routes
 are `paired` in the coverage table, and the two rows are **exposed-paired**.
+The audit now reads **28 exposed-paired, 38 human-only, 0 broken-window, 17
+exempt** — the count to read is the one the audit carries, because each batch
+that pairs a row moves it.
 
 **The audit's counts and the coverage table now agree.** The audit records the
 parity gate as reading **22 paired, 43 listed and 17 exempt**. That reading

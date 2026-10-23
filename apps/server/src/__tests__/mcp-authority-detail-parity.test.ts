@@ -40,6 +40,7 @@ import { buildApp } from '../app.js';
 import { loadConfig } from '../config.js';
 import { blockedCapabilities, executions, tasks } from '../db/schema.js';
 import { mcpToolNames } from '@personal-os/contracts';
+import type { ExecutionStatus } from '@personal-os/contracts';
 
 let app: FastifyInstance;
 let sessionCookie = '';
@@ -190,11 +191,7 @@ async function createAgent(
 }
 
 /** A turn in a workspace, in the state the test needs it in. */
-function seedExecution(
-  id: string,
-  workspaceId: string,
-  status: 'queued' | 'running' | 'blocked' | 'unknown',
-): void {
+function seedExecution(id: string, workspaceId: string, status: ExecutionStatus): void {
   const now = new Date().toISOString();
   app.services.runtime.db
     .insert(executions)
@@ -217,9 +214,10 @@ function seedExecution(
 }
 
 /** An approval waiting for a decision. */
-function seedApproval(label: string, workspaceId: string): string {
+function seedApproval(label: string, workspaceId: string, executionId?: string): string {
   const approval = app.services.approvals.request({
     workspaceId,
+    executionId,
     summary: `Delete the production database (${label})`,
     details: { marker: 'ELSEWHERE-ONLY' },
   });
@@ -473,7 +471,11 @@ describe('an agent reaching outside the workspace it was granted', () => {
 describe('the tool answers what the route answers', () => {
   it('reads the same evidence the owner’s route reads', async () => {
     const agent = await createAgent('Reader', ['approval.evidence']);
-    const approvalId = seedApproval('apr_evidence', ownId);
+    // The approval names the turn behind it, so the evidence has something to
+    // answer about. A tool that stopped reading the turn would answer null, and
+    // the comparison below would compare two empty answers and still pass.
+    seedExecution('exe_evidence', ownId, 'unknown');
+    const approvalId = seedApproval('apr_evidence', ownId, 'exe_evidence');
 
     const viaTool = await mcp({ authorization: `Bearer ${agent.token}` }, 'approval.evidence', {
       approvalId,
@@ -488,9 +490,13 @@ describe('the tool answers what the route answers', () => {
     });
     expect(viaRoute.statusCode).toBe(200);
 
+    // The evidence is about the turn the approval names.
+    const evidence = JSON.parse(toolText.text) as { execution: { id: string } | null };
+    expect(evidence.execution?.id).toBe('exe_evidence');
+
     // The same evidence, member for member. The route and the tool are thin
     // adapters over one capability, so there is one answer.
-    expect(JSON.parse(toolText.text)).toEqual(viaRoute.json());
+    expect(evidence).toEqual(viaRoute.json());
   });
 
   it('closes a turn the way the owner’s route closes it', async () => {
@@ -530,6 +536,28 @@ describe('the tool answers what the route answers', () => {
     expect(toolPayload.outcome).toBe(routePayload.outcome);
     expect(toolPayload.detail).toBe(routePayload.detail);
     expect(toolPayload.execution.status).toBe(routePayload.execution.status);
+  });
+
+  it('refuses to close a turn whose outcome is already known', async () => {
+    const agent = await createAgent('Resolver', ['execution.resolve']);
+    seedExecution('exe_already_known', ownId, 'completed');
+
+    const result = await mcp({ authorization: `Bearer ${agent.token}` }, 'execution.resolve', {
+      executionId: 'exe_already_known',
+      outcome: 'failed',
+    });
+    const text = toolResult(result.body);
+    expect(text.isError, 'a known outcome was overwritten').toBe(true);
+
+    // The turn did not move. A conclusion about a turn that already ended
+    // would rewrite what the log says happened, and the owner's conclusion is
+    // about work nobody can say how it went.
+    const rows = app.services.runtime.db
+      .select()
+      .from(executions)
+      .where(eq(executions.id, 'exe_already_known'))
+      .all();
+    expect(rows[0]?.status).toBe('completed');
   });
 
   it('accepts a task the way the owner’s route accepts it', async () => {

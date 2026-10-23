@@ -4,6 +4,8 @@ import type { Database } from '../../db/client.js';
 import { approvals, executions } from '../../db/schema.js';
 import { errors } from '../../lib/errors.js';
 import { newId } from '../../lib/ids.js';
+import type { EventsService } from '../events/service.js';
+import { publishTurnEnd } from '../events/turn-end.js';
 import { readApprovalEvidence } from './evidence.js';
 
 /**
@@ -57,7 +59,7 @@ export interface ApprovalsService {
  * decides, and the decision is recorded. An approval that is never decided
  * stays pending — the system never resolves it silently.
  */
-export function createApprovalsService(db: Database): ApprovalsService {
+export function createApprovalsService(db: Database, events: EventsService): ApprovalsService {
   const toApproval = (row: typeof approvals.$inferSelect): Approval => ({
     id: row.id,
     workspaceId: row.workspaceId,
@@ -172,6 +174,14 @@ export function createApprovalsService(db: Database): ApprovalsService {
         })
         .where(eq(executions.id, executionId))
         .run();
+
+      // A turn that ended here ends in the log too. `unknown` is a question,
+      // not an ending, so it publishes nothing: the owner closes that turn, and
+      // the close publishes the one event that ends it.
+      const turn = db.select().from(executions).where(eq(executions.id, executionId)).get();
+      if (turn) {
+        publishTurnEnd(events, turn, status);
+      }
     },
   };
 

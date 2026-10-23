@@ -290,7 +290,9 @@ describe('a delegated turn', () => {
     expect(childTurn).toBeDefined();
 
     const outcome = await executeJob(context, childTurn!);
-    expect(outcome.status).toBe('completed');
+    // The delegated answer went into the room's canonical history, so the
+    // turn is committed rather than merely completed.
+    expect(outcome.status).toBe('committed');
 
     // The answer came back to the room that asked, addressed to the
     // coordinator alone.

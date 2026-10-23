@@ -85,6 +85,7 @@ function conversation(participants: ConversationDetail['participants']): Convers
     maxDurationSeconds: 900,
     maxSpendUnits: 0,
     participants,
+    sessionRefs: [],
   };
 }
 

@@ -8,6 +8,7 @@ import {
   type Participant,
   type Persona,
   type RoutingMode,
+  type SessionReference,
   type TurnCapabilityView,
 } from '@personal-os/contracts';
 import type { Database } from '../../db/client.js';
@@ -19,6 +20,7 @@ import type { EventsService } from '../events/service.js';
 import type { Queue } from '../../queue/client.js';
 import type { AuditService } from '../audit/service.js';
 import { planAndDispatch } from './dispatch.js';
+import { listSessionReferences } from './session-refs.js';
 import {
   deriveChainState,
   planRouting,
@@ -33,6 +35,15 @@ export interface ConversationDetail extends Conversation {
   maxDurationSeconds: number;
   maxSpendUnits: number;
   participants: Participant[];
+  /**
+   * The runtime sessions this conversation holds.
+   *
+   * One reference per agent in the room, because two agents keep two
+   * sessions. The reference says which session the agent is in and whether the
+   * next turn may continue it — a runtime that keeps no session says so
+   * rather than pretending the conversation continues where it left off.
+   */
+  sessionRefs: SessionReference[];
 }
 
 export interface PostMessageInput {
@@ -192,6 +203,10 @@ export function createConversationsService(
     maxDurationSeconds: row.maxDurationSeconds,
     maxSpendUnits: row.maxSpendUnits,
     participants: listParticipants(row.id),
+    // The session references the conversation holds, so a client can read
+    // which runtime session it is talking to and whether the next turn may
+    // continue it.
+    sessionRefs: listSessionReferences(db, row.id),
   });
 
   function listParticipants(conversationId: string): Participant[] {

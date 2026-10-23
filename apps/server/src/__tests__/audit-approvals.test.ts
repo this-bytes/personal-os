@@ -3,6 +3,7 @@ import { createTestDatabase } from './helpers.js';
 import type { DatabaseHandle } from '../db/client.js';
 import { createAuditService } from '../modules/audit/service.js';
 import { createApprovalsService } from '../modules/approvals/service.js';
+import { EventsService } from '../modules/events/service.js';
 
 let handle: DatabaseHandle | null = null;
 
@@ -59,7 +60,7 @@ describe('the audit trail', () => {
 describe('approvals', () => {
   it('starts pending', () => {
     handle = createTestDatabase();
-    const approvals = createApprovalsService(handle.db);
+    const approvals = createApprovalsService(handle.db, new EventsService(handle.db));
 
     const approval = approvals.request({
       workspaceId: 'wsp_1',
@@ -73,7 +74,7 @@ describe('approvals', () => {
 
   it('records a decision', () => {
     handle = createTestDatabase();
-    const approvals = createApprovalsService(handle.db);
+    const approvals = createApprovalsService(handle.db, new EventsService(handle.db));
 
     const approval = approvals.request({
       workspaceId: 'wsp_1',
@@ -93,7 +94,7 @@ describe('approvals', () => {
 
   it('refuses to decide the same request twice', () => {
     handle = createTestDatabase();
-    const approvals = createApprovalsService(handle.db);
+    const approvals = createApprovalsService(handle.db, new EventsService(handle.db));
 
     const approval = approvals.request({ workspaceId: 'wsp_1', summary: 'Something' });
     approvals.decide(approval.id, { approved: true, decidedBy: 'usr_1' });
@@ -105,7 +106,7 @@ describe('approvals', () => {
 
   it('filters by status', () => {
     handle = createTestDatabase();
-    const approvals = createApprovalsService(handle.db);
+    const approvals = createApprovalsService(handle.db, new EventsService(handle.db));
 
     const first = approvals.request({ workspaceId: 'wsp_1', summary: 'One' });
     approvals.request({ workspaceId: 'wsp_1', summary: 'Two' });

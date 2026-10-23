@@ -325,14 +325,16 @@ describe('a turn that is waiting for a decision', () => {
       }),
     );
 
-    expect(outcome.status).toBe('completed');
+    // The reply went into the conversation's canonical history, so the turn is
+    // committed rather than merely completed.
+    expect(outcome.status).toBe('committed');
 
     const resumed = adapter.turns[1];
     expect(resumed?.externalSessionId).toBe('sess_1');
     expect(resumed?.message).toContain('The owner approved this operation');
 
     const execution = handle.db.select().from(executions).where(eq(executions.id, 'exe_1')).get();
-    expect(execution?.status).toBe('completed');
+    expect(execution?.status).toBe('committed');
     expect(execution?.finishedAt).not.toBeNull();
 
     // The reply is the same reply: one turn, one message, and what came

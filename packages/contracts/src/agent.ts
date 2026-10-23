@@ -184,6 +184,15 @@ export const executionStatusSchema = z.enum([
   'running',
   'blocked',
   'completed',
+  /**
+   * The turn's output is in canonical history, and the turn can be continued
+   * from it.
+   *
+   * `completed` means the adapter returned. `committed` means the output was
+   * written and acknowledged, which is a different fact: a turn that merely
+   * returned left nothing a later turn could continue from.
+   */
+  'committed',
   'failed',
   'cancelled',
   'unknown',
