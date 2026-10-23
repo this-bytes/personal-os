@@ -1,4 +1,4 @@
-import { spawn, type ChildProcessWithoutNullStreams } from 'node:child_process';
+import type { ChildProcessWithoutNullStreams } from 'node:child_process';
 import { mkdtemp, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
@@ -12,7 +12,7 @@ import {
 } from '@personal-os/contracts';
 import type { AdapterContext } from './types.js';
 import { AdapterLifecycle, notConnectedEvent } from './lifecycle.js';
-import { buildSanitizedEnv, resolveExecutable, terminateChild } from './util.js';
+import { buildSanitizedEnv, resolveExecutable, spawnExecutable, terminateChild } from './util.js';
 
 /**
  * Local command-line agents.
@@ -44,7 +44,7 @@ export class CliAdapter implements AgentAdapter {
   }
 
   async connect(_connection: AgentConnection): Promise<AgentCapabilities> {
-    const resolved = await resolveExecutable(this.config.command);
+    const resolved = resolveExecutable(this.config.command);
     if (!resolved) {
       const reason = `The command "${this.config.command}" was not found.`;
       this.ctx.logger.warn('CLI executable not found', { command: this.config.command });
@@ -98,13 +98,10 @@ export class CliAdapter implements AgentAdapter {
         args = [...args, this.config.promptArg, promptFile];
       }
 
-      const child = spawn(this.config.command, args, {
-        cwd: this.config.cwd ?? process.cwd(),
+      const child = spawnExecutable(this.config.command, args, {
+        cwd: this.config.cwd,
         env: buildSanitizedEnv(this.config.env),
-        stdio: ['pipe', 'pipe', 'pipe'],
-        shell: false,
-        windowsHide: true,
-      }) as ChildProcessWithoutNullStreams;
+      });
 
       this.running.set(executionId, child);
 
