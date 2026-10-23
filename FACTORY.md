@@ -1,5 +1,10 @@
 # Building Personal OS
 
+> **History, not process.** [ADR 0012](docs/decisions/0012-specs-and-adrs-drive-the-build.md)
+> retired this workflow. The build is driven by specs and ADRs, and the live queue
+> is [the spec queue](docs/spec/README.md). Nothing below is an instruction to
+> follow; the file is kept for provenance only.
+
 This is the **out-of-band development workflow**, approved in the chat-first
 recovery on 2026-10-22. It builds the product; the product's factory is a feature
 being built. Development, CI, release and recovery work with Personal OS stopped.

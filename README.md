@@ -222,31 +222,33 @@ personal-os/
 │   ├── agent-adapters/   # ACP, A2A, CLI, HTTP, model adapters
 │   └── ui/               # Reusable components
 ├── docs/
-│   ├── roadmap.md        # Current delivery sequence
+│   ├── spec/             # The work queue: a spec is the unit of work
+│   ├── roadmap.md        # The recovery stages the specs deliver
 │   ├── feature-guide.md  # How to implement a complete slice
 │   └── decisions/        # Architecture decision records
 ├── deploy/
 │   ├── install-service.sh
 │   ├── update.sh
 │   └── source-stack.sh
-├── .factory/             # Current work item and compact contract-status evidence
+├── .factory/             # Read-only history (ADR 0012); compact contract evidence
 ├── PRODUCT.md            # What this is and what it is not
 ├── ARCHITECTURE.md       # How the pieces fit together
 ├── CONTRACTS.md          # The published contracts
 ├── AGENTS.md             # Rules for coding agents working in this repo
-└── FACTORY.md            # How the software factory works, and who owns what
+└── FACTORY.md            # The retired out-of-band workflow, kept as history
 ```
 
 ## Documentation
 
-- [docs/roadmap.md](docs/roadmap.md) — the active delivery sequence
+- [docs/spec/](docs/spec/) — the work queue: a spec is the unit of work (ADR 0012)
+- [docs/roadmap.md](docs/roadmap.md) — the recovery stages the specs deliver
 - [docs/adapters.md](docs/adapters.md) — runtime integration research
 - [docs/reuse-inventory.md](docs/reuse-inventory.md) — what the chat surface takes from other people's code, and what it still has to build
 - [PRODUCT.md](PRODUCT.md) — product ownership boundaries and scope
 - [ARCHITECTURE.md](ARCHITECTURE.md) — components, data flow and design decisions
 - [CONTRACTS.md](CONTRACTS.md) — the conversation, connection, resource and factory contracts
 - [AGENTS.md](AGENTS.md) — the development contract for coding agents
-- [FACTORY.md](FACTORY.md) — the independent development workflow
+- [FACTORY.md](FACTORY.md) — the retired out-of-band workflow, kept as history
 - [CONTRIBUTING.md](CONTRIBUTING.md) — how to contribute
 - [SECURITY.md](SECURITY.md) — how to report a vulnerability
 - [docs/decisions](docs/decisions) — architecture decision records
@@ -261,8 +263,10 @@ historical practices, not required dispatch gates.
 
 The product's factory is a later feature built on rich chat and durable execution.
 It coordinates the owner's goals and tasks through connected agents; it is not the
-system required to build Personal OS itself. Follow [FACTORY.md](FACTORY.md) for
-development and [the roadmap](docs/roadmap.md) for the delivery sequence.
+system required to build Personal OS itself. The build is driven by specs and
+ADRs: take the next outcome from [the spec queue](docs/spec/README.md). The old
+out-of-band workflow in [FACTORY.md](FACTORY.md) is kept as history, not as
+process.
 
 ## Development
 
