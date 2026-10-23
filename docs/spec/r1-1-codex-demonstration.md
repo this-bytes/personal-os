@@ -110,6 +110,42 @@ input (the argument `-` says so), and `--json` makes the runtime a stream of
 JSONL events rather than a wall of text. `--sandbox` is the boundary the
 owner chooses for the agent's own commands.
 
+Two more of its subcommands, measured, because they bear on what the route
+can and cannot do:
+
+```
+codex exec resume --help
+```
+
+```
+Resume a previous session by id or pick the most recent with --last
+
+Usage: codex exec resume [OPTIONS] [SESSION_ID] [PROMPT]
+
+Arguments:
+  [SESSION_ID]
+          Conversation/session id (UUID) or thread name. UUIDs take precedence if it parses. If
+          omitted, use --last to pick the most recent recorded session
+```
+
+`codex exec resume` can re-enter a recorded session. It can only re-enter
+one that was recorded, which `--ephemeral` is defined not to do.
+
+And the approval policy that the non-interactive route does **not** carry:
+
+```
+codex --help
+```
+
+```
+  -a, --ask-for-approval <APPROVAL_POLICY>
+```
+
+That flag belongs to the interactive CLI. `codex exec --help` does not list
+it — the exec route offers `--approve-for-me` and
+`--dangerously-bypass-approvals-and-sandbox` instead, and neither of those
+asks the owner anything.
+
 ### The approved surface, and the one this spec must reach
 
 `docs/adapters.md` names the surface Codex is to be integrated through:
@@ -440,11 +476,14 @@ Stated plainly, because the baseline asks for a floor and a floor is not a
 parity claim.
 
 - **Codex exposes no in-conversation permission request on the command line
-  route.** `codex exec` has no `--ask-for-approval`; the options it offers
-  are `--approve-for-me` (automatic review under the `workspace-write`
-  sandbox) and `--dangerously-bypass-approvals-and-sandbox`. Neither is a
-  question to the owner. **The supported alternative** is the App Server
-  route, where the runtime raises the request itself and the panel answers it
+  route.** Codex does have an approval policy — the top-level interactive CLI
+  carries `-a, --ask-for-approval <APPROVAL_POLICY>` — but the non-interactive
+  route does not: `codex exec --help` offers no `--ask-for-approval`, only
+  `--approve-for-me` (automatic review under the `workspace-write` sandbox)
+  and `--dangerously-bypass-approvals-and-sandbox`. Neither is a question to
+  the owner, and a policy for an interactive session is not a question a
+  panel can answer. **The supported alternative** is the App Server route,
+  where the runtime raises the request itself and the panel answers it
   through the product's approval. On the command line route the product must
   say the limit rather than show a control that cannot work.
 - **The command line route cannot continue a session.** The `codex-cli`
