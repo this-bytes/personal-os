@@ -135,7 +135,16 @@ export interface FactoryService {
   /** Record an acceptance decision. Only a satisfied acceptance closes a task. */
   acceptTask(
     taskId: string,
-    input: { satisfied: boolean; reason?: string; acceptedBy: string },
+    input: {
+      satisfied: boolean;
+      reason?: string;
+      acceptedBy: string;
+      /**
+       * Who accepted. A task leaving the unknown state is written to the
+       * trail, and the entry names the actor that made the judgement.
+       */
+      actorType?: 'human' | 'agent';
+    },
   ): FactoryTask;
 }
 
@@ -553,7 +562,7 @@ export function createFactoryService(options: FactoryServiceOptions): FactorySer
       if (task.status === 'unknown') {
         audit.record({
           workspaceId: task.workspaceId,
-          actorType: 'human',
+          actorType: input.actorType ?? 'human',
           actorId: input.acceptedBy,
           action: 'task.outcome.resolved',
           targetType: 'task',
@@ -562,6 +571,19 @@ export function createFactoryService(options: FactoryServiceOptions): FactorySer
           metadata: { from: 'unknown', to: status },
         });
       }
+
+      // The acceptance itself is the owner's judgement on the work, and the
+      // trail says whose judgement it was.
+      audit.record({
+        workspaceId: task.workspaceId,
+        actorType: input.actorType ?? 'human',
+        actorId: input.acceptedBy,
+        action: input.satisfied ? 'task.accepted' : 'task.rejected',
+        targetType: 'task',
+        targetId: taskId,
+        result: 'success',
+        metadata: { reason: input.reason ?? '' },
+      });
 
       const updated = service.getTask(taskId);
       events.publish({ type: 'task.updated', task: updated }, { workspaceId: task.workspaceId });

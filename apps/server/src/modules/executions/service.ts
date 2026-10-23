@@ -87,14 +87,17 @@ export interface ExecutionsService {
    * be confirmed.
    *
    * The execution takes the conclusion and its reply follows it. The audit
-   * entry is written by the route, where the owner's own action is, and it
-   * names the owner.
+   * entry is written here, where the action is, and it names who reached the
+   * conclusion.
    */
   resolve(input: {
     executionId: string;
     outcome: ExecutionOutcome;
     /** The owner's own words, when they have any. */
     note?: string;
+    /** Who reached the conclusion. */
+    actorType: ActorType;
+    actorId: string;
   }): ExecutionResolution;
 }
 
@@ -299,7 +302,7 @@ export function createExecutionsService(options: {
       };
     },
 
-    resolve({ executionId, outcome, note }): ExecutionResolution {
+    resolve({ executionId, outcome, note, actorType, actorId }): ExecutionResolution {
       const execution = db.select().from(executions).where(eq(executions.id, executionId)).get();
       if (!execution) {
         throw errors.notFound('Execution');
@@ -342,11 +345,29 @@ export function createExecutionsService(options: {
         .where(eq(messages.executionId, executionId))
         .run();
 
+      // Leaving the unknown state is the answer to the question the worker
+      // could not answer, so it is written to the audit trail, beside the task
+      // path's own answer. The entry names who reached the conclusion, because
+      // a conclusion is somebody's.
+      audit.record({
+        workspaceId: execution.workspaceId,
+        actorType,
+        actorId,
+        action: 'execution.outcome.resolved',
+        targetType: 'execution',
+        targetId: executionId,
+        result: 'success',
+        metadata: {
+          from: 'unknown',
+          to: outcome,
+          ...(reason ? { note: reason } : {}),
+        },
+      });
+
       // The owner's conclusion is the turn's ending. The turn was in
       // `unknown` — a question, not an ending — so the close publishes the one
       // event that ends it, and the row and the log say the same thing.
       publishTurnEnd(events, execution, outcome);
-
       return {
         execution: {
           id: execution.id,

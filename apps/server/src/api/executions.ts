@@ -1,6 +1,6 @@
 import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
-import { audit, parseBody, requireAuth } from './helpers.js';
+import { parseBody, requireAuth } from './helpers.js';
 
 const resolveSchema = z.object({
   /** The owner's own conclusion: it did run, or it did not. */
@@ -20,22 +20,17 @@ export function registerExecutionRoutes(app: FastifyInstance): void {
     const { id } = request.params as { id: string };
     const body = parseBody(resolveSchema, request.body);
 
-    const resolution = app.services.executions.resolve({
+    // It is the shared capability API that closes the turn, so the owner's
+    // conclusion here and the agent's `execution.resolve` are the same path:
+    // one place where the turn leaves the unknown state, the reply follows and
+    // the trail is written.
+    const resolution = app.services.capabilities.executionResolve({
       executionId: id,
       outcome: body.outcome,
       note: body.note,
+      actorType: request.actorType ?? 'human',
+      actorId: request.user?.id ?? 'owner',
     });
-
-    // Leaving the unknown state is the owner's answer to the question the
-    // worker could not answer, so it is written to the audit trail, beside
-    // the task path's own answer. The entry names the owner, because it is
-    // the owner's answer and nobody else's.
-    audit(
-      request,
-      'execution.outcome.resolved',
-      { type: 'execution', id, workspaceId: resolution.workspaceId },
-      { from: 'unknown', to: body.outcome, ...(body.note?.trim() ? { note: body.note } : {}) },
-    );
 
     // The sentence comes back with the answer, so the panel can say what the
     // decision did instead of leaving the owner to infer it.

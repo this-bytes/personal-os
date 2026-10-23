@@ -227,9 +227,11 @@ execution's outcome could not be confirmed, so an execution that is no longer
 
 **The transition is written to the audit trail** as `execution.outcome.resolved`,
 beside the task path's `task.outcome.resolved`
-(`apps/server/src/modules/factory/service.ts:319`). It names the owner the way
-the task path's does — `actorType: 'human'` and the owner's id — and its
-metadata carries the transition, `from: 'unknown'` and `to` the outcome.
+(`apps/server/src/modules/factory/service.ts:319`). It names who reached the
+conclusion the way the task path's does — `actorType: 'human'` and the owner's
+id for the owner's own call, `actorType: 'agent'` and the connection's id for
+the agent's `execution.resolve` — and its metadata carries the transition,
+`from: 'unknown'` and `to` the outcome.
 
 **The route is additive.** No existing route's shape or semantics change. It
 takes the same authentication and workspace rules as every other owner-facing
@@ -241,13 +243,15 @@ This entry is the contract for **WI-031**, and the code implements it — as of
 (`363428e`), and `3dd490b` brought the route to the published shape after it.
 The route is `POST /api/executions/:id/resolve`, at
 `apps/server/src/api/executions.ts:19`, and it is registered at
-`apps/server/src/app.ts:252`. **Only the owner may call it**, under the same
+`apps/server/src/app.ts:252`. **Only the owner may call the route**, under the same
 authentication as every other owner-facing route
 (`apps/server/src/api/helpers.ts:14-16`). **The route's own writer is the
 executions service**, which writes the execution's status
-(`apps/server/src/modules/executions/service.ts:325-335`) and the reply's status
-(`apps/server/src/modules/executions/service.ts:340-343`) together; the
-route calls it at `apps/server/src/api/executions.ts:23`. **There are two
+(`apps/server/src/modules/executions/service.ts:328-338`) and the reply's status
+(`apps/server/src/modules/executions/service.ts:343-346`) together; the
+route calls it through the shared capability API at
+`apps/server/src/api/executions.ts:27`, which the agent's `execution.resolve`
+calls too. **There are two
 writers of an execution's outcome, not one**: the other is `resolveExecution`
 (`apps/server/src/modules/approvals/service.ts:163`), which the approval
 decision path calls (`apps/server/src/modules/approvals/resume.ts:159`) and
@@ -1114,16 +1118,16 @@ resource came from; the tree carries all of it. `resourceTemplateGuideSchema` is
 `packages/contracts/src/resource.ts:252` and
 `packages/contracts/src/resource.ts:256`. `resource.template.list` and
 `resource.template.get` are both published tool names — they are in `mcpToolNames`
-at `packages/contracts/src/mcp.ts:28-29`, inside the range
-`packages/contracts/src/mcp.ts:10-63`, and in the
-default agent grant list at `packages/contracts/src/mcp.ts:88-89`. The server
+at `packages/contracts/src/mcp.ts:35-36`, inside the range
+`packages/contracts/src/mcp.ts:10-80`, and in the
+default agent grant list at `packages/contracts/src/mcp.ts:106-107`. The server
 registers both tools only where
 the connection is granted them, the way every other tool on that surface is
-(`apps/server/src/modules/mcp/server.ts:556-624`). `resource.create` takes the
-`template` input at `apps/server/src/modules/mcp/server.ts:509`, merges the caller's
+(`apps/server/src/modules/mcp/server.ts:692-747`). `resource.create` takes the
+`template` input at `apps/server/src/modules/mcp/server.ts:573`, merges the caller's
 values into the template's spec at
-`apps/server/src/modules/mcp/server.ts:532-534`, and passes the template's id and
-version on at `apps/server/src/modules/mcp/server.ts:544`. The merge rules
+`apps/server/src/modules/mcp/server.ts:596-598`, and passes the template's id and
+version on at `apps/server/src/modules/mcp/server.ts:608`. The merge rules
 themselves are at `apps/server/src/modules/resources/templates.ts:509-522`, and the
 resource records them at
 `apps/server/src/modules/resources/service.ts:207-208` and
@@ -1340,6 +1344,7 @@ external agents can discover and operate them.
 | `task.create`            | Create a factory task.                                  |
 | `task.update`            | Update a factory task.                                  |
 | `task.get`               | Read a task with its evidence.                          |
+| `task.accept`            | Record an acceptance decision on a task.                |
 | `resource.create`        | Create a resource, optionally from a template.          |
 | `resource.get`           | Read a resource. Not another agent's own memory.        |
 | `resource.update`        | Update a resource with optimistic concurrency.          |
@@ -1350,9 +1355,11 @@ external agents can discover and operate them.
 | `autonomy.read`          | Read the autonomy policy in force for a scope.          |
 | `approval.list`          | List the approvals in a workspace, or read one of them. |
 | `approval.decide`        | Decide an approval, with a reason.                      |
+| `approval.evidence`      | Read the evidence a decision is taken against.          |
 | `execution.list`         | List the turns of a workspace, newest first.            |
 | `execution.get`          | Read a turn: its status, its activity, its run control. |
 | `execution.stop`         | Ask a turn to stop, and answer with what was done.      |
+| `execution.resolve`      | Close a turn whose outcome could not be confirmed.      |
 | `event.list`             | List the events of a workspace.                         |
 | `audit.list`             | List the audit entries of a workspace.                  |
 
@@ -1366,7 +1373,7 @@ granted. **An ungranted tool is not registered at all**, so it does not appear i
 
 **`autonomy.read` is in the default grant list, so every agent connection gets it.**
 A connection with no explicit grants runs on the default set
-(`packages/contracts/src/mcp.ts:78-98`), and that set carries `autonomy.read`: an
+(`packages/contracts/src/mcp.ts:96-117`), and that set carries `autonomy.read`: an
 agent can read the policy that governs it without the owner granting anything else.
 A connection whose grants were narrowed explicitly keeps the list it was given — the
 tool is not added to a stored list. The owner has it too, because the owner's grant
@@ -1388,7 +1395,7 @@ that cannot see why it was refused cannot do anything sensible about it
 
 **`resource.template.get` is in the default grant list, so every agent connection
 gets it.** The same default set carries it beside `resource.template.list`
-(`packages/contracts/src/mcp.ts:88-89`): an agent can read a template's guide — what
+(`packages/contracts/src/mcp.ts:106-107`): an agent can read a template's guide — what
 a good one of that kind is, which fields it must set, and what a reader would get
 wrong — without the owner granting anything else. A connection whose grants were
 narrowed explicitly keeps the list it was given, and the owner has it too, because
@@ -1511,12 +1518,14 @@ whole tenant**, and a refusal carries nothing of the object back — not its
 title, not its body, not its count.
 
 **The grant membership is deliberate.** The read-only tools — `approval.list`,
-`execution.list`, `execution.get`, `event.list` and `audit.list` — are in the
+`approval.evidence`, `execution.list`, `execution.get`, `event.list` and
+`audit.list` — are in the
 default grant set
-(`packages/contracts/src/mcp.ts:78-98`): an agent whose turn is blocked on the
+(`packages/contracts/src/mcp.ts:96-117`): an agent whose turn is blocked on the
 owner has to be able to see what it is blocked on, and an agent that has just
-acted has to be able to read what it did. **The two destructive verbs are not.**
-`approval.decide` and `execution.stop` are the owner's to grant, one by one,
+acted has to be able to read what it did. **The destructive verbs are not.**
+`approval.decide`, `execution.stop`, `execution.resolve` and `task.accept` are
+the owner's to grant, one by one,
 exactly as `bot.dispatch` is, because each of them spends an authority the owner
 holds. A connection that was not granted them does not have them registered, so
 a call for one is refused and the refusal is recorded the way every other
@@ -1538,6 +1547,61 @@ will pair it. The route that the server registers and the contract does not
 publish is a failure too: a route nobody wrote down can never be paired, and is
 therefore a human-only route by another name. **The gate fails closed**, and it
 refuses to pass when it has proved nothing.
+
+### The authority loop's own detail
+
+Three more owner capabilities, and the three tools that perform them. Each tool
+does the same operation, on the same object, as the route it pairs with, and
+reads the same data — the route and the tool are thin adapters over one shared
+capability, so an agent and a person operate through the same code path.
+
+| Tool                | Route                              | Input                             | Output                                        |
+| ------------------- | ---------------------------------- | --------------------------------- | --------------------------------------------- |
+| `approval.evidence` | `GET /api/approvals/:id/evidence`  | `{ approvalId }`                  | the `ApprovalEvidence` the route answers with |
+| `execution.resolve` | `POST /api/executions/:id/resolve` | `{ executionId, outcome, note? }` | `{ execution, outcome, detail }`              |
+| `task.accept`       | `POST /api/tasks/:id/accept`       | `{ taskId, satisfied, reason? }`  | `{ task }`                                    |
+
+**The grant rule is the rule the round trips above already keep.** A **read**
+verb joins the default grant set; a verb that **spends the owner's authority**
+does not, and the owner grants it by name. `approval.evidence` is a read — it
+decides nothing and changes nothing — so it is in the default grant set
+(`packages/contracts/src/mcp.ts:96-117`): an agent whose turn is blocked on a
+decision has to be able to see what it is blocked on, the same ground
+`approval.list` is held to. `execution.resolve` and `task.accept` spend the
+owner's authority — one closes a turn whose outcome is unknown, the other
+accepts a task — so **neither is in the default grant set**, and a connection
+that was not granted one does not have it registered at all. A call for one is
+refused and the refusal is recorded the way every other ungranted call is
+recorded.
+
+**The scoping rule is the rule the other id-addressed tools already keep.** Each
+of these three names an id, so each names an _object_ and not a workspace: the
+object is looked up in its own row and its workspace is checked against the
+caller's scope before anything of it is read. **An agent is bounded to the
+workspace it was granted, never to the whole tenant**, and a refusal carries
+nothing of the object back.
+
+**The record names who acted, and the authority behind it is the owner's
+grant.** `approval.evidence` decides nothing and writes nothing.
+`execution.resolve` writes `execution.outcome.resolved` and `task.accept`
+writes `task.accepted` or `task.rejected`, and each entry carries the
+`actorType` of the caller — `human` for the owner's own call, `agent` for an
+agent's — and the caller's id. The owner is not an actor kind of their own: an
+agent acting under a grant is recorded as the agent that acted, and the grant is
+what stands behind it.
+
+**An acceptance is not a report.** `task.accept` records an explicit judgement,
+and only a satisfied acceptance closes the task. A task that moves to `review`
+is waiting for this decision, and no other verb can make it: the rule that an
+agent reporting completion is not acceptance holds for the tool as it holds for
+the route.
+
+**Migration.** Nothing is reclassified and no record is rewritten. The three
+routes keep their published shapes and their published authentication — a
+session cookie or the owner token, and never an agent token. A client that
+does not call the new tools is unaffected. A connection that was granted the
+default set gains `approval.evidence` and nothing else; a connection whose
+grants were narrowed explicitly keeps the list it was given.
 
 ### Data-source guard rails
 
@@ -1784,9 +1848,9 @@ against the execution when the turn ends**: the worker writes one unit for an
 agent turn and none for a turn that never reached the agent
 (`apps/worker/src/execution-owner.ts:703`).
 **The row is created with no spend units**, because the cost is not known until
-the turn has run (`apps/server/src/modules/conversations/dispatch.ts:215`,
-`apps/server/src/modules/factory/service.ts:473`), and the column defaults to zero
-(`apps/server/src/db/schema.ts:321`). **So the workspace's spend for the day is
+the turn has run (`apps/server/src/modules/conversations/dispatch.ts:217`,
+`apps/server/src/modules/factory/service.ts:474`), and the column defaults to zero
+(`apps/server/src/db/schema.ts:295`). **So the workspace's spend for the day is
 the sum of what its turns actually cost, and the cap bites.**
 
 **The mode is resolved, readable, and enforced nowhere.** It is carried through the
@@ -1818,10 +1882,13 @@ write are published in [the autonomy-policy write](#the-autonomy-policy-write).
 acceptance criteria.** An agent's completion moves the task to `review`. Only an
 explicit acceptance decision moves it to `done`.
 
-The `done` status is reachable through exactly one path — the acceptance endpoint.
-`PATCH /api/tasks/:id` cannot set it, and the MCP `task.update` tool does not offer
-it. The rule is enforced in the service layer, which is the single choke point every
-caller passes through.
+The `done` status is reachable through exactly one path — the acceptance
+decision. `PATCH /api/tasks/:id` cannot set it, and the MCP `task.update` tool
+does not offer it. **The acceptance has two front doors and one writer**: the
+owner's `POST /api/tasks/:id/accept` route and the owner's granted
+`task.accept` tool, both of which call the same shared capability and land on the
+same service. The rule is enforced in the service layer, which is the single
+choke point every caller passes through.
 
 ---
 
@@ -2346,8 +2413,15 @@ same way, and its `detail` says which of the two it was.
 authentication as every other route** — a session cookie or the owner token, and
 never an agent token, which is MCP-only.
 
+**An agent reads the same evidence, under `approval.evidence`.** The tool
+performs this read on the same approval and answers with the same shape, so an
+agent and the owner look at the same thing before the same decision. It is a
+read, it is in the default grant set, and it is bounded to the caller's own
+workspace like every other id-addressed tool — see [The authority loop's own
+detail](#the-authority-loops-own-detail).
+
 This entry is the contract for **WI-039**, and the code implements it — the route
-is `GET /api/approvals/:id/evidence`, at `apps/server/src/api/approvals.ts:36`,
+is `GET /api/approvals/:id/evidence`, at `apps/server/src/api/approvals.ts:39`,
 and it is registered at `apps/server/src/app.ts:251`. The shape it answers is the
 one published above, and it lives at `packages/contracts/src/approvals.ts:91`. The
 drawer that reads it is WI-040's, and it waits for this route.
@@ -3568,14 +3642,19 @@ projections read it
 automation or task is recorded as authored by the agent that made it.
 
 **Every mutating route writes an audit entry.** Of the 41 mutating routes in
-`apps/server/src/api/`, 37 write an audit entry at the route level, and four more
+`apps/server/src/api/`, 35 write an audit entry at the route level, and six more
 write one from the service layer — `POST /api/approvals/:id/decide` and `POST
 /api/agui/runs/:runId/resume`, both at
 `apps/server/src/modules/approvals/resume.ts:55`, `PATCH /api/tasks/:id` at
-`apps/server/src/modules/factory/service.ts:415`, and that one only when the task
+`apps/server/src/modules/factory/service.ts:424`, and that one only when the task
 leaves `unknown`, and `POST /api/executions/:id/stop` at
 `apps/server/src/modules/executions/service.ts:274` — which is where the agent's
 own stop request is written too, so the request is in the trail whoever made it.
+`POST /api/executions/:id/resolve` writes at
+`apps/server/src/modules/executions/service.ts:338` and `POST /api/tasks/:id/accept`
+at `apps/server/src/modules/factory/service.ts:577`; both are written by the
+service layer so that the agent's `execution.resolve` and `task.accept` land in
+the same trail as the owner's own calls.
 **No mutating route writes none.**
 
 The twelve that used to write none write one each, at the route:
@@ -3613,11 +3692,16 @@ the denominator and can never sit in the count, so **the first measure is a lowe
 bound**: the ratio can only understate what the agents authored, and it does so by
 exactly the rows that predate the author being recorded.
 
-**The agent's own operations are not audited at all.** The MCP surface writes no
-audit entry — there is no audit call anywhere in
-`apps/server/src/modules/mcp/server.ts`, and none in the capabilities service its
-tools call, which reach the resources service directly rather than through the
-auditing route. The only writer of the trail that is not an owner HTTP route is
+**Most of the agent's own operations are not audited at all.** The MCP surface
+writes no audit entry of its own — there is no audit call anywhere in
+`apps/server/src/modules/mcp/server.ts` — and the capabilities service its tools
+call reach the resources service directly rather than through the auditing
+route. **Two verbs are the exception**, and they are the exception because they
+spend the owner's authority: `execution.resolve` and `task.accept` reach the
+executions and factory services, which write the trail themselves, so a
+connection that was granted one of them leaves `execution.outcome.resolved` or
+`task.accepted` behind with `actorType: 'agent'`. The other writer of the trail
+that is not an owner HTTP route is
 the worker — its `unknown` record (`apps/worker/src/execution-owner.ts:724-733`) and the
 policy refusals it writes (`apps/worker/src/execution-owner.ts:754-772`). So every audited
 operation is an owner operation, except the worker's own entries, which carry

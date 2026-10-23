@@ -514,6 +514,51 @@ export async function createMcpServer(options: McpServerOptions): Promise<McpSer
     );
   }
 
+  /**
+   * The acceptance decision on a task.
+   *
+   * An agent reporting completion is not acceptance: the acceptance is an
+   * explicit judgement, and a satisfied acceptance is what closes the task.
+   * The tool does the same thing the route does, on the same task, and writes
+   * the same trail.
+   *
+   * The tool is not in the default grant set: a connection that may accept a
+   * task is a connection the owner has said may accept one. The record names
+   * the agent that made the call, and the authority behind the acceptance is
+   * the owner's grant of this one verb.
+   */
+  if (granted.has('task.accept')) {
+    server.registerTool(
+      'task.accept',
+      {
+        description:
+          'Record an acceptance decision on a task: satisfied, which closes it, or not satisfied, ' +
+          'which does not. Reporting completion is not acceptance; this is the judgement.',
+        inputSchema: {
+          taskId: z.string(),
+          satisfied: z.boolean(),
+          reason: z.string().max(2_000).optional(),
+        },
+      },
+      async ({ taskId, satisfied, reason }) => {
+        try {
+          await guard('task.accept');
+          await assertObjectScope('task', taskId);
+          const task = options.capabilities.taskAccept({
+            taskId,
+            satisfied,
+            reason,
+            actorType: actor.kind === 'agent' ? 'agent' : 'human',
+            actorId: actor.kind === 'agent' ? (actor.agentConnectionId as string) : decidedBy(),
+          });
+          return jsonResult({ task });
+        } catch (error) {
+          return errorResult(error);
+        }
+      },
+    );
+  }
+
   if (granted.has('resource.create')) {
     server.registerTool(
       'resource.create',
@@ -898,6 +943,39 @@ export async function createMcpServer(options: McpServerOptions): Promise<McpSer
   }
 
   /**
+   * The evidence a decision is taken against.
+   *
+   * It is a read: the calls the turn made, the things it produced and what it
+   * cost. The owner's route answers with the same evidence, so an agent and a
+   * person look at the same thing before the same decision.
+   *
+   * It is in the default grant set: it decides nothing and changes nothing.
+   */
+  if (granted.has('approval.evidence')) {
+    server.registerTool(
+      'approval.evidence',
+      {
+        description:
+          'Read the evidence a decision is taken against: the turn behind the approval, the tool ' +
+          'calls it made, the things it produced and what it cost.',
+        inputSchema: { approvalId: z.string() },
+      },
+      async ({ approvalId }) => {
+        try {
+          await guard('approval.evidence');
+          // A tool that names an id names an object, not a workspace: the
+          // approval is checked against the caller's own scope, and the
+          // evidence it returns is the approval's own.
+          await assertObjectScope('approval', approvalId);
+          return jsonResult(options.capabilities.approvalEvidence(approvalId));
+        } catch (error) {
+          return errorResult(error);
+        }
+      },
+    );
+  }
+
+  /**
    * The turns of a workspace.
    *
    * A listing is scoped to a workspace and never wider: an agent sees the
@@ -1006,6 +1084,55 @@ export async function createMcpServer(options: McpServerOptions): Promise<McpSer
               actorId: actor.kind === 'agent' ? (actor.agentConnectionId as string) : decidedBy(),
             }),
           );
+        } catch (error) {
+          return errorResult(error);
+        }
+      },
+    );
+  }
+
+  /**
+   * Close a turn whose outcome could not be confirmed.
+   *
+   * The worker stopped and could not say how the turn ended, so the turn is a
+   * question. The conclusion is somebody's — it did run, or it did not — and
+   * the reply follows it. The tool does the same thing the route does, on the
+   * same turn, and writes the same trail.
+   *
+   * The tool is not in the default grant set: a connection that may close an
+   * unknown turn is a connection the owner has said may close one. The record
+   * names the agent that made the call, and the authority behind the
+   * conclusion is the owner's grant of this one verb.
+   */
+  if (granted.has('execution.resolve')) {
+    server.registerTool(
+      'execution.resolve',
+      {
+        description:
+          'Close a turn whose outcome could not be confirmed: completed if it did run, failed if ' +
+          'it did not. The turn leaves the unknown state and its reply follows the conclusion.',
+        inputSchema: {
+          executionId: z.string(),
+          outcome: z.enum(['completed', 'failed']),
+          note: z.string().max(2_000).optional(),
+        },
+      },
+      async ({ executionId, outcome, note }) => {
+        try {
+          await guard('execution.resolve');
+          await assertObjectScope('execution', executionId);
+          const resolution = options.capabilities.executionResolve({
+            executionId,
+            outcome,
+            note,
+            actorType: actor.kind === 'agent' ? 'agent' : 'human',
+            actorId: actor.kind === 'agent' ? (actor.agentConnectionId as string) : decidedBy(),
+          });
+          return jsonResult({
+            execution: resolution.execution,
+            outcome: resolution.outcome,
+            detail: resolution.detail,
+          });
         } catch (error) {
           return errorResult(error);
         }
