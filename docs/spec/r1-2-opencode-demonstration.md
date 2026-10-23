@@ -23,8 +23,14 @@ Measured on this machine, not assumed:
 opencode --version   →  1.19.4
 ```
 
-As with Codex, `docs/roadmap.md`'s line that the other four approved
-runtimes "are not installed here" is stale and should be corrected.
+`docs/roadmap.md` says the same, and says it measured rather than assumed:
+"**Two more of the approved runtimes are installed here** — `codex --version`
+reports `codex-cli 0.163.0` and `opencode --version` reports `1.19.4`, with
+Hermes at `C:\Users\Aaron\AppData\Local\hermes\bin\hermes.exe`." That line was
+corrected on 2026-10-23, before this spec was written.
+
+What is still missing is not the install. An installed runtime is not a
+demonstrated one, and this spec is what makes the difference for OpenCode.
 
 ## Preconditions
 
