@@ -1760,6 +1760,14 @@ exactly what it means after the change.
 list, so the client asks for one thing instead of fetching three and joining the
 answers itself.
 
+**A conversation can be asked what is waiting on it.** The same route takes an
+optional `conversationId`, and the list it returns then holds only what belongs
+to that conversation: the requests its agents made, the turns in it whose
+outcome could not be confirmed, and the capabilities its agents were refused.
+A task is not in it — a task is decided on the factory board and belongs to no
+conversation. The list without the parameter is the whole list, unchanged, so
+adding the parameter changes nothing for a client that does not send it.
+
 ```ts
 type WaitingKind = 'approval' | 'task' | 'turn' | 'capability';
 type WaitingReason = 'pending' | 'review' | 'blocked' | 'unknown';
@@ -1813,7 +1821,7 @@ defined in [The unknown outcome](#the-unknown-outcome); this entry publishes the
 list's use of it, and the two are not two definitions. The published type
 carries `pending | review | blocked | unknown`, member for member with
 `packages/contracts/src/waiting.ts:25`, and the route takes the reason straight
-from the task's status (`apps/server/src/api/waiting.ts:81`), so a task that cannot be confirmed
+from the task's status (`apps/server/src/api/waiting.ts:97`), so a task that cannot be confirmed
 arrives as `reason: 'unknown'` and the published type cannot drift away from
 what the route returns.
 
@@ -1879,14 +1887,20 @@ action that unblocks an agent cannot take anything away.
 half of it, but a criterion that says "from the list" names the surface where
 the owner finds the row, so the row itself carries the action: the panel's
 capability row holds a button that calls `POST /api/agents/:id/grants` with the
-row's own `toolName` (`apps/web/src/components/WaitingList.tsx:189`), and it
+row's own `toolName`
+(`apps/web/src/components/waiting/WaitingRow.tsx:159`), and it
 says which tool it is with the row's own `toolName` as well
-(`apps/web/src/components/WaitingList.tsx:350`). **The row is also named for
+(`apps/web/src/components/waiting/WaitingRow.tsx:75`). **The row is also named for
 what it is**: a capability row is labelled "Needs a grant"
-(`apps/web/src/components/WaitingList.tsx:493`) and not "Blocked", because a
+(`apps/web/src/components/waiting/WaitingRow.tsx:216`) and not "Blocked", because a
 capability carries the reason `pending` and a label that went by the reason
 would file it under work that is stuck rather than under a grant the owner can
 widen from the row.
+
+**The row is one row, in two places.** The waiting list on the conversations
+page and the room itself use the same row
+(`apps/web/src/components/waiting/WaitingRow.tsx:36`), so a request reads the
+same in both places and there is one set of words for it.
 
 The panel's capability row is the contract for **WI-132**, and the code
 implements it — as of `e76b124`.

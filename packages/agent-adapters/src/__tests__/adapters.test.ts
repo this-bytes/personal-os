@@ -55,6 +55,53 @@ describe('the echo adapter', () => {
     expect(completed).toBeDefined();
     expect(events[events.length - 1]?.type).toBe('execution.status');
   });
+
+  it('asks the owner once, and answers when the decision comes back', async () => {
+    const adapter = new EchoAdapter(
+      { reply: 'All done.', delayMs: 0, ask: { summary: 'May I read the project?' } },
+      ctx,
+    );
+    const capabilities = await adapter.connect({
+      id: 'agt_1',
+      name: 'Asker',
+      adapterType: 'echo',
+      configRef: 'cfg_1',
+      enabled: true,
+    });
+    // An agent that asks says it can ask, and says it can be continued.
+    expect(capabilities.approvals).toBe(true);
+    expect(capabilities.persistentSessions).toBe(true);
+
+    const asked = [];
+    for await (const event of adapter.send({
+      conversationId: 'cnv_1',
+      message: 'please start',
+      context: '',
+      executionId: 'exe_1',
+    })) {
+      asked.push(event);
+    }
+
+    const request = asked.find((event) => event.type === 'approval.requested');
+    expect(request).toMatchObject({ summary: 'May I read the project?' });
+    // The turn stops on the request: it does not answer before it is allowed to.
+    expect(asked.some((event) => event.type === 'message.completed')).toBe(false);
+
+    // The turn that continues after the decision arrives in the session the
+    // request was made in, and the agent answers rather than asks again.
+    const answered = [];
+    for await (const event of adapter.send({
+      conversationId: 'cnv_1',
+      message: 'The owner approved this operation. Continue.',
+      context: '',
+      executionId: 'exe_1',
+      externalSessionId: 'echo_exe_1',
+    })) {
+      answered.push(event);
+    }
+    expect(answered.some((event) => event.type === 'message.completed')).toBe(true);
+    expect(answered.some((event) => event.type === 'approval.requested')).toBe(false);
+  });
 });
 
 describe('the CLI adapter', () => {

@@ -41,6 +41,7 @@ import { ActivityTimeline } from '../components/chat/ActivityTimeline';
 import { PresenceList } from '../components/chat/PresenceList';
 import { RunControls } from '../components/chat/RunControls';
 import { TurnCapabilityPanel } from '../components/chat/TurnCapabilityPanel';
+import { WaitingInRoom } from '../components/waiting/WaitingInRoom';
 import { EmptyState, ErrorState, LoadingState } from '../components/ErrorState';
 import { ParticipantManager } from '../components/ParticipantManager';
 import { PersonaBadge } from '../components/PersonaBadge';
@@ -574,6 +575,19 @@ export function ConversationDetail(): React.JSX.Element {
         </Card>
 
         <div className="space-y-3">
+          {/*
+           * What is waiting on the owner, in the room.
+           *
+           * A request that arrives in a conversation is answered in that
+           * conversation. The owner does not have to leave the room to find
+           * what the room is asking of them.
+           */}
+          <WaitingInRoom
+            conversationId={current.id}
+            participants={current.participants}
+            agents={agents.data ?? []}
+          />
+
           <Card>
             <CardHeader className="pb-1">
               <CardTitle className="flex items-center justify-between gap-2">
