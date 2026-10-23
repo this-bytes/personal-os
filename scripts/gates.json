@@ -77,6 +77,12 @@
       "command": "npx",
       "args": ["tsx", "scripts/verify-restart-reconciliation.ts"],
       "about": "work that had already started is not run again, an uncertain outcome is visible and the owner can settle it, and a run whose runtime survived is reconnected"
+    },
+    {
+      "name": "codex-app-server",
+      "command": "npx",
+      "args": ["tsx", "scripts/verify-codex-app-server.ts"],
+      "about": "the Codex App Server route carries a thread, a turn, a steer and an approval, the session continues in the same thread, and the capability row the preset publishes is the capability the adapter reports"
     }
   ]
 }

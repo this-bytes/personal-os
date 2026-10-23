@@ -113,7 +113,9 @@ describe('the preset catalogue route', () => {
     const all = await presets();
     const types = new Set(all.map((preset) => preset.adapterType));
 
-    expect(types).toEqual(new Set(['cli', 'acp', 'a2a', 'http', 'model', 'echo', 'mcp', 'codex']));
+    expect(types).toEqual(
+      new Set(['cli', 'acp', 'a2a', 'http', 'model', 'echo', 'mcp', 'codex', 'codex-app-server']),
+    );
   });
 
   it('serves only the presets of the type that was asked for', async () => {

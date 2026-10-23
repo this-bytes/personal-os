@@ -16,6 +16,7 @@ export const adapterTypeSchema = z.enum([
   'echo',
   'mcp',
   'codex',
+  'codex-app-server',
 ]);
 export type AdapterType = z.infer<typeof adapterTypeSchema>;
 
@@ -28,6 +29,7 @@ export const adapterTypeLabels: Record<AdapterType, string> = {
   echo: 'Built-in echo (local test)',
   mcp: 'MCP server',
   codex: 'Codex CLI agent',
+  'codex-app-server': 'Codex App Server',
 };
 
 /**

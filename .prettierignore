@@ -4,6 +4,13 @@ data/
 package-lock.json
 apps/server/drizzle/
 
+# The pinned protocol: generated evidence, not hand-written source.
+# The schema is committed as the runtime generated it, byte for byte, so a
+# reader can check it against the runtime's own output. Prettier would
+# reformat it — and a number the runtime wrote as `0.0` would come back as
+# `0` — and the artifact would stop being what it claims to be.
+docs/protocols/
+
 # Design prototypes: static, hand-tuned artefacts rather than shipped code.
 # Prettier would reflow the deliberately compact CSS and break the intended
 # line-by-line layout of the mock-data script. They live outside the

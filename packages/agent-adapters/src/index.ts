@@ -4,6 +4,7 @@ import { createAcpAdapter } from './acp.js';
 import { createA2aAdapter } from './a2a.js';
 import { createCliAdapter } from './cli.js';
 import { createCodexAdapter } from './codex.js';
+import { createCodexAppServerAdapter } from './codex-app-server.js';
 import { createEchoAdapter } from './echo.js';
 import { createHttpAdapter } from './http.js';
 import { createMcpAdapter } from './mcp.js';
@@ -19,6 +20,13 @@ export { AcpAdapter, createAcpAdapter } from './acp.js';
 export { A2aAdapter, createA2aAdapter } from './a2a.js';
 export { CliAdapter, createCliAdapter } from './cli.js';
 export { CodexAdapter, createCodexAdapter } from './codex.js';
+export {
+  CodexAppServerAdapter,
+  createCodexAppServerAdapter,
+  appServerToolFor,
+  appServerApprovalFor,
+  mapAppServerNotification,
+} from './codex-app-server.js';
 export { EchoAdapter, createEchoAdapter } from './echo.js';
 export { HttpAdapter, createHttpAdapter } from './http.js';
 export { McpAdapter, createMcpAdapter } from './mcp.js';
@@ -38,6 +46,7 @@ export function createDefaultRegistry(): AdapterRegistry {
     model: createModelAdapter,
     mcp: createMcpAdapter,
     codex: createCodexAdapter,
+    'codex-app-server': createCodexAppServerAdapter,
   };
   return new AdapterRegistry(factories);
 }

@@ -94,6 +94,16 @@ export interface FormState {
   codexModel: string;
   codexEphemeral: boolean;
   codexSkipGitRepoCheck: boolean;
+  /**
+   * The App Server keeps its thread unless it is told not to.
+   *
+   * The command line route and the App Server route disagree about the
+   * default — one keeps a session by default and the other throws it away —
+   * so they do not share one field.
+   */
+  codexAppServerEphemeral: boolean;
+  /** When the App Server may ask the owner for permission. */
+  codexApprovalPolicy: 'untrusted' | 'on-request' | 'never';
 }
 
 const EMPTY: FormState = {
@@ -140,6 +150,8 @@ const EMPTY: FormState = {
   codexModel: '',
   codexEphemeral: true,
   codexSkipGitRepoCheck: true,
+  codexAppServerEphemeral: false,
+  codexApprovalPolicy: 'on-request',
 };
 
 /** One entry per line. */
@@ -256,6 +268,18 @@ export function buildAdapterConfig(type: AdapterType, form: FormState): Record<s
         sandbox: form.codexSandbox,
         skipGitRepoCheck: form.codexSkipGitRepoCheck,
         ephemeral: form.codexEphemeral,
+        ...(form.codexModel.trim() ? { model: form.codexModel.trim() } : {}),
+        timeoutSeconds: toNumber(form.timeoutSeconds, 900),
+      };
+    case 'codex-app-server':
+      return {
+        command: form.command.trim(),
+        args: parseLines(form.args),
+        ...(form.cwd.trim() ? { cwd: form.cwd.trim() } : {}),
+        env: parseKeyValues(form.env),
+        sandbox: form.codexSandbox,
+        approvalPolicy: form.codexApprovalPolicy,
+        ephemeral: form.codexAppServerEphemeral,
         ...(form.codexModel.trim() ? { model: form.codexModel.trim() } : {}),
         timeoutSeconds: toNumber(form.timeoutSeconds, 900),
       };
@@ -384,6 +408,25 @@ export function formValuesFromPreset(preset: AdapterPreset): Partial<FormState> 
         codexModel: text('model'),
         codexEphemeral: config['ephemeral'] !== false,
         codexSkipGitRepoCheck: config['skipGitRepoCheck'] !== false,
+        timeoutSeconds: String(count('timeoutSeconds', 900)),
+      };
+    }
+    case 'codex-app-server': {
+      const sandbox = text('sandbox', 'read-only');
+      const approvalPolicy = text('approvalPolicy', 'on-request');
+      return {
+        command: text('command'),
+        args: list('args').join('\n'),
+        cwd: text('cwd'),
+        env: keyValues('env').join('\n'),
+        codexSandbox:
+          sandbox === 'workspace-write' || sandbox === 'danger-full-access' ? sandbox : 'read-only',
+        codexApprovalPolicy:
+          approvalPolicy === 'untrusted' || approvalPolicy === 'never'
+            ? approvalPolicy
+            : 'on-request',
+        codexModel: text('model'),
+        codexAppServerEphemeral: config['ephemeral'] === true,
         timeoutSeconds: String(count('timeoutSeconds', 900)),
       };
     }
@@ -524,7 +567,8 @@ export function AgentConnectionForm({
       if (
         form.adapterType === 'cli' ||
         form.adapterType === 'acp' ||
-        form.adapterType === 'codex'
+        form.adapterType === 'codex' ||
+        form.adapterType === 'codex-app-server'
       ) {
         if (!form.command.trim()) {
           setLocalError('A command is required for this adapter.');
@@ -997,6 +1041,141 @@ export function AgentConnectionForm({
                       </span>
                     </label>
                   </div>
+                </div>
+              ) : null}
+
+              {form.adapterType === 'codex-app-server' ? (
+                <div className="space-y-4">
+                  <div className="grid gap-4 sm:grid-cols-2">
+                    <Field
+                      label="Command"
+                      htmlFor="codex-app-server-command"
+                      hint="The Codex executable. The App Server is started from it."
+                    >
+                      <Input
+                        id="codex-app-server-command"
+                        value={form.command}
+                        onChange={(event) => set('command', event.target.value)}
+                        placeholder="codex"
+                      />
+                    </Field>
+                    <Field
+                      label="Arguments"
+                      htmlFor="codex-app-server-args"
+                      hint="One argument per line, placed before the app-server subcommand."
+                    >
+                      <Input
+                        id="codex-app-server-args"
+                        value={form.args}
+                        onChange={(event) => set('args', event.target.value)}
+                        placeholder="(none)"
+                      />
+                    </Field>
+                  </div>
+                  <div className="grid gap-4 sm:grid-cols-2">
+                    <Field
+                      label="Working directory"
+                      htmlFor="codex-app-server-cwd"
+                      hint="Where Codex works. Empty means the server's own directory."
+                    >
+                      <Input
+                        id="codex-app-server-cwd"
+                        value={form.cwd}
+                        onChange={(event) => set('cwd', event.target.value)}
+                        placeholder="(optional)"
+                      />
+                    </Field>
+                    <Field
+                      label="Sandbox"
+                      htmlFor="codex-app-server-sandbox"
+                      hint="What Codex is allowed to do to your files."
+                    >
+                      <Select
+                        id="codex-app-server-sandbox"
+                        value={form.codexSandbox}
+                        onChange={(event) =>
+                          set('codexSandbox', event.target.value as FormState['codexSandbox'])
+                        }
+                      >
+                        <option value="read-only">read-only — cannot change files</option>
+                        <option value="workspace-write">workspace-write — may change files</option>
+                        <option value="danger-full-access">danger-full-access — no boundary</option>
+                      </Select>
+                    </Field>
+                  </div>
+                  <div className="grid gap-4 sm:grid-cols-2">
+                    <Field
+                      label="Permission requests"
+                      htmlFor="codex-app-server-approval-policy"
+                      hint="When Codex may ask you for permission before it acts."
+                    >
+                      <Select
+                        id="codex-app-server-approval-policy"
+                        value={form.codexApprovalPolicy}
+                        onChange={(event) =>
+                          set(
+                            'codexApprovalPolicy',
+                            event.target.value as FormState['codexApprovalPolicy'],
+                          )
+                        }
+                      >
+                        <option value="untrusted">untrusted — ask before anything</option>
+                        <option value="on-request">on-request — ask when it wants to act</option>
+                        <option value="never">never — decide for itself</option>
+                      </Select>
+                    </Field>
+                    <Field
+                      label="Model"
+                      htmlFor="codex-app-server-model"
+                      hint="Empty means Codex's own choice."
+                    >
+                      <Input
+                        id="codex-app-server-model"
+                        value={form.codexModel}
+                        onChange={(event) => set('codexModel', event.target.value)}
+                        placeholder="(optional)"
+                      />
+                    </Field>
+                  </div>
+                  <div className="grid gap-4 sm:grid-cols-2">
+                    <Field label="Timeout (seconds)" htmlFor="codex-app-server-timeout">
+                      <Input
+                        id="codex-app-server-timeout"
+                        type="number"
+                        min={1}
+                        value={form.timeoutSeconds}
+                        onChange={(event) => set('timeoutSeconds', event.target.value)}
+                      />
+                    </Field>
+                    <Field
+                      label="Environment"
+                      htmlFor="codex-app-server-env"
+                      hint="KEY=VALUE, one per line. Codex signs in with its own account, so no credential belongs here."
+                    >
+                      <Textarea
+                        id="codex-app-server-env"
+                        className="min-h-[60px] font-mono text-xs"
+                        value={form.env}
+                        onChange={(event) => set('env', event.target.value)}
+                      />
+                    </Field>
+                  </div>
+                  <label className="flex items-start gap-2 text-xs text-slate-300">
+                    <input
+                      type="checkbox"
+                      className="mt-0.5 accent-indigo-500"
+                      checked={form.codexAppServerEphemeral}
+                      onChange={(event) => set('codexAppServerEphemeral', event.target.checked)}
+                    />
+                    <span>
+                      Keep no session on disk
+                      <span className="mt-0.5 block text-[11px] text-slate-500">
+                        A kept session lets the next turn go back into the same thread. Turned on,
+                        the thread is thrown away when the turn ends, and the conversation starts
+                        afresh every time.
+                      </span>
+                    </span>
+                  </label>
                 </div>
               ) : null}
 

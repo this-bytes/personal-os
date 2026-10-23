@@ -14,6 +14,20 @@ type NotificationHandler = (method: string, params: unknown) => void;
 type RequestHandler = (method: string, params: unknown) => Promise<unknown> | unknown;
 
 /**
+ * How a supervised process is started.
+ *
+ * A protocol that names an executable that is not on PATH as a bare name — an
+ * npm shim on Windows, for instance — cannot be started by a plain spawn. The
+ * caller supplies the spawner it needs, so the transport stays a transport and
+ * the platform's rules stay in one place.
+ */
+export type SpawnProcess = (
+  command: string,
+  args: string[],
+  options: { cwd?: string; env?: NodeJS.ProcessEnv },
+) => ChildProcessWithoutNullStreams;
+
+/**
  * A minimal JSON-RPC 2.0 client over a newline-delimited stdio transport.
  * Used by protocol adapters that speak JSON-RPC (ACP and A2A-over-stdio).
  */
@@ -29,14 +43,16 @@ export class JsonRpcStdioClient {
   private readonly requestHandlers = new Set<RequestHandler>();
   private closed = false;
 
-  constructor(command: string, args: string[], options: { cwd?: string; env?: NodeJS.ProcessEnv }) {
-    this.child = spawn(command, args, {
+  constructor(
+    command: string,
+    args: string[],
+    options: { cwd?: string; env?: NodeJS.ProcessEnv; spawn?: SpawnProcess },
+  ) {
+    const start: SpawnProcess = options.spawn ?? defaultSpawn;
+    this.child = start(command, args, {
       cwd: options.cwd ?? process.cwd(),
       env: options.env,
-      stdio: ['pipe', 'pipe', 'pipe'],
-      shell: false,
-      windowsHide: true,
-    }) as ChildProcessWithoutNullStreams;
+    });
 
     this.child.stdout.setEncoding('utf8');
     this.child.stdout.on('data', (chunk: string) => this.consume(chunk));
@@ -191,6 +207,25 @@ export class JsonRpcStdioClient {
       `Method "${message.method}" is not supported by this Personal OS adapter.`,
     );
   }
+}
+
+/**
+ * The default way to start a supervised process.
+ *
+ * A plain spawn, with the pipes the transport needs and nothing else.
+ */
+function defaultSpawn(
+  command: string,
+  args: string[],
+  options: { cwd?: string; env?: NodeJS.ProcessEnv },
+): ChildProcessWithoutNullStreams {
+  return spawn(command, args, {
+    cwd: options.cwd ?? process.cwd(),
+    env: options.env,
+    stdio: ['pipe', 'pipe', 'pipe'],
+    shell: false,
+    windowsHide: true,
+  }) as ChildProcessWithoutNullStreams;
 }
 
 /**

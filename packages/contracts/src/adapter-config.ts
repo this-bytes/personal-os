@@ -182,6 +182,56 @@ export const codexAdapterConfigSchema = z.object({
 });
 export type CodexAdapterConfig = z.infer<typeof codexAdapterConfigSchema>;
 
+/**
+ * OpenAI Codex, as its App Server.
+ *
+ * The App Server is a JSON-RPC service Codex exposes over standard input and
+ * output. It is a different protocol from the JSONL event stream the `codex`
+ * adapter reads, and a different protocol from ACP: it has threads, turns,
+ * steers and approval requests of its own.
+ *
+ * **The credential stays in Codex.** Codex signs in with its own account and
+ * keeps that sign-in in its own home directory, so this configuration carries
+ * no secret and no reference to one.
+ */
+export const codexAppServerAdapterConfigSchema = z.object({
+  /** The Codex executable. */
+  command: z.string().min(1).default('codex'),
+  /** Extra arguments, placed before the `app-server` subcommand. */
+  args: z.array(z.string()).default([]),
+  /** The directory Codex works in. */
+  cwd: z.string().optional(),
+  /** Additional environment variables for the supervised process. */
+  env: z.record(z.string()).default({}),
+  /** The sandbox Codex runs its own commands under. */
+  sandbox: z.enum(['read-only', 'workspace-write', 'danger-full-access']).default('read-only'),
+  /**
+   * When Codex may ask the owner for permission.
+   *
+   * `never` means Codex decides for itself and never asks, which is what a
+   * connection whose capability row says it cannot ask for permission wants.
+   */
+  approvalPolicy: z.enum(['untrusted', 'on-request', 'never']).default('on-request'),
+  /**
+   * Whether Codex keeps the thread on disk after the turn.
+   *
+   * A thread that is kept is a thread the next turn can resume, which is what
+   * makes the conversation one conversation rather than a series of prompts.
+   */
+  ephemeral: z.boolean().default(false),
+  /** The model to ask for. */
+  model: z.string().optional(),
+  /**
+   * The thread's source classification.
+   *
+   * The protocol wants a short string here, not an object, so this is a
+   * string and not a structured tag.
+   */
+  threadSource: z.string().min(1).default('personalOs'),
+  timeoutSeconds: z.number().int().min(1).max(86_400).default(900),
+});
+export type CodexAppServerAdapterConfig = z.infer<typeof codexAppServerAdapterConfigSchema>;
+
 export const adapterConfigSchema = z.discriminatedUnion('adapterType', [
   cliAdapterConfigSchema.extend({ adapterType: z.literal('cli') }),
   acpAdapterConfigSchema.extend({ adapterType: z.literal('acp') }),
@@ -191,6 +241,7 @@ export const adapterConfigSchema = z.discriminatedUnion('adapterType', [
   echoAdapterConfigSchema.extend({ adapterType: z.literal('echo') }),
   mcpAdapterConfigSchema.extend({ adapterType: z.literal('mcp') }),
   codexAdapterConfigSchema.extend({ adapterType: z.literal('codex') }),
+  codexAppServerAdapterConfigSchema.extend({ adapterType: z.literal('codex-app-server') }),
 ]);
 export type AdapterConfig = z.infer<typeof adapterConfigSchema>;
 
