@@ -606,7 +606,7 @@
         },
         {
           "kind": "present-text",
-          "path": "apps/server/src/api/executions.ts",
+          "path": "apps/server/src",
           "value": "capabilityView: turn.capabilityView"
         },
         {

@@ -1,7 +1,6 @@
 import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
 import { parseBody, parseQuery, requireAuth } from './helpers.js';
-import { decideApproval } from '../modules/approvals/resume.js';
 
 const listQuerySchema = z.object({
   workspaceId: z.string(),
@@ -46,12 +45,12 @@ export function registerApprovalRoutes(app: FastifyInstance): void {
     // The decision has to change the outcome of the operation that asked for
     // it. An approval that changes nothing is not an approval. The decision
     // is recorded first, and only then is the turn continued or closed.
-    const decision = decideApproval({
-      db: app.services.runtime.db,
-      queue: app.services.queue,
-      audit: app.services.audit,
-      events: app.services.events,
-      approvals: app.services.approvals,
+    //
+    // It is the shared capability API that decides, so the owner's decision
+    // here and the agent's `approval.decide` are the same decision path: one
+    // place where the answer is recorded, the turn is continued and the trail
+    // is written.
+    const decision = app.services.capabilities.approvalDecide({
       approvalId: id,
       approved: body.approved,
       reason: body.reason,
