@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { existsSync, readFileSync } from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { eq } from 'drizzle-orm';
+import { and, eq, isNull } from 'drizzle-orm';
 import {
   agentConnections,
   automations,
@@ -281,7 +281,13 @@ function executionRow(id: string): {
   };
 }
 
-/** The execution row an automation's run wrote. */
+/**
+ * The execution row an automation's run wrote.
+ *
+ * The row belongs to no conversation and to no task — that is what an
+ * automation's turn is — and that is what tells it apart from the other two
+ * rows a case may have written.
+ */
 function automationExecution(): {
   status: string;
   error: string | null;
@@ -292,7 +298,7 @@ function automationExecution(): {
   const row = handle.db
     .select()
     .from(executions)
-    .where(eq(executions.agentConnectionId, 'agt_1'))
+    .where(and(isNull(executions.conversationId), isNull(executions.taskId)))
     .get();
   if (!row) throw new Error('The run wrote no execution row.');
   return {
@@ -302,6 +308,15 @@ function automationExecution(): {
     spendUnits: row.spendUnits,
     capabilityView: row.capabilityView as { agentConnectionId: string } | null,
   };
+}
+
+/** The rows the three callers wrote, each named by the path that wrote it. */
+function theThreeRows(): { path: string; row: ReturnType<typeof executionRow> }[] {
+  return [
+    { path: 'chat', row: executionRow('exe_chat') },
+    { path: 'task', row: executionRow('exe_task') },
+    { path: 'automation', row: automationExecution() },
+  ];
 }
 
 /** The methods the fixture server received, in the order it received them. */
@@ -478,11 +493,11 @@ describe('the three callers go through one owner', () => {
     );
     await executeJob(context, job('automation.run', { automationId: 'aut_1' }));
 
-    for (const row of [executionRow('exe_chat'), executionRow('exe_task'), automationExecution()]) {
-      expect(row.status).toBe('failed');
-      expect(row.error).toMatch(/disabled/i);
+    for (const { path, row } of theThreeRows()) {
+      expect(row.status, `the ${path} turn`).toBe('failed');
+      expect(row.error, `the ${path} turn`).toMatch(/disabled/i);
       // Nothing reached the agent, so nothing was spent.
-      expect(row.spendUnits).toBe(0);
+      expect(row.spendUnits, `the ${path} turn`).toBe(0);
     }
     expect(serverTrace()).toEqual([]);
   });
@@ -517,11 +532,11 @@ describe('the three callers go through one owner', () => {
     );
     await executeJob(context, job('automation.run', { automationId: 'aut_1' }));
 
-    for (const row of [executionRow('exe_chat'), executionRow('exe_task'), automationExecution()]) {
-      expect(row.status, 'the turn did not record a failure').toBe('failed');
+    for (const { path, row } of theThreeRows()) {
+      expect(row.status, `the ${path} turn did not record a failure`).toBe('failed');
       // The reason names what went wrong, so the owner knows what to do.
-      expect(row.error).toMatch(/connect|handshake|reach/i);
-      expect(row.finishedAt).not.toBeNull();
+      expect(row.error, `the ${path} turn`).toMatch(/connect|handshake|reach/i);
+      expect(row.finishedAt, `the ${path} turn`).not.toBeNull();
     }
 
     // The turn was never submitted: the server was never asked to do anything.
@@ -559,13 +574,19 @@ describe('the three callers go through one owner', () => {
     );
     await executeJob(context, job('automation.run', { automationId: 'aut_1' }));
 
-    for (const row of [executionRow('exe_chat'), executionRow('exe_task'), automationExecution()]) {
-      expect(row.status, 'the run was left looking like it was still going').toBe('failed');
-      expect(row.error).toMatch(/configuration/i);
-      expect(row.finishedAt, 'the run was left without an end').not.toBeNull();
-      // Nothing reached the agent, so nothing was spent.
-      expect(row.spendUnits).toBe(0);
+    for (const { path, row } of theThreeRows()) {
+      expect(row.status, `the ${path} run was left looking like it was still going`).toBe('failed');
+      expect(row.error, `the ${path} run`).toMatch(/configuration/i);
+      expect(row.finishedAt, `the ${path} run was left without an end`).not.toBeNull();
     }
+
+    // A task turn and an automation's run have no message of their own, so a
+    // turn that never reached the agent costs nothing. A chat turn has already
+    // opened its reply, and a conversation turn is that one message — which is
+    // the rule the spend has always counted by.
+    expect(executionRow('exe_task').spendUnits, 'the task turn').toBe(0);
+    expect(automationExecution().spendUnits, "the automation's run").toBe(0);
+    expect(executionRow('exe_chat').spendUnits, 'the chat turn').toBe(1);
   });
 
   it('the executor holds no part of the lifecycle', () => {
