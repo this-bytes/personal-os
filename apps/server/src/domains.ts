@@ -217,7 +217,11 @@ export interface SharedTableRead {
   owner: DomainName;
   /** Why the read exists, in one sentence. */
   reason: string;
-  /** The work item that removes it. */
+  /**
+   * The work that owns the crossing: the `WI-nnn` of the `.factory` era, or
+   * the spec of the queue that replaced it. It names the owner, so the debt
+   * is visible and has something to point at.
+   */
   workItem: string;
 }
 
@@ -229,6 +233,14 @@ export const sharedTableReads: SharedTableRead[] = [
     reason:
       'The effective policy is composed from the conversation\u2019s own limits, so resolving it reads the turn\u2019s row.',
     workItem: 'WI-110',
+  },
+  {
+    module: 'conversations',
+    table: 'agent_connections',
+    owner: 'runtime',
+    reason:
+      'A session reference names the connection whose runtime holds the session, so the read model checks that the connection is still there before it publishes the reference.',
+    workItem: 'SPEC-R0-3',
   },
 ];
 

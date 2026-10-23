@@ -12,6 +12,8 @@ import { executions, messages } from '../../db/schema.js';
 import { errors } from '../../lib/errors.js';
 import type { AuditService } from '../audit/service.js';
 import type { BotsService } from '../conversations/bots.js';
+import type { EventsService } from '../events/service.js';
+import { publishTurnEnd } from '../events/turn-end.js';
 import * as activity from './activity.js';
 
 /**
@@ -138,8 +140,9 @@ export function createExecutionsService(options: {
   db: Database;
   audit: AuditService;
   bots: BotsService;
+  events: EventsService;
 }): ExecutionsService {
-  const { db, audit, bots } = options;
+  const { db, audit, bots, events } = options;
 
   const toDetail = (row: typeof executions.$inferSelect): ExecutionDetail => ({
     id: row.id,
@@ -257,6 +260,14 @@ export function createExecutionsService(options: {
 
       const result = activity.requestStop(db, executionId, now);
 
+      // A turn that had not started is cancelled, and that is the turn's
+      // ending: the one event that ends it is published here, so the log and
+      // the row agree. A turn that was only *asked* to stop has not ended, and
+      // the worker publishes the ending when the turn really stops.
+      if (result.outcome === 'cancelled') {
+        publishTurnEnd(events, before, 'cancelled');
+      }
+
       // The request is written to the audit trail whether or not it could be
       // carried out: an ask that was recorded and did not stop the turn is
       // still something the caller did, and the trail should show it.
@@ -330,6 +341,11 @@ export function createExecutionsService(options: {
         .set({ status: outcome === 'completed' ? 'complete' : 'failed', detail })
         .where(eq(messages.executionId, executionId))
         .run();
+
+      // The owner's conclusion is the turn's ending. The turn was in
+      // `unknown` — a question, not an ending — so the close publishes the one
+      // event that ends it, and the row and the log say the same thing.
+      publishTurnEnd(events, execution, outcome);
 
       return {
         execution: {

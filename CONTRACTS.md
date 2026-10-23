@@ -213,7 +213,7 @@ say.
 **The note is recorded with the transition.** The audit entry carries it, and on
 an execution that failed it is the execution's `error`, because that column
 carries a reason only where there is an error
-(`apps/server/src/modules/approvals/service.ts:170`).
+(`apps/server/src/modules/approvals/service.ts:172`).
 
 **The route is for the run the list draws as a turn.** A turn on the waiting
 list is an execution whose outcome could not be confirmed and that belongs to no
@@ -245,8 +245,8 @@ The route is `POST /api/executions/:id/resolve`, at
 authentication as every other owner-facing route
 (`apps/server/src/api/helpers.ts:14-16`). **The route's own writer is the
 executions service**, which writes the execution's status
-(`apps/server/src/modules/executions/service.ts:314-324`) and the reply's status
-(`apps/server/src/modules/executions/service.ts:329-332`) together; the
+(`apps/server/src/modules/executions/service.ts:325-335`) and the reply's status
+(`apps/server/src/modules/executions/service.ts:340-343`) together; the
 route calls it at `apps/server/src/api/executions.ts:23`. **There are two
 writers of an execution's outcome, not one**: the other is `resolveExecution`
 (`apps/server/src/modules/approvals/service.ts:163`), which the approval
@@ -2314,7 +2314,7 @@ the resource it made, when it was given either.
 status, published in [Adapter events](#adapter-events). `error` carries the
 reason the execution stopped, and only then: a cancellation carries `null`,
 because a cancellation is a decision and not a fault
-(`apps/server/src/modules/approvals/service.ts:170`).
+(`apps/server/src/modules/approvals/service.ts:172`).
 
 **The spend units are recorded, and today they are zero.** A spend unit is an
 abstract cost counter, not currency (`packages/contracts/src/common.ts:58`). The
@@ -2615,14 +2615,16 @@ records it, and the next turn continues it when the runtime said it could.
 
 "Finished" is defined once, and every reader reads the same definition.
 
-**A turn ends once.** The execution owner publishes exactly one terminal event
-per turn, after it has recorded the turn's own conclusion, and that event
-names the state the turn is in. An adapter's own report that the turn finished
-is folded into that conclusion rather than published as a second ending: a log
-with two endings is a log a reader cannot settle.
+**A turn ends once.** The product publishes exactly one terminal event per
+turn, after it has recorded the turn's own conclusion, and that event names the
+state the turn is in. An adapter's own report that the turn finished is folded
+into that conclusion rather than published as a second ending: a log with two
+endings is a log a reader cannot settle. The worker publishes the ending of a
+turn it ran; the server publishes the ending of a turn it ended — a queued turn
+the owner cancelled, a turn the owner closed, a turn an approval closed.
 
 **The statuses that end a turn** are `committed`, `completed`, `failed`,
-`cancelled`, `unknown` and `lost`. `queued`, `running` and `blocked` are states
+`cancelled` and `lost`. `queued`, `running`, `blocked` and `unknown` are states
 of a turn rather than endings, and a suspended turn has no terminal event at
 all: it is held until the owner decides, and it may yet continue.
 
@@ -2634,20 +2636,28 @@ all: it is held until the owner decides, and it may yet continue.
 | `completed` | `turn.completed` | The adapter returned and the output is not in a canonical history.     |
 | `failed`    | `turn.failed`    | The turn failed, and the reason is on the turn.                        |
 | `cancelled` | `turn.cancelled` | The turn was stopped.                                                  |
-| `unknown`   | `turn.unknown`   | The turn started and its outcome could not be confirmed.               |
 | `lost`      | `turn.lost`      | Delegated work whose executor is gone was settled rather than retried. |
+
+`unknown` has no event, because it is not an ending: it is the state of a turn
+that started and whose outcome could not be confirmed, and only the owner can
+close it (see "The unknown outcome"). `lost` ends a _delegation_ rather than an
+execution, so it names a delegation's ending and is never the status of a run.
 
 **What a reader may rely on afterwards.** After the terminal event, the turn's
 status is final: the row and the event say the same thing, no further event
 ends the turn, and the turn's `committedRevision` is the revision its output
 was committed to — or null, when it was not committed to one.
 
+**An unsettled turn.** A turn in `unknown` has an admission and no terminal
+event, and the row says the state. The owner's conclusion is what ends it, and
+the conclusion publishes the one event that ends the turn.
+
 **What an interrupted turn looks like in the log.** A turn that was interrupted
 — the deadline passed, the worker was restarted — has an admission and
 whatever the runtime managed to publish, and **no terminal event**. The
 reconciliation that settles an interrupted turn is a later slice; until it
 lands, an interrupted turn is unsettled rather than quietly reported as a
-failure.
+failure, and the owner's conclusion is what ends it.
 
 **Migration.** The status enum grows by one member and nothing is reclassified:
 `committed` is new, and a turn recorded before this change stays `completed`,
@@ -3564,7 +3574,7 @@ write one from the service layer — `POST /api/approvals/:id/decide` and `POST
 `apps/server/src/modules/approvals/resume.ts:55`, `PATCH /api/tasks/:id` at
 `apps/server/src/modules/factory/service.ts:415`, and that one only when the task
 leaves `unknown`, and `POST /api/executions/:id/stop` at
-`apps/server/src/modules/executions/service.ts:263` — which is where the agent's
+`apps/server/src/modules/executions/service.ts:274` — which is where the agent's
 own stop request is written too, so the request is in the trail whoever made it.
 **No mutating route writes none.**
 

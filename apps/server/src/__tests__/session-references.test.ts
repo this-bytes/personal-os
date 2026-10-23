@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { eq } from 'drizzle-orm';
+import { eq, sql } from 'drizzle-orm';
 import {
   agentConnections,
   conversations,
@@ -18,6 +18,7 @@ import { EventsService } from '../modules/events/service.js';
 import { Queue } from '../queue/client.js';
 import { createTestDatabase } from './helpers.js';
 import type { Message, Participant } from '@personal-os/contracts';
+import { dispatchIdempotencyKey } from '@personal-os/contracts';
 
 /**
  * Session references, correlation and idempotency, from the server's side.
@@ -178,7 +179,6 @@ describe('a dispatch that repeats', () => {
     const runs = db.select().from(executions).all();
     expect(runs).toHaveLength(1);
     expect(runs[0]?.id).toBe(first.dispatches[0]?.executionId);
-
     // And the run carries the correlation id, so one turn can be followed
     // through the log.
     expect(runs[0]?.correlationId).toBe('corr_1');
@@ -191,6 +191,43 @@ describe('a dispatch that repeats', () => {
       .where(eq(executionEvents.executionId, first.dispatches[0]!.executionId))
       .all();
     expect(admission).toHaveLength(1);
+  });
+
+  it('does not start a second run when another writer wins the race', () => {
+    // Two dispatches of the same message can arrive together: both look for
+    // the run, both find none, and both try to start one. The unique key on
+    // the idempotency key is the arbiter, and the loser has to notice it
+    // rather than fail the turn.
+    //
+    // A trigger stands in for the other writer: it puts the row in the table
+    // between the lookup and the insert, which is exactly the window the race
+    // lives in.
+    const key = dispatchIdempotencyKey({
+      conversationId: 'cnv_1',
+      parentMessageId: 'msg_1',
+      agentConnectionId: 'agt_codex',
+    });
+    // A trigger cannot take a bound variable, so the key is written into the
+    // statement. It is a test constant that holds no quote.
+    db.run(
+      sql.raw(`CREATE TRIGGER racing_dispatch BEFORE INSERT ON executions
+      WHEN NEW.idempotency_key = '${key}'
+      BEGIN
+        INSERT INTO executions
+          (id, workspace_id, execution_owner, status, spend_units, created_at, idempotency_key)
+        VALUES ('exe_racer', 'wsp_1', 'personal-os', 'queued', 0, '${NOW}', '${key}');
+      END`),
+    );
+
+    const result = dispatch();
+
+    // The dispatch did not throw and it did not start a run. Before the
+    // loser was taught to notice, the unique key surfaced as an error and the
+    // turn failed. The row the trigger wrote is rolled back with the insert
+    // that lost, because both are one statement; a real race has the
+    // winner's row in another transaction, committed already.
+    expect(result.dispatches).toHaveLength(0);
+    expect(db.select().from(executions).all()).toHaveLength(0);
   });
 
   it('does not confuse two agents in one room', () => {
@@ -271,6 +308,34 @@ describe('the session references a conversation publishes', () => {
 
     const conversation = service.get('cnv_1');
     expect(conversation.sessionRefs[0]?.continuity).toBe('fresh');
+  });
+
+  it('publishes none when the connection behind the session is gone', () => {
+    recordSessionReference(db, {
+      workspaceId: 'wsp_1',
+      conversationId: 'cnv_1',
+      agentConnectionId: 'agt_codex',
+      sessionId: 'sess_7f3a',
+      capabilities: { persistentSessions: true },
+      capabilitiesRevision: 4,
+    });
+
+    // The connection is removed. The reference names a session nobody can go
+    // back into, so the room stops publishing it.
+    db.delete(agentConnections).where(eq(agentConnections.id, 'agt_codex')).run();
+
+    const service = createConversationsService({
+      db,
+      events,
+      queue,
+      audit,
+      agentDisplayName: (id) => id,
+    });
+
+    expect(service.get('cnv_1').sessionRefs).toEqual([]);
+    // The row is still there: the reference is history, and the read model
+    // does not publish one that names nothing.
+    expect(db.select().from(conversationSessions).all()).toHaveLength(1);
   });
 
   it('publishes none when the conversation holds none', () => {

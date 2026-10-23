@@ -96,7 +96,7 @@ export async function buildApp(options: BuildAppOptions = {}): Promise<FastifyIn
     allowPrivateTargets: config.allowPrivateTargets,
   });
   const automations = createAutomationsService({ db: runtime.db });
-  const approvals = createApprovalsService(runtime.db);
+  const approvals = createApprovalsService(runtime.db, events);
   const bots = createBotsService({
     db: runtime.db,
     events,
@@ -115,7 +115,7 @@ export async function buildApp(options: BuildAppOptions = {}): Promise<FastifyIn
     },
     agentDisplayName: (connectionId) => agents.get(connectionId).name,
   });
-  const executions = createExecutionsService({ db: runtime.db, audit, bots });
+  const executions = createExecutionsService({ db: runtime.db, audit, bots, events });
   const capabilities = createCapabilitiesService({
     db: runtime.db,
     workspaces,

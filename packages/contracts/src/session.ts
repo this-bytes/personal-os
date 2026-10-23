@@ -80,16 +80,22 @@ export function dispatchIdempotencyKey(input: {
  * The statuses that end a turn.
  *
  * A turn that is in one of these has ended. A turn that is `queued`,
- * `running` or `blocked` has not: it is admitted, working, or waiting for the
- * owner. The list is the definition of "finished", and it is read by every
- * reader — the panel, the MCP tools, the audit trail and the worker.
+ * `running`, `blocked` or `unknown` has not: it is admitted, working, waiting
+ * for the owner, or waiting for the owner to say how it went. The list is the
+ * definition of "finished", and it is read by every reader — the panel, the
+ * MCP tools, the audit trail and the worker.
+ *
+ * `unknown` is deliberately not on the list. It is a question, not an answer:
+ * the turn started and nobody can say how it ended, so the owner closes it
+ * (CONTRACTS.md, "The unknown outcome"). Until it is closed it has an
+ * admission and no terminal event, and the close publishes the one event that
+ * ends it.
  */
 export const TERMINAL_TURN_STATUSES = [
   'committed',
   'completed',
   'failed',
   'cancelled',
-  'unknown',
   'lost',
 ] as const;
 export type TerminalTurnStatus = (typeof TERMINAL_TURN_STATUSES)[number];
@@ -104,22 +110,21 @@ export function isTerminalTurnStatus(status: TurnStatus): status is TerminalTurn
 /**
  * The published event name for a turn status, when the status has one.
  *
- * `queued` is the turn's admission. Every terminal status has an event name,
- * because a turn that ended without saying how is a turn a reader cannot
- * settle:
+ * `queued` is the turn's admission. Every status that ends a turn has an
+ * event name, because the event says how the turn ended:
  *
  * - `turn.committed` — the turn's output is in canonical history;
  * - `turn.completed` — the adapter returned and the output is not in a
  *   canonical history, so there is nothing to continue from;
  * - `turn.failed` — the turn failed;
  * - `turn.cancelled` — the turn was cancelled;
- * - `turn.unknown` — the turn was stopped and its outcome could not be
- *   confirmed, so it may already have had its side effect;
  * - `turn.lost` — delegated work whose executor is gone was settled rather
  *   than retried.
  *
- * `running` and `blocked` are states of a turn rather than events, and the row
- * says the state.
+ * `running`, `blocked` and `unknown` are states of a turn rather than events,
+ * and the row says the state. A turn in `unknown` has an admission and no
+ * terminal event: the owner closes it, and the close publishes the one event
+ * that ends it.
  */
 export function turnEventFor(status: TurnStatus): string | null {
   switch (status) {
@@ -134,7 +139,9 @@ export function turnEventFor(status: TurnStatus): string | null {
     case 'cancelled':
       return 'turn.cancelled';
     case 'unknown':
-      return 'turn.unknown';
+      // A question, not an ending. The owner closes the turn, and the close
+      // publishes the one event that ends it.
+      return null;
     case 'lost':
       return 'turn.lost';
     default:

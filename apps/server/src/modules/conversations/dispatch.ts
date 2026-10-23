@@ -193,31 +193,41 @@ export function planAndDispatch(input: DispatchInput): DispatchResult {
     if (started) continue;
 
     const executionId = newId('exe');
-    db.insert(executions)
-      .values({
-        id: executionId,
-        workspaceId: conversation.workspaceId,
-        conversationId,
-        taskId: null,
-        externalRef: null,
-        agentConnectionId,
-        executionOwner: 'personal-os',
-        // The turn is admitted with the capability set it runs against, and
-        // the set cannot change underneath it afterwards.
-        capabilityView: pinCapabilityView(db, agentConnectionId),
-        status: 'queued',
-        error: null,
-        committedRevision: null,
-        idempotencyKey,
-        // The correlation id ties the run to the events it publishes and to
-        // the message it writes, so one turn can be followed through the log.
-        correlationId,
-        spendUnits: 0,
-        startedAt: null,
-        finishedAt: null,
-        createdAt: now,
-      })
-      .run();
+    try {
+      db.insert(executions)
+        .values({
+          id: executionId,
+          workspaceId: conversation.workspaceId,
+          conversationId,
+          taskId: null,
+          externalRef: null,
+          agentConnectionId,
+          executionOwner: 'personal-os',
+          // The turn is admitted with the capability set it runs against, and
+          // the set cannot change underneath it afterwards.
+          capabilityView: pinCapabilityView(db, agentConnectionId),
+          status: 'queued',
+          error: null,
+          committedRevision: null,
+          idempotencyKey,
+          // The correlation id ties the run to the events it publishes and to
+          // the message it writes, so one turn can be followed through the log.
+          correlationId,
+          spendUnits: 0,
+          startedAt: null,
+          finishedAt: null,
+          createdAt: now,
+        })
+        .run();
+    } catch (error) {
+      // Two dispatches of the same message can arrive together: both look for
+      // the run, both find none, and both try to start one. The unique key on
+      // the idempotency key is the arbiter — the second writer loses, and the
+      // run that exists is the one that started. A dispatch that repeats is
+      // not a second run, so the loser does not start one either.
+      if (!lostTheUniqueKeyRace(error)) throw error;
+      continue;
+    }
 
     queue.enqueue({
       workspaceId: conversation.workspaceId,
@@ -246,6 +256,20 @@ export function planAndDispatch(input: DispatchInput): DispatchResult {
   }
 
   return { dispatches, routing: decision };
+}
+
+/**
+ * Whether a write lost a race for a unique key.
+ *
+ * The database says so in a code and in its message, and the code is the
+ * honest signal; the message is the fallback for a driver that does not
+ * surface one.
+ */
+function lostTheUniqueKeyRace(error: unknown): boolean {
+  const code = (error as { code?: unknown } | null)?.code;
+  if (code === 'SQLITE_CONSTRAINT_UNIQUE') return true;
+  const message = error instanceof Error ? error.message : String(error);
+  return message.includes('UNIQUE constraint failed');
 }
 
 /**

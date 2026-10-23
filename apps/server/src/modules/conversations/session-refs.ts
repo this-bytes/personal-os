@@ -1,11 +1,11 @@
-import { and, eq } from 'drizzle-orm';
+import { and, eq, inArray } from 'drizzle-orm';
 import {
   continuityForCapabilities,
   type SessionContinuity,
   type SessionReference,
 } from '@personal-os/contracts';
 import type { Database } from '../../db/client.js';
-import { conversationSessions } from '../../db/schema.js';
+import { agentConnections, conversationSessions } from '../../db/schema.js';
 import { newId } from '../../lib/ids.js';
 
 /**
@@ -58,14 +58,31 @@ export function readSessionReference(
 
 /**
  * Read every session reference a conversation holds.
+ *
+ * A reference to a connection that is gone names a session nobody can go back
+ * into, so it is not published: the room would be claiming a continuity that
+ * has no connection behind it. The read crosses into the runtime domain's
+ * table, and `domains.ts` declares the crossing.
  */
 export function listSessionReferences(db: Database, conversationId: string): SessionReference[] {
-  return db
+  const rows = db
     .select()
     .from(conversationSessions)
     .where(eq(conversationSessions.conversationId, conversationId))
-    .all()
-    .map(toReference);
+    .all();
+  if (rows.length === 0) return [];
+
+  const ids = [...new Set(rows.map((row) => row.agentConnectionId))];
+  const live = new Set(
+    db
+      .select({ id: agentConnections.id })
+      .from(agentConnections)
+      .where(inArray(agentConnections.id, ids))
+      .all()
+      .map((row) => row.id),
+  );
+
+  return rows.filter((row) => live.has(row.agentConnectionId)).map(toReference);
 }
 
 /**
