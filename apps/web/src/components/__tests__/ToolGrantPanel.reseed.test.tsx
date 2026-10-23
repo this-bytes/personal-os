@@ -19,6 +19,12 @@ import type { AgentConnectionDetail } from '../../lib/types';
  * query holds it now — and assert the promise directly: the owner's turn
  * survives the row changing, and the save carries the turn they made.
  *
+ * The seeding keys on the **connection**, not on the row's contents: the editor
+ * seeds when it opens, and when it is pointed at a different connection, and
+ * not when the row changes under an owner who is mid-edit. The last two cases
+ * hold two of those paths — the editor opened again, and the editor pointed at
+ * another connection — which the earlier cases did not reach.
+ *
  * The page's own wiring is held by `ToolGrantPanel.refetch.test.tsx`, which
  * renders the page and checks that a refetch under the editor does not take
  * the turn away. That is a promise about how the page is wired; this file is
@@ -61,23 +67,37 @@ function agent(...toolGrants: string[]): AgentConnectionDetail {
  * The editor, over the connection it is handed.
  *
  * `hand` is how the page's query hands the editor a row it has just read:
- * the same connection, with whatever the grant holds now.
+ * the same connection, with whatever the grant holds now. `setOpen` is how
+ * the page opens and closes the editor.
  */
 function renderEditor(row: AgentConnectionDetail): {
   hand: (next: AgentConnectionDetail | null) => void;
+  setOpen: (open: boolean) => void;
 } {
   const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
-  const editor = (connection: AgentConnectionDetail | null) => (
+  let open = true;
+  let connection: AgentConnectionDetail | null = row;
+  const editor = () => (
     <QueryClientProvider client={queryClient}>
-      <ToolGrantPanel open={true} onOpenChange={vi.fn()} agent={connection} />
+      <ToolGrantPanel open={open} onOpenChange={vi.fn()} agent={connection} />
     </QueryClientProvider>
   );
-  const view = render(editor(row));
+  const view = render(editor());
   return {
     hand: (next) => {
-      view.rerender(editor(next));
+      connection = next;
+      view.rerender(editor());
+    },
+    setOpen: (next) => {
+      open = next;
+      view.rerender(editor());
     },
   };
+}
+
+/** Another connection, with a grant of its own. */
+function otherAgent(...toolGrants: string[]): AgentConnectionDetail {
+  return { ...agent(...toolGrants), id: 'agt_2', name: 'Second tester' };
 }
 
 /** The switch for one tool. */
@@ -156,5 +176,40 @@ describe('the grant editor handed the live row', () => {
       toolSwitch('task.create'),
       'the row coming back took away what the owner had turned: the change they made is gone and the save would carry nothing',
     ).toHaveAttribute('aria-checked', 'true');
+  });
+});
+
+describe('the grant editor opened again, and pointed at another connection', () => {
+  it('shows the grant as it is when it is opened again', async () => {
+    const { hand, setOpen } = renderEditor(agent('conversation.read', 'conversation.post'));
+    await waitForSeed();
+
+    // The owner closes the editor, and the page stops handing it a row.
+    setOpen(false);
+    hand(null);
+
+    // The owner opens it again, and the page hands it the row as it is now.
+    hand(agent('conversation.read', 'conversation.post', 'task.update'));
+    setOpen(true);
+
+    // The editor shows the grant as it is now. It was opened with the grant
+    // from before, and that is not the one the owner is looking at any more.
+    expect(toolSwitch('task.update')).toHaveAttribute('aria-checked', 'true');
+    expect(toolSwitch('conversation.read')).toHaveAttribute('aria-checked', 'true');
+  });
+
+  it('shows the grant of the connection it is pointed at', async () => {
+    const { hand } = renderEditor(agent('conversation.read', 'conversation.post'));
+    await waitForSeed();
+
+    // The editor is pointed at another connection, and that one holds a
+    // grant of its own.
+    hand(otherAgent('task.get', 'task.update'));
+
+    // The editor shows that connection's grant, not the one before it.
+    expect(toolSwitch('task.get')).toHaveAttribute('aria-checked', 'true');
+    expect(toolSwitch('task.update')).toHaveAttribute('aria-checked', 'true');
+    expect(toolSwitch('conversation.read')).toHaveAttribute('aria-checked', 'false');
+    expect(toolSwitch('conversation.post')).toHaveAttribute('aria-checked', 'false');
   });
 });
