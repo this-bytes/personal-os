@@ -211,140 +211,18 @@ jobs:
       - name: The agent surface matches the owner's
         run: npm run verify:mcp-parity
 
-  docker:
-    name: Build and run the stack
+  source-stack:
+    name: Source hosting and restart
     runs-on: ubuntu-latest
-    needs: build
-    timeout-minutes: 30
-
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
-
-      # The worker check below runs a TypeScript script, so it needs a
-      # runner. The one in the lockfile is the one it should get: an
-      # unpinned `npx` download would make a gate depend on the registry
-      # at the moment it runs, and fail for the wrong reason.
-      - name: Install the runner for the verification
-        run: npm ci --ignore-scripts --no-audit --no-fund
-
-      # The stack needs a secret key to encrypt the agents' configuration, and
-      # compose refuses to start without one. The key is generated per run and
-      # never leaves the job.
-      #
-      # It goes into the job environment in a step of its own, because a
-      # variable written to $GITHUB_ENV is available to the steps that follow
-      # it and not to the step that writes it. Written and used in the same
-      # step, compose fails with "required variable PERSONAL_OS_SECRET_KEY is
-      # missing a value" — and so does the teardown step, which has to parse
-      # the same file to take the stack down.
-      - name: Create the deployment secret
-        run: |
-          key="$(openssl rand -base64 32)"
-          echo "::add-mask::$key"
-          echo "PERSONAL_OS_SECRET_KEY=$key" >> "$GITHUB_ENV"
-
-      # Compose builds the images it runs, from the same context and the same
-      # Dockerfile targets, so the stack that is tested is the stack that
-      # ships. Building them separately and tagging them differently would
-      # prove nothing about the images the containers actually start.
-      - name: Build and start the stack
-        run: docker compose -f deploy/compose.yaml up -d --build
-
-      - name: Wait for the server to become healthy
-        run: |
-          for _ in $(seq 1 60); do
-            if curl -fsS http://127.0.0.1:4317/api/health; then
-              echo ""
-              exit 0
-            fi
-            sleep 3
-          done
-          echo "the stack did not become healthy"
-          docker compose -f deploy/compose.yaml ps
-          docker compose -f deploy/compose.yaml logs --tail 60
-          exit 1
-
-      - name: The web client is served
-        run: curl -fsS http://127.0.0.1:4317/ | grep -q '<div id="root">'
-
-      # A health check only proves the server answers. The worker is the other
-      # half of the product, and it runs as its own container: if it cannot
-      # reach the database or is missing a capability it needs, only this
-      # check notices.
-      - name: The worker in the stack runs the product
-        run: npx tsx scripts/verify-stack.ts http://127.0.0.1:4317
-
-      # The check above proves one half of the gate: a deployment that has no
-      # owner yet, and the script that creates it. It cannot prove the other
-      # half — a deployment that already has an owner, whose password the
-      # script does not know. That is the case a developer pointing this gate
-      # at their own instance is in, and it is what the static owner token
-      # exists for.
-      #
-      # The order is the point. The token is not set from the start: a job that
-      # only ever used the token would prove one path and lose the other. This
-      # job proves both, in this order — a fresh deployment works, and a
-      # deployment with an existing owner works too.
-      - name: The account path cannot get into a deployment that has an owner
-        run: |
-          # The check above created the owner, so the deployment has one now.
-          # Give it a password the script does not know, so the account path
-          # provably cannot get in. This must fail with the 401; if it did not
-          # fail, the steps after this one would prove nothing.
-          other_password="$(openssl rand -base64 24)"
-          echo "::add-mask::$other_password"
-          docker compose -f deploy/compose.yaml exec -T server \
-            node apps/server/dist/index.js --reset-password "$other_password"
-
-          set +e
-          output="$(npx tsx scripts/verify-stack.ts http://127.0.0.1:4317 2>&1)"
-          status=$?
-          set -e
-          echo "$output"
-          if [ "$status" -eq 0 ]; then
-            echo "the account path signed in to a deployment whose owner it does not know"
-            exit 1
-          fi
-          if ! echo "$output" | grep -q "the owner can sign in (got 401)"; then
-            echo "the account path failed, but not with the 401 it has to fail with"
-            exit 1
-          fi
-
-      # The token goes into the environment file in a step of its own, the way
-      # the deployment secret does, because a variable written there is
-      # available to the steps that follow it and not to the step that writes
-      # it.
-      - name: Create the owner token
-        run: |
-          token="$(openssl rand -hex 24)"
-          echo "::add-mask::$token"
-          echo "PERSONAL_OS_OWNER_TOKEN=$token" >> "$GITHUB_ENV"
-
-      # The server reads the token from its environment when it starts, so the
-      # stack has to be recreated for it to take effect. The data volume is not
-      # recreated, so the owner and the password it was given above are still
-      # there — which is the point: the token gets in to the deployment the
-      # account path could not.
-      - name: Restart the stack with the token in it
-        run: |
-          docker compose -f deploy/compose.yaml up -d
-          for _ in $(seq 1 60); do
-            if curl -fsS http://127.0.0.1:4317/api/health > /dev/null; then
-              exit 0
-            fi
-            sleep 3
-          done
-          echo "the stack did not come back with the token in it"
-          docker compose -f deploy/compose.yaml ps
-          docker compose -f deploy/compose.yaml logs --tail 60
-          exit 1
-
-      - name: The token path gets in where the account path could not
-        run: npx tsx scripts/verify-stack.ts http://127.0.0.1:4317
-
-      - name: Tear the stack down
-        if: always()
-        run: docker compose -f deploy/compose.yaml down -v
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      # The verifier installs its own disposable source checkout.
+      - run: npm run verify:source
 
   workflow-lint:
     name: Lint the workflows
