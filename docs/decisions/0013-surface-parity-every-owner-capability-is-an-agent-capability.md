@@ -23,6 +23,12 @@ creating them — exists for the human UI and is invisible to an agent. A
 feature that cannot be operated over MCP is, for the product's own stated
 purpose, not exposed.
 
+That was the state at `e038af8`, and it is kept here as the measurement the
+decision was taken on. **The number the tree publishes today is 23**, and
+`npm run verify:mcp-parity` prints it; the amendment below records how it
+got there. The count is measured, not asserted — a number written in this
+record goes stale the moment a tool is added, which is why the gate exists.
+
 ## 2026-10-23 — The lead: the tool count was wrong, and the round trip has landed
 
 This record said **17 tools**; the tree published **16**, and the enumeration
@@ -43,6 +49,34 @@ SPEC-S2 carries them in the audit's ranked order. The assignment is left
 there on purpose: an agent handing work to another agent is the autonomous
 team the owner has not asked for yet.
 
+## 2026-10-23 — The lead: the exemption clause named the wrong two categories
+
+The coverage table and the audit disagreed about seven routes: widening a tool
+grant, the three MCP-token routes, the secret inventory, the file upload and
+the AG-UI envelope. The audit called them exempt; the table listed them for
+SPEC-S2 to pair. Both artefacts carried the same reasons, and every one of
+those reasons says the route stays the owner's.
+
+**The clause above was the thing out of step.** It allowed an exemption for
+"auth flows and pure-UI reads only", which does not cover the owner's own
+authority over what an agent may do — and those seven are exactly that. A
+grant is the owner's authority over what an agent may do; a token is the
+owner's authority over who may call as that connection. The clause now names
+that category, and the coverage table's own header says the same.
+
+**The owner's precedence decides this, not the lead's preference.** The
+[chat-first recovery](../recovery.md) is owner-approved direction, and
+question 14 of it reads: _"Prove rich chat with Codex and OpenCode, support
+all five targets, then deliver autonomous teams and the factory."_ A tool that
+widens a grant, or that mints a token for another connection, is the
+vocabulary of autonomous teams. Leaving those routes on the parity list would
+have committed SPEC-S2 to delivering them, which is the direction the owner
+has not asked for yet.
+
+**So the seven are exempt, and their reasons are kept.** The table reads the
+82 published routes as 22 paired, 43 listed and 17 exempt. The 43 listed ones
+are the audit's ranked list, and SPEC-S2 carries them in that order.
+
 ## Decision
 
 **Surface parity is a requirement with a check, not a direction with hope.**
@@ -54,9 +88,9 @@ team the owner has not asked for yet.
 2. Parity is enforced by a shipped CI gate — `npm run verify:mcp-parity` —
    that enumerates owner-facing routes from the published contracts and
    requires a registered tool for each, or an explicit exemption with a
-   written reason (auth flows and pure-UI reads only). The gate, not prose,
-   is the rule. An ungranted operation is a contract defect, not a screen
-   shortcut.
+   written reason (auth flows, pure-UI reads, and the owner's own authority
+   over what an agent may do). The gate, not prose, is the rule. An ungranted
+   operation is a contract defect, not a screen shortcut.
 3. New capabilities are **spec'd contract-first**: the contract + MCP tool
    exist before the UI consumes them, so the human surface and the agent
    surface are born together. A UI-only feature does not pass review.
@@ -64,7 +98,8 @@ team the owner has not asked for yet.
 ## Consequences
 
 - `docs/spec/p0-feature-audit.md` produces the exact current inventory;
-  `docs/spec/s1-mcp-surface-parity.md` closes the gaps in owner-value order.
+  `docs/spec/s1-approval-execution-parity.md` closes the gaps in owner-value
+  order.
 - The grant model must extend to the new tools at spec time, not after:
   approval-shaped authority (the owner's turn decides destructive actions)
   applies uniformly to human and agent callers.
