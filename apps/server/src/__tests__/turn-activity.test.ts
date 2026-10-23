@@ -1,12 +1,10 @@
-import fs from 'node:fs';
-import os from 'node:os';
-import path from 'node:path';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { eq } from 'drizzle-orm';
 import type { FastifyInstance } from 'fastify';
 import { loadConfig } from '../config.js';
 import { buildApp } from '../app.js';
 import { executions, queueJobs } from '../db/schema.js';
+import { createTestDataDir } from './helpers.js';
 
 /**
  * The turn, its activity, and the stop request.
@@ -21,7 +19,7 @@ let sessionCookie = '';
 let workspaceId = '';
 
 beforeAll(async () => {
-  const dataDir = fs.mkdtempSync(path.join(os.tmpdir(), 'pos-turn-activity-'));
+  const dataDir = createTestDataDir('pos-turn-activity-');
   const config = loadConfig({
     ...process.env,
     PERSONAL_OS_DATA_DIR: dataDir,

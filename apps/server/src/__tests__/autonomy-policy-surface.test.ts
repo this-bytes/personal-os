@@ -13,14 +13,12 @@
  * file with it, and the contract with it.
  */
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import fs from 'node:fs';
-import os from 'node:os';
-import path from 'node:path';
 import type { FastifyInstance } from 'fastify';
 import { buildApp } from '../app.js';
 import { loadConfig } from '../config.js';
 import { defaultAgentToolGrants, mcpToolNames } from '@personal-os/contracts';
 import type { AutonomyPolicyPatch } from '@personal-os/contracts';
+import { createTestDataDir } from './helpers.js';
 
 /**
  * The policy the contract publishes for a workspace whose stored policy is
@@ -156,7 +154,7 @@ async function createAgent(
 }
 
 beforeAll(async () => {
-  const dataDir = fs.mkdtempSync(path.join(os.tmpdir(), 'pos-autonomy-surface-'));
+  const dataDir = createTestDataDir('pos-autonomy-surface-');
   const config = loadConfig({
     ...process.env,
     PERSONAL_OS_DATA_DIR: dataDir,

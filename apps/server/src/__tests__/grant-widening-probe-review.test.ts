@@ -46,13 +46,13 @@
  */
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import fs from 'node:fs';
-import os from 'node:os';
 import path from 'node:path';
 import { spawn } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import type { FastifyInstance } from 'fastify';
 import { buildApp } from '../app.js';
 import { loadConfig } from '../config.js';
+import { createTestDataDir } from './helpers.js';
 
 let app: FastifyInstance;
 let sessionCookie = '';
@@ -61,8 +61,9 @@ let dataDir = '';
 
 beforeAll(async () => {
   // The database lives in a temporary directory: another process has to be
-  // able to open the same file, so it cannot be in memory.
-  dataDir = fs.mkdtempSync(path.join(os.tmpdir(), 'pos-grant-probe-'));
+  // able to open the same file, so it cannot be in memory. The schema is
+  // already on it, so the boot does not spend its time applying it.
+  dataDir = createTestDataDir('pos-grant-probe-');
   const config = loadConfig({
     ...process.env,
     PERSONAL_OS_DATA_DIR: dataDir,
