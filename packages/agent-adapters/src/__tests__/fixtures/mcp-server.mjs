@@ -9,8 +9,18 @@
  * When MCP_FIXTURE_PID_FILE is set, the server writes its own process id
  * there. A test that has to prove the adapter released the process needs to
  * know which process it was.
+ *
+ * When MCP_FIXTURE_TRACE_FILE is set, the server appends the method of every
+ * message it receives, in the order it receives them. A test that has to prove
+ * the runtime was connected before the turn was sent to reads the order from
+ * the server's own record, not from the client that made the call.
+ *
+ * When MCP_FIXTURE_REFUSE_HANDSHAKE is set, the server refuses the handshake:
+ * it answers `initialize` with an error instead of a result. A test that has
+ * to prove a failed handshake is an actionable failure needs a server that
+ * fails it for real.
  */
-import { writeFileSync } from 'node:fs';
+import { appendFileSync, writeFileSync } from 'node:fs';
 import { createInterface } from 'node:readline';
 
 const pidFile = process.env.MCP_FIXTURE_PID_FILE;
@@ -19,6 +29,18 @@ if (pidFile) {
     writeFileSync(pidFile, String(process.pid));
   } catch {
     // The test notices the missing file.
+  }
+}
+
+const traceFile = process.env.MCP_FIXTURE_TRACE_FILE;
+const refuseHandshake = Boolean(process.env.MCP_FIXTURE_REFUSE_HANDSHAKE);
+
+function trace(method) {
+  if (!traceFile) return;
+  try {
+    appendFileSync(traceFile, `${method}\n`);
+  } catch {
+    // The test notices the missing record.
   }
 }
 
@@ -66,10 +88,19 @@ rl.on('line', (line) => {
   }
 
   // A notification carries no id and expects no answer.
-  if (message.id === undefined || message.id === null) return;
+  if (message.id === undefined || message.id === null) {
+    trace(message.method);
+    return;
+  }
+
+  trace(message.method);
 
   switch (message.method) {
     case 'initialize':
+      if (refuseHandshake) {
+        respondError(message.id, -32000, 'This server refuses to start.');
+        return;
+      }
       respond(message.id, {
         protocolVersion: '2025-06-18',
         capabilities: { tools: {} },

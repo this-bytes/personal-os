@@ -7,7 +7,7 @@ import {
   type AdapterConfig,
 } from '@personal-os/contracts';
 import type { AdapterContext } from './types.js';
-import { asText, getByPath, interpolate, parseSseData, readSseEvents } from './util.js';
+import { asText, getByPath, interpolateJson, parseSseData, readSseEvents } from './util.js';
 
 /**
  * Generic gateway adapter for framework-specific HTTP APIs.
@@ -70,7 +70,7 @@ export class HttpAdapter implements AgentAdapter {
         }
       }
 
-      const body = interpolate(this.config.bodyTemplate, {
+      const body = interpolateJson(this.config.bodyTemplate, {
         message: input.message,
         context: input.context,
         conversationId: input.conversationId,

@@ -50,6 +50,7 @@ export type {
   DispatchScopeDecision,
 } from './modules/conversations/bots.js';
 export { createFactoryService } from './modules/factory/service.js';
+export { pinCapabilityView, turnAcceptsSteering } from './modules/capabilities/capability-view.js';
 export { loadEffectiveAutonomyPolicy } from './modules/autonomy/service.js';
 export type { EffectivePolicyScope } from './modules/autonomy/service.js';
 export { listAgentMemories } from './modules/resources/agent-memory.js';
