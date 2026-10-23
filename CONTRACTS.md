@@ -90,7 +90,7 @@ turn derived from one human request together. `origin` records who spoke and how
 the delegation chain has travelled — the basis of the echo-loop guard. `executionId`
 names the execution the message belongs to — the execution is the run itself, and
 the message it produced is that run's own record
-(`apps/server/src/modules/conversations/service.ts:78-83`). **`detail` is the
+(`apps/server/src/modules/conversations/service.ts:78-82`). **`detail` is the
 server's own sentence about how the message ended** — a message that did not finish
 says why, in the server's words
 (`packages/contracts/src/conversation.ts:151`), and the client shows it as it is
@@ -135,7 +135,7 @@ timeout. The owner sees an `unknown` item as **"check this"**, never as **"fix
 this"**.
 
 **A second `unknown`, on a connection.** `AgentConnectionStatus` carries
-`unknown` too (`packages/contracts/src/agent.ts:138-144`), and it means something
+`unknown` too (`packages/contracts/src/agent.ts:148-154`), and it means something
 else: a connection whose state was never checked, which is how a new connection
 starts. This `unknown` is about an outcome that cannot be confirmed; that one
 is about a state that was never looked at. They are different things that
@@ -149,7 +149,7 @@ owner, and only the owner can close it. Every transition into and out of
 This entry is the contract for **WI-008**, and the code implements it — as of
 `9ad4f98`. `messageStatusSchema` carries `'unknown'` at
 `packages/contracts/src/conversation.ts:62`, `executionStatusSchema` at
-`packages/contracts/src/agent.ts:164`, and `taskStatusSchema` at
+`packages/contracts/src/agent.ts:182`, and `taskStatusSchema` at
 `packages/contracts/src/factory.ts:25`.
 
 **Migration.** Nothing is reclassified. Rows recorded as `failed` before this
@@ -1890,9 +1890,9 @@ be told apart from the stored default. See
 
 **The limits, the allowed actions and the approvals are enforced.** The worker holds
 a turn to the effective policy: the chain's turn count
-(`apps/worker/src/executor.ts:1252`) and its spend
-(`apps/worker/src/executor.ts:1259`), and the workspace's spend for the day
-(`apps/worker/src/executor.ts:1266`), before the turn starts; the policy's duration
+(`apps/worker/src/executor.ts:1219`) and its spend
+(`apps/worker/src/executor.ts:1226`), and the workspace's spend for the day
+(`apps/worker/src/executor.ts:1233`), before the turn starts; the policy's duration
 limit caps the turn while it runs, and every action the agent announces is checked
 against what the policy allows. The MCP surface refuses an action the policy does not
 allow, and one the policy wants the owner to approve until the owner has decided. A
@@ -1901,8 +1901,8 @@ truncated.
 
 **A daily cap is a cap on the workspace.** The workspace's spend for the day is the
 sum of the spend units on the executions of that workspace since 00:00 UTC
-(`apps/worker/src/executor.ts:1289-1298`,
-`apps/worker/src/executor.ts:1293-1298`), and it is the same day for every workspace —
+(`apps/worker/src/executor.ts:1256-1266`,
+`apps/worker/src/executor.ts:1260-1265`), and it is the same day for every workspace —
 the system stores ISO timestamps everywhere and has no per-workspace timezone. A daily
 cap of zero is no cap, as it is for the chain's spend limit. The cap applies across
 the workspace's conversations and goals, and not per chain, which is the whole
@@ -2369,7 +2369,7 @@ exhaustively on the item's fields has one more field to read.
 
 The blocked capability is the contract for **WI-121**, and the code implements it —
 as of `d229b53`: the refusal is recorded at `apps/server/src/modules/mcp/server.ts:1319`, the list
-draws it as its own kind at `apps/server/src/api/waiting.ts:140`, and the owner's
+draws it as its own kind at `apps/server/src/api/waiting.ts:159`, and the owner's
 action is `POST /api/agents/:id/grants`.
 
 **The order of the list is over reasons, not kinds.** A turn carries the reason
@@ -2385,7 +2385,7 @@ with this entry. A row recorded before this change keeps the kind it was
 recorded with: no approval becomes a turn, and no task becomes a turn.
 
 The order is the order of urgency, and it is the order the code assembles the
-list in (`apps/server/src/api/waiting.ts:156`): an agent that cannot
+list in (`apps/server/src/api/waiting.ts:175`): an agent that cannot
 continue comes first, then the work whose outcome could not be confirmed, then
 the work waiting for an acceptance decision, then the work that is stuck.
 
@@ -2442,7 +2442,7 @@ and not the call, so a call is answered by the next completion for that tool.
 do not say why a call did not finish, and this entry does not claim a reason.
 
 **What it produced** is `artifacts`: the execution's `artifact.created` events
-(`packages/contracts/src/agent.ts:210`), each with the title it was given and
+(`packages/contracts/src/agent.ts:236-241`), each with the title it was given and
 the resource it made, when it was given either.
 
 **What it cost** is `spendUnits` and `status`. `status` is the execution's own
@@ -2841,11 +2841,18 @@ A worker holds a job while it works on it, and a worker can die while it holds
 one. What happens to that job is decided by what the product knows, not by how
 long the lease has been idle.
 
-**No blind replay.** A job is run again only when the product knows the
-previous executor did not run it: the work had not started
-(`apps/server/src/queue/reconciliation.ts`). A job whose work had started is
-never run again on its own, because the side effect may already have happened
-and running the work again would repeat it.
+**No blind replay after a restart.** A job whose worker died is run again only
+when the product knows the previous executor did not run it: the work had not
+started (`apps/server/src/queue/reconciliation.ts`). A job whose work had
+started is never run again on its own, because the side effect may already have
+happened and running the work again would repeat it.
+
+**A failed job is a different path, and it is not covered here.** A job whose
+worker reported a failure is retried while it has attempts left
+(`apps/server/src/queue/client.ts`). The product knows the work _failed_, not
+that it never ran, so a retry may repeat part of the work. That is the
+behaviour the queue has always had; the rule above governs the jobs whose
+worker died, and it does not govern this one.
 
 **The rule is one rule, and it is stated in terms of what is known.** The item a
 job was working on is in one of four states, and each has one answer: it never
@@ -2864,7 +2871,9 @@ a job that is not its own.
 **The transition is atomic.** A job is never running and requeued at the same
 time: the write that moves it is conditional on the job still being the one
 that was looked at (`apps/server/src/queue/client.ts`). Two workers looking at
-the same dead job settle it once.
+the same dead job settle it once, and they end its turn once: the turn is ended
+only by the worker whose write to the job landed
+(`apps/worker/src/reconcile.ts`).
 
 **Uncertainty is a state the owner can act on.** A run whose outcome could not
 be confirmed is published as uncertain, it is on the owner's waiting list

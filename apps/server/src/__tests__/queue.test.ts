@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it } from 'vitest';
 import { eq } from 'drizzle-orm';
-import { executions, queueJobs } from '../db/schema.js';
+import { automations, automationRuns, executions, queueJobs, tasks } from '../db/schema.js';
 import { decideStaleJob } from '../queue/reconciliation.js';
 import { createTestStack, type TestStack } from './helpers.js';
 
@@ -350,6 +350,186 @@ describe('the rule on its own', () => {
     ] as const) {
       expect(decideStaleJob(item).reason.length).toBeGreaterThan(20);
     }
+  });
+});
+
+describe('an automation’s run', () => {
+  /** An automation the scheduler could have queued. */
+  function seedAutomation(id: string): void {
+    stack!.handle.db
+      .insert(automations)
+      .values({
+        id,
+        workspaceId: 'wsp_1',
+        title: 'A nightly report',
+        trigger: { type: 'schedule', everyMinutes: 60 },
+        action: { type: 'resource.refresh', resourceId: 'res_1', method: 'GET' },
+        enabled: true,
+        nextRunAt: new Date().toISOString(),
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      })
+      .run();
+  }
+
+  /** A run of that automation, in the state it is in. */
+  function seedRun(id: string, automationId: string, status: string): void {
+    stack!.handle.db
+      .insert(automationRuns)
+      .values({
+        id,
+        automationId,
+        status,
+        startedAt: new Date().toISOString(),
+        finishedAt: null,
+        output: null,
+        error: null,
+      })
+      .run();
+  }
+
+  it('is not run again when the run had started', () => {
+    stack = createTestStack();
+    seedAutomation('aut_1');
+    seedRun('run_1', 'aut_1', 'running');
+    stack.queue.enqueue({
+      workspaceId: 'wsp_1',
+      type: 'automation.run',
+      payload: { automationId: 'aut_1', runId: 'run_1' },
+    });
+    const job = stack.queue.claimNext('worker-a');
+    ageTheLease(job!.id);
+
+    expect(stack.queue.decideFor(job!).kind).toBe('reconcile');
+  });
+
+  it('is run again when the run had not started', () => {
+    stack = createTestStack();
+    seedAutomation('aut_1');
+    stack.queue.enqueue({
+      workspaceId: 'wsp_1',
+      type: 'automation.run',
+      payload: { automationId: 'aut_1', runId: 'run_never' },
+    });
+    const job = stack.queue.claimNext('worker-a');
+    ageTheLease(job!.id);
+
+    const decision = stack.queue.decideFor(job!);
+    expect(decision.kind).toBe('requeue');
+
+    expect(stack.queue.applyStaleDecision(job!, decision)).toBe(true);
+    expect(stack.queue.claimNext('worker-b')?.id).toBe(job!.id);
+  });
+
+  it('is held when the job does not say which run it is', () => {
+    stack = createTestStack();
+    seedAutomation('aut_1');
+    stack.queue.enqueue({
+      workspaceId: 'wsp_1',
+      type: 'automation.run',
+      payload: { automationId: 'aut_1' },
+    });
+    const job = stack.queue.claimNext('worker-a');
+    ageTheLease(job!.id);
+
+    // Knowing nothing about the run is not a reason to run it again.
+    expect(stack.queue.decideFor(job!).kind).toBe('hold');
+  });
+
+  it('is finished when its run had already finished', () => {
+    stack = createTestStack();
+    seedAutomation('aut_1');
+    seedRun('run_1', 'aut_1', 'completed');
+    stack.queue.enqueue({
+      workspaceId: 'wsp_1',
+      type: 'automation.run',
+      payload: { automationId: 'aut_1', runId: 'run_1' },
+    });
+    const job = stack.queue.claimNext('worker-a');
+    ageTheLease(job!.id);
+
+    expect(stack.queue.decideFor(job!).kind).toBe('complete');
+  });
+});
+
+describe('a task’s turn', () => {
+  /** A task whose agent turn is the run the job is working on. */
+  function seedTask(id: string, status: string): void {
+    stack!.handle.db
+      .insert(tasks)
+      .values({
+        id,
+        workspaceId: 'wsp_1',
+        goalId: null,
+        title: 'A task',
+        description: '',
+        assigneeId: null,
+        status,
+        acceptanceCriteria: [],
+        evidenceResourceIds: [],
+        dependsOnTaskIds: [],
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      })
+      .run();
+  }
+
+  /** The execution of that task's turn. */
+  function seedTaskExecution(id: string, taskId: string, status: string, startedAt: string | null) {
+    stack!.handle.db
+      .insert(executions)
+      .values({
+        id,
+        workspaceId: 'wsp_1',
+        conversationId: null,
+        taskId,
+        externalRef: null,
+        agentConnectionId: 'conn_1',
+        executionOwner: 'personal-os',
+        status: status as never,
+        error: null,
+        committedRevision: null,
+        idempotencyKey: null,
+        correlationId: null,
+        capabilityView: null,
+        spendUnits: 0,
+        startedAt,
+        finishedAt: null,
+        createdAt: new Date().toISOString(),
+      })
+      .run();
+  }
+
+  it('is not run again when its turn had started', () => {
+    stack = createTestStack();
+    seedTask('tsk_1', 'open');
+    seedTaskExecution('exe_task', 'tsk_1', 'running', new Date().toISOString());
+    stack.queue.enqueue({
+      workspaceId: 'wsp_1',
+      type: 'factory.execute',
+      payload: { taskId: 'tsk_1' },
+    });
+    const job = stack.queue.claimNext('worker-a');
+    ageTheLease(job!.id);
+
+    // A task stays open for the whole of its turn, so the execution is what
+    // says the turn had started.
+    expect(stack.queue.decideFor(job!).kind).toBe('reconcile');
+  });
+
+  it('is run again when its turn had not started', () => {
+    stack = createTestStack();
+    seedTask('tsk_1', 'open');
+    seedTaskExecution('exe_task', 'tsk_1', 'queued', null);
+    stack.queue.enqueue({
+      workspaceId: 'wsp_1',
+      type: 'factory.execute',
+      payload: { taskId: 'tsk_1' },
+    });
+    const job = stack.queue.claimNext('worker-a');
+    ageTheLease(job!.id);
+
+    expect(stack.queue.decideFor(job!).kind).toBe('requeue');
   });
 });
 

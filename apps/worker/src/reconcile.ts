@@ -1,8 +1,23 @@
-import { eq } from 'drizzle-orm';
+import { and, eq, notInArray } from 'drizzle-orm';
 import type { AgentAdapter, AgentAdapterExtras, AgentReconciliation } from '@personal-os/contracts';
 import { agentConnections, executions, messages } from '@personal-os/server/db';
 import type { QueueJob, Runtime } from '@personal-os/server/runtime';
 import { loadAdapterConfig, publishTerminalEvent } from './execution-owner.js';
+
+/**
+ * The statuses that mean a run has ended.
+ *
+ * A run in one of them is not ended again. The list is the product's answer
+ * to "has this turn already had its ending", and it is what keeps a turn
+ * from ending twice when two workers settle the same dead job.
+ */
+const ENDED_EXECUTION_STATUSES = [
+  'completed',
+  'failed',
+  'committed',
+  'cancelled',
+  'unknown',
+] as const;
 
 /**
  * What a worker does with the jobs whose worker died.
@@ -39,13 +54,18 @@ export async function reconcileStaleJobs(runtime: Runtime, olderThanMs = 120_000
     if (decision.kind === 'reconcile') {
       const answer = await witness(runtime, job);
       if (answer && answer.outcome !== 'unknown') {
-        recordWitnessedOutcome(runtime, job, answer);
-        runtime.queue.applyStaleDecision(job, {
+        // The job is settled first, and the turn is ended only if that
+        // settlement landed. Two workers can look at the same dead job, and
+        // only one of them may end its turn: a turn ends once.
+        const settled = runtime.queue.applyStaleDecision(job, {
           kind: 'complete',
           reason:
             'The runtime was asked what became of the run, and it said the run finished. The run was not run again.',
         });
-        handled += 1;
+        if (settled) {
+          recordWitnessedOutcome(runtime, job, answer);
+          handled += 1;
+        }
         continue;
       }
 
@@ -53,21 +73,22 @@ export async function reconcileStaleJobs(runtime: Runtime, olderThanMs = 120_000
         'The runtime could not say what became of this run, so the outcome is uncertain. It was not run again, and the owner decides what happens next.';
       if (runtime.queue.applyStaleDecision(job, { kind: 'hold', reason })) {
         markUncertain(runtime, job, reason);
+        handled += 1;
       }
-      handled += 1;
       continue;
     }
 
     if (decision.kind === 'hold') {
       if (runtime.queue.applyStaleDecision(job, decision)) {
         markUncertain(runtime, job, decision.reason);
+        handled += 1;
       }
-      handled += 1;
       continue;
     }
 
-    runtime.queue.applyStaleDecision(job, decision);
-    handled += 1;
+    if (runtime.queue.applyStaleDecision(job, decision)) {
+      handled += 1;
+    }
   }
 
   return handled;
@@ -149,6 +170,9 @@ async function witness(runtime: Runtime, job: QueueJob): Promise<AgentReconcilia
  * It is the same run: the same execution, the same correlation id and the
  * same session reference. The run was not started again, so nothing about it
  * is new except how it ended.
+ *
+ * The write only lands on a run that has not ended yet. A turn ends once, and
+ * a turn that some other worker already ended is not ended a second time.
  */
 function recordWitnessedOutcome(
   runtime: Runtime,
@@ -170,11 +194,17 @@ function recordWitnessedOutcome(
     answer.detail ?? 'The runtime was asked what became of this run, and it said the run finished.';
   const now = new Date().toISOString();
 
-  runtime.db
+  const written = runtime.db
     .update(executions)
     .set({ status, error: status === 'failed' ? detail : null, finishedAt: now })
-    .where(eq(executions.id, payload.executionId))
+    .where(
+      and(
+        eq(executions.id, payload.executionId),
+        notInArray(executions.status, [...ENDED_EXECUTION_STATUSES]),
+      ),
+    )
     .run();
+  if (written.changes === 0) return;
 
   runtime.db
     .update(messages)
@@ -208,11 +238,17 @@ function markUncertain(runtime: Runtime, job: QueueJob, reason: string): void {
     .get();
   if (!execution) return;
 
-  runtime.db
+  const written = runtime.db
     .update(executions)
     .set({ status: 'unknown', error: reason })
-    .where(eq(executions.id, payload.executionId))
+    .where(
+      and(
+        eq(executions.id, payload.executionId),
+        notInArray(executions.status, [...ENDED_EXECUTION_STATUSES]),
+      ),
+    )
     .run();
+  if (written.changes === 0) return;
 
   runtime.db
     .update(messages)

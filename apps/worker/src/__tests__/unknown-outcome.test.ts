@@ -6,6 +6,7 @@ import {
   automationRuns,
   conversations,
   createDatabase,
+  executionEvents,
   executions,
   messages,
   participants,
@@ -21,7 +22,12 @@ import {
   Queue,
   type Runtime,
 } from '@personal-os/server/runtime';
-import type { AgentAdapter, AgentEvent, AgentTurnInput } from '@personal-os/contracts';
+import type {
+  AgentAdapter,
+  AgentEvent,
+  AgentReconciliation,
+  AgentTurnInput,
+} from '@personal-os/contracts';
 import { reconcileStaleJobs } from '../reconcile.js';
 import { executeJob, type ExecutionOutcome, type ExecutorContext } from '../executor.js';
 
@@ -45,11 +51,26 @@ class HangingAdapter implements AgentAdapter {
    */
   readonly holdsRuntime = false;
 
+  /** What the adapter sees when it starts working. */
+  onSend: (() => void) | null = null;
+
+  /**
+   * The optional question a runtime that can be asked answers.
+   *
+   * It is the adapter's extras, not the adapter itself: a runtime that cannot
+   * be asked does not have it at all.
+   */
+  reconcile?: (request: {
+    executionId: string;
+    externalSessionId?: string;
+  }) => Promise<AgentReconciliation>;
+
   async connect(): Promise<never> {
     throw new Error('not used');
   }
 
   async *send(input: AgentTurnInput): AsyncIterable<AgentEvent> {
+    this.onSend?.();
     // The turn is stopped by the deadline, and the adapter notices the
     // abort the way a real one would.
     await new Promise<void>((resolve) => {
@@ -561,4 +582,102 @@ describe('a job whose outcome is unknown', () => {
       'the job was picked up again: an unknown outcome was retried',
     ).toBeNull();
   }, 20_000);
+});
+
+describe('an automation’s run', () => {
+  it('is recorded as started before it does anything', async () => {
+    seedAutomation();
+
+    // The run's id is on the job, so the product can find the run afterwards.
+    const enqueued = runtime.queue.enqueue({
+      workspaceId: 'wsp_1',
+      type: 'automation.run',
+      payload: { automationId: 'aut_1', runId: 'run_1' },
+    });
+    const job = runtime.queue.claimNext('worker_1');
+
+    // The runtime looks at the product from the inside, while the run is in
+    // flight: the row has to be there already.
+    let seenDuringTheRun: string | null = null;
+    const adapter = new HangingAdapter();
+    adapter.onSend = () => {
+      seenDuringTheRun =
+        handle.db.select().from(automationRuns).where(eq(automationRuns.id, 'run_1')).get()
+          ?.status ?? null;
+    };
+    const runtimeWithObserver: Runtime = {
+      ...runtime,
+      registry: { create: () => adapter } as unknown as Runtime['registry'],
+    };
+
+    await executeJob({ runtime: runtimeWithObserver }, job!);
+
+    expect(seenDuringTheRun, 'the run was not recorded as started while it was running').toBe(
+      'running',
+    );
+    expect(enqueued.id).toBeTruthy();
+  });
+});
+
+describe('two workers looking at the same dead job', () => {
+  it('end its turn once', async () => {
+    // A runtime that can be asked, and says the run had finished.
+    const answering = new HangingAdapter();
+    answering.reconcile = async (request) => ({
+      executionId: request.executionId,
+      outcome: 'completed' as const,
+      detail: 'The runtime kept the session, and the turn had finished.',
+    });
+    const runtimeWithAnswering: Runtime = {
+      ...runtime,
+      registry: { create: () => answering } as unknown as Runtime['registry'],
+    };
+
+    const enqueued = runtime.queue.enqueue({
+      workspaceId: 'wsp_1',
+      type: 'chat.turn',
+      payload: {
+        conversationId: 'cnv_1',
+        parentMessageId: 'msg_parent',
+        agentConnectionId: 'agt_1',
+        executionId: 'exe_1',
+        correlationId: 'cor_1',
+        depth: 1,
+      },
+    });
+    runtime.queue.claimNext('worker_1');
+
+    // The turn started and the worker died holding the job.
+    handle.db
+      .update(executions)
+      .set({ status: 'running', startedAt: NOW })
+      .where(eq(executions.id, 'exe_1'))
+      .run();
+    handle.db
+      .update(queueJobs)
+      .set({ lockedAt: '2000-01-01T00:00:00.000Z' })
+      .where(eq(queueJobs.id, enqueued.id))
+      .run();
+
+    await Promise.all([
+      reconcileStaleJobs(runtimeWithAnswering),
+      reconcileStaleJobs(runtimeWithAnswering),
+    ]);
+
+    const endings = handle.db
+      .select()
+      .from(executionEvents)
+      .all()
+      .filter((entry) => {
+        if (entry.executionId !== 'exe_1') return false;
+        const payload = entry.payload as { event?: { type?: string; status?: string } };
+        return (
+          payload.event?.type === 'execution.status' &&
+          ['completed', 'committed', 'failed', 'cancelled'].includes(payload.event?.status ?? '')
+        );
+      });
+
+    expect(endings.length, 'the turn was ended more than once').toBe(1);
+    expect(jobRow(enqueued.id)?.status).toBe('done');
+  });
 });

@@ -80,6 +80,14 @@ export interface UnknownTurn {
   conversationId: string;
   conversationTitle: string;
   agentConnectionId: string | null;
+  /**
+   * Why the outcome could not be confirmed.
+   *
+   * The reason is what the run recorded when it was marked uncertain, and it
+   * is what the owner reads before deciding: two uncertain runs can be
+   * uncertain for different reasons.
+   */
+  reason: string | null;
 }
 
 /**
@@ -317,6 +325,7 @@ export function createConversationsService(
           conversationId: executions.conversationId,
           conversationTitle: conversations.title,
           agentConnectionId: executions.agentConnectionId,
+          reason: executions.error,
         })
         .from(executions)
         .innerJoin(conversations, eq(conversations.id, executions.conversationId))
@@ -333,6 +342,7 @@ export function createConversationsService(
           conversationId: row.conversationId!,
           conversationTitle: row.conversationTitle,
           agentConnectionId: row.agentConnectionId,
+          reason: row.reason ?? null,
         }));
     },
 

@@ -129,8 +129,11 @@ export function listWaiting(
           id: `turn:${turn.executionId}`,
           kind: 'turn' as const,
           title: turn.conversationTitle,
-          detail:
-            'This turn started and we cannot confirm how it ended. Check whether it ran before you ask the agent again.',
+          // The run's own reason comes with it: the fixed sentence says what
+          // kind of thing this is, and the reason says which thing it was.
+          detail: turn.reason
+            ? `This turn started and we cannot confirm how it ended. ${turn.reason}`
+            : 'This turn started and we cannot confirm how it ended. Check whether it ran before you ask the agent again.',
           reason: 'unknown',
           workspaceId,
           conversationId: turn.conversationId,
