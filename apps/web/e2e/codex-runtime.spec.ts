@@ -77,8 +77,12 @@ test.describe('a Codex runtime in the room', () => {
     // The commands the runtime ran are in the trace, not only in its words.
     // A runtime that says what it did is the difference between a turn and an
     // answer.
-    await expect(page.getByText('tool.started')).toBeVisible({ timeout: 15_000 });
-    await expect(page.getByText('tool.completed')).toBeVisible();
+    //
+    // The trace pairs a tool's start with its completion into one row, so the
+    // row carries the name of the event that began it and the name of the
+    // tool that ran.
+    await expect(page.getByText('tool.started', { exact: true })).toBeVisible({ timeout: 15_000 });
+    await expect(page.getByText('command', { exact: true }).first()).toBeVisible();
     await expect(page.getByText('message.completed')).toBeVisible();
 
     // The turn is over: nothing is still streaming.
