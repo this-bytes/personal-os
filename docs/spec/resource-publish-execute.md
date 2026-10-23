@@ -182,12 +182,21 @@ fails if it declares the support again instead of reading the published one.
 **The audit's rows.** _Publish a resource_ and _execute a resource_ are
 **human-only**: the owner path tells the truth, and no agent path exists —
 `mcpToolNames` publishes no `resource.publish` and no `resource.execute`. The
-audit's counts move from _17 exposed-paired, 50 human-only, 2 broken-window,
-14 exempt_ to _17 exposed-paired, 52 human-only, 0 broken-window, 14 exempt_, and
-the two rows are re-measured in the audit with the evidence of both readings.
+audit's record now reads **23 exposed-paired, 43 human-only, 0 broken-window,
+17 exempt — 83 rows over 82 routes**, and the two rows are re-measured in the
+audit with the evidence of both readings.
 `scripts/mcp-parity.json` keeps both routes `listed` against `SPEC-S2+`, with
 the reasons restated: the route runs or publishes what the kind can do and
 refuses the rest, and the agent path is SPEC-S2's question.
+
+**One thing about the audit's counts is not yet true on this branch alone.**
+The audit records the parity gate as reading **22 paired, 43 listed and 17
+exempt**. That reading comes from seven rows that move from `listed` to
+`exempt` in `scripts/mcp-parity.json`, and those seven are another branch's
+change, which lands separately. On this branch alone the gate reads **22
+paired, 50 listed, 10 exempt** — the seven exemptions are not in it, and they
+are not in this slice's scope. The audit is written against the corrected
+record, so the two agree once that branch lands.
 
 **The commands, and what they answered.** The box was under load from a
 background CPU load and two other agents' suites, so the timings below are the
@@ -208,6 +217,9 @@ load's, not the slice's.
 | `npm run verify:contracts`                    | 28 claims checked, 0 failures.                                                                                |
 | `npm run verify:mcp-parity`                   | 82 routes published and registered, 23 tools, 22 paired, 50 listed, 10 exempt; 0 failures.                    |
 | `npm run verify:bundle`                       | Every chunk within 300 kB and the first paint carries no page chunk.                                          |
+| `npm run verify:dependencies`                 | Workspace manifests match the lockfile; npm reports a complete installed dependency tree.                     |
+| `npx tsx scripts/verify-build.ts`             | The compiled server boots and serves requests.                                                                |
+| `npm run verify:stack http://127.0.0.1:4333`  | A running deployment executed an agent's turn and the reply carried the adapter's output.                     |
 | `npm run test:e2e`                            | 37 browser tests passed, on a port of their own — see the limits below.                                       |
 
 **The four server failures, and what they are.** One was mine and is fixed:
