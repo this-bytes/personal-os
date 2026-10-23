@@ -14,6 +14,11 @@
  * message it receives, in the order it receives them. A test that has to prove
  * the runtime was connected before the turn was sent to reads the order from
  * the server's own record, not from the client that made the call.
+ *
+ * When MCP_FIXTURE_REFUSE_HANDSHAKE is set, the server refuses the handshake:
+ * it answers `initialize` with an error instead of a result. A test that has
+ * to prove a failed handshake is an actionable failure needs a server that
+ * fails it for real.
  */
 import { appendFileSync, writeFileSync } from 'node:fs';
 import { createInterface } from 'node:readline';
@@ -28,6 +33,7 @@ if (pidFile) {
 }
 
 const traceFile = process.env.MCP_FIXTURE_TRACE_FILE;
+const refuseHandshake = Boolean(process.env.MCP_FIXTURE_REFUSE_HANDSHAKE);
 
 function trace(method) {
   if (!traceFile) return;
@@ -91,6 +97,10 @@ rl.on('line', (line) => {
 
   switch (message.method) {
     case 'initialize':
+      if (refuseHandshake) {
+        respondError(message.id, -32000, 'This server refuses to start.');
+        return;
+      }
       respond(message.id, {
         protocolVersion: '2025-06-18',
         capabilities: { tools: {} },

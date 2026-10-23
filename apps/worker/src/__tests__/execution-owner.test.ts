@@ -89,8 +89,11 @@ function job(type: string, payload: Record<string, unknown>): Parameters<typeof 
  * The fixture is told to record the methods it receives, so the order the
  * runtime was reached in is the server's own record and not the client's
  * account of it.
+ *
+ * The extra environment is how a case changes how the server behaves: a case
+ * that needs a server that refuses the handshake says so here.
  */
-function seedAgent(): void {
+function seedAgent(extraEnv: Record<string, string> = {}): void {
   handle.db
     .insert(agentConnections)
     .values({
@@ -111,6 +114,11 @@ function seedAgent(): void {
     })
     .run();
 
+  agentEnvironment(extraEnv);
+}
+
+/** The environment the agent's server is started in. */
+function agentEnvironment(extraEnv: Record<string, string> = {}): void {
   runtime.resolveSecret = async () =>
     JSON.stringify({
       adapterType: 'mcp',
@@ -121,7 +129,7 @@ function seedAgent(): void {
         toolName: 'echo',
         argumentTemplate: '{"message":"{{message}}"}',
         timeoutSeconds: 30,
-        env: { MCP_FIXTURE_TRACE_FILE: traceFile },
+        env: { MCP_FIXTURE_TRACE_FILE: traceFile, ...extraEnv },
       },
     });
 }
@@ -273,6 +281,29 @@ function executionRow(id: string): {
   };
 }
 
+/** The execution row an automation's run wrote. */
+function automationExecution(): {
+  status: string;
+  error: string | null;
+  finishedAt: string | null;
+  spendUnits: number;
+  capabilityView: { agentConnectionId: string } | null;
+} {
+  const row = handle.db
+    .select()
+    .from(executions)
+    .where(eq(executions.agentConnectionId, 'agt_1'))
+    .get();
+  if (!row) throw new Error('The run wrote no execution row.');
+  return {
+    status: row.status,
+    error: row.error,
+    finishedAt: row.finishedAt,
+    spendUnits: row.spendUnits,
+    capabilityView: row.capabilityView as { agentConnectionId: string } | null,
+  };
+}
+
 /** The methods the fixture server received, in the order it received them. */
 function serverTrace(): string[] {
   if (!existsSync(traceFile)) return [];
@@ -396,12 +427,7 @@ describe('the three callers go through one owner', () => {
 
     // The run's execution row belongs to no conversation and to no task, so it
     // is the worker's own row and is found by the agent it ran on.
-    const row = handle.db
-      .select()
-      .from(executions)
-      .where(eq(executions.agentConnectionId, 'agt_1'))
-      .get();
-    if (!row) throw new Error('The run wrote no execution row.');
+    const row = automationExecution();
     expect(row.status, `the run did not finish: ${row.error ?? ''}`).toBe('completed');
     expect(row.error).toBeNull();
     expect(row.finishedAt).not.toBeNull();
@@ -427,8 +453,21 @@ describe('the three callers go through one owner', () => {
       .set({ enabled: false })
       .where(eq(agentConnections.id, 'agt_1'))
       .run();
+    seedChatTurn();
     seedTaskTurn();
+    seedAutomationRun();
 
+    await executeJob(
+      context,
+      job('chat.turn', {
+        conversationId: 'cnv_1',
+        parentMessageId: 'msg_parent',
+        agentConnectionId: 'agt_1',
+        executionId: 'exe_chat',
+        correlationId: 'corr_1',
+        depth: 1,
+      }),
+    );
     await executeJob(
       context,
       job('factory.execute', {
@@ -437,13 +476,96 @@ describe('the three callers go through one owner', () => {
         agentConnectionId: 'agt_1',
       }),
     );
+    await executeJob(context, job('automation.run', { automationId: 'aut_1' }));
 
-    const row = executionRow('exe_task');
-    expect(row.status).toBe('failed');
-    expect(row.error).toMatch(/disabled/i);
-    // Nothing reached the agent, so nothing was spent.
-    expect(row.spendUnits).toBe(0);
+    for (const row of [executionRow('exe_chat'), executionRow('exe_task'), automationExecution()]) {
+      expect(row.status).toBe('failed');
+      expect(row.error).toMatch(/disabled/i);
+      // Nothing reached the agent, so nothing was spent.
+      expect(row.spendUnits).toBe(0);
+    }
     expect(serverTrace()).toEqual([]);
+  });
+
+  it('a failed handshake blocks submission and records a failure on every path', async () => {
+    // A server that refuses the handshake is a server the turn cannot be
+    // submitted to. The owner has to say so, on every path, with a reason the
+    // owner can act on.
+    agentEnvironment({ MCP_FIXTURE_REFUSE_HANDSHAKE: '1' });
+    seedChatTurn();
+    seedTaskTurn();
+    seedAutomationRun();
+
+    await executeJob(
+      context,
+      job('chat.turn', {
+        conversationId: 'cnv_1',
+        parentMessageId: 'msg_parent',
+        agentConnectionId: 'agt_1',
+        executionId: 'exe_chat',
+        correlationId: 'corr_1',
+        depth: 1,
+      }),
+    );
+    await executeJob(
+      context,
+      job('factory.execute', {
+        taskId: 'tsk_1',
+        executionId: 'exe_task',
+        agentConnectionId: 'agt_1',
+      }),
+    );
+    await executeJob(context, job('automation.run', { automationId: 'aut_1' }));
+
+    for (const row of [executionRow('exe_chat'), executionRow('exe_task'), automationExecution()]) {
+      expect(row.status, 'the turn did not record a failure').toBe('failed');
+      // The reason names what went wrong, so the owner knows what to do.
+      expect(row.error).toMatch(/connect|handshake|reach/i);
+      expect(row.finishedAt).not.toBeNull();
+    }
+
+    // The turn was never submitted: the server was never asked to do anything.
+    expect(serverTrace()).not.toContain('tools/call');
+  });
+
+  it('a configuration that cannot be read fails the run on every path', async () => {
+    // The configuration is read inside the turn, so a configuration that cannot
+    // be read is a turn that failed. The record of the run has to say that: a
+    // row still saying `running` is a run that looks like it is going when it
+    // finished a second ago.
+    runtime.resolveSecret = async () => undefined;
+    seedChatTurn();
+    seedTaskTurn();
+    seedAutomationRun();
+
+    await executeJob(
+      context,
+      job('chat.turn', {
+        conversationId: 'cnv_1',
+        parentMessageId: 'msg_parent',
+        agentConnectionId: 'agt_1',
+        executionId: 'exe_chat',
+        correlationId: 'corr_1',
+        depth: 1,
+      }),
+    );
+    await executeJob(
+      context,
+      job('factory.execute', {
+        taskId: 'tsk_1',
+        executionId: 'exe_task',
+        agentConnectionId: 'agt_1',
+      }),
+    );
+    await executeJob(context, job('automation.run', { automationId: 'aut_1' }));
+
+    for (const row of [executionRow('exe_chat'), executionRow('exe_task'), automationExecution()]) {
+      expect(row.status, 'the run was left looking like it was still going').toBe('failed');
+      expect(row.error).toMatch(/configuration/i);
+      expect(row.finishedAt, 'the run was left without an end').not.toBeNull();
+      // Nothing reached the agent, so nothing was spent.
+      expect(row.spendUnits).toBe(0);
+    }
   });
 
   it('the executor holds no part of the lifecycle', () => {
@@ -464,6 +586,22 @@ describe('the three callers go through one owner', () => {
       'readExternalTaskId',
     ]) {
       expect(source, `the executor still owns "${marker}"`).not.toContain(marker);
+    }
+
+    // The same holds for the lifecycle a caller could re-implement through the
+    // published API instead of through the owner's helpers: connecting a
+    // runtime, releasing one, or writing the end of a run.
+    for (const marker of ['adapter.connect(', 'adapter.close(', 'finishedAt:']) {
+      expect(source, `the executor still owns "${marker}"`).not.toContain(marker);
+    }
+
+    // The executor may write to an execution row — the external reference is
+    // the adapter's to offer — but the state of the run belongs to the owner.
+    const executionWrites = source.match(/update\(executions\)[^;]*?;/g) ?? [];
+    for (const write of executionWrites) {
+      expect(write, 'the executor writes the state of an execution row').not.toMatch(
+        /status|error|spendUnits|finishedAt/,
+      );
     }
 
     // And the owner holds all of it.

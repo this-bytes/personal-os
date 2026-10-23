@@ -270,22 +270,13 @@ async function runTurn(
     .where(eq(executions.id, opened.executionId))
     .run();
 
-  const adapterConfig = await loadAdapterConfig(context, opened.agentConnectionId);
-  const timeoutSeconds = adapterTimeout(adapterConfig);
-  // The deadline for this turn. The adapter's own timeout and the policy's
-  // duration limit are both deadlines, and the earlier one is the one that
-  // applies: a policy may tighten the adapter's budget, and it may never
-  // widen it.
-  const deadlineSeconds = Math.min(timeoutSeconds, request.policy.maxDurationSeconds);
-
   // The deadline is the one moment where we stop waiting for an agent that
   // may already be doing something. Past it we cannot confirm the outcome.
   const controller = new AbortController();
   let timedOut = false;
-  const timeout = setTimeout(() => {
-    timedOut = true;
-    controller.abort();
-  }, deadlineSeconds * 1000);
+  let timeout: ReturnType<typeof setTimeout> | undefined;
+  let timeoutSeconds = 0;
+  let deadlineSeconds = request.policy.maxDurationSeconds;
 
   let adapter: AgentAdapter | null = null;
   let failure: string | undefined;
@@ -293,8 +284,39 @@ async function runTurn(
   let suspended = false;
   let reachedAgent = false;
   let externalRef: string | undefined;
+  let turnEnded = false;
+
+  // The turn is over the moment the owner says so, and it is over only once.
+  // A steer that arrives after this is steering the next turn.
+  const endTurn = async () => {
+    if (turnEnded) return;
+    turnEnded = true;
+    try {
+      await request.onTurnEnd?.();
+    } catch {
+      // Whatever the turn held is let go whatever the turn did. A teardown
+      // that fails is not a second failure of the turn.
+    }
+  };
 
   try {
+    // The configuration is read inside the turn's own failure handling. A
+    // configuration that cannot be read is a turn that failed before it
+    // started, and the record of the run has to say that — a row still
+    // saying `running` is a run that looks like it is going when it finished
+    // a second ago.
+    const adapterConfig = await loadAdapterConfig(context, opened.agentConnectionId);
+    timeoutSeconds = adapterTimeout(adapterConfig);
+    // The deadline for this turn. The adapter's own timeout and the policy's
+    // duration limit are both deadlines, and the earlier one is the one that
+    // applies: a policy may tighten the adapter's budget, and it may never
+    // widen it.
+    deadlineSeconds = Math.min(timeoutSeconds, request.policy.maxDurationSeconds);
+    timeout = setTimeout(() => {
+      timedOut = true;
+      controller.abort();
+    }, deadlineSeconds * 1000);
+
     adapter = runtime.registry.create(adapterConfig, {
       resolveSecret: runtime.resolveSecret,
       logger: {
@@ -342,6 +364,11 @@ async function runTurn(
       if (handled === 'refused') break;
     }
 
+    // The turn is over before the adapter is asked for anything else. The
+    // owner's steers are let go first: a steer taken by a turn that has
+    // already ended is a steer nobody reads, and it is recorded as taken.
+    await endTurn();
+
     // The external reference the adapter offers: an orchestrator's task
     // identifier if it has one, and otherwise the session a decision would
     // continue in.
@@ -351,13 +378,8 @@ async function runTurn(
   } catch (error) {
     failure = error instanceof Error ? error.message : String(error);
   } finally {
-    clearTimeout(timeout);
-    try {
-      await request.onTurnEnd?.();
-    } catch {
-      // Whatever the turn held is let go whatever the turn did. A teardown
-      // that fails is not a second failure of the turn.
-    }
+    if (timeout !== undefined) clearTimeout(timeout);
+    await endTurn();
     await releaseTurn(adapter);
   }
 

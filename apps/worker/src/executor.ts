@@ -849,14 +849,6 @@ async function executeAutomation(
   let output: unknown = null;
   let failure: string | undefined;
   let timedOut = false;
-  let timeoutSeconds = 0;
-  /**
-   * The execution the run's agent turn runs on. An automation's run belongs to
-   * no conversation and to no task, so the worker creates the row itself.
-   */
-  let executionId: string | undefined;
-  /** Whether the run's turn reached the agent. */
-  let agentTurnRan = false;
 
   // An automation that was started by an event produces its own events at
   // the next depth, which is what bounds the chain.
@@ -901,8 +893,7 @@ async function executeAutomation(
       // turn; an automation's run is the worker's own, so the worker creates
       // the row it writes the cost on. The row belongs to no conversation and
       // to no task, which is what an automation's turn is.
-      executionId = newId('exe');
-      const runExecutionId = executionId;
+      const runExecutionId = newId('exe');
       createTurnExecution(context, {
         id: runExecutionId,
         workspaceId: automation.workspaceId,
@@ -946,7 +937,6 @@ async function executeAutomation(
         });
         failure = turn.error;
         timedOut = turn.status === 'unknown';
-        timeoutSeconds = turn.deadlineSeconds;
       } else {
         failure = opened.reason;
       }
@@ -1144,16 +1134,12 @@ function finishAutomationRun(
 }
 
 /**
- * Record a turn that never started.
+ * Record a turn that never ran.
  *
  * This is used when the work cannot begin at all — the connection is gone,
  * it is switched off, or the task is no longer there. Nothing ran, so the
- * outcome is known: it failed.
- */
-/**
- * Record a turn that did not run.
- *
- * The execution row is the record of the run, and the owner writes its state.
+ * outcome is known: it failed. The execution row is the record of the run,
+ * and the owner writes its state.
  */
 function fail(context: ExecutorContext, executionId: string, message: string): ExecutionOutcome {
   return recordTurnFailure(context, { executionId, reason: message });
@@ -1283,9 +1269,3 @@ async function runDataSourceRows(
 
   throw new Error('Unsupported data source kind.');
 }
-
-/**
- * Load the adapter configuration for a connection. The configuration is
- * stored as an encrypted secret record; the worker reads it through the
- * shared secret store.
- */

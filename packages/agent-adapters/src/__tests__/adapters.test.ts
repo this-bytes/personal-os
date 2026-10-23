@@ -174,6 +174,24 @@ describe('adapter helpers', () => {
     expect(JSON.parse(rendered)).toEqual({ message });
   });
 
+  it('escapes a value that lands in a string and leaves a bare value alone', () => {
+    // A value in a string is text and is escaped. A value outside a string is
+    // part of the document's structure, and quoting it would change the
+    // document's shape.
+    expect(interpolateJson('{"a":"{{text}}"}', { text: 'a"b' })).toBe('{"a":"a\\"b"}');
+    expect(interpolateJson('{"a":{{count}}}', { count: '5' })).toBe('{"a":5}');
+  });
+
+  it('reads a placeholder position through an escaped quote', () => {
+    // The escape belongs to the template. What follows it is still inside the
+    // string, so the value there is escaped.
+    expect(interpolateJson('{"a":"x\\"{{text}}"}', { text: 'a"b' })).toBe('{"a":"x\\"a\\"b"}');
+  });
+
+  it('leaves an unknown placeholder in a JSON template untouched', () => {
+    expect(interpolateJson('{"a":"{{unknown}}"}', {})).toBe('{"a":"{{unknown}}"}');
+  });
+
   it('splits text into chunks without losing characters', () => {
     const text = 'word '.repeat(50);
     const chunks = chunkText(text, 32);

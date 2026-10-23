@@ -226,13 +226,43 @@ export function interpolate(template: string, vars: Record<string, string>): str
  * substituting it raw makes the document invalid: the turn then fails on the
  * way to the tool, with a complaint about the template rather than about the
  * message.
+ *
+ * Whether a value is escaped depends on where it lands. Inside a JSON string
+ * literal the value is text, and it is escaped. Anywhere else it is part of
+ * the document's structure — a number, a boolean — and it is substituted as
+ * it is, because quoting it would change the document's shape.
  */
 export function interpolateJson(template: string, vars: Record<string, string>): string {
-  const escaped: Record<string, string> = {};
-  for (const [key, value] of Object.entries(vars)) {
-    escaped[key] = escapeJson(value);
+  const placeholder = /\{\{\s*([\w.-]+)\s*\}\}/g;
+  let out = '';
+  let inString = false;
+  let index = 0;
+
+  while (index < template.length) {
+    const char = template[index];
+
+    if (inString && char === '\\') {
+      // An escape belongs to the template, not to the value.
+      out += char + (template[index + 1] ?? '');
+      index += 2;
+      continue;
+    }
+
+    placeholder.lastIndex = index;
+    const match = placeholder.exec(template);
+    if (match && match.index === index) {
+      const value = vars[match[1]!];
+      out += value === undefined ? match[0] : inString ? escapeJson(value) : value;
+      index += match[0].length;
+      continue;
+    }
+
+    if (char === '"') inString = !inString;
+    out += char;
+    index += 1;
   }
-  return interpolate(template, escaped);
+
+  return out;
 }
 
 /** Escape a string for safe inclusion in a JSON document. */
