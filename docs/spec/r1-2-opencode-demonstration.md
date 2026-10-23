@@ -453,8 +453,9 @@ read the run without running anything. It contains, in this order:
    the adapter returned, verbatim.
 4. **The limits.** Every capability the acceptance asked for that the runtime
    did not provide, each with the reason and the supported alternative.
-5. **The version and the credential.** `1.19.4`, the date of the run, and
-   whether the run used a free model or a credentialed one.
+5. **The version, the revision and the credential.** `1.19.4`, the commit the
+   run was made on, the date of the run, and whether the run used a free model
+   or a credentialed one.
 
 The acceptance commands, run on the delivered revision:
 

@@ -454,7 +454,8 @@ read the run without running anything. It contains, in this order:
    records, as the transcript read them.
 4. **The limits.** Every capability the acceptance asked for that the runtime
    did not provide, each with the reason and the supported alternative.
-5. **The version.** `codex-cli 0.163.0`, and the date of the run.
+5. **The version and the revision.** `codex-cli 0.163.0`, the commit the run
+   was made on, and the date of the run.
 
 The acceptance commands, run on the delivered revision:
 
