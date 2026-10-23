@@ -192,6 +192,15 @@ export function registerResourceRoutes(app: FastifyInstance): void {
     return { resource };
   });
 
+  /**
+   * Publish a resource.
+   *
+   * The answer says what happened: a resource that was published answers
+   * `published` and carries the live resource. A kind with no publish act is
+   * refused with a reason the owner can read — the service throws, and the
+   * error handler answers with the shared envelope, so a refusal is never the
+   * same 200 as a success.
+   */
   app.post('/api/resources/:id/publish', { preHandler: requireAuth }, async (request) => {
     const { id } = request.params as { id: string };
     const resource = app.services.resources.publish(id);
@@ -200,9 +209,17 @@ export function registerResourceRoutes(app: FastifyInstance): void {
       id,
       workspaceId: resource.workspaceId,
     });
-    return { resource };
+    return { outcome: 'published', resource };
   });
 
+  /**
+   * Execute a resource.
+   *
+   * The answer says what happened: a run that was enqueued answers `queued`
+   * and one that ran answers `succeeded`. A kind with no run is refused with a
+   * reason the owner can read, so a refusal is never the same 200 as a success
+   * that did not happen.
+   */
   app.post('/api/resources/:id/execute', { preHandler: requireAuth }, async (request) => {
     const { id } = request.params as { id: string };
     const resource = app.services.resources.get(id);
@@ -212,7 +229,7 @@ export function registerResourceRoutes(app: FastifyInstance): void {
       id,
       workspaceId: resource.workspaceId,
     });
-    return { result };
+    return { outcome: result.outcome, result: { output: result.output } };
   });
 
   app.get('/api/resources/:id/inspect', { preHandler: requireAuth }, async (request) => {

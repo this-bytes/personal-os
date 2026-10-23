@@ -13,7 +13,7 @@ carry.
 | [SPEC-P0 — feature audit](audit-2026-10-23.md)                                        | done      | —                               | The honest inventory of what exists for the owner and what exists for an agent. |
 | [SPEC-S1 — approval and execution parity](s1-approval-execution-parity.md)            | done      | SPEC-P0                         | The authority loop becomes agent-operable. One row is carried to SPEC-S2.       |
 | [SPEC-S2 — the remaining owner parity](s2-remaining-owner-parity.md)                  | open      | SPEC-S1, SPEC-P0                | The rest of the owner surface, in the audit's ranked order.                     |
-| [SPEC-RESOURCE-RUN — publish and execute tell the truth](resource-publish-execute.md) | open      | SPEC-P0                         | Publishing and executing a resource stop claiming they happened.                |
+| [SPEC-RESOURCE-RUN — publish and execute tell the truth](resource-publish-execute.md) | delivered | SPEC-P0                         | Publishing and executing a resource stop claiming they happened.                |
 | [SPEC-GRANT-EDITOR — the grant editor's save](grant-editor-save.md)                   | delivered | —                               | The owner's grant decision reaches the connection it was made for.              |
 | [SPEC-R0-1 — shared execution ownership](r0-1-shared-execution-ownership.md)          | delivered | —                               | One execution owner serves chat, tasks and automations.                         |
 | [SPEC-R0-2 — authorised dispatch](r0-2-authorised-dispatch.md)                        | open      | SPEC-R0-1, SPEC-GRANT-EDITOR    | The grant decision taken at admission is the one enforced at execution.         |
