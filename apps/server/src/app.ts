@@ -64,6 +64,7 @@ export async function buildApp(options: BuildAppOptions = {}): Promise<FastifyIn
 
   const events = new EventsService(runtime.db);
   const queue = new Queue(runtime.db);
+  const audit = runtime.audit;
 
   const auth = createAuthService(runtime.db);
   const agentTokens = createAgentTokenService(runtime.db);
@@ -114,6 +115,7 @@ export async function buildApp(options: BuildAppOptions = {}): Promise<FastifyIn
     },
     agentDisplayName: (connectionId) => agents.get(connectionId).name,
   });
+  const executions = createExecutionsService({ db: runtime.db, audit, bots });
   const capabilities = createCapabilitiesService({
     db: runtime.db,
     workspaces,
@@ -124,10 +126,12 @@ export async function buildApp(options: BuildAppOptions = {}): Promise<FastifyIn
     resources,
     automations,
     approvals,
+    executions,
+    audit,
+    events,
+    queue,
   });
-  const audit = runtime.audit;
   const measures = createMeasuresService({ resources, audit });
-  const executions = createExecutionsService({ db: runtime.db });
 
   const services: AppServices = {
     config,
@@ -267,7 +271,10 @@ export async function buildApp(options: BuildAppOptions = {}): Promise<FastifyIn
     if (bearer?.toLowerCase().startsWith('bearer ')) {
       const token = bearer.slice(7).trim();
       if (config.ownerToken && token === config.ownerToken) {
-        return { kind: 'owner' };
+        // The owner may be authenticated by the static token, and the token
+        // carries no identity of its own: the owner row is who it acts as.
+        const owner = auth.owner();
+        return { kind: 'owner', ...(owner ? { user: owner } : {}) };
       }
       const agentConnectionId = agentTokens.verify(token);
       if (agentConnectionId) {
@@ -275,8 +282,9 @@ export async function buildApp(options: BuildAppOptions = {}): Promise<FastifyIn
       }
     }
     const cookieToken = request.cookies[SESSION_COOKIE];
-    if (cookieToken && (await auth.authenticate(cookieToken))) {
-      return { kind: 'owner' };
+    if (cookieToken) {
+      const user = await auth.authenticate(cookieToken);
+      if (user) return { kind: 'owner', user };
     }
     return null;
   };
