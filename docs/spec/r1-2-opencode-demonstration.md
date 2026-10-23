@@ -258,6 +258,14 @@ needs the owner's decision — not from a runtime's own question. So there is
 no path from OpenCode's permission request to the owner, and the acceptance
 item below cannot be met on this route as it stands.
 
+The preset's own persona already expects the opposite. The `opencode-acp`
+preset tells the agent it leads the room with to _"surface the runtime's own
+permission and question requests to the owner rather than deciding them
+yourself"_ — and the adapter the preset configures answers every one of
+those requests with an error. The template, the capability row and the
+implementation disagree with each other, and the implementation is the one
+that runs.
+
 Worse, the capability row over-claims. `packages/contracts/src/adapter-presets.ts`:
 
 ```ts
