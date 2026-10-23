@@ -92,7 +92,8 @@ still work.
 
 ## Evidence
 
-Delivered on `feature/r0-1-execution-owner` at `eb7eb26`.
+Delivered on `feature/r0-1-execution-owner` at `7c2e4e1`, with `origin/main` at
+`58dacf8` merged in.
 
 **The owner.** `apps/worker/src/execution-owner.ts` holds the lifecycle the
 three callers share: it resolves the connection, admits the turn against the
@@ -109,9 +110,45 @@ vocabulary. The fixture now records the methods it receives, so the order the
 runtime was reached in is the server's own record and not the client's
 account.
 
+Three more cases drive **every** path, because the acceptance named every path
+and one case had been claiming it while driving one: a connection that is
+switched off is refused; a server that refuses the handshake blocks submission
+and records an actionable failure — the fixture can refuse a handshake for
+real — and a configuration that cannot be read fails the run. Each of them
+asserts the terminal state, the reason and the end of the run, on the chat
+turn, the task turn and the automation's run.
+
 The gate's last case reads the executor's own source and fails when it still
 holds any part of the lifecycle, which is what "a caller can be made to skip
-the shared owner and still work" means in a test.
+the shared owner and still work" means in a test. It also fails when the
+executor connects or releases a runtime through the published API, or writes
+the state of an execution row: the bypass it looks for is not one spelling of
+it.
+
+**The review.** An independent reviewer replayed thirteen scenarios against
+the pre-slice executor — the same scenarios through the real MCP fixture over
+stdio — and compared what each side wrote. It found one confirmed regression,
+one ordering defect and three gaps in the gate, and all four are addressed:
+
+- **The regression.** The adapter configuration was read outside the turn's own
+  failure handling. A configuration that could not be read therefore left an
+  automation's execution row saying `running`, with no error and no end, where
+  the pre-slice code wrote `failed` with the reason. The read is inside the
+  turn now, and the row is failed with the reason on every path. The gate
+  covers it.
+- **The ordering.** The owner's steers were let go after the adapter had been
+  asked for its external reference, so a steer taken in that window was
+  recorded as taken and read by nobody. The turn ends before the adapter is
+  asked for anything else now.
+- **The gate's gaps.** The switched-off case drove one path and called itself
+  "every path"; no case covered a failed handshake at all, and the
+  source-level check did not look for a caller that re-implements the
+  lifecycle through the published API. All three are covered now.
+
+The reviewer also confirmed the chat path is byte-for-byte identical to the
+base apart from the capability view, that the terminal states, the spend
+units, the approval flow and the unknown outcome are unchanged on all three
+paths, and that the contract's line references are accurate.
 
 **What changed, and what did not.**
 
@@ -131,17 +168,43 @@ the shared owner and still work" means in a test.
   live connection, which is what the view is for.
 
 **The commands, on the delivered revision.** `npm run typecheck`, `npm run
-test`, `npm run format:check`, `npm run build`, `npx tsx scripts/smoke.ts`.
+test`, `npm run format:check`, `npm run build`, `npx tsx scripts/smoke.ts`,
+`npm run verify:contracts`, `npx tsx scripts/verify-contract-pointers.ts` and
+`npm run verify:mcp-parity`.
+
+Measured on this machine, one package at a time: worker 106, server 717, web
+191, agent-adapters 50, contracts 48. The contract gate checks 28 claims and
+reports no failure; the pointer gate checks 190 pointers and reports none
+stale; the parity gate reports 82 published routes and 82 registered, 23
+tools, 22 paired, 50 listed and 10 exempt, with no failure.
+
+One measurement on this machine does not carry: `contractStatus.test.ts`
+runs the contract gate as a subprocess with a 60-second limit, and the gate
+takes longer than that on this Windows host, so that one case times out here
+and passes in CI. It is pre-existing, and it is the same case on `main`.
 
 **The limits.** The owner covers the three callers that exist; a fourth
 caller is the thing that has to change. The grant decision taken at admission
 and enforced at execution is SPEC-R0-2, the session reference is SPEC-R0-3,
 and the restart reconciliation is SPEC-R0-4.
 
+**A limit worth stating plainly.** A task turn's report is the task's
+deliverable, and the policy gates the agent's text as `message.send`. A
+workspace whose policy allows `tool.call` but not `message.send` therefore
+gets a refusal instead of a report from every factory task: the task is
+blocked, and the evidence summary is the refusal. That follows from the rule
+this slice states — an action the policy refuses does not happen on any path —
+and the way back is the factory's own, which re-runs a task when the owner
+reassigns it. Whether the report of a delegated task is a message is a
+question about what the policy means, and it belongs with SPEC-R0-2, which
+owns the decision taken at admission.
+
 **A defect the gate found.** A message with a newline in it made the MCP
 tool's arguments invalid JSON, and the HTTP adapter's body the same: both
 templates are JSON documents, and the values went into them raw. The values
-are escaped for them now.
+are escaped for them now — where the placeholder lands in a string, the value
+is text and is escaped, and where it lands anywhere else it is part of the
+document's shape and is left alone.
 
 ## Not in scope
 

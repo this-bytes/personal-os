@@ -209,7 +209,7 @@ describe('the code, as the section describes it', () => {
       },
       {
         file: 'apps/worker/src/execution-owner.ts',
-        at: [563, 563],
+        at: [585, 585],
         pattern: /result:\s*'unknown'/,
         what: 'the worker writes unknown',
       },
