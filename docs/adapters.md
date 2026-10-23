@@ -49,7 +49,7 @@ checked again, and the date says when it last was.
 | `http`       | A gateway over HTTP            | fresh — the request carries the turn and the gateway is not asked to remember the session                                              | agent-adapters 0.1.0, 2026-10-23 |
 | `a2a`        | An agent-to-agent orchestrator | fresh — the orchestrator's task id names a task, and a task is not claimed as a session                                                | agent-adapters 0.1.0, 2026-10-23 |
 | `model`      | A model API                    | fresh — a model call has no session                                                                                                    | agent-adapters 0.1.0, 2026-10-23 |
-| `echo`       | The built-in local test agent  | fresh unless the agent is asked to ask — a turn that asked keeps the turn it asked in, so the answer can be its next input             | agent-adapters 0.1.0, 2026-10-23 |
+| `echo`       | The built-in local test agent  | fresh unless the agent is asked to ask — a turn that asked keeps the session it asked in, so the answer can be its next input          | agent-adapters 0.1.0, 2026-10-23 |
 
 **The column says what the adapter reports.** A row names the answer the
 adapter gives for a connection as it is configured, and a row that says
