@@ -244,17 +244,17 @@
       "expect": [
         {
           "kind": "present-text",
-          "path": "apps/web/src/components/WaitingList.tsx",
+          "path": "apps/web/src/components",
           "value": "Needs a grant"
         },
         {
           "kind": "present-pattern",
-          "path": "apps/web/src/components/WaitingList.tsx",
+          "path": "apps/web/src/components",
           "value": "`/agents/\\$\\{input\\.agentConnectionId\\}/grants`"
         },
         {
           "kind": "present-pattern",
-          "path": "apps/web/src/components/WaitingList.tsx",
+          "path": "apps/web/src/components",
           "value": "Tool: <span[^>]*>\\{item\\.toolName\\}</span>"
         },
         {

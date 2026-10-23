@@ -13,12 +13,24 @@ import { parseQuery, requireAuth } from './helpers.js';
  */
 export type { WaitingItem, WaitingKind, WaitingReason } from '@personal-os/contracts';
 
-const waitingQuerySchema = z.object({ workspaceId: z.string() });
+const waitingQuerySchema = z.object({
+  workspaceId: z.string(),
+  /**
+   * The conversation to ask about.
+   *
+   * A conversation can be asked what is waiting on the owner for it, so the
+   * owner can answer where the request was made instead of leaving the room
+   * to look for it. When it is given, the list holds only what belongs to that
+   * conversation: its approvals, its turns, and the capabilities of the agents
+   * taking part in it.
+   */
+  conversationId: z.string().optional(),
+});
 
 export function registerWaitingRoutes(app: FastifyInstance): void {
   app.get('/api/waiting', { preHandler: requireAuth }, async (request) => {
-    const { workspaceId } = parseQuery(waitingQuerySchema, request.query);
-    return { items: listWaiting(app, workspaceId) };
+    const { workspaceId, conversationId } = parseQuery(waitingQuerySchema, request.query);
+    return { items: listWaiting(app, workspaceId, conversationId) };
   });
 }
 
@@ -43,7 +55,11 @@ export function registerWaitingRoutes(app: FastifyInstance): void {
  * same list rather than counting its own way. Two numbers that say the same
  * thing must not be able to disagree.
  */
-export function listWaiting(app: FastifyInstance, workspaceId: string): WaitingItem[] {
+export function listWaiting(
+  app: FastifyInstance,
+  workspaceId: string,
+  conversationId?: string,
+): WaitingItem[] {
   const pending = app.services.approvals.list(workspaceId, 'pending');
 
   const approvals: WaitingItem[] = pending.map((approval) => ({
@@ -153,5 +169,60 @@ export function listWaiting(app: FastifyInstance, workspaceId: string): WaitingI
   const review = tasks.filter((task) => task.reason === 'review');
   const blocked = tasks.filter((task) => task.reason === 'blocked');
 
-  return [...approvals, ...capabilities, ...unknown, ...turns, ...review, ...blocked];
+  const all = [...approvals, ...capabilities, ...unknown, ...turns, ...review, ...blocked];
+
+  if (!conversationId) return all;
+  return forConversation(app, all, conversationId);
+}
+
+/**
+ * The part of the list that belongs to one conversation.
+ *
+ * A conversation is asked what is waiting on the owner for it, so the owner can
+ * answer where the request was made. Three kinds of thing qualify: a request
+ * the agents in this conversation made, a turn in it whose outcome could not
+ * be confirmed, and a capability one of its agents was refused.
+ *
+ * **A task does not qualify.** A task is decided on the factory board, where
+ * the work is, and it belongs to no conversation in the first place.
+ *
+ * A capability has no conversation of its own — it belongs to an agent — so it
+ * is matched by the agent's part in this conversation. An agent in the room
+ * that cannot call the tool it needs is stuck for that room, whether or not
+ * the refusal was recorded against a conversation.
+ */
+function forConversation(
+  app: FastifyInstance,
+  items: WaitingItem[],
+  conversationId: string,
+): WaitingItem[] {
+  const participants = participantIds(app, conversationId);
+  return items.filter((item) => {
+    if (item.conversationId === conversationId) return true;
+    if (item.kind === 'capability' && item.agentConnectionId) {
+      return participants.has(item.agentConnectionId);
+    }
+    return false;
+  });
+}
+
+/**
+ * The agents taking part in a conversation.
+ *
+ * A conversation that cannot be read has no participants, and therefore
+ * nothing waiting for the owner in it. That is the honest answer for a room
+ * that is gone: the items it was waiting on are waiting on the owner
+ * somewhere else, and the list they would appear in still holds them.
+ */
+function participantIds(app: FastifyInstance, conversationId: string): Set<string> {
+  try {
+    const conversation = app.services.conversations.get(conversationId);
+    return new Set(
+      conversation.participants
+        .map((participant) => participant.agentConnectionId)
+        .filter((id): id is string => typeof id === 'string'),
+    );
+  } catch {
+    return new Set();
+  }
 }

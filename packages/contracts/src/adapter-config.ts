@@ -96,6 +96,23 @@ export type ModelAdapterConfig = z.infer<typeof modelAdapterConfigSchema>;
 export const echoAdapterConfigSchema = z.object({
   reply: z.string().optional(),
   delayMs: z.number().int().min(0).max(60_000).default(0),
+  /**
+   * When set, the agent asks the owner before it answers.
+   *
+   * The built-in agent is the product's own test agent, and a request that
+   * arrives in a room has to be answerable in that room. So an owner can
+   * ask this agent to ask them something, and the request shows up where the
+   * conversation is.
+   *
+   * The agent asks once. When the owner has decided, the turn continues and
+   * the agent answers.
+   */
+  ask: z
+    .object({
+      summary: z.string().min(1),
+      details: z.unknown().optional(),
+    })
+    .optional(),
 });
 export type EchoAdapterConfig = z.infer<typeof echoAdapterConfigSchema>;
 

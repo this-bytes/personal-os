@@ -5,6 +5,7 @@ import {
   type AgentCapabilities,
   type AgentConnection,
   type AgentEvent,
+  type AgentExecutionStatus,
   type AgentTurnInput,
 } from '@personal-os/contracts';
 import type { AdapterContext } from './types.js';
@@ -51,8 +52,41 @@ export class EchoAdapter implements AgentAdapter {
     private readonly ctx: AdapterContext,
   ) {}
 
+  /**
+   * Whether this turn asked the owner for a decision.
+   *
+   * The answer is the session the turn can be continued in, and a turn that
+   * never asked cannot be continued in anything.
+   */
+  private asked = false;
+
   async connect(_connection: AgentConnection): Promise<AgentCapabilities> {
-    return { ...CAPABILITIES };
+    return {
+      ...CAPABILITIES,
+      // An agent that asks the owner for a decision says so: the panel shows
+      // what the agent can do, and a request is one of the things it can do.
+      approvals: Boolean(this.config.ask),
+      // An agent that asks can be continued after the answer. Its session is
+      // the turn it asked in, so the decision can be its next input.
+      persistentSessions: Boolean(this.config.ask),
+    };
+  }
+
+  /**
+   * The session this turn is in, when the agent asked the owner.
+   *
+   * The session is what a decision needs in order to continue the turn
+   * instead of closing it. An agent that has no session to offer has none —
+   * and a turn that did not ask has no session either.
+   */
+  async getStatus(executionId: string): Promise<AgentExecutionStatus> {
+    if (!this.asked) return { executionId, status: 'completed' };
+    return { executionId, status: 'blocked', externalRef: `echo_${executionId}` };
+  }
+
+  /** The session is the turn's own, so it is restored by being named. */
+  async resumeSession(_connection: AgentConnection, sessionId: string): Promise<string> {
+    return sessionId;
   }
 
   /** Release what the adapter holds. The echo agent holds nothing. */
@@ -70,6 +104,25 @@ export class EchoAdapter implements AgentAdapter {
     // the owner may steer a turn they can see running — so the delay that
     // follows is the work taking its time, not the turn failing to start.
     yield { type: 'execution.status', executionId: input.executionId, status: 'running' };
+
+    /**
+     * The agent asks the owner, and the turn stops here.
+     *
+     * The agent asks once. A turn that continues after the owner's decision
+     * arrives in the session the request was made in, and the decision is
+     * that turn's message — so the agent has nothing left to ask.
+     */
+    if (this.config.ask && !input.externalSessionId) {
+      this.asked = true;
+      yield {
+        type: 'approval.requested',
+        executionId: input.executionId,
+        approvalId: `apr_echo_${input.executionId}`,
+        summary: this.config.ask.summary,
+        details: this.config.ask.details,
+      };
+      return;
+    }
 
     if (this.config.delayMs > 0) {
       await new Promise((resolve) => setTimeout(resolve, this.config.delayMs));

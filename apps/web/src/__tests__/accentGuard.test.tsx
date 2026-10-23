@@ -341,11 +341,14 @@ describe('the waiting rail is one colour', () => {
   });
 
   it('names no other badge colour in the rail', () => {
-    const source = fs.readFileSync(
-      path.join(webRoot, 'src', 'components', 'WaitingList.tsx'),
-      'utf8',
+    // The rail is made of the list and the row it renders, and the row is
+    // shared with the room, so both are read here.
+    const variants = ['components/WaitingList.tsx', 'components/waiting/WaitingRow.tsx'].flatMap(
+      (file) => {
+        const source = fs.readFileSync(path.join(webRoot, 'src', file), 'utf8');
+        return [...source.matchAll(/<Badge variant="([^"]+)"/g)].map((match) => match[1]);
+      },
     );
-    const variants = [...source.matchAll(/<Badge variant="([^"]+)"/g)].map((match) => match[1]);
 
     expect([...new Set(variants)]).toEqual(['accent']);
   });

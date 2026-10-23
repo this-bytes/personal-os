@@ -40,6 +40,30 @@ async function waiting(target = workspaceId): Promise<WaitingItem[]> {
   return response.json().items as WaitingItem[];
 }
 
+/** What is waiting on the owner for one conversation. */
+async function waitingIn(conversationId: string): Promise<WaitingItem[]> {
+  const response = await app.inject({
+    method: 'GET',
+    url: `/api/waiting?workspaceId=${workspaceId}&conversationId=${conversationId}`,
+    headers: { cookie: sessionCookie },
+  });
+  expect(response.statusCode).toBe(200);
+  return response.json().items as WaitingItem[];
+}
+
+/** A conversation to ask about. */
+async function createConversation(title: string): Promise<string> {
+  const response = await app.inject({
+    method: 'POST',
+    url: '/api/conversations',
+    headers: { cookie: sessionCookie },
+    payload: { workspaceId, title, routingMode: 'mentions' },
+  });
+  // The route creates the conversation, so it answers 201.
+  expect(response.statusCode).toBe(201);
+  return response.json().conversation.id as string;
+}
+
 /** The `WaitingItem` interface as CONTRACTS.md publishes it. */
 function publishedWaitingItem(): Record<string, string> {
   const text = fs.readFileSync(path.join(repoRoot, 'CONTRACTS.md'), 'utf8');
@@ -367,6 +391,34 @@ describe('the waiting list', () => {
   it('does not show the items of another workspace', async () => {
     expect(otherWorkspaceId).not.toBe('');
     expect(await waiting(otherWorkspaceId)).toEqual([]);
+  });
+
+  it('can be asked about one conversation, and holds only what belongs to it', async () => {
+    // Two rooms, two requests. The owner asks one of them what it is waiting
+    // on, and that room's own request is what comes back.
+    const first = await createConversation('The first room');
+    const second = await createConversation('The second room');
+    app.services.approvals.request({
+      workspaceId,
+      conversationId: first,
+      summary: 'A decision in the first room',
+    });
+    app.services.approvals.request({
+      workspaceId,
+      conversationId: second,
+      summary: 'A decision in the second room',
+    });
+
+    const items = await waitingIn(first);
+    expect(items.map((item) => item.title)).toEqual(['A decision in the first room']);
+  });
+
+  it('does not put a task in a conversation, because a task is decided on the board', async () => {
+    await createTask('Waiting for review', 'review');
+    const conversation = await createConversation('A room with no request');
+
+    const items = await waitingIn(conversation);
+    expect(items).toEqual([]);
   });
 
   it('is not readable without a session', async () => {
