@@ -295,10 +295,13 @@ export class Queue {
       // A task stays open for the whole of its agent turn, so the task's own
       // status cannot say whether the work had started. The execution can: it
       // is written before the adapter runs, and it is what says the turn began.
+      // A task may have more than one execution row, so the newest one is the
+      // turn the job is about.
       const execution = this.db
         .select()
         .from(executions)
         .where(eq(executions.taskId, payload.taskId))
+        .orderBy(desc(executions.createdAt))
         .get();
       if (!execution) return { kind: 'not-started' };
       return executionItemState(execution.status, execution.startedAt);

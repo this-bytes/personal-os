@@ -39,7 +39,7 @@ concurrency:
 
 jobs:
   verify:
-    name: Typecheck, format and audit
+    name: Typecheck and format
     runs-on: ubuntu-latest
     timeout-minutes: 15
 
@@ -60,8 +60,8 @@ jobs:
 
       # The install must not audit. `npm ci` audits by default, so without the
       # flag the job pays for the registry round-trip twice: once inside the
-      # install, at npm's own default level, and once in the audit step
-      # below, at the level this job names.
+      # install, at npm's own default level, and once in the audit job
+      # below, at the level that job names.
       - name: Install dependencies
         run: npm ci --no-audit --no-fund
 
@@ -85,6 +85,30 @@ jobs:
 
       - name: Formatting
         run: npm run format:check
+
+  audit:
+    name: Dependency audit
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      # The install must not audit. `npm ci` audits by default, so without this
+      # flag the job pays for the registry round-trip twice: once inside the
+      # install, at npm's own default level, and once in the step below, at
+      # the level this job names. The step below is the audit this job is
+      # named for.
+      #
+      # The install skips the scripts, because the audit reads the tree and
+      # the registry, and neither needs a native module.
+      - name: Install dependencies
+        run: npm ci --ignore-scripts --no-audit --no-fund
 
       # A release that introduces a known vulnerability should not be able to
       # reach main quietly.

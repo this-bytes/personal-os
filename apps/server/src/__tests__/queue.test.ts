@@ -568,4 +568,24 @@ describe('a held job, settled by the owner', () => {
     expect(stack.queue.settleHeldJob(executionId, 'The owner settled this turn.')).toBe(true);
     expect(stack.queue.settleHeldJob(executionId, 'The owner settled this turn.')).toBe(false);
   });
+
+  it('is settled when the owner accepts the task whose turn it was', () => {
+    stack = createTestStack();
+    const executionId = execution('unknown', new Date().toISOString());
+    // The payload is the one the product enqueues for a task's turn: the task,
+    // the turn and the agent the turn is for. A job of another shape would
+    // prove nothing about the branch the product takes.
+    stack.queue.enqueue({
+      workspaceId: 'wsp_1',
+      type: 'factory.execute',
+      payload: { taskId: 'tsk_1', executionId, agentConnectionId: 'agt_1' },
+    });
+    const job = stack.queue.claimNext('worker-a');
+    ageTheLease(job!.id);
+    stack.queue.applyStaleDecision(job!, stack.queue.decideFor(job!));
+    expect(jobRow(job!.id).status).toBe('unknown');
+
+    expect(stack.queue.settleHeldJob(executionId, 'The owner settled this task.')).toBe(true);
+    expect(jobRow(job!.id).status).toBe('done');
+  });
 });

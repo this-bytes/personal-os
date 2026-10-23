@@ -116,7 +116,7 @@ services:
 
 ```ts
 import type { FastifyInstance } from 'fastify';
-import { z } from 'zod';
+import { z } from 'zod/v3';
 import { parseQuery, requireAuth } from '../../api/helpers.js';
 import type { ServerFeature } from '../registry.js';
 

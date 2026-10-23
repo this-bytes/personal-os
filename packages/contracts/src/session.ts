@@ -14,7 +14,7 @@
  * Nothing here reaches for a database or a clock. The shapes and the rules are
  * the contract; the storage and the hashing live where they belong.
  */
-import { z } from 'zod';
+import { z } from 'zod/v3';
 import { idSchema, isoDateSchema } from './common.js';
 import { turnStatusSchema, type TurnStatus } from './chat.js';
 

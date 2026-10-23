@@ -1,5 +1,5 @@
 import { and, asc, desc, eq, gte, sql } from 'drizzle-orm';
-import { z } from 'zod';
+import { z } from 'zod/v3';
 import {
   actionNeedsApproval,
   autonomyPolicyLevelPhrase,

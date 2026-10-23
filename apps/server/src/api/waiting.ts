@@ -1,5 +1,5 @@
 import type { FastifyInstance } from 'fastify';
-import { z } from 'zod';
+import { z } from 'zod/v3';
 import type { WaitingItem, WaitingReason } from '@personal-os/contracts';
 import { parseQuery, requireAuth } from './helpers.js';
 

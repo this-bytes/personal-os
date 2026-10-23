@@ -1,5 +1,5 @@
 import type { FastifyInstance } from 'fastify';
-import { z, ZodError } from 'zod';
+import { z, ZodError } from 'zod/v3';
 import {
   adapterTypeSchema,
   buildAgentMemoryBrief,

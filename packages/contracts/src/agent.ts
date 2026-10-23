@@ -1,4 +1,4 @@
-import { z } from 'zod';
+import { z } from 'zod/v3';
 import { idSchema, isoDateSchema } from './common.js';
 import { mcpToolNameSchema } from './mcp.js';
 import type { AdapterConfig } from './adapter-config.js';

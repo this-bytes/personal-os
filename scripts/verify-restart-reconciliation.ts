@@ -247,13 +247,6 @@ async function loadWorker(): Promise<{
   }
 }
 
-/** The tree the gate reads its static claims from. */
-function readRepoFile(relativePath: string): string {
-  const path = join(findRepoRoot(), relativePath);
-  if (!existsSync(path)) throw new Error(`The gate needs ${relativePath}, and it is not there.`);
-  return readFileSync(path, 'utf8');
-}
-
 /** Every file under a directory. */
 function walk(dir: string): string[] {
   const found: string[] = [];
@@ -424,12 +417,68 @@ function checkTheRule(): void {
       );
     }
   }
+}
 
-  // The rule lives in one place, and the queue applies that one.
-  const client = readRepoFile('apps/server/src/queue/client.ts');
-  if (!client.includes('decideStaleJob')) {
-    fail('apps/server/src/queue/client.ts does not apply the shared stale-job rule.');
-  }
+/**
+ * The queue asks the shared rule.
+ *
+ * The rule is one rule and the queue applies it. A source-text check could say
+ * so — but a file that mentions the rule's name is not the queue applying it,
+ * and a comment would satisfy such a check. So this asks the queue instead:
+ * what does it know about the item a job was working on, and what does it
+ * answer?
+ *
+ * The job here names a turn the product cannot find. The product cannot tell
+ * what the job was working on, so the item is "none" and the answer is to hold
+ * the job: it may already have had its side effect, so it is never run again.
+ */
+async function checkTheQueueAsksTheRule(): Promise<void> {
+  await withFixture(new SilentRuntime(), async (fixture) => {
+    const { db, queue } = fixture;
+
+    const job = queue.enqueue({
+      workspaceId: WORKSPACE,
+      type: 'chat.turn',
+      payload: { executionId: 'exe_the_product_cannot_find' },
+    });
+
+    const item = queue.itemStateFor(job);
+    if (item.kind !== 'none') {
+      fail(
+        `The queue says it is working on "${item.kind}" for a job whose turn it cannot find, and it should say it cannot tell.`,
+      );
+    }
+
+    // The queue's answer is the shared rule's answer for the item it computed.
+    const answer = queue.decideFor(job);
+    const shared = decideStaleJob(item);
+    if (answer.kind !== shared.kind) {
+      fail(
+        `The queue answered "${answer.kind}" for a job it cannot identify, and the shared rule answers "${shared.kind}".`,
+      );
+    }
+    if (answer.kind !== 'hold') {
+      fail(
+        `A job whose item the product cannot identify was answered "${answer.kind}", and it should be held rather than run again.`,
+      );
+    }
+
+    // And the answer is carried out: the job is held, and it is never offered
+    // to another worker.
+    const claimed = queue.claimNext('worker_dead');
+    if (!claimed || claimed.id !== job.id) {
+      fail('The gate could not claim the job it enqueued.');
+      return;
+    }
+    letTheWorkerDie(db, job.id);
+    queue.applyStaleDecision(claimed, answer);
+    const settled = db.select().from(schema.queueJobs).where(eq(schema.queueJobs.id, job.id)).get();
+    if (settled?.status !== 'unknown') {
+      fail(
+        `A job whose item the product cannot identify is "${settled?.status}", and it should be held rather than run again.`,
+      );
+    }
+  });
 }
 
 /**
@@ -1202,6 +1251,39 @@ async function checkTheRecords(): Promise<void> {
         `The owner's conclusion did not settle the task: the task is "${settledTask?.status}", and it still says its outcome could not be confirmed.`,
       );
     }
+
+    // The turn is closed with the task, and the job that was held for it is
+    // settled with it. The owner's conclusion is the outcome, so neither the
+    // run nor the queue's record goes on saying that the outcome was never
+    // confirmed.
+    const settledTurn = db
+      .select()
+      .from(schema.executions)
+      .where(eq(schema.executions.id, 'exe_task'))
+      .get();
+    if (settledTurn?.status !== 'completed') {
+      fail(
+        `The owner's conclusion did not settle the uncertain turn of the task: the turn is "${settledTurn?.status}".`,
+      );
+    }
+    const settledHeldJob = db
+      .select()
+      .from(schema.queueJobs)
+      .where(eq(schema.queueJobs.id, job.id))
+      .get();
+    if (settledHeldJob?.status !== 'done') {
+      fail(
+        `The owner's conclusion did not settle the job that was held for the task: the job is "${settledHeldJob?.status}", and it still says the outcome was never confirmed.`,
+      );
+    }
+
+    // The turn ended once, and the ending is on the one event log.
+    const endings = terminalEndings(db, 'exe_task');
+    if (endings.length !== 1 || endings[0] !== 'completed') {
+      fail(
+        `The owner's conclusion ended the task's turn ${endings.length} times (${endings.join(', ') || 'never'}), and a turn ends once.`,
+      );
+    }
     const after = await ownerWaiting(fixture);
     if (after.some((entry) => entry.id === 'task:tsk_gate')) {
       fail("The task is still on the owner's waiting list after the owner settled it.");
@@ -1484,11 +1566,143 @@ async function checkTheRecords(): Promise<void> {
       );
     }
   });
+
+  // ---------------------------------------------------------------------
+  // 8. The agent's tool is bounded: a connection granted the tool in one
+  //    workspace cannot close a run in another.
+  // ---------------------------------------------------------------------
+  await withFixture(new SilentRuntime(), async (fixture) => {
+    const { app, db } = fixture;
+
+    // A workspace the gate's agent may not reach, and an automation in it
+    // with a run whose outcome could not be confirmed.
+    const other = await fixture.asOwner({
+      method: 'POST',
+      url: '/api/workspaces',
+      payload: { name: 'Elsewhere', description: 'The workspace the agent may not reach.' },
+    });
+    if (other.statusCode !== 201) {
+      fail(
+        `The gate could not create the second workspace: the route answered ${other.statusCode}.`,
+      );
+      return;
+    }
+    const otherWorkspaceId = (other.body as { workspace: { id: string } }).workspace.id;
+
+    const automation = await fixture.asOwner({
+      method: 'POST',
+      url: '/api/automations',
+      payload: {
+        workspaceId: otherWorkspaceId,
+        title: "The other workspace's automation",
+        trigger: { type: 'schedule', everyMinutes: 60 },
+        action: { type: 'resource.refresh', resourceId: 'res_gate', method: 'GET' },
+      },
+    });
+    if (automation.statusCode !== 201) {
+      fail(
+        `The gate could not create the automation: the route answered ${automation.statusCode}.`,
+      );
+      return;
+    }
+    const automationId = (automation.body as { automation: { id: string } }).automation.id;
+
+    const now = new Date().toISOString();
+    db.insert(schema.automationRuns)
+      .values({
+        id: 'run_elsewhere',
+        automationId,
+        status: 'unknown',
+        startedAt: now,
+        finishedAt: null,
+        output: null,
+        error: 'The worker stopped before it recorded how the run ended.',
+      })
+      .run();
+
+    // An agent in the gate's own workspace, with the tool granted to it.
+    const agent = await fixture.asOwner({
+      method: 'POST',
+      url: '/api/agents',
+      payload: {
+        workspaceId: WORKSPACE,
+        name: 'The gate agent',
+        adapterType: 'echo',
+        config: { reply: 'hi' },
+        toolGrants: ['automation.run.resolve'],
+      },
+    });
+    if (agent.statusCode !== 201) {
+      fail(`The gate could not create the agent: the route answered ${agent.statusCode}.`);
+      return;
+    }
+    const agentId = (agent.body as { agent: { id: string } }).agent.id;
+    const token = await fixture.asOwner({
+      method: 'POST',
+      url: `/api/agents/${agentId}/tokens`,
+      payload: { label: 'gate' },
+    });
+    if (token.statusCode !== 201) {
+      fail(`The gate could not mint the agent's token: the route answered ${token.statusCode}.`);
+      return;
+    }
+    const agentToken = (token.body as { token: string }).token;
+
+    // The agent calls the tool, pointing at the run in the other workspace.
+    // This is the surface the agent has, so the gate drives it: a tool that
+    // only the owner's route respects is not a bounded tool.
+    const response = await app.inject({
+      method: 'POST',
+      url: '/mcp',
+      headers: {
+        'content-type': 'application/json',
+        accept: 'application/json, text/event-stream',
+        authorization: `Bearer ${agentToken}`,
+      },
+      payload: {
+        jsonrpc: '2.0',
+        id: 1,
+        method: 'tools/call',
+        params: {
+          name: 'automation.run.resolve',
+          arguments: { runId: 'run_elsewhere', outcome: 'completed', note: 'It did run.' },
+        },
+      },
+    });
+
+    const dataLine = response.body.split('\n').find((line) => line.startsWith('data: '));
+    if (!dataLine) {
+      fail(`The agent's tool answered without a payload: ${response.body.slice(0, 200)}`);
+      return;
+    }
+    const payload = JSON.parse(dataLine.slice('data: '.length)) as {
+      result?: { isError?: boolean; content?: { text?: string }[] };
+    };
+    if (payload.result?.isError !== true) {
+      fail(
+        'An agent granted the tool in one workspace closed a run in another workspace: the tool answered without refusing.',
+      );
+    }
+
+    // And the run is untouched: it still says its outcome could not be
+    // confirmed, and the job that was held for it is still held.
+    const run = db
+      .select()
+      .from(schema.automationRuns)
+      .where(eq(schema.automationRuns.id, 'run_elsewhere'))
+      .get();
+    if (run?.status !== 'unknown') {
+      fail(
+        `An agent granted the tool in one workspace closed a run in another workspace: the run is "${run?.status}".`,
+      );
+    }
+  });
 }
 
 async function main(): Promise<void> {
   checkTheBuildIsCurrent();
   checkTheRule();
+  await checkTheQueueAsksTheRule();
   await checkTheRecords();
 
   if (failures.length > 0) {

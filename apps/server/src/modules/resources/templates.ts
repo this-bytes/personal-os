@@ -1,4 +1,4 @@
-import { z } from 'zod';
+import { z } from 'zod/v3';
 import type { ResourceTemplate, ResourceTemplateRef, ResourceType } from '@personal-os/contracts';
 import { errors, AppError } from '../../lib/errors.js';
 
