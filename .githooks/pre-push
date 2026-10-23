@@ -75,8 +75,22 @@ for update in "$@"; do
     elif git merge-base --is-ancestor "$remote_sha" "refs/remotes/$remote_name/main" 2>/dev/null; then
       printf 'Deleting merged topic branch %s.\n' "$remote_ref"
     else
-      printf 'PUSH BLOCKED: %s is not proven merged into %s/main. Fetch and preserve unmerged work.\n' "$remote_ref" "$remote_name"
-      failed=1
+      # Ancestry is one proof that the branch's work is already in main, and
+      # not the only one. A slice is often landed as a squash, a cherry-pick
+      # or a rebase, and then the branch's own commits are not ancestors of
+      # main even though every line of their work is there. `git cherry`
+      # measures exactly that: a '-' means the patch is already applied.
+      #
+      # A branch is released only when nothing is left behind — no unmerged
+      # commit, no unapplied patch. A cherry that cannot be computed is not a
+      # proof, and a branch nobody can prove is kept.
+      cherry=$(git cherry "refs/remotes/$remote_name/main" "$remote_sha" 2>/dev/null) || cherry='+unproven'
+      if printf '%s\n' "$cherry" | grep -q '^+'; then
+        printf 'PUSH BLOCKED: %s is not proven merged into %s/main. Fetch and preserve unmerged work.\n' "$remote_ref" "$remote_name"
+        failed=1
+      else
+        printf 'Deleting topic branch %s (its work is already in %s/main).\n' "$remote_ref" "$remote_name"
+      fi
     fi
     continue
   fi
