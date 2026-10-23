@@ -88,8 +88,8 @@ Both cases fail if a stale lease is treated as permission to run again.
 ## Evidence
 
 **Revision.** Delivered on `feature/r0-4-restart-reconciliation`. The code is
-in `4f0715d`; the commit after it is the contract's claim for it and this
-evidence. `origin/main` at `ad75915` is merged in.
+in `3226502`, and the commit after it carries the contract's claim for it.
+`origin/main` at `ad75915` is merged in.
 
 ### What landed
 
