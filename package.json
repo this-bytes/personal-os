@@ -46,7 +46,8 @@
     "db:migrate": "npm run db:migrate -w @personal-os/server",
     "db:generate": "npm run db:generate -w @personal-os/server",
     "format": "prettier --write \"**/*.{ts,tsx,js,json,md,css}\"",
-    "format:check": "prettier --check \"**/*.{ts,tsx,js,json,md,css}\""
+    "format:check": "prettier --check \"**/*.{ts,tsx,js,json,md,css}\"",
+    "verify:source": "node scripts/verify-source.mjs"
   },
   "devDependencies": {
     "@personal-os/agent-adapters": "0.1.0",

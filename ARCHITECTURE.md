@@ -35,7 +35,7 @@ cannot become the only way to repair the product.
 ## 2. Technology baseline
 
 Keep Node.js LTS, strict TypeScript, Fastify, React/Vite, Tailwind/UI primitives,
-Drizzle, SQLite WAL, filesystem artifacts, SSE, Vitest/Playwright and Docker Compose.
+Drizzle, SQLite WAL, filesystem artifacts, SSE, Vitest/Playwright and a supervised source stack during active development.
 The SQLite-backed queue needs no new broker. Add infrastructure only for a measured
 requirement. Prefer maintained SDKs for protocol clients; do not build an inference
 engine or an agent harness.
@@ -186,8 +186,8 @@ prerequisite for the first worker-lifecycle fix.
 ## 10. Operating the current build
 
 See README.md for installation and AGENTS.md for gates. The current source stack is
-npm run dev:stack; deploy/compose.yaml runs the compiled server and worker sharing
-a local SQLite volume. A health response does not prove agent execution.
+npm run dev:stack; deploy/install-service.sh installs the supervised source stack
+with persistent data outside the checkout. A health response does not prove agent execution.
 
 The current owner-password recovery command is npm run reset:owner-password,
 implemented by scripts/reset-owner-password.ts.

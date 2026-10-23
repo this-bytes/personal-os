@@ -23,11 +23,11 @@
  *     their work in worktrees beside the repository, so an unfinished
  *     branch cannot reach the running instance.
  *
- * This is an iteration tool. The deployment is the Compose stack in
- * `deploy/`, and it runs the compiled code.
+ * The user service supervises this stack; a checkout update drains it and
+ * restarts all components through deploy/source-stack.sh.
  */
 
-import { spawn, type ChildProcess } from 'node:child_process';
+import { execFileSync, spawn, type ChildProcess } from 'node:child_process';
 import fs from 'node:fs';
 import net from 'node:net';
 import path from 'node:path';
@@ -62,6 +62,7 @@ const SERVER_READY_TIMEOUT_MS = 60_000;
 const API_PORT = process.env['PERSONAL_OS_PORT'] ?? '4317';
 const WEB_PORT = process.env['PERSONAL_OS_WEB_PORT'] ?? '5173';
 const API_HOST = process.env['PERSONAL_OS_HOST'] ?? '127.0.0.1';
+const API_TARGET = `http://127.0.0.1:${API_PORT}`;
 
 const DATA_DIR = path.resolve(process.env['PERSONAL_OS_DATA_DIR'] ?? path.join(root, 'data'));
 const DB_PATH = path.join(DATA_DIR, 'personal-os.db');
@@ -99,7 +100,7 @@ const SPECS: Record<ChildName, ChildSpec> = {
   web: {
     cwd: path.join(root, 'apps', 'web'),
     args: [VITE_CLI, '--host', API_HOST, '--port', WEB_PORT, '--strictPort'],
-    env: { PERSONAL_OS_API_TARGET: `http://${API_HOST}:${API_PORT}` },
+    env: { PERSONAL_OS_API_TARGET: API_TARGET },
   },
 };
 
@@ -117,6 +118,12 @@ interface WatchTarget {
  * restarting anything.
  */
 const WATCH_TARGETS: WatchTarget[] = [
+  { label: 'migrations', paths: [path.join(root, 'apps/server/drizzle')], restarts: [] },
+  {
+    label: 'launcher',
+    paths: [path.join(root, 'scripts/dev.ts'), path.join(root, 'deploy/source-stack.sh')],
+    restarts: [],
+  },
   {
     label: 'dependency manifests',
     paths: [
@@ -236,7 +243,9 @@ async function waitForHealth(timeoutMs: number): Promise<boolean> {
   const deadline = Date.now() + timeoutMs;
   while (Date.now() < deadline) {
     try {
-      const response = await fetch(`http://${API_HOST}:${API_PORT}/api/health`);
+      const response = await fetch(`${API_TARGET}/api/health`, {
+        signal: AbortSignal.timeout(2000),
+      });
       if (response.ok) return true;
     } catch {
       // The server is not answering yet.
@@ -247,6 +256,7 @@ async function waitForHealth(timeoutMs: number): Promise<boolean> {
 }
 
 function startChild(name: ChildName): void {
+  if (shuttingDown) return;
   const spec = SPECS[name];
   const child = children[name];
   child.stopping = false;
@@ -265,12 +275,13 @@ function startChild(name: ChildName): void {
 
     const how = signal ? `signal ${signal}` : `code ${code ?? 0}`;
     if (Date.now() - child.startedAt < CRASH_WINDOW_MS) {
-      log(`${name} stopped (${how}) straight after starting; it waits for a change now`);
+      log(`${name} stopped (${how}) straight after starting; draining for supervisor restart`);
+      void shutdown(1);
       return;
     }
     log(`${name} stopped (${how}); starting it again`);
     setTimeout(() => {
-      if (!shuttingDown) startChild(name);
+      if (!shuttingDown && !child.stopping && !child.proc) startChild(name);
     }, 500);
   });
 }
@@ -321,7 +332,10 @@ function requestRestart(name: ChildName): void {
       // The worker applies migrations at boot, and so does the server. The
       // server goes first, the same order the Compose stack uses.
       const healthy = await waitForHealth(SERVER_READY_TIMEOUT_MS);
-      if (!healthy) log('the server is not healthy; starting the worker anyway');
+      if (!healthy) {
+        await shutdown(1);
+        return;
+      }
     }
     startChild(name);
   })();
@@ -372,18 +386,22 @@ async function watch(): Promise<void> {
   const snapshots = new Map<string, string>();
   for (const target of WATCH_TARGETS) snapshots.set(target.label, signature(target));
 
+  const revision = execFileSync('git', ['rev-parse', 'HEAD'], { cwd: root, encoding: 'utf8' });
   while (!shuttingDown) {
     await sleep(POLL_INTERVAL_MS);
+    if (execFileSync('git', ['rev-parse', 'HEAD'], { cwd: root, encoding: 'utf8' }) !== revision) {
+      log('checkout revision changed; draining for a full restart');
+      await shutdown();
+      return;
+    }
 
     for (const target of WATCH_TARGETS) {
       const next = signature(target);
       if (next === snapshots.get(target.label)) continue;
       snapshots.set(target.label, next);
       log(`${target.label} changed`);
-      if (target.label === 'dependency manifests') {
-        log(
-          'Dependency declarations changed. Draining the stack; run npm ci in this checkout and restart it.',
-        );
+      if (['dependency manifests', 'migrations', 'launcher'].includes(target.label)) {
+        log('Draining for a full restart; the source launcher installs changed dependencies.');
         await shutdown();
         return;
       }
@@ -397,12 +415,12 @@ async function watch(): Promise<void> {
   }
 }
 
-async function shutdown(): Promise<void> {
+async function shutdown(exitCode = 0): Promise<void> {
   if (shuttingDown) return;
   shuttingDown = true;
   log('stopping the stack');
   await Promise.all([stopChild('server'), stopChild('worker'), stopChild('web')]);
-  process.exit(0);
+  process.exit(exitCode);
 }
 
 async function main(): Promise<void> {
@@ -423,7 +441,10 @@ async function main(): Promise<void> {
   startChild('server');
 
   const healthy = await waitForHealth(SERVER_READY_TIMEOUT_MS);
-  if (!healthy) log('the server did not become healthy; starting the worker anyway');
+  if (!healthy) {
+    await shutdown(1);
+    return;
+  }
   startChild('worker');
 
   await watch();
@@ -434,5 +455,5 @@ process.on('SIGTERM', () => void shutdown());
 
 main().catch((error: unknown) => {
   process.stderr.write(`${error instanceof Error ? error.stack : String(error)}\n`);
-  process.exit(1);
+  void shutdown(1);
 });
