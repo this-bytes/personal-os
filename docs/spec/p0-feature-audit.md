@@ -1,7 +1,10 @@
 # SPEC-P0 — Feature audit: what actually exists
 
-**State:** open · **Owner:** implementing agent, one session · **Verifier:** Gilfoyle
+**State:** done · **Owner:** implementing agent, one session · **Verifier:** Gilfoyle
 **Depends on:** ADR 0012, ADR 0013 · **Blocks:** SPEC-S1
+**Delivered:** the inventory is `docs/spec/audit-2026-10-23.md`. It was
+re-measured against the tree after SPEC-S1 landed, and what changed since the
+baseline is written down in the audit's own _What moved since the baseline_.
 
 ## Outcome
 
