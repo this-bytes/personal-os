@@ -27,10 +27,14 @@ Measured on this machine, not assumed:
 codex --version   →  codex-cli 0.163.0
 ```
 
-`docs/roadmap.md` still says the other four approved runtimes "are not
-installed here". That line is stale for Codex, OpenCode and Hermes, and it is
-wrong for the stage it describes. This spec removes that excuse from the
-record: Codex is here, and the demonstration runs against it.
+`docs/roadmap.md` says the same, and says it measured rather than assumed:
+"**Two more of the approved runtimes are installed here** — `codex --version`
+reports `codex-cli 0.163.0` and `opencode --version` reports `1.19.4`, with
+Hermes at `C:\Users\Aaron\AppData\Local\hermes\bin\hermes.exe`." That line was
+corrected on 2026-10-23, before this spec was written.
+
+What is still missing is not the install. An installed runtime is not a
+demonstrated one, and this spec is what makes the difference for Codex.
 
 ## Preconditions
 
