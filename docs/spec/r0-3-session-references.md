@@ -160,9 +160,9 @@ Measured on this machine, one package at a time, because
 passed (6 files), agent-adapters 50 (5), worker 113 (12), server 760 (74), web
 210 (27). `@personal-os/ui` has no test script.
 
-`npm run dependencies` exits 1 on this machine and is **not measurable here**:
-the worktree is installed with `npm ci --ignore-scripts`, and npm reports
-`invalid: esbuild@0.25.12`. It says nothing about this slice.
+`npm run verify:dependencies` exits 1 on this machine and is **not measurable
+here**: the worktree is installed with `npm ci --ignore-scripts`, and npm
+reports `invalid: esbuild@0.25.12`. It says nothing about this slice.
 
 ### The tests that fail without the implementation
 
