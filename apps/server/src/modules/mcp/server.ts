@@ -688,6 +688,74 @@ export async function createMcpServer(options: McpServerOptions): Promise<McpSer
     );
   }
 
+  /**
+   * The two acts a resource may have.
+   *
+   * They are the owner's to grant, one by one, and neither is in the default
+   * grant set: publishing "makes a resource visible to everyone; it is the
+   * owner's own act", and running a resource now runs the owner's work — an
+   * automation's run is enqueued for the worker and its action may prompt an
+   * agent, and a data source's query makes the outbound request the owner's
+   * configuration describes. A connection that was not granted one of them
+   * does not have it registered at all, so the call is refused and the refusal
+   * is recorded the way every other ungranted call is recorded.
+   *
+   * A kind that has no such act is refused with the reason the owner can read,
+   * and it is the same refusal the route makes: the route and the tool are
+   * thin adapters over one shared capability.
+   */
+  if (granted.has('resource.publish')) {
+    server.registerTool(
+      'resource.publish',
+      {
+        description:
+          'Publish a resource: make a dashboard visible, or make an automation active. Only the kinds that have a publish act can be published — a kind that has none is refused, and the refusal names the kinds that do.',
+        inputSchema: { resourceId: z.string() },
+      },
+      async ({ resourceId }) => {
+        try {
+          await guard('resource.publish');
+          await assertObjectScope('resource', resourceId);
+          return jsonResult(
+            options.capabilities.resourcePublish({
+              resourceId,
+              actorType: actor.kind === 'agent' ? 'agent' : 'human',
+              actorId: actor.kind === 'agent' ? (actor.agentConnectionId as string) : decidedBy(),
+            }),
+          );
+        } catch (error) {
+          return errorResult(error);
+        }
+      },
+    );
+  }
+
+  if (granted.has('resource.execute')) {
+    server.registerTool(
+      'resource.execute',
+      {
+        description:
+          "Run a resource now: an automation's run is enqueued for the worker, a data source's query runs, and a dashboard's widgets' sources run. Only the kinds that have a run can be executed — a kind that has none is refused, and the refusal names the kinds that do.",
+        inputSchema: { resourceId: z.string() },
+      },
+      async ({ resourceId }) => {
+        try {
+          await guard('resource.execute');
+          await assertObjectScope('resource', resourceId);
+          return jsonResult(
+            await options.capabilities.resourceExecute({
+              resourceId,
+              actorType: actor.kind === 'agent' ? 'agent' : 'human',
+              actorId: actor.kind === 'agent' ? (actor.agentConnectionId as string) : decidedBy(),
+            }),
+          );
+        } catch (error) {
+          return errorResult(error);
+        }
+      },
+    );
+  }
+
   if (granted.has('resource.template.list')) {
     server.registerTool(
       'resource.template.list',

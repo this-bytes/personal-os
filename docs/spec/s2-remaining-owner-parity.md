@@ -15,8 +15,8 @@ queue, an agent's own memory, the rooms, the workspaces, the schedules, and
 the reads the panel does.
 
 The parity gate (`npm run verify:mcp-parity`) is the measure. Its coverage
-table already answers for all 82 published owner-facing routes: **25 paired
-with a registered tool, 40 listed with a reason and the spec that will pair
+table already answers for all 82 published owner-facing routes: **27 paired
+with a registered tool, 38 listed with a reason and the spec that will pair
 them, and 17 exempt with a reason.** **This spec moves the listed ones to
 paired, in the ranked order, and the gate refuses to pass while any remain
 listed under it.**
@@ -26,6 +26,10 @@ listed under it.**
 counts have moved from 22 paired and 43 listed to **25 paired and 40 listed**.
 The fourth row, _assign a task to an agent_, stays listed, and the reason is
 written down below.
+
+**Batch 2 is delivered.** Both of its rows are paired: `resource.publish` and
+`resource.execute`, and the gate's counts have moved again, from 25 paired and
+40 listed to **27 paired and 38 listed**.
 
 ## The scope, and where it came from
 
@@ -70,7 +74,14 @@ _Publish a resource_ (#5) and _execute a resource_ (#6). SPEC-RESOURCE-RUN
 made the owner path honest: the route refuses a kind that has no such act
 and says so, and the panel offers only the actions that can succeed. What is
 left is the agent path — a tool that publishes the kinds that have a publish
-act and refuses the rest, the way the route does.
+act and refuses the rest, the way the route does. **Delivered, both of them:**
+`resource.publish` and `resource.execute`. Neither is in the default grant
+set, and the reason is the coverage table's own — publishing "makes a
+resource visible to everyone; it is the owner's own act", and running a
+resource is running it _now_: an automation's run is enqueued for the worker
+and its action may prompt an agent, and a data source's query makes the
+outbound request the owner's configuration describes. Both spend an authority
+the owner holds, so the owner grants each of them by name.
 
 **Batch 3 — what the agent waits on and remembers.** _Read the waiting
 queue_ (#7), _read an agent's own memories_ (#8), _re-probe an agent's
@@ -168,9 +179,9 @@ in batch 1 are paired: `approval.evidence`, `execution.resolve` and
 `task.accept`. The fourth, _assign a task to an agent_, stays `listed` with its
 reason, and the gate reads it as one of the 40.
 
-**The gate's own report, on the delivered tree.** `npm run verify:mcp-parity`
+**The gate's own report, on batch 1's delivered tree.** `npm run verify:mcp-parity`
 reads 82 published routes and 82 registered, 26 published tools, **25 paired,
-40 listed, 17 exempt, 0 failures**. Before this batch it read 22 paired, 43
+40 listed, 17 exempt, 0 failures**. Before that batch it read 22 paired, 43
 listed and 17 exempt.
 
 **The grant rule, held in two halves.** `approval.evidence` is a read, so it is
@@ -238,3 +249,100 @@ grant editor lists the tools it reads from the contracts package, so the three
 new verbs are in the owner's grant list the moment they are published, and the
 owner's own decision to widen a grant is the same decision it always was. The
 web client needed no change, so no bundle or browser gate was run for it.
+
+### Batch 2 — the two acts a resource may have
+
+**Batch 2, delivered on `feature/s2-batch-2`.** Both of its rows are paired:
+`resource.publish` and `resource.execute`. The two routes now call one shared
+capability, and so do the two tools, so the route and the tool are thin
+adapters over the same code.
+
+**The gate's own report, at this revision.** `npm run verify:mcp-parity` reads
+82 published routes and 82 registered, 28 published tools, **27 paired, 38
+listed, 17 exempt, 0 failures**. Before this batch it read 25 paired, 40 listed
+and 17 exempt. The gate reads this worktree, not the main checkout: the counts
+it prints are this branch's, and the two rows that moved are named in
+`scripts/mcp-parity.json` as `resource.publish` and `resource.execute`.
+
+**The grant rule, reasoned from the coverage table's own reasons.** A read verb
+joins the default grant set; a verb that spends the owner's authority does not,
+and the owner grants it by name. Neither of these two is a read:
+
+- **Publishing.** The table says it "makes a resource visible to everyone; it is
+  the owner's own act". Publishing a dashboard makes it visible; publishing an
+  automation is what makes it active, and an active automation runs the owner's
+  work — the action it carries prompts an agent, and the owner's budget and
+  authority are what stand behind it.
+- **Running a resource.** The table says "Running a resource now". A run is not
+  a read: an automation's run is enqueued for the worker and the action it
+  carries may prompt an agent; a data source's query makes the outbound request
+  the owner's configuration describes; a dashboard's run is its widgets' sources
+  run.
+
+So **neither is in the default grant set**. A connection that was not granted
+one of them by name does not have it registered at all: the call is refused with
+the MCP server's own "not found", and the refusal is recorded in
+`blocked_capabilities`, so the owner finds the agent on the waiting list. The
+tests hold all of it: the default set has neither act, a grant by name registers
+it, a grant of one act does not register the other, and an ungranted call is
+refused **and** recorded while the resource is left untouched.
+
+**The scope rule, held on both.** Each of the two names an id, so each names an
+object: the object's own row is read to find its workspace, and a workspace the
+caller was not granted is refused with the guard's own sentence — "This agent
+has no access to that workspace." A refusal leaks nothing: no title, no body,
+and nothing of the object. Inside the agent's own workspace both calls still
+work.
+
+**The same refusal, kind by kind.** The tests walk every published kind and
+compare the two paths. A kind with no publish act, and a kind with no run, are
+refused by the tool with the same words and the same facts the route refuses
+them with — the same `code`, the same `message`, and the same `details`, with
+the kind, the operation and the kinds that do have the act. The kinds that do
+have the act succeed on both paths, with the same shape and the same outcome:
+`published` for a publish, `succeeded` for a data source's run and `queued` for
+an automation's.
+
+**The record names who acted.** The publish writes `resource.published` and the
+run writes `resource.executed`, each with the caller's `actorType` — `human`
+for the owner's own route, `agent` for the agent's tool — and the caller's id.
+The authority behind an agent's call is the owner's grant of that one verb. The
+two routes' trail entries moved from the route into the shared capability so
+that the agent's call lands in the same trail as the owner's; a refused act
+writes nothing.
+
+**The test that holds it.** `apps/server/src/__tests__/mcp-resource-publish-execute-parity.test.ts`
+drives the MCP surface itself — 18 cases over the two tools — so the code and
+the rule it states cannot drift apart quietly.
+
+**The gates, at this revision.** `npm run build`, `npm run typecheck`,
+`npm run format:check`, `npm run verify:contracts` (28 claims),
+`npx tsx scripts/verify-contract-pointers.ts` (207 pointers),
+`npm run verify:mcp-parity` and `npx tsx scripts/smoke.ts` all pass. The suites
+pass one package at a time: contracts 48, agent-adapters 50, server 788,
+worker 106, web 207. **`npm run verify:dependencies` exits 1 on this host**, with
+`invalid: esbuild@0.25.12`: the worktrees are installed with
+`npm ci --ignore-scripts`, so the esbuild binary is never fetched. That is a
+property of this machine's install, not of this slice, and it is reported here
+rather than hidden.
+
+**The teeth, shown.** Each of the four rules was broken on purpose, one at a
+time, and the named case failed; every break was reverted before the tree was
+committed. Putting `resource.publish` in the default grant set failed "gives
+the default set neither act" **and** "refuses a publish the connection was not
+granted, and records the refusal" — the ungranted agent published. Removing
+the scope assertion from `resource.publish` failed "refuses to publish a
+resource in a workspace it was not granted, and changes nothing". Making the
+tool answer a kind with a reason of its own failed "refuses the same kinds for
+publish, with the same reason" and "names the kind and the act in the
+refusal". Making the trail always name the owner failed "names the agent that
+published, and the owner on the route".
+
+**What is not in this batch.** The owner-facing panel does not change: the
+grant editor lists the tools it reads from the contracts package, so the two
+new verbs are in the owner's grant list the moment they are published, and the
+owner's own decision to widen a grant is the same decision it always was. The
+web client needed no change, so no bundle or browser gate was run for it. The
+owner path's semantics are unchanged: the routes keep their published shapes
+and their published authentication, and only the place the trail entry is
+written moved.
