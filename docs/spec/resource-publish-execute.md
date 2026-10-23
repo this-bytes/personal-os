@@ -180,17 +180,21 @@ claimed, it does not say a queued run ran, and it shows a refusal as a refusal
 — and claims no success in its place. One case reads the panel's own source and
 fails if it declares the support again instead of reading the published one.
 
-**The audit's rows.** _Publish a resource_ and _execute a resource_ are
-**human-only**: the owner path tells the truth, and no agent path exists —
-`mcpToolNames` publishes no `resource.publish` and no `resource.execute`. The
-audit's record read **23 exposed-paired, 43 human-only, 0 broken-window,
-17 exempt — 83 rows over 82 routes** when this slice measured it. Later slices
-pair routes and the count moves, so the count to read is the one the audit
-carries; the two rows are re-measured in the audit with the evidence of both
-readings.
-`scripts/mcp-parity.json` keeps both routes `listed` against `SPEC-S2+`, with
-the reasons restated: the route runs or publishes what the kind can do and
-refuses the rest, and the agent path is SPEC-S2's question.
+**The audit's rows.** _Publish a resource_ and _execute a resource_ were
+**human-only** before this slice: the owner path told the truth, and no agent
+path existed — `mcpToolNames` published no `resource.publish` and no
+`resource.execute`. The audit's record read **23 exposed-paired, 43
+human-only, 0 broken-window, 17 exempt — 83 rows over 82 routes** at that
+baseline, and the two rows were re-measured in the audit with the evidence of
+both readings.
+`scripts/mcp-parity.json` kept both routes `listed` against `SPEC-S2+`, with the
+reasons restated: the route runs or publishes what the kind can do and refuses
+the rest, and the agent path is SPEC-S2's question. **SPEC-S2 batch 2 has since
+answered that question**: `mcpToolNames` publishes both names, the two routes
+are `paired` in the coverage table, and the two rows are **exposed-paired**.
+The audit now reads **28 exposed-paired, 38 human-only, 0 broken-window, 17
+exempt** — the count to read is the one the audit carries, because each batch
+that pairs a row moves it.
 
 **The audit's counts and the coverage table now agree.** The audit records the
 parity gate as reading **22 paired, 43 listed and 17 exempt**. That reading
@@ -198,11 +202,11 @@ comes from seven rows that move from `listed` to `exempt` in
 `scripts/mcp-parity.json`: widening a tool grant, the three MCP-token routes,
 the secret inventory, the file upload and the AG-UI envelope. They landed
 separately, in PR #12, and `npm run verify:mcp-parity` read 22/43/17 on `main`
-then. **SPEC-S2 batch 1 has since paired three more routes, so the reading is
-now 25 paired, 40 listed and 17 exempt**; the two routes this slice
-re-measured stay `listed` against `SPEC-S2+`:
-the route runs or publishes what the kind can do and refuses the rest, and the
-agent path is SPEC-S2's question.
+then. **SPEC-S2 batch 1 has since paired three more routes, and SPEC-S2 batch 2
+two more, so the reading is now 27 paired, 38 listed and 17 exempt**; the two
+routes this slice re-measured are `paired` with `resource.publish` and
+`resource.execute`, and the agent path refuses the same kinds the route
+refuses, with the same words.
 
 **The gate readings below are the ones this slice answered on.** The table
 records what each command answered on this slice's revision, before the seven
@@ -247,10 +251,12 @@ loaded box while passing with 0 failures when run on its own.
 
 **The limits.**
 
-- **The agent path does not exist, and that is a decision, not an omission.**
-  `mcpToolNames` publishes no `resource.publish` and no `resource.execute`, so
-  both are owner-only. SPEC-S2 asks whether that should change, and it is asked
-  after the owner path tells the truth.
+- **The agent path did not exist when this slice landed, and that was a decision, not an
+  omission.** `mcpToolNames` published no `resource.publish` and no
+  `resource.execute`, so both were owner-only, and SPEC-S2 asked whether that
+  should change. **It has**: SPEC-S2 batch 2 shipped both tools, and the agent
+  path refuses the same kinds this slice made the route refuse, with the same
+  words.
 - **A publish pipeline for a document, a task or a memory does not exist.** The
   spec's "not in scope" says so, and this slice does not build one. What it
   does is stop the product claiming one happened.

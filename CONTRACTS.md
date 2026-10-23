@@ -1118,12 +1118,12 @@ resource came from; the tree carries all of it. `resourceTemplateGuideSchema` is
 `packages/contracts/src/resource.ts:252` and
 `packages/contracts/src/resource.ts:256`. `resource.template.list` and
 `resource.template.get` are both published tool names — they are in `mcpToolNames`
-at `packages/contracts/src/mcp.ts:35-36`, inside the range
-`packages/contracts/src/mcp.ts:10-80`, and in the
-default agent grant list at `packages/contracts/src/mcp.ts:106-107`. The server
+at `packages/contracts/src/mcp.ts:50-51`, inside the range
+`packages/contracts/src/mcp.ts:10-95`, and in the
+default agent grant list at `packages/contracts/src/mcp.ts:121-122`. The server
 registers both tools only where
 the connection is granted them, the way every other tool on that surface is
-(`apps/server/src/modules/mcp/server.ts:692-747`). `resource.create` takes the
+(`apps/server/src/modules/mcp/server.ts:759-813`). `resource.create` takes the
 `template` input at `apps/server/src/modules/mcp/server.ts:573`, merges the caller's
 values into the template's spec at
 `apps/server/src/modules/mcp/server.ts:596-598`, and passes the template's id and
@@ -1257,10 +1257,75 @@ claimed, and a refusal is rendered as a refusal — not swallowed into a success
 does not offer a button that can only be refused, and it says which action a kind
 does not have rather than leaving a gap.
 
-**There is no agent path for either operation, and the contract does not claim one.**
-The MCP surface publishes no `resource.publish` and no `resource.execute`, so both
-are owner-only for now. Whether an agent should be able to publish or execute is
-SPEC-S2's question, and it is asked after the owner path tells the truth.
+**There is now an agent path for both operations, and it is the same path.** The MCP
+surface publishes `resource.publish` and `resource.execute`, and each tool does what
+its route does, on the same object, through one shared capability. The refusal is the
+route's refusal — a kind with no publish act, and a kind with no run, are refused with
+the same words and the same facts. See [The resource acts](#the-resource-acts).
+
+### The resource acts
+
+The two acts a resource may have, and the two tools that perform them. SPEC-RESOURCE-RUN
+made the owner path honest — the route refuses a kind that has no such act and says so,
+and the panel offers only the actions that can succeed. This is the agent path for the
+same two operations.
+
+| Tool               | Route                             | Input            | Output                               |
+| ------------------ | --------------------------------- | ---------------- | ------------------------------------ |
+| `resource.publish` | `POST /api/resources/:id/publish` | `{ resourceId }` | `{ outcome: 'published', resource }` |
+| `resource.execute` | `POST /api/resources/:id/execute` | `{ resourceId }` | `{ outcome, result: { output } }`    |
+
+The shared capability is `apps/server/src/modules/capabilities/service.ts:568` for the
+publish and `apps/server/src/modules/capabilities/service.ts:591` for the run. The
+routes call it at `apps/server/src/api/resources.ts:208` and
+`apps/server/src/api/resources.ts:228`, the tools are registered at
+`apps/server/src/modules/mcp/server.ts:709` and
+`apps/server/src/modules/mcp/server.ts:735`, and the names are published in
+`packages/contracts/src/mcp.ts:48`.
+
+**The grant rule is the rule the other round trips already keep, and the reason is the
+coverage table's own.** A **read** verb joins the default grant set; a verb that
+**spends the owner's authority** does not, and the owner grants it by name. Neither of
+these two is a read:
+
+- **Publishing** "makes a resource visible to everyone; it is the owner's own act".
+  Publishing a dashboard makes it visible; publishing an automation is what makes it
+  active, and an active automation runs the owner's work — the action it carries
+  prompts an agent, and the owner's budget and the owner's authority are what stand
+  behind it.
+- **Running a resource** is running it _now_. An automation's run is enqueued for the
+  worker, and the action it carries may prompt an agent; a data source's query makes
+  the outbound request the owner's configuration describes; a dashboard's run is its
+  widgets' sources run.
+
+So **neither is in the default grant set**, and a connection that was not granted one
+of them does not have it registered at all. A call for one is refused and the refusal
+is recorded the way every other ungranted call is recorded — the owner finds the agent
+on the waiting list and widens that one grant.
+
+**The refusal is the route's refusal.** A kind with no publish act, and a kind with no
+run, are refused by the tool with the same words and the same facts the route refuses
+them with, because the route and the tool are thin adapters over one shared capability.
+The refusal names the kind and the act, and the details carry the kinds that do have
+the act.
+
+**The scoping rule is the rule the other id-addressed tools already keep.** Each of
+these two names an id, so each names an _object_ and not a workspace: the object's own
+row is read to find the workspace it belongs to, and that workspace is checked against
+the caller's scope before anything of the object is returned or acted on. **An agent
+is bounded to the workspace it was granted, never to the whole tenant**, and a refusal
+carries nothing of the object back.
+
+**The record names who acted, and the authority behind it is the owner's grant.** A
+publish writes `resource.published` and a run writes `resource.executed`, each with
+the `actorType` of the caller — `human` for the owner's own call, `agent` for an
+agent's — and the caller's id.
+
+**Migration.** Nothing is reclassified and no record is rewritten. The two routes keep
+their published shapes and their published authentication — a session cookie or the
+owner token, and never an agent token. The two trail entries the routes used to write
+at the route level are written by the shared capability instead, so the owner's own
+publish and an agent's publish leave the same entry, naming who acted.
 
 ### The agent memory scope
 
@@ -1348,6 +1413,8 @@ external agents can discover and operate them.
 | `resource.create`        | Create a resource, optionally from a template.          |
 | `resource.get`           | Read a resource. Not another agent's own memory.        |
 | `resource.update`        | Update a resource with optimistic concurrency.          |
+| `resource.publish`       | Publish a resource — make it live.                      |
+| `resource.execute`       | Run a resource now.                                     |
 | `resource.template.list` | List the templates published for one resource kind.     |
 | `resource.template.get`  | Read one template in full — its spec and its guide.     |
 | `automation.create`      | Create an automation.                                   |
@@ -1373,7 +1440,7 @@ granted. **An ungranted tool is not registered at all**, so it does not appear i
 
 **`autonomy.read` is in the default grant list, so every agent connection gets it.**
 A connection with no explicit grants runs on the default set
-(`packages/contracts/src/mcp.ts:96-117`), and that set carries `autonomy.read`: an
+(`packages/contracts/src/mcp.ts:111-132`), and that set carries `autonomy.read`: an
 agent can read the policy that governs it without the owner granting anything else.
 A connection whose grants were narrowed explicitly keeps the list it was given — the
 tool is not added to a stored list. The owner has it too, because the owner's grant
@@ -1395,7 +1462,7 @@ that cannot see why it was refused cannot do anything sensible about it
 
 **`resource.template.get` is in the default grant list, so every agent connection
 gets it.** The same default set carries it beside `resource.template.list`
-(`packages/contracts/src/mcp.ts:106-107`): an agent can read a template's guide — what
+(`packages/contracts/src/mcp.ts:121-122`): an agent can read a template's guide — what
 a good one of that kind is, which fields it must set, and what a reader would get
 wrong — without the owner granting anything else. A connection whose grants were
 narrowed explicitly keeps the list it was given, and the owner has it too, because
@@ -1521,10 +1588,11 @@ title, not its body, not its count.
 `approval.evidence`, `execution.list`, `execution.get`, `event.list` and
 `audit.list` — are in the
 default grant set
-(`packages/contracts/src/mcp.ts:96-117`): an agent whose turn is blocked on the
+(`packages/contracts/src/mcp.ts:111-132`): an agent whose turn is blocked on the
 owner has to be able to see what it is blocked on, and an agent that has just
 acted has to be able to read what it did. **The destructive verbs are not.**
-`approval.decide`, `execution.stop`, `execution.resolve` and `task.accept` are
+`approval.decide`, `execution.stop`, `execution.resolve`, `task.accept`,
+`resource.publish` and `resource.execute` are
 the owner's to grant, one by one,
 exactly as `bot.dispatch` is, because each of them spends an authority the owner
 holds. A connection that was not granted them does not have them registered, so
@@ -1565,7 +1633,7 @@ capability, so an agent and a person operate through the same code path.
 verb joins the default grant set; a verb that **spends the owner's authority**
 does not, and the owner grants it by name. `approval.evidence` is a read — it
 decides nothing and changes nothing — so it is in the default grant set
-(`packages/contracts/src/mcp.ts:96-117`): an agent whose turn is blocked on a
+(`packages/contracts/src/mcp.ts:111-132`): an agent whose turn is blocked on a
 decision has to be able to see what it is blocked on, the same ground
 `approval.list` is held to. `execution.resolve` and `task.accept` spend the
 owner's authority — one closes a turn whose outcome is unknown, the other
@@ -2300,7 +2368,7 @@ a client that reads the fields it knows keeps working; a client that switches
 exhaustively on the item's fields has one more field to read.
 
 The blocked capability is the contract for **WI-121**, and the code implements it —
-as of `d229b53`: the refusal is recorded at `apps/server/src/modules/mcp/server.ts:1115`, the list
+as of `d229b53`: the refusal is recorded at `apps/server/src/modules/mcp/server.ts:1319`, the list
 draws it as its own kind at `apps/server/src/api/waiting.ts:140`, and the owner's
 action is `POST /api/agents/:id/grants`.
 
@@ -3371,70 +3439,70 @@ by running something else instead. That is the cost of this recovery path, and
 it is paid knowingly: the path exists so that an owner who cannot authenticate
 is not left deleting the database.
 
-| Method             | Path                                                 | Purpose                                                                                                             |
-| ------------------ | ---------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------- |
-| `GET`              | `/api/health`                                        | Liveness and setup state.                                                                                           |
-| `GET`              | `/api/auth/status`                                   | Whether setup is still required.                                                                                    |
-| `POST`             | `/api/auth/setup`                                    | Create the owner account. Once per instance.                                                                        |
-| `POST`             | `/api/auth/login`                                    | Start a session.                                                                                                    |
-| `POST`             | `/api/auth/logout`                                   | End the session.                                                                                                    |
-| `GET`              | `/api/auth/me`                                       | The current owner.                                                                                                  |
-| `POST`             | `/api/auth/owner-token`                              | Return the configured owner token. Owner only — an agent token is refused.                                          |
-| `GET/POST`         | `/api/workspaces`                                    | List and create workspaces.                                                                                         |
-| `GET/PATCH`        | `/api/workspaces/:id`                                | Read and update a workspace. `PATCH` accepts `autonomyPolicy`.                                                      |
-| `GET/POST`         | `/api/agents`                                        | List and create agent connections.                                                                                  |
-| `GET`              | `/api/agent-presets`                                 | The adapter preset catalogue. A template, never an integration.                                                     |
-| `GET/PATCH/DELETE` | `/api/agents/:id`                                    | Read, update, remove a connection. `PATCH` accepts `toolGrants` and `toolGrantChange`.                              |
-| `POST`             | `/api/agents/:id/probe`                              | Re-run capability discovery.                                                                                        |
-| `POST`             | `/api/agents/:id/grants`                             | Widen one tool grant. The action a blocked agent needs.                                                             |
-| `GET/POST`         | `/api/agents/:id/tokens`                             | Issue and list MCP tokens.                                                                                          |
-| `DELETE`           | `/api/agents/:id/tokens/:tokenId`                    | Revoke an MCP token.                                                                                                |
-| `GET`              | `/api/agents/:id/memories`                           | The agent's own memories, and the brief's budget, used and dropped counts.                                          |
-| `GET`              | `/api/secrets`                                       | List the secret configurations. Metadata only — a value never leaves the server.                                    |
-| `GET/POST`         | `/api/conversations`                                 | List and create conversations.                                                                                      |
-| `GET/PATCH/DELETE` | `/api/conversations/:id`                             | Read, update, remove a conversation.                                                                                |
-| `GET/POST`         | `/api/conversations/:id/messages`                    | Read and post messages.                                                                                             |
-| `POST`             | `/api/conversations/:id/participants`                | Add a participant.                                                                                                  |
-| `DELETE`           | `/api/conversations/:id/participants/:participantId` | Remove a participant.                                                                                               |
-| `PATCH`            | `/api/conversations/:id/participants/:participantId` | Change a participant's persona override. `null` clears it.                                                          |
-| `GET/POST`         | `/api/conversations/:id/bots`                        | The team of a room, and register or change a bot in it.                                                             |
-| `POST`             | `/api/conversations/:id/bots/dispatch`               | Hand work to another agent on the coordinator's behalf.                                                             |
-| `GET/POST`         | `/api/resources`                                     | List and create resources. A resource is never born live.                                                           |
-| `GET/PATCH`        | `/api/resources/:id`                                 | Read and update a resource.                                                                                         |
-| `POST`             | `/api/resources/:id/publish`                         | Publish a resource. The act that makes one live. Only the kinds that support it.                                    |
-| `POST`             | `/api/resources/:id/execute`                         | Execute a resource. Only the kinds that support it.                                                                 |
-| `GET`              | `/api/resources/:id/inspect`                         | Validate without changing.                                                                                          |
-| `POST`             | `/api/resources/upload`                              | Store a file's bytes and answer with the resource that points at them.                                              |
-| `GET`              | `/api/resources/:id/content`                         | The bytes of a resource that is a file.                                                                             |
-| `GET/POST`         | `/api/goals`                                         | List and create goals.                                                                                              |
-| `GET`              | `/api/goals/overview`                                | The goals and the counts under each.                                                                                |
-| `GET`              | `/api/goals/:id`                                     | Read a goal.                                                                                                        |
-| `GET`              | `/api/goals/:id/view`                                | A goal with its work, its dependencies and its shape.                                                               |
-| `GET/POST`         | `/api/tasks`                                         | List and create tasks.                                                                                              |
-| `GET`              | `/api/tasks/dependencies`                            | What the workspace's tasks wait on.                                                                                 |
-| `GET/PATCH`        | `/api/tasks/:id`                                     | Read and update a task. `PATCH` cannot set `done`; it also enforces `expectedRevision`.                             |
-| `POST`             | `/api/tasks/:id/assign`                              | Assign a task to an agent.                                                                                          |
-| `POST`             | `/api/tasks/:id/accept`                              | Record an acceptance decision.                                                                                      |
-| `POST`             | `/api/executions/:id/resolve`                        | Close a turn the owner cannot confirm. See [the entry](#closing-an-unknown-outcome).                                |
-| `GET`              | `/api/executions/:id`                                | The turn: its status, its capability view, its delegation tree, its committed revision, and the activity behind it. |
-| `POST`             | `/api/executions/:id/stop`                           | Ask a turn to stop, and answer with what the request actually did.                                                  |
-| `GET/POST`         | `/api/automations`                                   | List and create automations.                                                                                        |
-| `GET/PATCH/DELETE` | `/api/automations/:id`                               | Read, update and remove an automation.                                                                              |
-| `POST`             | `/api/automations/:id/enable` · `/disable`           | Toggle scheduling.                                                                                                  |
-| `GET`              | `/api/approvals`                                     | List approval requests.                                                                                             |
-| `GET`              | `/api/approvals/:id`                                 | Read an approval request.                                                                                           |
-| `GET`              | `/api/approvals/:id/evidence`                        | The evidence a decision is taken against. See [the entry](#the-approval-evidence).                                  |
-| `POST`             | `/api/approvals/:id/decide`                          | Approve or reject a sensitive operation. Publishes `approval.decided`.                                              |
-| `GET`              | `/api/waiting`                                       | Everything waiting on the owner, in one list. See below.                                                            |
-| `GET`              | `/api/audit`                                         | Read the audit trail. See [the entry](#the-audit-outcome).                                                          |
-| `GET`              | `/api/measures`                                      | The product's two measures of itself. See below.                                                                    |
-| `GET`              | `/api/autonomy-policy`                               | The autonomy policy in force for a scope. See below.                                                                |
-| `GET`              | `/api/events`                                        | Server-sent event stream.                                                                                           |
-| `GET`              | `/api/agui/events`                                   | The same stream in AG-UI. See [the AG-UI stream](#the-ag-ui-stream).                                                |
-| `POST`             | `/api/agui/runs/:runId/resume`                       | Answer the interrupts of an AG-UI run. See [the AG-UI stream](#the-ag-ui-stream).                                   |
-| `GET`              | `/api/features/bots/team`                            | The bot feature's read model — the same payload as the conversation route, under the feature's own prefix.          |
-| `GET`              | `/api/features/map`                                  | The map feature's read model.                                                                                       |
-| `ANY`              | `/mcp`                                               | MCP streamable HTTP endpoint.                                                                                       |
+| Method             | Path                                                 | Purpose                                                                                                                                                     |
+| ------------------ | ---------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `GET`              | `/api/health`                                        | Liveness and setup state.                                                                                                                                   |
+| `GET`              | `/api/auth/status`                                   | Whether setup is still required.                                                                                                                            |
+| `POST`             | `/api/auth/setup`                                    | Create the owner account. Once per instance.                                                                                                                |
+| `POST`             | `/api/auth/login`                                    | Start a session.                                                                                                                                            |
+| `POST`             | `/api/auth/logout`                                   | End the session.                                                                                                                                            |
+| `GET`              | `/api/auth/me`                                       | The current owner.                                                                                                                                          |
+| `POST`             | `/api/auth/owner-token`                              | Return the configured owner token. Owner only — an agent token is refused.                                                                                  |
+| `GET/POST`         | `/api/workspaces`                                    | List and create workspaces.                                                                                                                                 |
+| `GET/PATCH`        | `/api/workspaces/:id`                                | Read and update a workspace. `PATCH` accepts `autonomyPolicy`.                                                                                              |
+| `GET/POST`         | `/api/agents`                                        | List and create agent connections.                                                                                                                          |
+| `GET`              | `/api/agent-presets`                                 | The adapter preset catalogue. A template, never an integration.                                                                                             |
+| `GET/PATCH/DELETE` | `/api/agents/:id`                                    | Read, update, remove a connection. `PATCH` accepts `toolGrants` and `toolGrantChange`.                                                                      |
+| `POST`             | `/api/agents/:id/probe`                              | Re-run capability discovery.                                                                                                                                |
+| `POST`             | `/api/agents/:id/grants`                             | Widen one tool grant. The action a blocked agent needs.                                                                                                     |
+| `GET/POST`         | `/api/agents/:id/tokens`                             | Issue and list MCP tokens.                                                                                                                                  |
+| `DELETE`           | `/api/agents/:id/tokens/:tokenId`                    | Revoke an MCP token.                                                                                                                                        |
+| `GET`              | `/api/agents/:id/memories`                           | The agent's own memories, and the brief's budget, used and dropped counts.                                                                                  |
+| `GET`              | `/api/secrets`                                       | List the secret configurations. Metadata only — a value never leaves the server.                                                                            |
+| `GET/POST`         | `/api/conversations`                                 | List and create conversations.                                                                                                                              |
+| `GET/PATCH/DELETE` | `/api/conversations/:id`                             | Read, update, remove a conversation.                                                                                                                        |
+| `GET/POST`         | `/api/conversations/:id/messages`                    | Read and post messages.                                                                                                                                     |
+| `POST`             | `/api/conversations/:id/participants`                | Add a participant.                                                                                                                                          |
+| `DELETE`           | `/api/conversations/:id/participants/:participantId` | Remove a participant.                                                                                                                                       |
+| `PATCH`            | `/api/conversations/:id/participants/:participantId` | Change a participant's persona override. `null` clears it.                                                                                                  |
+| `GET/POST`         | `/api/conversations/:id/bots`                        | The team of a room, and register or change a bot in it.                                                                                                     |
+| `POST`             | `/api/conversations/:id/bots/dispatch`               | Hand work to another agent on the coordinator's behalf.                                                                                                     |
+| `GET/POST`         | `/api/resources`                                     | List and create resources. A resource is never born live.                                                                                                   |
+| `GET/PATCH`        | `/api/resources/:id`                                 | Read and update a resource.                                                                                                                                 |
+| `POST`             | `/api/resources/:id/publish`                         | Publish a resource. The act that makes one live. Only the kinds that support it. The agent tool is `resource.publish`. See [the entry](#the-resource-acts). |
+| `POST`             | `/api/resources/:id/execute`                         | Execute a resource. Only the kinds that support it. The agent tool is `resource.execute`. See [the entry](#the-resource-acts).                              |
+| `GET`              | `/api/resources/:id/inspect`                         | Validate without changing.                                                                                                                                  |
+| `POST`             | `/api/resources/upload`                              | Store a file's bytes and answer with the resource that points at them.                                                                                      |
+| `GET`              | `/api/resources/:id/content`                         | The bytes of a resource that is a file.                                                                                                                     |
+| `GET/POST`         | `/api/goals`                                         | List and create goals.                                                                                                                                      |
+| `GET`              | `/api/goals/overview`                                | The goals and the counts under each.                                                                                                                        |
+| `GET`              | `/api/goals/:id`                                     | Read a goal.                                                                                                                                                |
+| `GET`              | `/api/goals/:id/view`                                | A goal with its work, its dependencies and its shape.                                                                                                       |
+| `GET/POST`         | `/api/tasks`                                         | List and create tasks.                                                                                                                                      |
+| `GET`              | `/api/tasks/dependencies`                            | What the workspace's tasks wait on.                                                                                                                         |
+| `GET/PATCH`        | `/api/tasks/:id`                                     | Read and update a task. `PATCH` cannot set `done`; it also enforces `expectedRevision`.                                                                     |
+| `POST`             | `/api/tasks/:id/assign`                              | Assign a task to an agent.                                                                                                                                  |
+| `POST`             | `/api/tasks/:id/accept`                              | Record an acceptance decision.                                                                                                                              |
+| `POST`             | `/api/executions/:id/resolve`                        | Close a turn the owner cannot confirm. See [the entry](#closing-an-unknown-outcome).                                                                        |
+| `GET`              | `/api/executions/:id`                                | The turn: its status, its capability view, its delegation tree, its committed revision, and the activity behind it.                                         |
+| `POST`             | `/api/executions/:id/stop`                           | Ask a turn to stop, and answer with what the request actually did.                                                                                          |
+| `GET/POST`         | `/api/automations`                                   | List and create automations.                                                                                                                                |
+| `GET/PATCH/DELETE` | `/api/automations/:id`                               | Read, update and remove an automation.                                                                                                                      |
+| `POST`             | `/api/automations/:id/enable` · `/disable`           | Toggle scheduling.                                                                                                                                          |
+| `GET`              | `/api/approvals`                                     | List approval requests.                                                                                                                                     |
+| `GET`              | `/api/approvals/:id`                                 | Read an approval request.                                                                                                                                   |
+| `GET`              | `/api/approvals/:id/evidence`                        | The evidence a decision is taken against. See [the entry](#the-approval-evidence).                                                                          |
+| `POST`             | `/api/approvals/:id/decide`                          | Approve or reject a sensitive operation. Publishes `approval.decided`.                                                                                      |
+| `GET`              | `/api/waiting`                                       | Everything waiting on the owner, in one list. See below.                                                                                                    |
+| `GET`              | `/api/audit`                                         | Read the audit trail. See [the entry](#the-audit-outcome).                                                                                                  |
+| `GET`              | `/api/measures`                                      | The product's two measures of itself. See below.                                                                                                            |
+| `GET`              | `/api/autonomy-policy`                               | The autonomy policy in force for a scope. See below.                                                                                                        |
+| `GET`              | `/api/events`                                        | Server-sent event stream.                                                                                                                                   |
+| `GET`              | `/api/agui/events`                                   | The same stream in AG-UI. See [the AG-UI stream](#the-ag-ui-stream).                                                                                        |
+| `POST`             | `/api/agui/runs/:runId/resume`                       | Answer the interrupts of an AG-UI run. See [the AG-UI stream](#the-ag-ui-stream).                                                                           |
+| `GET`              | `/api/features/bots/team`                            | The bot feature's read model — the same payload as the conversation route, under the feature's own prefix.                                                  |
+| `GET`              | `/api/features/map`                                  | The map feature's read model.                                                                                                                               |
+| `ANY`              | `/mcp`                                               | MCP streamable HTTP endpoint.                                                                                                                               |
 
 ### The autonomy-policy route
 
@@ -3642,7 +3710,7 @@ projections read it
 automation or task is recorded as authored by the agent that made it.
 
 **Every mutating route writes an audit entry.** Of the 41 mutating routes in
-`apps/server/src/api/`, 35 write an audit entry at the route level, and six more
+`apps/server/src/api/`, 33 write an audit entry at the route level, and eight more
 write one from the service layer — `POST /api/approvals/:id/decide` and `POST
 /api/agui/runs/:runId/resume`, both at
 `apps/server/src/modules/approvals/resume.ts:55`, `PATCH /api/tasks/:id` at
@@ -3654,7 +3722,12 @@ own stop request is written too, so the request is in the trail whoever made it.
 `apps/server/src/modules/executions/service.ts:352` and `POST /api/tasks/:id/accept`
 at `apps/server/src/modules/factory/service.ts:577`; both are written by the
 service layer so that the agent's `execution.resolve` and `task.accept` land in
-the same trail as the owner's own calls.
+the same trail as the owner's own calls. `POST /api/resources/:id/publish` and
+`POST /api/resources/:id/execute` write from the shared capability for the same
+reason, at `apps/server/src/modules/capabilities/service.ts:578` and
+`apps/server/src/modules/capabilities/service.ts:602`, so that the agent's
+`resource.publish` and `resource.execute` land in the
+same trail as the owner's own calls.
 **No mutating route writes none.**
 
 The twelve that used to write none write one each, at the route:
@@ -3696,17 +3769,20 @@ exactly the rows that predate the author being recorded.
 writes no audit entry of its own — there is no audit call anywhere in
 `apps/server/src/modules/mcp/server.ts` — and the capabilities service its tools
 call reach the resources service directly rather than through the auditing
-route. **Two verbs are the exception**, and they are the exception because they
+route. **Four verbs are the exception**, and they are the exception because they
 spend the owner's authority: `execution.resolve` and `task.accept` reach the
-executions and factory services, which write the trail themselves, so a
-connection that was granted one of them leaves `execution.outcome.resolved` or
-`task.accepted` behind with `actorType: 'agent'`. The other writer of the trail
+executions and factory services, which write the trail themselves, and
+`resource.publish` and `resource.execute` reach the shared capability, which
+writes `resource.published` and `resource.executed` itself. So a
+connection that was granted one of them leaves `execution.outcome.resolved`,
+`task.accepted`, `resource.published` or `resource.executed` behind with
+`actorType: 'agent'`. The other writer of the trail
 that is not an owner HTTP route is
 the worker — its `unknown` record (`apps/worker/src/execution-owner.ts:724-733`) and the
 policy refusals it writes (`apps/worker/src/execution-owner.ts:754-772`). So every audited
 operation is an owner operation, except the worker's own entries, which carry
 `actorType: 'agent'`. **The second measure does not count the work an agent does
-through MCP**: an agent can create, update and publish resources all day and the
+through MCP**: an agent can create and update resources all day and the
 trail will show none of it. An implementation that wants the measure to mean what
 it says has to widen the audit coverage first, and that is WI-033's to do, with
 WI-034 publishing the rules it implements.

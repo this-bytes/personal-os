@@ -18,6 +18,8 @@ import {
   type Message,
   type Participant,
   type Resource,
+  type ResourceExecuteResponse,
+  type ResourcePublishResponse,
   type ResourceTemplate,
   type ResourceTemplateRef,
   type ResourceType,
@@ -188,6 +190,37 @@ export interface CapabilitiesService {
     id: string,
     patch: { expectedRevision: number; title?: string; data?: unknown },
   ): Resource;
+
+  /**
+   * The publish act: the thing that makes a resource live.
+   *
+   * A kind that has no publish act is refused with the reason the owner can
+   * read, exactly as the route refuses it, because the route and the tool are
+   * thin adapters over this one capability.
+   *
+   * `actorType` and `actorId` say who published, and the entry written to the
+   * trail names them. The authority behind an agent's publish is the owner's
+   * grant of this one verb.
+   */
+  resourcePublish(input: {
+    resourceId: string;
+    actorType: 'human' | 'agent';
+    actorId: string;
+  }): ResourcePublishResponse;
+
+  /**
+   * The run act: the thing that runs a resource now.
+   *
+   * A kind that has no run is refused with the reason the owner can read,
+   * exactly as the route refuses it. The answer says what happened — `queued`
+   * for a run the worker has not done yet, `succeeded` for one that did.
+   */
+  resourceExecute(input: {
+    resourceId: string;
+    actorType: 'human' | 'agent';
+    actorId: string;
+  }): Promise<ResourceExecuteResponse>;
+
   /** The templates published for one resource kind — or for every kind. */
   resourceTemplateList(type?: ResourceType): ResourceTemplate[];
   /** One template, by reference. The template names its own kind. */
@@ -530,6 +563,53 @@ export function createCapabilitiesService(
 
     resourceUpdate(id, patch): Resource {
       return resources.update(id, patch);
+    },
+
+    resourcePublish(input): ResourcePublishResponse {
+      // The refusal for a kind with no publish act is raised in the resources
+      // service, so the route and the tool refuse the same kinds with the same
+      // words.
+      const resource = resources.publish(input.resourceId);
+
+      // Publishing is one of the acts that spend the owner's authority, so the
+      // trail names who published: the owner on the route, the agent on the
+      // tool. The authority behind an agent's publish is the owner's grant of
+      // this one verb.
+      audit.record({
+        workspaceId: resource.workspaceId,
+        actorType: input.actorType,
+        actorId: input.actorId,
+        action: 'resource.published',
+        targetType: 'resource',
+        targetId: input.resourceId,
+        result: 'success',
+      });
+
+      return { outcome: 'published', resource };
+    },
+
+    async resourceExecute(input): Promise<ResourceExecuteResponse> {
+      // The workspace is read out of the resource's own row, so the entry lands
+      // in the workspace the resource lives in and not in one the caller named.
+      const current = resources.get(input.resourceId);
+
+      // The refusal for a kind with no run is raised in the resources service,
+      // so the route and the tool refuse the same kinds with the same words.
+      const result = await resources.execute(input.resourceId);
+
+      // Running a resource spends the owner's authority too, so the trail names
+      // who ran it, the same way the publish entry names who published.
+      audit.record({
+        workspaceId: current.workspaceId,
+        actorType: input.actorType,
+        actorId: input.actorId,
+        action: 'resource.executed',
+        targetType: 'resource',
+        targetId: input.resourceId,
+        result: 'success',
+      });
+
+      return { outcome: result.outcome, result: { output: result.output } };
     },
 
     resourceTemplateList(type): ResourceTemplate[] {
