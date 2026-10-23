@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { ShieldCheck } from 'lucide-react';
 import {
@@ -41,12 +41,39 @@ export function ToolGrantPanel({
 
   const agentId = agent?.id ?? '';
 
-  // Reset the selection whenever a different connection is opened.
+  /**
+   * The connection the editor was seeded for.
+   *
+   * The editor seeds what it shows from the connection it was handed, and it
+   * seeds it when the owner opens the editor or points it at a different
+   * connection. It does not seed it because the row changed: the owner is
+   * looking at the grant they opened the editor with, and their turn is
+   * measured against that grant.
+   */
+  const seededFor = useRef<string | null>(null);
+
+  // Seed the editor when it opens, and when it is pointed at a different
+  // connection.
+  //
+  // If the editor re-seeded whenever the row changed, a refetch under the
+  // editor would replace the grant the owner is looking at with the new one.
+  // The owner's turn would stop being a difference against it, and the save
+  // would carry an empty change: the server would apply nothing while the
+  // panel reported success, and the owner would be told their change was
+  // saved. So what the seeding keys on is the connection, not the row's
+  // contents — and the panel always sends the turn it is showing, so it never
+  // reports success for a change it did not send.
   useEffect(() => {
-    if (open && agent) {
-      setBase([...agent.toolGrants]);
-      setSelected([...agent.toolGrants]);
+    if (!open) {
+      // Closing forgets the connection, so opening the editor again seeds it
+      // with the grant as it is then.
+      seededFor.current = null;
+      return;
     }
+    if (!agent || seededFor.current === agent.id) return;
+    seededFor.current = agent.id;
+    setBase([...agent.toolGrants]);
+    setSelected([...agent.toolGrants]);
   }, [open, agent]);
 
   const save = useMutation({
