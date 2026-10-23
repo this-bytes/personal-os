@@ -5,7 +5,7 @@
     {
       "id": "the-session-reference",
       "section": "The session reference",
-      "note": "SPEC-R0-3, and the code implements it — as of `2c00452`",
+      "note": "SPEC-R0-3, and the code implements it — as of `6847121`",
       "claim": "implemented",
       "why": "SPEC-R0-3's session reference: the published reference, the durable record of it, and the continuity the next turn continues.",
       "expect": [
@@ -34,7 +34,7 @@
     {
       "id": "the-terminal-event-of-a-turn",
       "section": "The terminal event of a turn",
-      "note": "SPEC-R0-3, and the code implements it — as of `2c00452`",
+      "note": "SPEC-R0-3, and the code implements it — as of `6847121`",
       "claim": "implemented",
       "why": "SPEC-R0-3's terminal-event rules: one definition of what ends a turn, read by every reader.",
       "expect": [

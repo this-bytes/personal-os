@@ -106,25 +106,26 @@ The gate runs in CI on the delivered revision.
 ## Evidence
 
 **Revision.** Delivered on `feature/r0-3-session-references`. The code is in
-`2c00452`; the commit after it is the contract's claim for it and this
-evidence. `origin/main` at `ece75fd` is merged in.
+`6847121`; the commit after it is the contract's claim for it and this evidence.
+`origin/main` at `00649d8` is merged in.
 
 ### What landed
 
-| The promise                         | Where it is kept                                                                                                                                                          |
-| ----------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| The session reference is durable    | `conversation_sessions` (`apps/server/src/db/schema.ts:343`), written by `recordSessionReference` (`apps/server/src/modules/conversations/session-refs.ts`)               |
-| It is published                     | `ConversationDetail.sessionRefs` (`apps/server/src/modules/conversations/service.ts:46`), read by `GET /api/conversations/:id`                                            |
-| The transcript names the session    | `MessageOrigin.sessionId` (`packages/contracts/src/conversation.ts:100`), written by the commit (`apps/worker/src/executor.ts:519`)                                       |
-| Continuity is a fact, not a hope    | `continuityForCapabilities` (`packages/contracts/src/session.ts`), from the connection's own capability set                                                               |
-| A second turn continues the session | `apps/worker/src/executor.ts:306` reads the reference and restores the session                                                                                            |
-| A dispatch has an identity          | `dispatchIdempotencyKey` (`packages/contracts/src/session.ts`), checked in `planAndDispatch` (`apps/server/src/modules/conversations/dispatch.ts:191`)                    |
-| A turn carries a correlation id     | `executions.correlationId`, published on the turn view (`apps/server/src/modules/executions/service.ts:242`)                                                              |
-| "Finished" is defined once          | `TERMINAL_TURN_STATUSES` and `turnEventFor` (`packages/contracts/src/session.ts`), read by the server's derivation (`apps/server/src/modules/executions/activity.ts:287`) |
-| Exactly one event ends a turn       | `publishTerminalEvent` (`apps/worker/src/execution-owner.ts`), after the turn's own conclusion is recorded                                                                |
-| The revision is written             | The commit hook (`apps/worker/src/executor.ts:568`), read back and hashed by `computeHistoryRevision` (`apps/server/src/modules/conversations/history-revision.ts`)       |
-| The revision is published           | `committedRevision` on the turn view (`apps/server/src/modules/executions/service.ts`)                                                                                    |
-| The limits are recorded             | `docs/adapters.md`, one row per adapter type, with the version each claim was verified against                                                                            |
+| The promise                         | Where it is kept                                                                                                                                                            |
+| ----------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| The session reference is durable    | `conversation_sessions` (`apps/server/src/db/schema.ts:343`), written by `recordSessionReference` (`apps/server/src/modules/conversations/session-refs.ts`)                 |
+| It is published                     | `ConversationDetail.sessionRefs` (`apps/server/src/modules/conversations/service.ts:46`), read by `GET /api/conversations/:id`                                              |
+| The transcript names the session    | `MessageOrigin.sessionId` (`packages/contracts/src/conversation.ts:100`), written by the commit (`apps/worker/src/executor.ts:519`)                                         |
+| Continuity is a fact, not a hope    | `continuityForCapabilities` (`packages/contracts/src/session.ts:168`), from the connection's own capability set                                                             |
+| A second turn continues the session | `apps/worker/src/executor.ts:306` reads the reference and restores the session                                                                                              |
+| A dispatch has an identity          | `dispatchIdempotencyKey` (`packages/contracts/src/session.ts:71`), checked in `planAndDispatch` (`apps/server/src/modules/conversations/dispatch.ts:191`)                   |
+| A turn carries a correlation id     | `executions.correlationId`, published on the turn view (`apps/server/src/modules/executions/service.ts:248`)                                                                |
+| "Finished" is defined once          | `TERMINAL_TURN_STATUSES` and `turnEventFor` (`packages/contracts/src/session.ts`), read by the server's derivation (`apps/server/src/modules/executions/activity.ts:287`)   |
+| `unknown` is not an ending          | `TERMINAL_TURN_STATUSES` (`packages/contracts/src/session.ts:94`) leaves it out, and `turnEventFor('unknown')` is `null` (`packages/contracts/src/session.ts:129`)          |
+| Exactly one event ends a turn       | the worker publishes it (`apps/worker/src/execution-owner.ts:504`), and the server publishes it for a turn the owner ends (`apps/server/src/modules/events/turn-end.ts:37`) |
+| The revision is written             | The commit hook (`apps/worker/src/executor.ts:568`), read back and hashed by `computeHistoryRevision` (`apps/server/src/modules/conversations/history-revision.ts`)         |
+| The revision is published           | `committedRevision` on the turn view (`apps/server/src/modules/executions/service.ts`)                                                                                      |
+| The limits are recorded             | `docs/adapters.md`, one row per adapter type, with the version each claim was verified against                                                                              |
 
 ### The commands that were run, and what they said
 
@@ -145,19 +146,23 @@ $ npm run verify:contracts
   The contract status gate: 30 claims in the table, 30 checked, 0 unchecked, 0 failures.
 
 $ npx tsx scripts/verify-contract-pointers.ts
-  The contract pointer gate: 195 pointers checked, 0 failures.
+  The contract pointer gate: 198 pointers checked, 0 failures.
 
 $ npm run verify:mcp-parity
-  The MCP parity gate: 82 published routes and 82 registered, 23 tools,
-  22 paired, 50 listed, 10 exempt, 0 failures.
+  The MCP parity gate: 82 published routes and 82 registered, 26 tools,
+  25 paired, 40 listed, 17 exempt, 0 failures.
 
 $ npx tsx scripts/smoke.ts
   All smoke checks passed.
 ```
 
+The parity counts are the measurement at this revision: batch 1 of SPEC-S2
+landed in the merged `main`, so the tree carries its two paired tools. They
+are not a claim about the whole of SPEC-S2, which is still open.
+
 Measured on this machine, one package at a time, because
 `npm run test --workspaces` hangs here with runaway vitest workers: contracts 48
-passed (6 files), agent-adapters 50 (5), worker 113 (12), server 760 (74), web
+passed (6 files), agent-adapters 50 (5), worker 113 (12), server 778 (75), web
 210 (27). `@personal-os/ui` has no test script.
 
 `npm run verify:dependencies` exits 1 on this machine and is **not measurable
@@ -166,19 +171,21 @@ reports `invalid: esbuild@0.25.12`. It says nothing about this slice.
 
 ### The tests that fail without the implementation
 
-The gate is the evidence. Five mutations were made to the tree, each one
+The gate is the evidence. Seven mutations were made to the tree, each one
 rebuilt where the built code carries it and each one run against
 `npx tsx scripts/verify-session-references.ts`. Each fails the gate and names
 what it found. The file was restored from a byte-for-byte backup after each
 one, and the gate passes again on the restored tree.
 
-| The mutation                                                | What the gate said                                                                                                 |
-| ----------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------ |
-| the dispatch stops recognising the run it started last time | `UNIQUE constraint failed: executions.idempotency_key`                                                             |
-| the recorded session reference names no session             | `A session reference names no session.`                                                                            |
-| the owner publishes the ending twice                        | `A turn (exe_…) ended more than once: committed, committed.` and `A turn ended 2 times; it must end once.`         |
-| the turn stores a revision nobody wrote                     | `A committed turn (exe_…) carries a revision that is not the revision of the history it committed to.`             |
-| the server defines its own terminal-event rule              | `apps/server/src/modules/executions/activity.ts defines its own terminal-event rule; it must read the shared one.` |
+| The mutation                                    | What the gate said                                                                                                                                       |
+| ----------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| the dispatch key is not stable                  | `A dispatch repeated with the same key started a second run.` and `A dispatch repeated with the same key left more than one run behind.`                 |
+| the recorded session reference names no session | `A session reference names no session.` and `The second turn was offered no session instead of the session the first turn established ("gate-session").` |
+| the owner publishes the ending twice            | `A turn (exe_…) ended more than once: committed, committed.` and `A turn ended 2 times; it must end once.`                                               |
+| the turn stores a revision nobody wrote         | `A committed turn (exe_…) carries a revision that is not the revision of the history it committed to.`                                                   |
+| the server defines its own terminal-event rule  | `apps/server/src/modules/executions/activity.ts defines its own terminal-event rule; it must read the shared one.`                                       |
+| the contract makes `unknown` an ending again    | `'unknown' is published as a status that ends a turn; it is a question the owner closes.`                                                                |
+| the runtime keeps no session to continue        | `The second turn was offered no session instead of the session the first turn established ("gate-session").`                                             |
 
 The unit tests beside the gate are
 `apps/server/src/__tests__/session-references.test.ts` (the reference is
@@ -197,6 +204,12 @@ committed revision is the revision of the history the turn committed to).
   implemented, and the contract says so where it says it.
 - **An interrupted turn is unsettled, not reconciled.** A turn the deadline
   stops has an admission and no terminal event; settling it is SPEC-R0-4.
+- **The ending has one definition and two publishers.** The rule lives in the
+  contract (`TERMINAL_TURN_STATUSES`, `turnEventFor`); the worker publishes the
+  ending of a turn it ran, and the server publishes the ending of a turn it
+  ended — a queued turn the owner cancelled, a turn the owner closed, a turn an
+  approval closed. Neither publisher defines its own rule, and the gate fails
+  if one of them does.
 - **The session reference is per conversation and agent connection.** A
   conversation with one agent has one reference. Two agents in one room have
   two, and neither is the other's.

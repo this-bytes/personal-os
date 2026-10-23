@@ -2682,7 +2682,7 @@ fields it carried before, and a field it does not know about is a field it does
 not read.
 
 **Implementation status.** SPEC-R0-3, and the code implements it — as of
-`2c00452`: the reference is published on the conversation's read model, the turn
+`6847121`: the reference is published on the conversation's read model, the turn
 records it, and the next turn continues it when the runtime said it could.
 
 ### The terminal event of a turn
@@ -2742,7 +2742,7 @@ switches exhaustively on the status has to render `committed`, and a client that
 draws a turn's activity has to draw the terminal event of a committed turn.
 
 **Implementation status.** SPEC-R0-3, and the code implements it — as of
-`2c00452`: the owner publishes one terminal event per turn, and the panel, the
+`6847121`: the owner publishes one terminal event per turn, and the panel, the
 MCP tools and the audit trail read the same definition of what ends a turn.
 
 ### Correlation and idempotency
