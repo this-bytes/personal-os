@@ -1601,9 +1601,9 @@ be told apart from the stored default. See
 
 **The limits, the allowed actions and the approvals are enforced.** The worker holds
 a turn to the effective policy: the chain's turn count
-(`apps/worker/src/executor.ts:1624`) and its spend
-(`apps/worker/src/executor.ts:1631`), and the workspace's spend for the day
-(`apps/worker/src/executor.ts:1638`), before the turn starts; the policy's duration
+(`apps/worker/src/executor.ts:1174`) and its spend
+(`apps/worker/src/executor.ts:1181`), and the workspace's spend for the day
+(`apps/worker/src/executor.ts:1188`), before the turn starts; the policy's duration
 limit caps the turn while it runs, and every action the agent announces is checked
 against what the policy allows. The MCP surface refuses an action the policy does not
 allow, and one the policy wants the owner to approve until the owner has decided. A
@@ -1612,8 +1612,8 @@ truncated.
 
 **A daily cap is a cap on the workspace.** The workspace's spend for the day is the
 sum of the spend units on the executions of that workspace since 00:00 UTC
-(`apps/worker/src/executor.ts:1679-1689`,
-`apps/worker/src/executor.ts:1683-1688`), and it is the same day for every workspace —
+(`apps/worker/src/executor.ts:1211-1220`,
+`apps/worker/src/executor.ts:1215-1220`), and it is the same day for every workspace —
 the system stores ISO timestamps everywhere and has no per-workspace timezone. A daily
 cap of zero is no cap, as it is for the chain's spend limit. The cap applies across
 the workspace's conversations and goals, and not per chain, which is the whole
@@ -1625,7 +1625,7 @@ one spend unit — the measure the product already has
 (`apps/server/src/modules/conversations/routing.ts:332`). **The cost is recorded
 against the execution when the turn ends**: the worker writes one unit for an
 agent turn and none for a turn that never reached the agent
-(`apps/worker/src/executor.ts:1092`, `apps/worker/src/executor.ts:1389`).
+(`apps/worker/src/execution-owner.ts:535`).
 **The row is created with no spend units**, because the cost is not known until
 the turn has run (`apps/server/src/modules/conversations/dispatch.ts:184`,
 `apps/server/src/modules/factory/service.ts:473`), and the column defaults to zero
@@ -1745,7 +1745,7 @@ not.**
 failure. It is the same word the unknown outcome uses
 ([The unknown outcome](#the-unknown-outcome)), and it is in this vocabulary because
 the product produces it: the worker writes it when a turn's outcome cannot be
-confirmed (`apps/worker/src/executor.ts:118`), and the conversation dispatch writes it
+confirmed (`apps/worker/src/execution-owner.ts:563`), and the conversation dispatch writes it
 when a turn stops for the same reason
 (`apps/server/src/modules/conversations/dispatch.ts:260`). **A vocabulary without
 `unknown` would leave the unknown outcome unrepresentable in the trail**, and the
@@ -3309,8 +3309,8 @@ audit entry — there is no audit call anywhere in
 `apps/server/src/modules/mcp/server.ts`, and none in the capabilities service its
 tools call, which reach the resources service directly rather than through the
 auditing route. The only writer of the trail that is not an owner HTTP route is
-the worker — its `unknown` record (`apps/worker/src/executor.ts:111-120`) and the
-policy refusals it writes (`apps/worker/src/executor.ts:1719-1731`). So every audited
+the worker — its `unknown` record (`apps/worker/src/execution-owner.ts:563`) and the
+policy refusals it writes (`apps/worker/src/execution-owner.ts:586-603`). So every audited
 operation is an owner operation, except the worker's own entries, which carry
 `actorType: 'agent'`. **The second measure does not count the work an agent does
 through MCP**: an agent can create, update and publish resources all day and the
@@ -3325,9 +3325,9 @@ but the route helper hardcodes `success`
 (`apps/server/src/modules/audit/service.ts:79`). The two values a writer does
 produce come from the worker: the `unknown` of
 [The unknown outcome](#the-unknown-outcome)
-(`apps/worker/src/executor.ts:118`), and the `failure` it writes when the
+(`apps/worker/src/execution-owner.ts:563`), and the `failure` it writes when the
 autonomy policy refuses a turn or an action
-(`apps/worker/src/executor.ts:1726`). **An operation that failed at the route is
+(`apps/worker/src/execution-owner.ts:603`). **An operation that failed at the route is
 counted here as an operation that completed.**
 
 **The route exists.** It answers with the shape above, member for member: the
