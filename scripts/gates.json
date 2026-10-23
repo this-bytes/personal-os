@@ -65,6 +65,12 @@
       "command": "npm",
       "args": ["run", "verify:bundle"],
       "about": "the client bundle stays within its budget"
+    },
+    {
+      "name": "session-references",
+      "command": "npx",
+      "args": ["tsx", "scripts/verify-session-references.ts"],
+      "about": "every published session reference resolves, every committed revision is one the product wrote, and every turn ends once"
     }
   ]
 }

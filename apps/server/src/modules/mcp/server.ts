@@ -911,7 +911,16 @@ export async function createMcpServer(options: McpServerOptions): Promise<McpSer
         inputSchema: {
           workspaceId: z.string().optional(),
           status: z
-            .enum(['queued', 'running', 'blocked', 'completed', 'failed', 'cancelled', 'unknown'])
+            .enum([
+              'queued',
+              'running',
+              'blocked',
+              'completed',
+              'committed',
+              'failed',
+              'cancelled',
+              'unknown',
+            ])
             .optional(),
           limit: z.number().int().min(1).max(200).optional(),
         },

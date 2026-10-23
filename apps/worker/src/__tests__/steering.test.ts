@@ -280,7 +280,9 @@ describe('a steer, from the worker', () => {
     writeSteer('msg_steer', new Date().toISOString());
 
     const outcome = await running;
-    expect(outcome.status).toBe('completed');
+    // The reply went into the conversation's canonical history, so the turn is
+    // committed rather than merely completed.
+    expect(outcome.status).toBe('committed');
 
     // The turn read the steer.
     expect(adapter.hadChannel).toBe(true);
@@ -298,7 +300,7 @@ describe('a steer, from the worker', () => {
     writeSteer('msg_late', NOW);
 
     const outcome = await executeJob(context, theTurn());
-    expect(outcome.status).toBe('completed');
+    expect(outcome.status).toBe('committed');
 
     const row = handle.db.select().from(messages).where(eq(messages.id, 'msg_late')).get();
     expect(row?.consumedAt).not.toBeNull();

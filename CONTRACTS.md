@@ -90,10 +90,10 @@ turn derived from one human request together. `origin` records who spoke and how
 the delegation chain has travelled — the basis of the echo-loop guard. `executionId`
 names the execution the message belongs to — the execution is the run itself, and
 the message it produced is that run's own record
-(`apps/server/src/modules/conversations/service.ts:67-72`). **`detail` is the
+(`apps/server/src/modules/conversations/service.ts:78-83`). **`detail` is the
 server's own sentence about how the message ended** — a message that did not finish
 says why, in the server's words
-(`packages/contracts/src/conversation.ts:90`), and the client shows it as it is
+(`packages/contracts/src/conversation.ts:151`), and the client shows it as it is
 given rather than rewording it
 (`apps/web/src/components/ChatMessageList.tsx:136`). **`delivery` says how the
 message was sent** — a steer went into the turn that was running, and a queue
@@ -245,8 +245,8 @@ The route is `POST /api/executions/:id/resolve`, at
 authentication as every other owner-facing route
 (`apps/server/src/api/helpers.ts:14-16`). **The route's own writer is the
 executions service**, which writes the execution's status
-(`apps/server/src/modules/executions/service.ts:311-321`) and the reply's status
-(`apps/server/src/modules/executions/service.ts:326-329`) together; the
+(`apps/server/src/modules/executions/service.ts:314-324`) and the reply's status
+(`apps/server/src/modules/executions/service.ts:329-332`) together; the
 route calls it at `apps/server/src/api/executions.ts:23`. **There are two
 writers of an execution's outcome, not one**: the other is `resolveExecution`
 (`apps/server/src/modules/approvals/service.ts:163`), which the approval
@@ -1758,9 +1758,9 @@ be told apart from the stored default. See
 
 **The limits, the allowed actions and the approvals are enforced.** The worker holds
 a turn to the effective policy: the chain's turn count
-(`apps/worker/src/executor.ts:1160`) and its spend
-(`apps/worker/src/executor.ts:1167`), and the workspace's spend for the day
-(`apps/worker/src/executor.ts:1174`), before the turn starts; the policy's duration
+(`apps/worker/src/executor.ts:1252`) and its spend
+(`apps/worker/src/executor.ts:1259`), and the workspace's spend for the day
+(`apps/worker/src/executor.ts:1266`), before the turn starts; the policy's duration
 limit caps the turn while it runs, and every action the agent announces is checked
 against what the policy allows. The MCP surface refuses an action the policy does not
 allow, and one the policy wants the owner to approve until the owner has decided. A
@@ -1769,8 +1769,8 @@ truncated.
 
 **A daily cap is a cap on the workspace.** The workspace's spend for the day is the
 sum of the spend units on the executions of that workspace since 00:00 UTC
-(`apps/worker/src/executor.ts:1197-1206`,
-`apps/worker/src/executor.ts:1201-1206`), and it is the same day for every workspace —
+(`apps/worker/src/executor.ts:1289-1298`,
+`apps/worker/src/executor.ts:1293-1298`), and it is the same day for every workspace —
 the system stores ISO timestamps everywhere and has no per-workspace timezone. A daily
 cap of zero is no cap, as it is for the chain's spend limit. The cap applies across
 the workspace's conversations and goals, and not per chain, which is the whole
@@ -1782,11 +1782,11 @@ one spend unit — the measure the product already has
 (`apps/server/src/modules/conversations/routing.ts:332`). **The cost is recorded
 against the execution when the turn ends**: the worker writes one unit for an
 agent turn and none for a turn that never reached the agent
-(`apps/worker/src/execution-owner.ts:557`).
+(`apps/worker/src/execution-owner.ts:703`).
 **The row is created with no spend units**, because the cost is not known until
-the turn has run (`apps/server/src/modules/conversations/dispatch.ts:184`,
+the turn has run (`apps/server/src/modules/conversations/dispatch.ts:215`,
 `apps/server/src/modules/factory/service.ts:473`), and the column defaults to zero
-(`apps/server/src/db/schema.ts:295`). **So the workspace's spend for the day is
+(`apps/server/src/db/schema.ts:321`). **So the workspace's spend for the day is
 the sum of what its turns actually cost, and the cap bites.**
 
 **The mode is resolved, readable, and enforced nowhere.** It is carried through the
@@ -1861,7 +1861,7 @@ supports, and the capability to do it is already modelled and negotiated.
 This entry is the contract for **WI-007**, and the code implements it — as of
 `5f019b9`. `resumeSession` is implemented at
 `packages/agent-adapters/src/acp.ts:238` and called at
-`apps/worker/src/executor.ts:448`, and the gate is the capability and the session
+`apps/worker/src/executor.ts:406`, and the gate is the capability and the session
 id together: `canResume = capabilities?.persistentSessions === true &&
 Boolean(execution.externalRef)`.
 
@@ -1902,9 +1902,9 @@ not.**
 failure. It is the same word the unknown outcome uses
 ([The unknown outcome](#the-unknown-outcome)), and it is in this vocabulary because
 the product produces it: the worker writes it when a turn's outcome cannot be
-confirmed (`apps/worker/src/execution-owner.ts:585`), and the conversation dispatch writes it
+confirmed (`apps/worker/src/execution-owner.ts:731`), and the conversation dispatch writes it
 when a turn stops for the same reason
-(`apps/server/src/modules/conversations/dispatch.ts:260`). **A vocabulary without
+(`apps/server/src/modules/conversations/dispatch.ts:291`). **A vocabulary without
 `unknown` would leave the unknown outcome unrepresentable in the trail**, and the
 trail is where it is recorded.
 
@@ -2233,7 +2233,7 @@ a client that reads the fields it knows keeps working; a client that switches
 exhaustively on the item's fields has one more field to read.
 
 The blocked capability is the contract for **WI-121**, and the code implements it —
-as of `d229b53`: the refusal is recorded at `apps/server/src/modules/mcp/server.ts:1106`, the list
+as of `d229b53`: the refusal is recorded at `apps/server/src/modules/mcp/server.ts:1115`, the list
 draws it as its own kind at `apps/server/src/api/waiting.ts:140`, and the owner's
 action is `POST /api/agents/:id/grants`.
 
@@ -2299,7 +2299,7 @@ interface ArtifactEvidence {
 **What the agent did** is `toolCalls`: the tool calls of that execution and how
 each ended. The calls are the execution's `tool.started` events and the
 `tool.completed` events that answer them
-(`packages/contracts/src/agent.ts:191`, `:197`). A call that answered has
+(`packages/contracts/src/agent.ts:217-222`, `:223-228`). A call that answered has
 `outcome: 'completed'` and a `completedAt`; a call that did not has
 `outcome: 'unfinished'` and a `completedAt` of `null`. The events name the tool
 and not the call, so a call is answered by the next completion for that tool.
@@ -2319,7 +2319,7 @@ because a cancellation is a decision and not a fault
 **The spend units are recorded, and today they are zero.** A spend unit is an
 abstract cost counter, not currency (`packages/contracts/src/common.ts:58`). The
 execution is created with `spendUnits: 0`
-(`apps/server/src/modules/conversations/dispatch.ts:184`) and nothing writes the
+(`apps/server/src/modules/conversations/dispatch.ts:215`) and nothing writes the
 column afterwards — the turn count the router uses to enforce a spend limit is
 computed in memory and never stored
 (`apps/server/src/modules/conversations/routing.ts:307`). A client that shows
@@ -2480,7 +2480,7 @@ turn pins the same view, because there is one rule for it and it lives with
 the capability API, which is the one module that reads across every domain
 (`apps/server/src/modules/capabilities/capability-view.ts:29`). A conversation
 turn and a factory turn are pinned the same way
-(`apps/server/src/modules/conversations/dispatch.ts:181`,
+(`apps/server/src/modules/conversations/dispatch.ts:207`,
 `apps/server/src/modules/factory/service.ts:470`).
 
 **The turn's own view answers what the turn may do.** Whether a turn can be
@@ -2543,6 +2543,145 @@ The reply message's status moves from `streaming` to `complete` only when the
 commit is acknowledged. A crash between the write and the commit leaves the
 message `unknown` — the state the contract already publishes, and the one that
 means _started, outcome unconfirmed_.
+
+**The committed revision.** The revision of canonical history is a content hash
+over the messages the history holds, in the order it holds them. A commit
+publishes the revision of the history through the message it committed, so a
+reader that holds a revision can tell whether the history changed underneath it.
+The turn's `committedRevision` is that revision, and it is null exactly when
+the turn's output is not in a canonical history: a turn that failed, a turn
+whose outcome is unconfirmed, and a turn whose output belongs to a task rather
+than to a conversation's history.
+
+**A committed turn is not a completed turn.** A turn whose output was committed
+is `committed`; a turn that merely returned is `completed`. The revision is how
+a reader tells them apart without reading the whole history.
+
+### The session reference
+
+A conversation holds a durable reference to the runtime session behind it.
+
+```ts
+interface SessionReference {
+  id: string;
+  workspaceId: string;
+  conversationId: string;
+  /** The agent connection whose runtime holds the session. */
+  agentConnectionId: string;
+  /** The runtime's own name for the session. */
+  sessionId: string;
+  /** Whether the next turn can continue this session. */
+  continuity: 'resumable' | 'fresh';
+  /** The revision of the connection's capability set, when it is known. */
+  capabilitiesRevision: number | null;
+  establishedAt: string;
+  updatedAt: string;
+}
+```
+
+There is one reference per conversation and agent connection, because two
+agents in one room keep two sessions and neither is the other's. The reference
+is published on the conversation's own read model, so a client can read which
+session it is looking at.
+
+**Continuity is a fact about the runtime, not a hope.** A connection whose
+capability set reports persistent sessions is `resumable`: the next turn in that
+conversation goes back into the same runtime session. A connection that reports
+no persistent sessions — or that nobody has probed at all — is `fresh`, and the
+product does not claim a continuity it cannot see. The capability row records
+the limit, and the panel shows it.
+
+**The transcript names the session.** A reply that came out of a session says
+so in its origin, so a reader can tell one session's answer from another's.
+The origin names no session when the runtime keeps none.
+
+**What the adapter matrix records.** For every adapter type, the matrix in
+`docs/adapters.md` records the session limit and the version the claim was
+verified against. A limit is a stated fact, not a surprise, and a matrix row
+whose runtime version changes is a row whose claim has to be checked again.
+
+**Migration.** Nothing is reclassified and no record is rewritten. The reference
+is a new table and a new field, and a conversation that has not run a turn since
+this change holds no reference and publishes an empty list. A client written
+before this change keeps working: the conversation's read model carries the
+fields it carried before, and a field it does not know about is a field it does
+not read.
+
+**Implementation status.** SPEC-R0-3, and the code implements it: the reference
+is published on the conversation's read model, the turn records it, and the next
+turn continues it when the runtime said it could.
+
+### The terminal event of a turn
+
+"Finished" is defined once, and every reader reads the same definition.
+
+**A turn ends once.** The execution owner publishes exactly one terminal event
+per turn, after it has recorded the turn's own conclusion, and that event
+names the state the turn is in. An adapter's own report that the turn finished
+is folded into that conclusion rather than published as a second ending: a log
+with two endings is a log a reader cannot settle.
+
+**The statuses that end a turn** are `committed`, `completed`, `failed`,
+`cancelled`, `unknown` and `lost`. `queued`, `running` and `blocked` are states
+of a turn rather than endings, and a suspended turn has no terminal event at
+all: it is held until the owner decides, and it may yet continue.
+
+**The event names** are one per ending:
+
+| Status      | Event            | What it means                                                          |
+| ----------- | ---------------- | ---------------------------------------------------------------------- |
+| `committed` | `turn.committed` | The turn's output is in canonical history.                             |
+| `completed` | `turn.completed` | The adapter returned and the output is not in a canonical history.     |
+| `failed`    | `turn.failed`    | The turn failed, and the reason is on the turn.                        |
+| `cancelled` | `turn.cancelled` | The turn was stopped.                                                  |
+| `unknown`   | `turn.unknown`   | The turn started and its outcome could not be confirmed.               |
+| `lost`      | `turn.lost`      | Delegated work whose executor is gone was settled rather than retried. |
+
+**What a reader may rely on afterwards.** After the terminal event, the turn's
+status is final: the row and the event say the same thing, no further event
+ends the turn, and the turn's `committedRevision` is the revision its output
+was committed to — or null, when it was not committed to one.
+
+**What an interrupted turn looks like in the log.** A turn that was interrupted
+— the deadline passed, the worker was restarted — has an admission and
+whatever the runtime managed to publish, and **no terminal event**. The
+reconciliation that settles an interrupted turn is a later slice; until it
+lands, an interrupted turn is unsettled rather than quietly reported as a
+failure.
+
+**Migration.** The status enum grows by one member and nothing is reclassified:
+`committed` is new, and a turn recorded before this change stays `completed`,
+`failed`, `cancelled` or `unknown`. **A turn that was `completed` before this
+change is not `committed` in disguise** — we cannot know whether its output was
+in a canonical history — and its `committedRevision` is null. A client that
+switches exhaustively on the status has to render `committed`, and a client that
+draws a turn's activity has to draw the terminal event of a committed turn.
+
+**Implementation status.** SPEC-R0-3, and the code implements it: the owner
+publishes one terminal event per turn, and the panel, the MCP tools and the
+audit trail read the same definition of what ends a turn.
+
+### Correlation and idempotency
+
+A turn carries a correlation id. It ties the run to the events it published,
+to the message it wrote and to its terminal state, so one turn can be followed
+through the log without guessing which events belong to it. The turn's read
+model publishes it.
+
+**A dispatch has an identity.** It is derived from the message, the
+conversation and the agent it went to, so the same dispatch always produces
+the same key. A dispatch that repeats with the same key finds the run it
+started last time and does not start a second one: one run, one set of events.
+A dispatch to a different agent in the same conversation is a different
+dispatch, and starts its own run.
+
+**Migration.** The two columns are additive and nullable
+(`apps/server/drizzle/0014_session_references.sql`), and nothing is backfilled:
+a turn recorded before this change carries no correlation id and no committed
+revision, and both are null, which is what the shape publishes as absent. The
+idempotency key is derived from the dispatch and stored on the execution row, so
+a dispatch repeated after this change finds the run it started last time, and a
+dispatch repeated before it started a second run, which is not reconciled.
 
 ### Steer and queue
 
@@ -3412,7 +3551,7 @@ only.
 
 **Every kind carries an author now.** The `automation` and `task` kinds keep their
 author on the row — `created_by` on both tables
-(`apps/server/src/db/schema.ts:450`, `apps/server/src/db/schema.ts:536`) — and the
+(`apps/server/src/db/schema.ts:639`, `apps/server/src/db/schema.ts:553`) — and the
 projections read it
 (`apps/server/src/modules/resources/service.ts:250`,
 `apps/server/src/modules/resources/service.ts:381`). An agent-created
@@ -3425,7 +3564,7 @@ write one from the service layer — `POST /api/approvals/:id/decide` and `POST
 `apps/server/src/modules/approvals/resume.ts:55`, `PATCH /api/tasks/:id` at
 `apps/server/src/modules/factory/service.ts:415`, and that one only when the task
 leaves `unknown`, and `POST /api/executions/:id/stop` at
-`apps/server/src/modules/executions/service.ts:260` — which is where the agent's
+`apps/server/src/modules/executions/service.ts:263` — which is where the agent's
 own stop request is written too, so the request is in the trail whoever made it.
 **No mutating route writes none.**
 
@@ -3469,8 +3608,8 @@ audit entry — there is no audit call anywhere in
 `apps/server/src/modules/mcp/server.ts`, and none in the capabilities service its
 tools call, which reach the resources service directly rather than through the
 auditing route. The only writer of the trail that is not an owner HTTP route is
-the worker — its `unknown` record (`apps/worker/src/execution-owner.ts:585`) and the
-policy refusals it writes (`apps/worker/src/execution-owner.ts:608-625`). So every audited
+the worker — its `unknown` record (`apps/worker/src/execution-owner.ts:724-733`) and the
+policy refusals it writes (`apps/worker/src/execution-owner.ts:754-772`). So every audited
 operation is an owner operation, except the worker's own entries, which carry
 `actorType: 'agent'`. **The second measure does not count the work an agent does
 through MCP**: an agent can create, update and publish resources all day and the
@@ -3485,9 +3624,9 @@ but the route helper hardcodes `success`
 (`apps/server/src/modules/audit/service.ts:79`). The two values a writer does
 produce come from the worker: the `unknown` of
 [The unknown outcome](#the-unknown-outcome)
-(`apps/worker/src/execution-owner.ts:585`), and the `failure` it writes when the
+(`apps/worker/src/execution-owner.ts:731`), and the `failure` it writes when the
 autonomy policy refuses a turn or an action
-(`apps/worker/src/execution-owner.ts:625`). **An operation that failed at the route is
+(`apps/worker/src/execution-owner.ts:771`). **An operation that failed at the route is
 counted here as an operation that completed.**
 
 **The route exists.** It answers with the shape above, member for member: the

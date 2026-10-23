@@ -1,6 +1,6 @@
 # SPEC-R0-3 — A conversation points at the runtime session behind it
 
-**State:** open · **Owner:** implementing agent, one session · **Verifier:** independent reviewer
+**State:** delivered · **Owner:** implementing agent, one session · **Verifier:** independent reviewer
 **Depends on:** SPEC-R0-1 (one execution owner) · **Blocks:** SPEC-R1-1, SPEC-R1-2 (the demonstrations need history that survives)
 
 ## Outcome
@@ -102,3 +102,111 @@ The gate runs in CI on the delivered revision.
 - A general session store, a workflow engine, or a plugin framework.
 - Inventing a session concept for a runtime that has none. A runtime without
   native sessions gets a recorded capability limit, not an invented layer.
+
+## Evidence
+
+**Revision.** Delivered on `feature/r0-3-session-references`. The code is in
+`<COMMIT>`; the commit after it is the contract's claim for it and this
+evidence. `origin/main` at `ece75fd` is merged in.
+
+### What landed
+
+| The promise                         | Where it is kept                                                                                                                                                          |
+| ----------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| The session reference is durable    | `conversation_sessions` (`apps/server/src/db/schema.ts:343`), written by `recordSessionReference` (`apps/server/src/modules/conversations/session-refs.ts`)               |
+| It is published                     | `ConversationDetail.sessionRefs` (`apps/server/src/modules/conversations/service.ts:46`), read by `GET /api/conversations/:id`                                            |
+| The transcript names the session    | `MessageOrigin.sessionId` (`packages/contracts/src/conversation.ts:100`), written by the commit (`apps/worker/src/executor.ts:519`)                                       |
+| Continuity is a fact, not a hope    | `continuityForCapabilities` (`packages/contracts/src/session.ts`), from the connection's own capability set                                                               |
+| A second turn continues the session | `apps/worker/src/executor.ts:306` reads the reference and restores the session                                                                                            |
+| A dispatch has an identity          | `dispatchIdempotencyKey` (`packages/contracts/src/session.ts`), checked in `planAndDispatch` (`apps/server/src/modules/conversations/dispatch.ts:191`)                    |
+| A turn carries a correlation id     | `executions.correlationId`, published on the turn view (`apps/server/src/modules/executions/service.ts:242`)                                                              |
+| "Finished" is defined once          | `TERMINAL_TURN_STATUSES` and `turnEventFor` (`packages/contracts/src/session.ts`), read by the server's derivation (`apps/server/src/modules/executions/activity.ts:287`) |
+| Exactly one event ends a turn       | `publishTerminalEvent` (`apps/worker/src/execution-owner.ts`), after the turn's own conclusion is recorded                                                                |
+| The revision is written             | The commit hook (`apps/worker/src/executor.ts:568`), read back and hashed by `computeHistoryRevision` (`apps/server/src/modules/conversations/history-revision.ts`)       |
+| The revision is published           | `committedRevision` on the turn view (`apps/server/src/modules/executions/service.ts`)                                                                                    |
+| The limits are recorded             | `docs/adapters.md`, one row per adapter type, with the version each claim was verified against                                                                            |
+
+### The commands that were run, and what they said
+
+```
+$ npm run build
+  contracts, agent-adapters, server, worker and the web client all build.
+
+$ npm run typecheck
+  contracts, agent-adapters, server, worker, web, ui and the scripts all typecheck.
+
+$ npm run format:check
+  All matched files use Prettier code style!
+
+$ npx tsx scripts/verify-session-references.ts
+  The session reference gate passed.
+
+$ npm run verify:contracts
+  The contract status gate: 30 claims in the table, 30 checked, 0 unchecked, 0 failures.
+
+$ npx tsx scripts/verify-contract-pointers.ts
+  The contract pointer gate: 195 pointers checked, 0 failures.
+
+$ npm run verify:mcp-parity
+  The MCP parity gate: 82 published routes and 82 registered, 23 tools,
+  22 paired, 50 listed, 10 exempt, 0 failures.
+
+$ npx tsx scripts/smoke.ts
+  All smoke checks passed.
+```
+
+Measured on this machine, one package at a time, because
+`npm run test --workspaces` hangs here with runaway vitest workers: contracts 48
+passed (6 files), agent-adapters 50 (5), worker 113 (12), server 760 (74), web
+210 (27). `@personal-os/ui` has no test script.
+
+`npm run dependencies` exits 1 on this machine and is **not measurable here**:
+the worktree is installed with `npm ci --ignore-scripts`, and npm reports
+`invalid: esbuild@0.25.12`. It says nothing about this slice.
+
+### The tests that fail without the implementation
+
+The gate is the evidence. Five mutations were made to the tree, each one
+rebuilt where the built code carries it and each one run against
+`npx tsx scripts/verify-session-references.ts`. Each fails the gate and names
+what it found. The file was restored from a byte-for-byte backup after each
+one, and the gate passes again on the restored tree.
+
+| The mutation                                                     | What the gate said                                                                                             |
+| ---------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------- |
+| the dispatch stops recognising the run it started last time     | `UNIQUE constraint failed: executions.idempotency_key`                                                          |
+| the recorded session reference names no session                 | `A session reference names no session.`                                                                         |
+| the owner publishes the ending twice                            | `A turn (exe_…) ended more than once: committed, committed.` and `A turn ended 2 times; it must end once.`      |
+| the turn stores a revision nobody wrote                         | `A committed turn (exe_…) carries a revision that is not the revision of the history it committed to.`           |
+| the server defines its own terminal-event rule                  | `apps/server/src/modules/executions/activity.ts defines its own terminal-event rule; it must read the shared one.` |
+
+The unit tests beside the gate are
+`apps/server/src/__tests__/session-references.test.ts` (the reference is
+durable, published on the conversation's read model and per agent connection;
+a repeated dispatch finds the run it started last time) and
+`apps/worker/src/__tests__/session-continuity.test.ts` (the next turn continues
+the session when the runtime said it could and does not when it did not; the
+committed revision is the revision of the history the turn committed to).
+
+### What is not covered
+
+- **The commit protocol's later steps are not implemented.** The contract's
+  commit is five steps, and this slice implements the durable part of it: the
+  write, the read-back, the revision and the acknowledgement. The
+  `HistoryCommitted` projection wait and the compaction lifecycle are not
+  implemented, and the contract says so where it says it.
+- **An interrupted turn is unsettled, not reconciled.** A turn the deadline
+  stops has an admission and no terminal event; settling it is SPEC-R0-4.
+- **The session reference is per conversation and agent connection.** A
+  conversation with one agent has one reference. Two agents in one room have
+  two, and neither is the other's.
+- **Continuity is read from the capability set that was pinned at admission.**
+  A connection nobody has probed keeps no session to continue, so the product
+  claims none. A runtime that keeps sessions but has never been probed is
+  therefore recorded as `fresh` until it is probed.
+- **The adapter matrix records the limits the tree knows.** The versions in
+  `docs/adapters.md` were read off the runtimes on this machine
+  (`codex-cli 0.163.0`, `Hermes 0.21.0`, `MCP SDK 1.32.1`); the rows for the
+  adapters with no external runtime name the adapter package's own version.
+  A row whose runtime version moves is a row whose claim has to be checked
+  again.

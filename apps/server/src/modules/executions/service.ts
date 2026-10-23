@@ -236,7 +236,10 @@ export function createExecutionsService(options: {
                   (task): task is DelegatedTask => task !== undefined,
                 )
               : null,
-          committedRevision: null,
+          committedRevision: turn.committedRevision,
+          // The correlation id the turn carries, so a reader can follow one
+          // turn through the events it published.
+          correlationId: turn.correlationId,
         },
         activities,
         run,

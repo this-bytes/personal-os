@@ -388,7 +388,11 @@ describe('the three callers go through one owner', () => {
     );
 
     const row = executionRow('exe_chat');
-    expect(row.status, `the turn did not finish: ${row.error ?? ''}`).toBe('completed');
+    // A chat turn's output is written into the conversation's canonical
+    // history, so the turn is committed rather than merely completed: the
+    // contract keeps the two apart, and a client that renders them alike
+    // cannot tell a turn that can be continued from one that cannot.
+    expect(row.status, `the turn did not finish: ${row.error ?? ''}`).toBe('committed');
     expect(row.error).toBeNull();
     expect(row.finishedAt).not.toBeNull();
     expect(row.spendUnits).toBe(1);

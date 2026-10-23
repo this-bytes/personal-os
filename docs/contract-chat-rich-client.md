@@ -73,12 +73,18 @@ The response is:
     startedAt, finishedAt,
     capabilityView: null,      // the view the turn was admitted with; absent, not empty
     delegatedTasks: null,      // absent, not empty
-    committedRevision: null,
+    committedRevision: null,   // the revision the turn committed to; null when it committed to none
+    correlationId: null,       // the id that ties the turn to its events
   },
   activities: ChatActivity[],
   run: { state: RunState, options: RunControlOption[] },
 }
 ```
+
+A turn's `status` is `committed` when its output is in canonical history and
+`completed` when the adapter merely returned. The two are different facts, and
+the `committedRevision` is how a client tells them apart without reading the
+history.
 
 `POST /api/executions/:id/stop` answers with `{ executionId, outcome, detail,
 run }`, where `outcome` is one of:

@@ -70,7 +70,11 @@ async function main(): Promise<void> {
         clearInterval(heartbeat);
       }
 
-      if (outcome.status === 'completed' || outcome.status === 'cancelled') {
+      if (
+        outcome.status === 'completed' ||
+        outcome.status === 'committed' ||
+        outcome.status === 'cancelled'
+      ) {
         runtime.queue.complete(job.id);
       } else if (outcome.status === 'unknown') {
         // The work started and we cannot confirm how it ended. It is not

@@ -3,6 +3,7 @@ import {
   actionNeedsApproval,
   autonomyPolicyLevelPhrase,
   isActionAllowed,
+  isTerminalTurnStatus,
   parseAdapterConfig,
   type AdapterConfig,
   type AgentAdapter,
@@ -143,6 +144,47 @@ export interface TurnRequest {
     targetId: string;
     metadata?: Record<string, unknown>;
   };
+  /**
+   * What the caller does with the turn's output before the turn is recorded as
+   * finished.
+   *
+   * A chat turn's output belongs in the conversation's canonical history, and
+   * it belongs there only once the commit is acknowledged. The caller commits
+   * it here — inside the turn, before the terminal state is written — and says
+   * what the commit produced.
+   *
+   * The hook runs for every turn that ended, so a caller can record a failure
+   * and an unconfirmed outcome too. It runs before the terminal event is
+   * published, because the event has to name the state the history is in and
+   * not the state the turn was in.
+   */
+  commit?: (input: {
+    /** How the turn ended. */
+    status: 'completed' | 'failed' | 'cancelled' | 'unknown';
+    /** Why the turn ended badly, when it did. */
+    error?: string;
+    /** The refusal, when the policy refused the turn. */
+    refusal?: string;
+    /**
+     * The runtime session the turn ran in, when the runtime keeps one.
+     *
+     * A reply that came out of a session names it, so the transcript says
+     * which session it is reading.
+     */
+    sessionId?: string;
+  }) => Promise<CommitResult> | CommitResult;
+}
+
+/**
+ * What a commit produced.
+ *
+ * `committedRevision` is the revision of the canonical history the commit
+ * produced. It is absent when the output was not committed into a canonical
+ * history — a task turn and an automation's run have none — and the turn is
+ * then `completed` rather than `committed`.
+ */
+export interface CommitResult {
+  committedRevision?: string;
 }
 
 /**
@@ -151,9 +193,14 @@ export interface TurnRequest {
  * `blocked` means the work is suspended, not over: the agent is waiting for
  * the owner to decide something, and the turn continues in a new turn when the
  * decision arrives.
+ *
+ * `committed` means the turn's output was written into a canonical history and
+ * the commit was acknowledged. It is a different fact from `completed`, which
+ * means the adapter returned and the output is nowhere a later turn could
+ * continue from.
  */
 export interface TurnOutcome {
-  status: 'completed' | 'failed' | 'unknown' | 'blocked';
+  status: 'completed' | 'committed' | 'failed' | 'cancelled' | 'unknown' | 'blocked';
   /** Why the turn ended, when it ended badly. */
   error?: string;
   /** The refusal, when the policy refused the turn. */
@@ -164,6 +211,19 @@ export interface TurnOutcome {
   deadlineSeconds: number;
   /** The external reference the adapter offered, when it offered one. */
   externalRef?: string;
+  /**
+   * The runtime session the turn ran in, when the runtime keeps one.
+   *
+   * It is the session a later turn in the same conversation continues, and it
+   * is kept apart from the external reference: an orchestrator's task
+   * identifier is not a session.
+   */
+  sessionId?: string;
+  /**
+   * The revision of the canonical history the turn's output was committed to,
+   * when it was committed to one.
+   */
+  committedRevision?: string;
 }
 
 /**
@@ -282,8 +342,11 @@ async function runTurn(
   let failure: string | undefined;
   let refusal: string | undefined;
   let suspended = false;
+  let cancelled = false;
+  let unconfirmed = false;
   let reachedAgent = false;
   let externalRef: string | undefined;
+  let sessionId: string | undefined;
   let turnEnded = false;
 
   // The turn is over the moment the owner says so, and it is over only once.
@@ -351,6 +414,12 @@ async function runTurn(
         onFailure: (reason) => {
           failure = failure ?? reason;
         },
+        onCancelled: () => {
+          cancelled = true;
+        },
+        onUnconfirmed: () => {
+          unconfirmed = true;
+        },
       });
 
       // The agent is waiting for the owner. The turn stops here and continues
@@ -369,12 +438,16 @@ async function runTurn(
     // already ended is a steer nobody reads, and it is recorded as taken.
     await endTurn();
 
+    // The session the adapter is in, when it has one. It is the session a
+    // later turn in the same conversation continues, and it is kept apart
+    // from the external reference: an orchestrator's task identifier is not a
+    // session, and a conversation must not claim to be in one.
+    sessionId = await readExternalSessionId(adapter, opened.executionId);
+
     // The external reference the adapter offers: an orchestrator's task
     // identifier if it has one, and otherwise the session a decision would
     // continue in.
-    externalRef =
-      (await readExternalTaskId(adapter, opened.agentConnectionId)) ??
-      (await readExternalSessionId(adapter, opened.executionId));
+    externalRef = (await readExternalTaskId(adapter, opened.agentConnectionId)) ?? sessionId;
   } catch (error) {
     failure = error instanceof Error ? error.message : String(error);
   } finally {
@@ -390,7 +463,7 @@ async function runTurn(
     failure = refusal;
   }
 
-  const status = turnStatus({ timedOut, suspended, failure });
+  const status = turnStatus({ timedOut, suspended, cancelled, unconfirmed, failure });
   const unknown = status === 'unknown';
   const explanation = unknown
     ? `The agent did not finish within ${deadlineSeconds}s.${
@@ -400,12 +473,39 @@ async function runTurn(
       } It was stopped, and it may already have had its side effect.`
     : failure;
 
+  // The caller's commit runs before the terminal state is written, so that the
+  // state and the event that names it describe the same history rather than
+  // a promise about it. A turn that was suspended is not over, so it has
+  // nothing to commit.
+  const commit =
+    request.commit === undefined || status === 'blocked'
+      ? null
+      : await request.commit({
+          status,
+          ...(explanation !== undefined ? { error: explanation } : {}),
+          ...(refusal !== undefined ? { refusal } : {}),
+          ...(sessionId !== undefined ? { sessionId } : {}),
+        });
+  const committedRevision = commit?.committedRevision;
+  const terminalStatus = committedRevision === undefined ? status : 'committed';
+
   recordTurnOutcome(context, {
     executionId: opened.executionId,
-    status,
-    error: status === 'blocked' ? null : (explanation ?? null),
+    status: terminalStatus,
+    error: terminalStatus === 'blocked' ? null : (explanation ?? null),
+    committedRevision: committedRevision ?? null,
     spendUnits: spendUnitsFor(db, opened.executionId, reachedAgent),
-    finished: status !== 'blocked',
+    finished: terminalStatus !== 'blocked',
+  });
+
+  // The one event that ends the turn. Every reader — the panel, the MCP tools,
+  // the audit trail — reads the turn's end from here, so it is published once
+  // and it names the state the turn is in.
+  publishTerminalEvent(context, {
+    workspaceId: opened.workspaceId,
+    conversationId: opened.conversationId,
+    executionId: opened.executionId,
+    status: terminalStatus,
   });
 
   if (unknown) {
@@ -421,13 +521,44 @@ async function runTurn(
   }
 
   return {
-    status,
-    ...(status === 'blocked' ? {} : { error: explanation }),
+    status: terminalStatus,
+    ...(terminalStatus === 'blocked' ? {} : { error: explanation }),
     ...(refusal !== undefined ? { refusal } : {}),
     reachedAgent,
     deadlineSeconds,
     ...(externalRef !== undefined ? { externalRef } : {}),
+    ...(sessionId !== undefined ? { sessionId } : {}),
+    ...(committedRevision !== undefined ? { committedRevision } : {}),
   };
+}
+
+/**
+ * Publish the event that ends a turn.
+ *
+ * A turn that is suspended is not ended, so it has no terminal event. Every
+ * other end of a turn has exactly one, and it is published here — after the
+ * terminal state was written, so the event and the row say the same thing.
+ */
+function publishTerminalEvent(
+  context: ExecutorContext,
+  input: {
+    workspaceId: string;
+    conversationId?: string;
+    executionId: string;
+    status: 'completed' | 'committed' | 'failed' | 'cancelled' | 'unknown' | 'blocked';
+  },
+): void {
+  if (!isTerminalTurnStatus(input.status)) return;
+
+  context.runtime.events.publish(
+    {
+      type: 'execution.event',
+      conversationId: input.conversationId,
+      executionId: input.executionId,
+      event: { type: 'execution.status', executionId: input.executionId, status: input.status },
+    },
+    { workspaceId: input.workspaceId, conversationId: input.conversationId },
+  );
 }
 
 /**
@@ -436,14 +567,23 @@ async function runTurn(
  * A turn that was suspended on the owner's decision is not over, so it is not
  * a failure and not an unknown. A deadline that passed is an unknown: the
  * agent may already have had its side effect.
+ *
+ * The adapter's own report is part of what the turn saw. A runtime that says
+ * the turn was cancelled was cancelled, and a runtime that says it cannot say
+ * how the turn ended leaves the turn unconfirmed — neither of which the owner
+ * may quietly turn into a success.
  */
 function turnStatus(input: {
   timedOut: boolean;
   suspended: boolean;
+  cancelled: boolean;
+  unconfirmed: boolean;
   failure?: string;
-}): 'completed' | 'failed' | 'unknown' | 'blocked' {
+}): 'completed' | 'failed' | 'cancelled' | 'unknown' | 'blocked' {
   if (input.suspended) return 'blocked';
   if (input.timedOut) return 'unknown';
+  if (input.cancelled) return 'cancelled';
+  if (input.unconfirmed) return 'unknown';
   return input.failure !== undefined ? 'failed' : 'completed';
 }
 
@@ -457,8 +597,13 @@ export function recordTurnOutcome(
   context: ExecutorContext,
   input: {
     executionId: string;
-    status: 'completed' | 'failed' | 'unknown' | 'blocked';
+    status: 'completed' | 'committed' | 'failed' | 'cancelled' | 'unknown' | 'blocked';
     error: string | null;
+    /**
+     * The revision of the canonical history the turn's output was committed
+     * to. Null when the output was not committed into one.
+     */
+    committedRevision: string | null;
     spendUnits: number;
     /**
      * Whether the turn is finished.
@@ -474,6 +619,7 @@ export function recordTurnOutcome(
     .set({
       status: input.status,
       error: input.error,
+      committedRevision: input.committedRevision,
       spendUnits: input.spendUnits,
       ...(input.finished ? { finishedAt: new Date().toISOString() } : {}),
     })
@@ -673,6 +819,20 @@ interface OwnerEventContext {
    * reason it gave is the reason the owner reads.
    */
   onFailure: (reason: string) => void;
+  /**
+   * The adapter reported that the turn was cancelled.
+   *
+   * A runtime that was stopped — the owner asked it to stop, or its process
+   * was signalled — says so. The owner does not turn that into a success.
+   */
+  onCancelled: () => void;
+  /**
+   * The adapter reported that it cannot say how the turn ended.
+   *
+   * The turn started and its outcome is unconfirmed. That is the same fact a
+   * deadline produces, and it is never quietly recorded as a success.
+   */
+  onUnconfirmed: () => void;
 }
 
 /**
@@ -762,6 +922,26 @@ async function handleAgentEvent(
     // The reason is still the adapter's to give, so it is asked for rather than
     // invented here.
     eventContext.onFailure('The agent reported that the turn failed.');
+  }
+
+  if (event.type === 'execution.status' && event.status === 'cancelled') {
+    // The adapter was stopped. A stopped turn is a cancelled turn, and the
+    // owner does not record it as one that finished.
+    eventContext.onCancelled();
+  }
+
+  if (event.type === 'execution.status' && event.status === 'unknown') {
+    // The adapter cannot say how the turn ended. The turn started and its
+    // outcome is unconfirmed, which is the same fact a deadline produces.
+    eventContext.onUnconfirmed();
+  }
+
+  if (event.type === 'execution.status' && isTerminalTurnStatus(event.status)) {
+    // The adapter's own terminal status is not published as an event of its
+    // own: the owner publishes the one event that ends the turn, once it has
+    // recorded the turn's own conclusion. A log with two endings is a log a
+    // reader cannot settle.
+    return 'handled';
   }
 
   if (event.type === 'approval.requested') {

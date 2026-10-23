@@ -1211,7 +1211,7 @@ describe('the worker', () => {
         outcome.status,
         'the owner-directed turn did not run under the default manual policy: manual means the ' +
           'agent may not BEGIN work on its own initiative, not that the agent is switched off',
-      ).toBe('completed');
+      ).toBe('committed');
 
       const reply = handle.db
         .select()

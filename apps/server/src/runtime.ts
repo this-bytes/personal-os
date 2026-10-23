@@ -36,6 +36,14 @@ export { createAuthService } from './modules/auth/service.js';
 export type { AuthenticatedUser } from './modules/auth/service.js';
 export { planAndDispatch } from './modules/conversations/dispatch.js';
 export { planRouting, deriveChainState } from './modules/conversations/routing.js';
+export {
+  readSessionReference,
+  listSessionReferences,
+  recordSessionReference,
+} from './modules/conversations/session-refs.js';
+export type { SessionReferenceInput } from './modules/conversations/session-refs.js';
+export { computeHistoryRevision } from './modules/conversations/history-revision.js';
+export type { HistoryMessage } from './modules/conversations/history-revision.js';
 export { createConversationsService } from './modules/conversations/service.js';
 export {
   createBotsService,

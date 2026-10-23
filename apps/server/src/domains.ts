@@ -90,6 +90,9 @@ export const moduleDomains: Record<string, DomainName> = {
  * `executions` is Work's table: a turn and a factory task's execution are the
  * same row, and the ledger is what owns it. The Interaction module that
  * resolves an unknown turn writes it — see `sharedTableWrites` below.
+ *
+ * `conversation_sessions` is Interaction's table: a session reference belongs
+ * to the conversation that holds it, and the room is what publishes it.
  */
 export const tableDomains: Record<string, DomainName> = {
   agent_connections: 'runtime',
@@ -101,6 +104,7 @@ export const tableDomains: Record<string, DomainName> = {
   blocked_capabilities: 'runtime',
   bots: 'interaction',
   conversations: 'interaction',
+  conversation_sessions: 'interaction',
   delegated_tasks: 'interaction',
   event_sequence: 'substrate',
   evidence: 'work',

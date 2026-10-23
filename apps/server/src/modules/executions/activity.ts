@@ -1,5 +1,6 @@
 import { and, asc, eq, sql } from 'drizzle-orm';
 import { turnAcceptsSteering as acceptsSteering } from '../capabilities/capability-view.js';
+import { isTerminalTurnStatus, terminalTurnEvent, turnEventFor } from '@personal-os/contracts';
 import type {
   AgentEvent,
   ChatActivity,
@@ -41,26 +42,11 @@ export interface ActivitySourceEvent {
 /**
  * The published event name for a turn status, when the status has one.
  *
- * `queued` is the turn's admission, `failed` is its failure, `lost` is the
- * settling of delegated work whose executor is gone, and `committed` is the
- * acknowledgement that the turn's output is in canonical history. The rest —
- * `running`, `blocked`, `completed`, `cancelled`, `unknown` — are states of a
- * turn rather than events, and the row says the state.
+ * The definition lives in the shared contracts, because "which event ends a
+ * turn" has to be one answer and not one answer per reader. It is re-exported
+ * here so the readers that already import it from this module keep working.
  */
-export function turnEventFor(status: TurnStatus): string | null {
-  switch (status) {
-    case 'queued':
-      return 'turn.admitted';
-    case 'committed':
-      return 'turn.committed';
-    case 'failed':
-      return 'turn.failed';
-    case 'lost':
-      return 'turn.lost';
-    default:
-      return null;
-  }
-}
+export { turnEventFor, isTerminalTurnStatus, terminalTurnEvent };
 
 /** The state of an activity that records a turn status. */
 export function activityStatusFor(status: TurnStatus): ChatActivity['status'] {
@@ -458,6 +444,16 @@ export interface TurnRow {
   finishedAt: string | null;
   /** What the turn was admitted with, when it was admitted with a view. */
   capabilityView: TurnCapabilityView | null;
+  /**
+   * The revision of the canonical history the turn's output was committed to.
+   *
+   * Null when the output was not committed into one, which is the honest
+   * answer for a turn that failed and for a turn whose output is not part of
+   * a conversation's history.
+   */
+  committedRevision: string | null;
+  /** The correlation id the turn carries. */
+  correlationId: string | null;
 }
 
 /** Read a turn's row, or null when there is no such turn. */
@@ -475,6 +471,8 @@ export function readTurnRow(db: Database, executionId: string): TurnRow | null {
     startedAt: row.startedAt,
     finishedAt: row.finishedAt,
     capabilityView: row.capabilityView,
+    committedRevision: row.committedRevision,
+    correlationId: row.correlationId,
   };
 }
 

@@ -1,5 +1,10 @@
 import { and, asc, eq } from 'drizzle-orm';
-import type { Message, MessageStatus, Participant } from '@personal-os/contracts';
+import {
+  dispatchIdempotencyKey,
+  type Message,
+  type MessageStatus,
+  type Participant,
+} from '@personal-os/contracts';
 import type { Database } from '../../db/client.js';
 import { conversations, executions, messages } from '../../db/schema.js';
 import { newId } from '../../lib/ids.js';
@@ -166,6 +171,27 @@ export function planAndDispatch(input: DispatchInput): DispatchResult {
       .get();
     if (duplicate) continue;
 
+    /**
+     * The identity of this dispatch.
+     *
+     * The key is derived from the message, the conversation and the agent, so
+     * the same dispatch always produces the same key. A dispatch that repeats
+     * with the same key finds the run it started last time and does not start
+     * a second one: one run, one set of events.
+     */
+    const idempotencyKey = dispatchIdempotencyKey({
+      conversationId,
+      parentMessageId: message.id,
+      agentConnectionId,
+    });
+
+    const started = db
+      .select({ id: executions.id })
+      .from(executions)
+      .where(eq(executions.idempotencyKey, idempotencyKey))
+      .get();
+    if (started) continue;
+
     const executionId = newId('exe');
     db.insert(executions)
       .values({
@@ -181,6 +207,11 @@ export function planAndDispatch(input: DispatchInput): DispatchResult {
         capabilityView: pinCapabilityView(db, agentConnectionId),
         status: 'queued',
         error: null,
+        committedRevision: null,
+        idempotencyKey,
+        // The correlation id ties the run to the events it publishes and to
+        // the message it writes, so one turn can be followed through the log.
+        correlationId,
         spendUnits: 0,
         startedAt: null,
         finishedAt: null,

@@ -229,6 +229,14 @@ export const turnViewSchema = z.object({
   delegatedTasks: z.array(delegatedTaskSchema).nullable(),
   /** The committed revision, when the turn's output is canonical. */
   committedRevision: z.string().nullable(),
+  /**
+   * The correlation id the turn carries.
+   *
+   * It ties the run to the events it publishes and to the message it wrote, so
+   * one turn can be followed through the log without guessing which events
+   * belong to it.
+   */
+  correlationId: z.string().nullable(),
 });
 export type TurnView = z.infer<typeof turnViewSchema>;
 

@@ -209,13 +209,13 @@ describe('the code, as the section describes it', () => {
       },
       {
         file: 'apps/worker/src/execution-owner.ts',
-        at: [585, 585],
+        at: [731, 731],
         pattern: /result:\s*'unknown'/,
         what: 'the worker writes unknown',
       },
       {
         file: 'apps/server/src/modules/conversations/dispatch.ts',
-        at: [260, 260],
+        at: [291, 291],
         pattern: /result:\s*'unknown'/,
         what: 'the dispatch writes unknown',
       },
