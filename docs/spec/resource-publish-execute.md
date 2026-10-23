@@ -195,8 +195,10 @@ parity gate as reading **22 paired, 43 listed and 17 exempt**. That reading
 comes from seven rows that move from `listed` to `exempt` in
 `scripts/mcp-parity.json`: widening a tool grant, the three MCP-token routes,
 the secret inventory, the file upload and the AG-UI envelope. They landed
-separately, in PR #12, and `npm run verify:mcp-parity` reads 22/43/17 on `main`
-now. The two routes this slice re-measured stay `listed` against `SPEC-S2+`:
+separately, in PR #12, and `npm run verify:mcp-parity` read 22/43/17 on `main`
+then. **SPEC-S2 batch 1 has since paired three more routes, so the reading is
+now 25 paired, 40 listed and 17 exempt**; the two routes this slice
+re-measured stay `listed` against `SPEC-S2+`:
 the route runs or publishes what the kind can do and refuses the rest, and the
 agent path is SPEC-S2's question.
 
