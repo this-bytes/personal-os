@@ -25,8 +25,21 @@
  * dependencies and builds the packages the gates need.
  *
  * `remove` takes the worktree away and deletes the branch, but only when the
- * branch is merged. An unmerged branch is somebody's work that has not landed
- * yet, and a script that deletes it is a script that loses work.
+ * branch's work has landed. An unlanded branch is somebody's work, and a script
+ * that deletes it is a script that loses work.
+ *
+ * "Has landed" is proved, not assumed. A branch merged or fast-forwarded into
+ * the base has its commits there; a branch landed as a squash, a cherry-pick or
+ * a rebase has its *content* there but not its commits, and the tool says so
+ * and keeps those commits under a ref of its own before the branch goes. A
+ * branch that holds a merge the base does not have is never released: a merge's
+ * resolution is not a patch anybody can compare, and it exists nowhere else
+ * until it is landed.
+ *
+ * The main checkout is never removed, the remote integration branch is never
+ * deleted, and every check runs before anything is taken away — including the
+ * move of uncommitted files to `--preserve-to`, which happens only once the
+ * tool knows the tree is going.
  */
 import { execFileSync } from 'node:child_process';
 import fs from 'node:fs';
@@ -190,6 +203,23 @@ function listWorktrees(): Worktree[] {
 
   return worktrees;
 }
+
+/**
+ * The main checkout of this repository.
+ *
+ * The helper is documented to be run from another checkout, so "the directory
+ * this script lives in" is the wrong answer to "which tree is the main one":
+ * the script is copied around, and the main checkout is wherever the common
+ * Git directory is. Every linked worktree points back at it, which is why it
+ * is the one tree a removal must never take.
+ */
+function mainCheckoutPath(): string {
+  const common = path.resolve(git(['rev-parse', '--path-format=absolute', '--git-common-dir']));
+  return path.basename(common) === '.git' ? path.dirname(common) : common;
+}
+
+/** The branches a cleanup may never delete: the ones the base is built on. */
+const INTEGRATION_BRANCHES = new Set(['main', 'master']);
 
 /**
  * The commit a new work item branches from.
@@ -361,14 +391,16 @@ function inspectLinks(directory: string, boundary: string, detach: boolean): voi
     // A link that cannot be resolved points at nothing that can be checked.
     // It is treated as reaching outside, because that is the answer that keeps
     // the tree rather than the thing it might have pointed at.
-    let target: string;
+    let outside = true;
     try {
-      target = fs.realpathSync(directory);
+      const target = fs.realpathSync(directory);
+      const relative = path.relative(boundary, target);
+      outside =
+        relative === '..' || relative.startsWith(`..${path.sep}`) || path.isAbsolute(relative);
     } catch {
-      target = path.resolve(directory, '..', 'unresolvable');
+      outside = true;
     }
-    const relative = path.relative(boundary, target);
-    if (relative === '..' || relative.startsWith(`..${path.sep}`) || path.isAbsolute(relative)) {
+    if (outside) {
       if (!detach) {
         fail(`Preserve ${directory}: a symbolic link/junction reaches outside this worktree.`);
       }
@@ -387,24 +419,174 @@ function inspectLinks(directory: string, boundary: string, detach: boolean): voi
 }
 
 /**
+ * What the tool can prove about a branch and the base it should have landed in.
+ */
+interface IntegrationProof {
+  /** The branch's work is in the base: deleting the branch loses no work. */
+  integrated: boolean;
+  /** The commits the branch holds that the base does not. */
+  unique: string[];
+  /** Why the branch is not integrated, in the operator's words. */
+  reason: string;
+}
+
+/**
+ * The commits in a range, or null when the range cannot be listed.
+ *
+ * A range that cannot be listed is not an empty range. `git cherry` on a
+ * branch whose only unique commit is a merge prints nothing at all, and an
+ * empty answer read as "integrated" is how a merge resolution came to be
+ * deleted with its branch.
+ */
+function revList(args: string[]): string[] | null {
+  const out = gitOrNullQuiet(['rev-list', ...args]);
+  if (out === null) return null;
+  return out.split('\n').filter(Boolean);
+}
+
+/**
+ * The branch's patches that the base does not have.
+ *
+ * `git cherry` compares the two by patch identity: a '-' means the patch is
+ * already applied, a '+' means it is not. A cherry-picked or rebased branch
+ * has no '+'. Merge commits are not reported at all, which is why a merge is
+ * refused before this question is asked.
+ */
+function unappliedPatches(base: string, subject: string): string[] | null {
+  const out = gitOrNullQuiet(['cherry', '-v', base, subject]);
+  if (out === null) return null;
+  const unapplied: string[] = [];
+  for (const line of out.split('\n')) {
+    if (!line.startsWith('+')) continue;
+    const sha = line.slice(1).trim().split(' ')[0];
+    if (sha) unapplied.push(sha);
+  }
+  return unapplied;
+}
+
+/**
+ * Whether the branch's tip leaves behind a tree the base already has.
+ *
+ * A squash merge lands the branch's whole content as one commit, so none of
+ * the branch's patches matches and the patch proof cannot see the landing.
+ * The tree can: the squashed commit's tree is exactly the tree the branch
+ * left behind.
+ *
+ * Only the commits the base gained after the two diverged are compared. A
+ * tree that matches a commit from before the fork is a state the branch
+ * returned to rather than work the base has absorbed, and treating that as a
+ * landing would release a branch that undoes the base.
+ */
+function treeIsInBase(subject: string, base: string): boolean {
+  const tipTree = gitOrNullQuiet(['rev-parse', '--verify', `${subject}^{tree}`]);
+  if (!tipTree) return false;
+  const fork = gitOrNullQuiet(['merge-base', base, subject]);
+  if (!fork) return false;
+  const trees = gitOrNullQuiet(['log', '--format=%T', `${fork}..${base}`]);
+  if (trees === null) return false;
+  return trees.split('\n').includes(tipTree);
+}
+
+/**
  * Whether a commit's work is already in a base branch.
  *
- * Ancestry is the ordinary answer, but it is not the only one. A slice is
- * often landed as a squash, a cherry-pick or a rebase, and then its commits
- * are not ancestors of main even though every line of their work is there.
- * `git cherry` measures exactly that: a '-' means the patch is already
- * applied, a '+' means it is not.
+ * Ancestry is the ordinary proof: a branch that was merged or fast-forwarded
+ * has its commits in the base, and deleting the branch preserves them.
  *
- * A tree is only released when nothing is left behind — no unmerged commit,
- * no unapplied patch.
+ * A slice is often landed as a squash, a cherry-pick or a rebase, and then its
+ * commits are not ancestors of the base even though every line of their work is
+ * there. Two further proofs cover that: patch equivalence (`git cherry`), and
+ * tree equivalence for a squash, whose one squashed commit carries every
+ * change and matches no patch of its own.
+ *
+ * Neither of those can see a merge. `git cherry` skips merge commits
+ * entirely, and a merge's resolution is not a patch anybody can compare: it
+ * is whatever the person who resolved the conflict decided, and it exists in
+ * no other commit until it is landed. A branch that holds a merge the base
+ * does not have is therefore never released on the strength of a patch or a
+ * tree: the tool cannot show that the resolution is anywhere else, and a
+ * branch whose only unique commit is a merge has nothing but that resolution
+ * to lose.
  */
-function isIntegrated(subject: string, base: string): boolean {
-  if (gitSucceeds(['merge-base', '--is-ancestor', subject, base])) return true;
-  const patches = gitOrNull(['cherry', '-v', base, subject]);
-  if (patches === null) return false;
-  const commits = patches.split('\n').filter(Boolean);
-  if (commits.length === 0) return true;
-  return !commits.some((line) => line.startsWith('+'));
+function proveIntegration(subject: string, base: string): IntegrationProof {
+  const unique = revList([`${base}..${subject}`]);
+  if (unique === null) {
+    return {
+      integrated: false,
+      unique: [],
+      reason: `the commits between ${base} and ${subject} could not be listed`,
+    };
+  }
+  if (gitSucceeds(['merge-base', '--is-ancestor', subject, base])) {
+    return { integrated: true, unique, reason: '' };
+  }
+  const merges = revList(['--merges', `${base}..${subject}`]);
+  if (merges === null) {
+    return {
+      integrated: false,
+      unique,
+      reason: `the merges between ${base} and ${subject} could not be listed`,
+    };
+  }
+  if (merges.length > 0) {
+    return {
+      integrated: false,
+      unique,
+      reason:
+        `it holds ${merges.length} merge commit(s) that ${base} does not have, and a merge's ` +
+        'resolution is not a patch that can be compared: it is lost with the branch unless ' +
+        'the merge itself is landed',
+    };
+  }
+  const unapplied = unappliedPatches(base, subject);
+  if (unapplied === null) {
+    return {
+      integrated: false,
+      unique,
+      reason: `its patches could not be compared with ${base}`,
+    };
+  }
+  if (unapplied.length === 0) return { integrated: true, unique, reason: '' };
+  if (treeIsInBase(subject, base)) return { integrated: true, unique, reason: '' };
+  return {
+    integrated: false,
+    unique,
+    reason: `${unapplied.length} of its patches are not in ${base}`,
+  };
+}
+
+/**
+ * The ref that keeps a branch's own commits alive after the branch is gone.
+ *
+ * `refs/keep/` is neither a branch nor a tag: `git branch` does not list it,
+ * `git push` does not send it, and `git gc` does not prune it while it is
+ * there. The short commit is in the name so that a branch name reused later
+ * does not overwrite the commits of the last use.
+ */
+function keepRefName(name: string, sha: string): string {
+  return `refs/keep/${name}@${sha.slice(0, 7)}`;
+}
+
+/**
+ * A ref other than the branch itself that still holds the branch's commits.
+ *
+ * A branch that was pushed is held by its remote-tracking ref; a branch that
+ * was tagged is held by the tag. Either is the separate evidence FACTORY.md
+ * asks for before a squash-landed branch may be deleted. A ref the removal is
+ * about to delete is not evidence: the remote-tracking ref of a branch whose
+ * remote branch is about to go holds the commits for a few seconds longer.
+ */
+function preservingRef(unique: string[], branch: string, remoteWillGo: boolean): string | null {
+  for (const sha of unique) {
+    const refs = gitOrNullQuiet(['for-each-ref', '--contains', sha, '--format=%(refname)']);
+    if (refs === null) continue;
+    for (const ref of refs.split('\n').filter(Boolean)) {
+      if (ref === `refs/heads/${branch}`) continue;
+      if (remoteWillGo && ref === `refs/remotes/origin/${branch}`) continue;
+      return ref;
+    }
+  }
+  return null;
 }
 
 /**
@@ -435,10 +617,7 @@ function selectWorktreeForRemoval(
   if (!id) {
     fail(
       'Usage: npx tsx scripts/work-item.ts remove <WI-nnn> | --path <worktree-path>\n' +
-        '  --allow-runtime-data   discard the runtime data a worktree regenerates\n' +
-        '  --delete-remote        delete the remote branch once it is merged\n' +
-        '  --detach-shared-install unlink a shared install instead of refusing it\n' +
-        '  --preserve-to <dir>    keep uncommitted files in <dir> before removal\n',
+        REMOVE_OPTIONS.map((option) => `  ${option}\n`),
     );
   }
 
@@ -465,8 +644,8 @@ function selectWorktreeForRemoval(
  * `playwright-report/` are test output.
  *
  * The data directory is the one that needs judgement: it can hold real
- * records. It is disposable only when every database inside it belongs to a
- * throwaway run, which is what `hasOnlyThrowawayDatabases` decides.
+ * records. It is disposable only when everything inside it is a key the
+ * server writes for itself, which is what `holdsOnlyOnDemandKeys` decides.
  */
 function isRegenerableRuntimeData(entry: string, worktreePath: string): boolean {
   const normalized = entry.replace(/\\/g, '/');
@@ -477,31 +656,31 @@ function isRegenerableRuntimeData(entry: string, worktreePath: string): boolean 
   if (!isDirectory && base === 'secret.key') return true;
   if (isDirectory && (base === 'test-results' || base === 'playwright-report')) return true;
   if (isDirectory && base === 'data') {
-    return holdsOnlyThrowawayRunData(path.join(worktreePath, trimmed));
+    return holdsOnlyOnDemandKeys(path.join(worktreePath, trimmed));
   }
   return false;
 }
 
 /**
- * Whether a data directory holds nothing but throwaway run data.
+ * Whether a data directory holds nothing but the keys the server writes.
  *
- * A throwaway run writes under a folder named `e2e-*` — the harness makes one
- * per port — so that is the shape of disposable data. Anything else inside
- * the directory is somebody's: a record, a note, a file. The absence of a
- * database is not evidence that the directory is empty of anything worth
- * keeping, so the question is asked of every file rather than of the
- * databases alone.
+ * `apps/server/src/config.ts` writes `secret.key` into the data directory
+ * with fresh random bytes whenever it is missing, so a data directory that
+ * holds nothing else can go with the tree that made it. Anything else inside
+ * it is somebody's: a database, a note, a file. The question is asked of every
+ * file rather than of the databases alone, because a directory that holds a
+ * key and a database holds both.
  */
-function holdsOnlyThrowawayRunData(directory: string): boolean {
+function holdsOnlyOnDemandKeys(directory: string): boolean {
   for (const file of filesUnder(directory)) {
-    const relative = path.relative(directory, file);
-    const top = relative.split(path.sep)[0] ?? '';
-    if (!top.startsWith('e2e-')) return false;
+    if (path.basename(file) !== 'secret.key') return false;
   }
   return true;
 }
 
-/** Every file under a directory, without following a link out of it. */
+/**
+ * Every file under a directory, without following a link out of it.
+ */
 function filesUnder(directory: string): string[] {
   const found: string[] = [];
   let entries: fs.Dirent[];
@@ -520,6 +699,76 @@ function filesUnder(directory: string): string[] {
     found.push(full);
   }
   return found;
+}
+
+/** The options a removal accepts. Anything else is a mistake, not a no-op. */
+const REMOVE_OPTIONS = [
+  '--path <worktree-path>',
+  '--preserve-to <directory>',
+  '--allow-runtime-data',
+  '--delete-remote',
+  '--detach-shared-install',
+];
+
+/**
+ * Move uncommitted files out of a tree that is about to go.
+ *
+ * The copy comes first and the removal second: a copy that fails leaves the
+ * tree exactly as it was, and a tree that is going to be kept is never
+ * touched at all. A directory is copied as a directory, because Git reports
+ * an untracked directory as one entry and a file copy of it fails.
+ */
+function preserveUncommittedFiles(
+  worktreePath: string,
+  destination: string,
+  files: string[],
+): void {
+  for (const relative of files) {
+    const from = path.join(worktreePath, relative);
+    const to = path.join(destination, relative);
+    fs.mkdirSync(path.dirname(to), { recursive: true });
+    try {
+      fs.cpSync(from, to, { recursive: true, force: true, dereference: true });
+    } catch (error) {
+      const detail = error instanceof Error ? error.message : String(error);
+      fail(
+        `Kept ${worktreePath}: ${relative} could not be copied to ${destination} (${detail}). ` +
+          'Nothing was removed from the worktree.',
+      );
+    }
+  }
+  for (const relative of files) {
+    fs.rmSync(path.join(worktreePath, relative), { recursive: true, force: true });
+  }
+}
+
+/**
+ * The files an ignored entry stands for.
+ *
+ * `git ls-files --directory` collapses an ignored directory into a single
+ * entry, so the tool is told about `data/` and the operator has to move
+ * `data/personal-os.db`. The names are what the operator needs.
+ */
+function ignoredEntryFiles(entry: string, worktreePath: string): string[] {
+  const normalized = entry.replace(/\\/g, '/');
+  if (!normalized.endsWith('/')) return [normalized];
+  const directory = path.join(worktreePath, normalized.slice(0, -1));
+  const files = filesUnder(directory).map((file) =>
+    path.relative(worktreePath, file).split(path.sep).join('/'),
+  );
+  return files.length > 0 ? files : [normalized];
+}
+
+/**
+ * Whether the remote branch's commits survive the deletion of the remote branch.
+ *
+ * They survive if the base has them, or if the local branch has them: a local
+ * branch whose commits are not in the base is kept under a ref of its own, so
+ * its history is still there after the remote ref is gone.
+ */
+function remoteCommitsAreSafe(remoteHead: string, localTip: string): boolean {
+  if (gitSucceeds(['merge-base', '--is-ancestor', remoteHead, 'origin/main'])) return true;
+  return gitSucceeds(['merge-base', '--is-ancestor', remoteHead, localTip]);
 }
 
 function cmdRemove(args: string[]): void {
@@ -547,7 +796,18 @@ function cmdRemove(args: string[]): void {
       }
       continue;
     }
-    if (arg.startsWith('--')) continue;
+    if (arg === '--allow-runtime-data' || arg === '--delete-remote') {
+      continue;
+    }
+    if (arg === '--detach-shared-install') {
+      continue;
+    }
+    if (arg.startsWith('--')) {
+      fail(
+        `Unknown option ${arg}. A removal accepts:\n` +
+          REMOVE_OPTIONS.map((option) => `  ${option}`).join('\n'),
+      );
+    }
     positional.push(arg);
   }
   const allowRuntimeData = args.includes('--allow-runtime-data');
@@ -555,18 +815,40 @@ function cmdRemove(args: string[]): void {
   const detachSharedInstall = args.includes('--detach-shared-install');
 
   const worktree = selectWorktreeForRemoval(positional[0], requestedPath);
-  if (path.resolve(worktree.path) === repoRoot)
-    fail('Run removal from another checkout, after the worktree owner has finished.');
+
+  // The main checkout is not a worktree, and it is the one tree whose removal
+  // takes the repository with it. The helper is documented to be run from
+  // another checkout, so the checkout it runs from is not the answer: the
+  // main checkout is the one the common Git directory belongs to.
+  const mainCheckout = mainCheckoutPath();
+  if (path.resolve(worktree.path).toLowerCase() === mainCheckout.toLowerCase())
+    fail(
+      `Kept ${worktree.path}: this is the main checkout, not a worktree, and the main ` +
+        'checkout is never removed. Run the removal for the tree you mean, from another checkout.',
+    );
+
+  // The integration branch is the base everything else is built on. It is
+  // never removed here, and never deleted on the remote: a hook may be
+  // installed in one clone and absent in the next, and the tool cannot
+  // depend on a hook to keep the base safe.
+  const branch = worktree.branch ?? '';
+  if (INTEGRATION_BRANCHES.has(branch)) {
+    fail(
+      `Kept ${worktree.path}: ${branch} is the integration branch, and this helper never ` +
+        'removes it or deletes it on the remote.',
+    );
+  }
 
   const status = gitOrNull(['status', '--porcelain'], worktree.path);
   if (status === null)
     fail(
       `Cannot inspect ${worktree.path}. Use the Git/platform that owns this worktree; do not prune it.`,
     );
+  const untracked: string[] = [];
   if (status) {
     const lines = status.split('\n').filter(Boolean);
     const tracked = lines.filter((line) => !line.startsWith('??'));
-    const untracked = lines
+    const untrackedFiles = lines
       .filter((line) => line.startsWith('?? '))
       .map((line) => line.slice(3).trim());
 
@@ -576,27 +858,17 @@ function cmdRemove(args: string[]): void {
           'Commit them, or move them elsewhere, before the worktree is removed.',
       );
     }
-    if (untracked.length) {
+    if (untrackedFiles.length) {
       if (!preserveTo) {
         fail(
-          `${worktree.path} has uncommitted files:\n${untracked.join('\n')}\n\n` +
+          `${worktree.path} has uncommitted files:\n${untrackedFiles.join('\n')}\n\n` +
             'Commit them, move them elsewhere, or pass --preserve-to <directory> to keep ' +
             'them somewhere else before the worktree is removed.',
         );
       }
-      const destination = path.join(preserveTo, path.basename(worktree.path));
-      for (const relative of untracked) {
-        const from = path.join(worktree.path, relative);
-        const to = path.join(destination, relative);
-        fs.mkdirSync(path.dirname(to), { recursive: true });
-        try {
-          fs.renameSync(from, to);
-        } catch {
-          fs.copyFileSync(from, to);
-          fs.unlinkSync(from);
-        }
-      }
-      process.stdout.write(`Preserved ${untracked.length} uncommitted file(s) in ${destination}\n`);
+      // The files are only moved once every check below has passed. A tree
+      // that is going to be kept must still hold them.
+      untracked.push(...untrackedFiles);
     }
   }
   for (const operation of [
@@ -616,7 +888,6 @@ function cmdRemove(args: string[]): void {
       fail(`Preserve ${worktree.path}: ${operation} indicates an unfinished Git operation.`);
   }
 
-  const branch = worktree.branch ?? '';
   if (gitOrNull(['fetch', 'origin']) === null)
     fail('Fetch failed; cleanup requires current remote integration evidence.');
 
@@ -630,11 +901,15 @@ function cmdRemove(args: string[]): void {
   // landed. The local main is still asked, because a repository that has no
   // remote at all is a repository whose only record of what landed is local.
   const subject = branch || worktree.head;
-  if (!isIntegrated(subject, 'origin/main') && !isIntegrated(subject, 'main')) {
+  const proof = proveIntegration(subject, 'origin/main');
+  const localProof = proof.integrated ? null : proveIntegration(subject, 'main');
+  if (!proof.integrated && !localProof?.integrated) {
     fail(
-      `Kept ${worktree.path}: ${subject} is not integrated into origin/main. Fetch and verify integration first.`,
+      `Kept ${worktree.path}: ${subject} is not integrated into origin/main (${proof.reason}). ` +
+        'Fetch and verify integration first.',
     );
   }
+  const accepted = proof.integrated ? proof : localProof;
 
   // Git also removes ignored files. Only disposable build/install output may
   // be discarded automatically; local data, credentials and notes must survive.
@@ -657,19 +932,27 @@ function cmdRemove(args: string[]): void {
   const regenerable = candidates.filter((file) => isRegenerableRuntimeData(file, worktree.path));
   const mustSurvive = candidates.filter((file) => !regenerable.includes(file));
 
-  if (mustSurvive.length) fail(`Preserve ignored files before cleanup:\n${mustSurvive.join('\n')}`);
+  if (mustSurvive.length) {
+    const names = mustSurvive.flatMap((file) => ignoredEntryFiles(file, worktree.path));
+    fail(
+      `Preserve ignored files before cleanup:\n${names.join('\n')}\n\n` +
+        'These are ignored files the worktree does not regenerate: a database, a note, a ' +
+        'credential. Move them out of the worktree before the cleanup.',
+    );
+  }
   if (regenerable.length) {
+    const names = regenerable.flatMap((file) => ignoredEntryFiles(file, worktree.path));
     if (!allowRuntimeData) {
       fail(
-        `Preserve ignored files before cleanup:\n${regenerable.join('\n')}\n\n` +
-          'These are the runtime data the worktree regenerates for itself — a key it ' +
-          'writes on demand, a throwaway test database, test output. Re-run with ' +
+        `Preserve ignored files before cleanup:\n${names.join('\n')}\n\n` +
+          'These are the runtime data the worktree regenerates for itself: a key the server ' +
+          'writes on demand (data/secret.key), and test output. Re-run with ' +
           '--allow-runtime-data to discard them, or move them out of the worktree first.',
       );
     }
     process.stdout.write(
       'Discarding the runtime data this worktree regenerates for itself:\n' +
-        regenerable.map((file) => `  ${file}`).join('\n') +
+        names.map((file) => `  ${file}`).join('\n') +
         '\n',
     );
   }
@@ -682,30 +965,92 @@ function cmdRemove(args: string[]): void {
   // a problem half way through has already destroyed the thing it was
   // supposed to preserve, and the message it leaves behind describes a
   // failure that did not happen.
+  if (untracked.length) {
+    const destination = path.join(preserveTo as string, path.basename(worktree.path));
+    preserveUncommittedFiles(worktree.path, destination, untracked);
+    process.stdout.write(`Preserved ${untracked.length} uncommitted file(s) in ${destination}\n`);
+  }
+
+  // FACTORY.md asks for separate evidence that the original commits of a
+  // squash-landed branch are preserved before the branch is deleted. The
+  // evidence is a ref that still holds them: a tag, another branch, the
+  // remote-tracking ref of a pushed branch, or the keep-ref written here.
+  const tipSha = gitOrNullQuiet(['rev-parse', '--verify', `${subject}^{commit}`]);
+  if (accepted?.unique.length && tipSha) {
+    const holder = preservingRef([tipSha], branch, deleteRemote);
+    if (holder) {
+      process.stdout.write(`The branch's own commits are preserved by ${holder}.\n`);
+    } else {
+      const ref = keepRefName(branch || `detached-${tipSha.slice(0, 7)}`, tipSha);
+      if (gitOrNullQuiet(['update-ref', ref, tipSha]) === null) {
+        fail(
+          `Kept ${worktree.path}: the commits of ${subject} are in no other ref, and ${ref} ` +
+            'could not be written. Tag the branch, or keep another ref that holds its ' +
+            'commits, and remove the worktree again.',
+        );
+      }
+      process.stdout.write(
+        `Kept the branch's own commits at ${ref}: they are not in origin/main, and deleting ` +
+          'the branch would have destroyed them.\n',
+      );
+    }
+  }
+
   if (deleteRemote && branch) {
+    if (INTEGRATION_BRANCHES.has(branch)) {
+      fail(
+        `Kept the remote branch ${branch}: it is the integration branch, and deleting it would ` +
+          'take the base with it.',
+      );
+    }
     // The local branch is about to go, so the reachability question is asked of
     // the remote ref itself rather than of a name that no longer resolves.
     const remoteHead = gitOrNullQuiet(['rev-parse', '--verify', `refs/remotes/origin/${branch}`]);
     if (!remoteHead) {
       process.stdout.write(`${branch} has no remote branch to delete.\n`);
-    } else if (!isIntegrated(remoteHead, 'origin/main')) {
-      fail(`Kept the remote branch ${branch}: it is not integrated into origin/main.`);
+    } else if (!remoteCommitsAreSafe(remoteHead, subject)) {
+      fail(
+        `Kept the remote branch ${branch}: it holds commits that are in neither origin/main nor ` +
+          'the local branch, and deleting it would destroy them.',
+      );
     } else {
-      run('git', ['push', 'origin', '--delete', branch]);
+      try {
+        run('git', ['push', 'origin', '--delete', branch]);
+      } catch (error) {
+        const detail = error instanceof Error ? error.message : String(error);
+        fail(`Kept the remote branch ${branch}: the deletion was refused. ${detail}`);
+      }
     }
   }
 
-  run('git', ['worktree', 'remove', worktree.path]);
+  try {
+    run('git', ['worktree', 'remove', worktree.path]);
+  } catch (error) {
+    const detail = error instanceof Error ? error.message : String(error);
+    fail(
+      `The worktree ${worktree.path} was not removed: ${detail}\n` +
+        'Recheck the registration (git worktree list) and the disk state before trying again.',
+    );
+  }
 
   if (branch) {
+    if (INTEGRATION_BRANCHES.has(branch)) {
+      fail(`Kept the branch ${branch}: it is the integration branch.`);
+    }
     // The integration check above already proved this branch's work is in
     // origin/main, so the strict form of the delete is allowed to fail on a
     // branch that landed as a squash or a cherry-pick: git compares the
-    // branch's own commits, and those are not the commits that landed.
+    // branch's own commits, and those are not the commits that landed. The
+    // keep-ref written above is what keeps them alive.
     try {
       run('git', ['branch', '-d', branch]);
     } catch {
-      run('git', ['branch', '-D', branch]);
+      try {
+        run('git', ['branch', '-D', branch]);
+      } catch (error) {
+        const detail = error instanceof Error ? error.message : String(error);
+        fail(`The worktree is gone, but the branch ${branch} was not deleted: ${detail}`);
+      }
     }
   }
 
@@ -732,12 +1077,22 @@ function main(): void {
           '  list                    show the worktrees and their work items\n' +
           '  remove WI-017           take the worktree away\n' +
           '  remove --path <dir>     take a named worktree away\n' +
-          '    --allow-runtime-data  also discard the runtime data it regenerates\n' +
-          '    --delete-remote       also delete the merged remote branch\n' +
-          '    --detach-shared-install  unlink a shared install instead of refusing it\n' +
-          '    --preserve-to <dir>   keep uncommitted files in <dir> before removal\n',
+          REMOVE_OPTIONS.map((option) => `    ${option}\n`),
       );
   }
 }
 
-main();
+try {
+  main();
+} catch (error) {
+  // A Git command that fails is an answer, not a crash. FACTORY.md asks for a
+  // recheck of the registration and the disk state in that case, not for a
+  // stack trace that says nothing about the state of anything.
+  const detail = error instanceof Error ? error.message : String(error);
+  process.stderr.write(
+    `The cleanup stopped: ${detail}\n` +
+      'Recheck what is registered (git worktree list) and what is on disk, then run the ' +
+      'command again.\n',
+  );
+  process.exit(1);
+}
