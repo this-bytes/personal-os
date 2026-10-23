@@ -1,4 +1,4 @@
-import { z } from 'zod';
+import { z } from 'zod/v3';
 import { idSchema, isoDateSchema } from './common.js';
 import { agentConnectionStatusSchema } from './agent.js';
 import { resourceTypeSchema } from './resource.js';

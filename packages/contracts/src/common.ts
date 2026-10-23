@@ -1,4 +1,4 @@
-import { z } from 'zod';
+import { z } from 'zod/v3';
 
 /** Opaque identifier. Stable across the system, never parsed for meaning. */
 export const idSchema = z.string().min(1).max(128);

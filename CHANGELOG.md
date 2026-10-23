@@ -120,5 +120,12 @@ verify:stack` signs in, registers an agent, posts a message to it and waits
   The critical `tinypool` remote-code-execution advisory and the `braces`
   stack-exhaustion advisory are not in the tree — the packages that carried
   them are not dependencies of this project.
+- The `zod` memory-exhaustion advisory (GHSA-mrhx-c7xc-m3w5) is out of the
+  tree. npm widened its range to `zod < 4.6.6` on 2026-10-23, which named the
+  pinned 3.25.76 and failed the audit on every branch, `main` included. The
+  tree now holds 4.6.7, whose v4 code carries upstream's size-bound fix, and
+  the schemas still use zod's v3 API through the `zod/v3` subpath, so the
+  published contract is unchanged. The reasoning is in
+  [ADR 0014](docs/decisions/0014-the-contract-schemas-stay-on-zods-v3-api.md).
 
 [Unreleased]: https://github.com/this-bytes/personal-os/compare/main...HEAD

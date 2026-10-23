@@ -1,6 +1,6 @@
 import type { FastifyInstance } from 'fastify';
 import fs from 'node:fs';
-import { z } from 'zod';
+import { z } from 'zod/v3';
 import { resourceTypeSchema } from '@personal-os/contracts';
 import { errors } from '../lib/errors.js';
 import { createResourceFilesService } from '../modules/resources/files.js';

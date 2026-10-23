@@ -1,5 +1,5 @@
 import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
-import { z } from 'zod';
+import { z } from 'zod/v3';
 import type { Author } from '../lib/author.js';
 import { errors } from '../lib/errors.js';
 
