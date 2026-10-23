@@ -18,7 +18,7 @@ carry.
 | [SPEC-R0-1 — shared execution ownership](r0-1-shared-execution-ownership.md)          | delivered | —                               | One execution owner serves chat, tasks and automations.                                    |
 | [SPEC-R0-2 — authorised dispatch](r0-2-authorised-dispatch.md)                        | open      | SPEC-R0-1, SPEC-GRANT-EDITOR    | The grant decision taken at admission is the one enforced at execution.                    |
 | [SPEC-R0-3 — session references](r0-3-session-references.md)                          | delivered | SPEC-R0-1                       | A conversation points at the runtime session behind it.                                    |
-| [SPEC-R0-4 — restart reconciliation](r0-4-restart-reconciliation.md)                  | open      | SPEC-R0-1, SPEC-R0-3            | A surviving run is reconnected and the rest are named uncertain.                           |
+| [SPEC-R0-4 — restart reconciliation](r0-4-restart-reconciliation.md)                  | delivered | SPEC-R0-1, SPEC-R0-3            | A surviving run is reconnected and the rest are named uncertain.                           |
 | [SPEC-R1-1 — Codex demonstration](r1-1-codex-demonstration.md)                        | open      | SPEC-R0-1, SPEC-R0-3, SPEC-R0-4 | The owner completes real work against a real, installed Codex runtime.                     |
 | [SPEC-R1-2 — OpenCode demonstration](r1-2-opencode-demonstration.md)                  | open      | SPEC-R0-1, SPEC-R0-3, SPEC-R0-4 | The owner completes real work against a real, installed OpenCode runtime.                  |
 

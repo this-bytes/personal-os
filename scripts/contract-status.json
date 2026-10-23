@@ -869,6 +869,35 @@
       ]
     },
     {
+      "id": "the-worker-that-dies",
+      "section": "The worker that dies",
+      "note": "SPEC-R0-4, and the code implements it — as of `c0a3f80`",
+      "claim": "implemented",
+      "why": "SPEC-R0-4's restart reconciliation: work that had already started is not run again, an uncertain outcome is visible and the owner can settle it, and a run whose runtime survived is reconnected.",
+      "expect": [
+        {
+          "kind": "present-pattern",
+          "path": "apps/server/src/queue/reconciliation.ts",
+          "value": "export function decideStaleJob"
+        },
+        {
+          "kind": "present-pattern",
+          "path": "apps/server/src/queue/client.ts",
+          "value": "eq\\(queueJobs\\.lockedBy, workerId\\)"
+        },
+        {
+          "kind": "present-pattern",
+          "path": "apps/worker/src/reconcile.ts",
+          "value": "export async function reconcileStaleJobs"
+        },
+        {
+          "kind": "present-pattern",
+          "path": "packages/contracts/src/agent.ts",
+          "value": "reconcile\\?"
+        }
+      ]
+    },
+    {
       "id": "the-prompts-of-an-empty-room",
       "section": "The chat surface",
       "note": "This entry is the contract for the prompts an empty room offers, and the code implements it",

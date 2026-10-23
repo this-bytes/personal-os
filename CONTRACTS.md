@@ -2876,13 +2876,18 @@ owner.
 
 **A run whose runtime survived is reconnected, not started again.** The
 runtime may be asked what became of a run
-(`packages/contracts/src/agent.ts`); a runtime that cannot be asked does not
-implement the question, and the answer is that the outcome is uncertain. A
-runtime that answers says what happened, and the product records it on the
-same run: the same execution, the same correlation id and the same session
-reference (`apps/worker/src/reconcile.ts`). **No runtime the product ships today
-can be asked**, so every uncertain run is held for the owner, and the adapter
-matrix records that limit.
+(`packages/contracts/src/agent.ts`); a runtime that has no way to answer leaves
+the outcome uncertain, and that is the honest answer. A runtime that answers
+says what happened, and the product records it on the same run: the same
+execution, the same correlation id and the same session reference
+(`apps/worker/src/reconcile.ts`). **No runtime the product ships today can be
+asked**, so every uncertain run is held for the owner, and the adapter matrix
+records that limit.
+
+**Implementation status.** SPEC-R0-4, and the code implements it — as of
+`c0a3f80`: work that had already started is not run again, an uncertain
+outcome is visible and the owner can settle it, and a run whose runtime
+survived is reconnected rather than started again.
 
 ### Steer and queue
 
