@@ -163,10 +163,10 @@ counts, so the movement is visible rather than asserted.
 
 ## Evidence
 
-**Batch 1, delivered on `feature/s2-batch-1`.** Three of the four rows in
-batch 1 are paired: `approval.evidence`, `execution.resolve` and `task.accept`.
-The fourth, _assign a task to an agent_, stays `listed` with its reason, and
-the gate reads it as one of the 40.
+**Batch 1, delivered in PR #16 on `feature/s2-batch-1`.** Three of the four rows
+in batch 1 are paired: `approval.evidence`, `execution.resolve` and
+`task.accept`. The fourth, _assign a task to an agent_, stays `listed` with its
+reason, and the gate reads it as one of the 40.
 
 **The gate's own report, on the delivered tree.** `npm run verify:mcp-parity`
 reads 82 published routes and 82 registered, 26 published tools, **25 paired,
