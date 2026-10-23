@@ -74,6 +74,25 @@ function gitOrNull(args: string[], cwd = repoRoot): string | null {
 }
 
 /**
+ * The same, without Git's complaint on the terminal.
+ *
+ * A question whose answer is "no" is a normal answer, and Git says so loudly.
+ * `rev-parse --verify` on a ref that is not there prints a `fatal:` that has
+ * nothing to do with anything the caller did.
+ */
+function gitOrNullQuiet(args: string[], cwd = repoRoot): string | null {
+  try {
+    return execFileSync('git', args, {
+      cwd,
+      encoding: 'utf8',
+      stdio: ['ignore', 'pipe', 'ignore'],
+    }).trim();
+  } catch {
+    return null;
+  }
+}
+
+/**
  * Whether a git command succeeds.
  *
  * `git merge-base --is-ancestor` reports its answer through its exit code
@@ -666,7 +685,7 @@ function cmdRemove(args: string[]): void {
   if (deleteRemote && branch) {
     // The local branch is about to go, so the reachability question is asked of
     // the remote ref itself rather than of a name that no longer resolves.
-    const remoteHead = gitOrNull(['rev-parse', '--verify', `refs/remotes/origin/${branch}`]);
+    const remoteHead = gitOrNullQuiet(['rev-parse', '--verify', `refs/remotes/origin/${branch}`]);
     if (!remoteHead) {
       process.stdout.write(`${branch} has no remote branch to delete.\n`);
     } else if (!isIntegrated(remoteHead, 'origin/main')) {
