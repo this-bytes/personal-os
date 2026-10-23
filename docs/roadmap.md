@@ -45,8 +45,12 @@ and the turn's outcome is the adapter's outcome rather than a quiet completion.
 The proof is a worker-level regression that drives a **real** MCP server over
 stdio and records its answer, and a second case where a handshake that fails is
 an actionable failure. **R0 is not closed**: the rest of the stage — shared
-execution ownership across the three callers, authorised dispatch, session
-references and restart reconciliation — has not been done.
+execution ownership across the three callers, session references and restart
+reconciliation have since landed ([SPEC-R0-1](spec/r0-1-shared-execution-ownership.md),
+[SPEC-R0-3](spec/r0-3-session-references.md),
+[SPEC-R0-4](spec/r0-4-restart-reconciliation.md)). **Authorised dispatch
+([SPEC-R0-2](spec/r0-2-authorised-dispatch.md)) is deferred** by the owner's
+direction, so that slice has not been done and R0 is not closed.
 
 **R1 is partly landed and partly not.** The chat surface, the activity trace and
 the stop control are in. **Steering is in now**: a steer goes into the turn that
