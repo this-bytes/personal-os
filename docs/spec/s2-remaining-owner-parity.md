@@ -316,11 +316,11 @@ drives the MCP surface itself — 18 cases over the two tools — so the code an
 the rule it states cannot drift apart quietly.
 
 **The gates, at this revision.** `npm run build`, `npm run typecheck`,
-`npm run format:check`, `npm run verify:contracts` (28 claims),
+`npm run format:check`, `npm run verify:contracts` (30 claims),
 `npx tsx scripts/verify-contract-pointers.ts` (207 pointers),
 `npm run verify:mcp-parity` and `npx tsx scripts/smoke.ts` all pass. The suites
-pass one package at a time: contracts 48, agent-adapters 50, server 788,
-worker 106, web 207. **`npm run verify:dependencies` exits 1 on this host**, with
+pass one package at a time: contracts 48, agent-adapters 50, server 796,
+worker 113, web 210. **`npm run verify:dependencies` exits 1 on this host**, with
 `invalid: esbuild@0.25.12`: the worktrees are installed with
 `npm ci --ignore-scripts`, so the esbuild binary is never fetched. That is a
 property of this machine's install, not of this slice, and it is reported here
