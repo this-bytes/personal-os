@@ -227,7 +227,7 @@ describe('the code, as the section describes it', () => {
       },
       {
         file: 'apps/server/src/app.ts',
-        at: [219, 219],
+        at: [225, 225],
         pattern: /setErrorHandler/,
         what: 'the error handler that writes nothing',
       },

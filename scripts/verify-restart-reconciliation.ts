@@ -37,42 +37,42 @@
  *    finish, fail or hold a job that is not its own — and two workers looking
  *    at the same dead job end its turn once.
  *
- * The gate builds its own database and drives the product's own code, so it
- * checks what the product does rather than what it says it does.
+ * The gate builds the product's own server over its own database and drives
+ * it, so it checks what the product does rather than what it says it does.
+ * The owner's own surfaces are the ones it drives — the waiting list and the
+ * route that closes an automation's run — because a promise the owner cannot
+ * act on is not a promise the product keeps.
  *
- * The gate exercises the built product. A build that is older than the tree it
- * was built from would make the gate check something else, so the gate says
- * so rather than passing quietly.
+ * The gate exercises the built product. A build that is not the build of this
+ * tree would make the gate check something else, so the gate rebuilds the
+ * tree and compares the two builds byte for byte, and says so rather than
+ * passing quietly.
  *
  * Run it with `npx tsx scripts/verify-restart-reconciliation.ts`.
  */
+import { spawnSync } from 'node:child_process';
+import { createHash } from 'node:crypto';
 import {
   appendFileSync,
   existsSync,
   mkdtempSync,
   readFileSync,
   readdirSync,
-  statSync,
+  rmSync,
 } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, relative } from 'node:path';
+import { pathToFileURL } from 'node:url';
 import { eq } from 'drizzle-orm';
+import { schema, type Database } from '@personal-os/server/db';
 import {
-  createDatabase,
-  runMigrations,
-  schema,
-  type Database,
-  type DatabaseHandle,
-} from '@personal-os/server/db';
-import {
-  createAuditService,
   createConversationsService,
   createExecutionsService,
   decideStaleJob,
-  EventsService,
   findRepoRoot,
   loadConfig,
-  Queue,
+  type AppConfig,
+  type Queue,
   type QueueJob,
   type Runtime,
   type StaleJobItem,
@@ -94,6 +94,9 @@ function fail(message: string): void {
 
 const NOW = '2026-01-01T00:00:00.000Z';
 const WORKSPACE = 'wsp_gate';
+
+/** The token the owner calls the API with. */
+const OWNER_TOKEN = 'gate-token';
 
 /**
  * The file the fixture writes its side effect to.
@@ -263,47 +266,132 @@ function walk(dir: string): string[] {
 }
 
 /**
+ * The packages the gate exercises, and the project that builds each one.
+ *
+ * The agent-adapters package is in the list because the server's build reads
+ * its types: a stale adapters build would make the server's own build stale
+ * as well, and the gate has to be able to say so.
+ */
+const BUILT_PACKAGES = [
+  {
+    name: 'contracts',
+    project: 'packages/contracts/tsconfig.json',
+    build: 'packages/contracts/dist',
+  },
+  {
+    name: 'agent-adapters',
+    project: 'packages/agent-adapters/tsconfig.json',
+    build: 'packages/agent-adapters/dist',
+  },
+  { name: 'server', project: 'apps/server/tsconfig.json', build: 'apps/server/dist' },
+  { name: 'worker', project: 'apps/worker/tsconfig.json', build: 'apps/worker/dist' },
+];
+
+/**
  * The build the gate exercises has to be the build of this tree.
  *
  * The gate drives the built product, because that is what runs. A build that
- * is older than the source it was built from is a different product, and a
- * gate that quietly checks the older one proves something about the wrong
- * tree. So the gate refuses rather than passing on a stale build.
+ * is not the build of this tree is a different product, and a gate that
+ * quietly checks the other one proves something about the wrong tree.
+ *
+ * So the gate rebuilds the tree into a scratch directory and compares the two
+ * builds byte for byte. A modification time cannot do this: it says when a
+ * file was written, not what it says. A file restored from a backup has a
+ * fresh time and the content it had before, so a tree that was put back the
+ * way it was would be reported as stale; and a build that was edited after it
+ * was made has a fresh time and content nobody wrote, so it would be reported
+ * as current. The content settles both, and only the content does.
  */
 function checkTheBuildIsCurrent(): void {
   const root = findRepoRoot();
-  const packages = [
-    { source: 'packages/contracts/src', build: 'packages/contracts/dist' },
-    { source: 'apps/server/src', build: 'apps/server/dist' },
-    { source: 'apps/worker/src', build: 'apps/worker/dist' },
-  ];
+  const compiler = join(root, 'node_modules', 'typescript', 'bin', 'tsc');
+  if (!existsSync(compiler)) {
+    fail(
+      'The TypeScript compiler is not installed, so the gate cannot tell whether the build it exercises is the build of this tree.',
+    );
+    return;
+  }
 
-  for (const { source, build } of packages) {
-    const sourceDir = join(root, source);
-    const buildDir = join(root, build);
+  for (const pkg of BUILT_PACKAGES) {
+    const buildDir = join(root, pkg.build);
     if (!existsSync(buildDir)) {
-      fail(`${build} is not there, so the gate cannot exercise the product. Run "npm run build".`);
+      fail(
+        `${pkg.build} is not there, so the gate cannot exercise the product. Run "npm run build".`,
+      );
       continue;
     }
 
-    for (const file of walk(sourceDir)) {
-      const name = relative(sourceDir, file);
-      if (!name.endsWith('.ts') || name.endsWith('.d.ts')) continue;
-      // The tests are not part of the build, so they have no built output.
-      if (name.includes(`${'__tests__'}`) || name.endsWith('.test.ts')) continue;
-
-      const built = join(buildDir, name.replace(/\.ts$/, '.js'));
-      if (!existsSync(built)) {
-        fail(`${source}/${name} has no built output, so the gate would not be exercising it.`);
+    const scratch = mkdtempSync(join(tmpdir(), `personal-os-build-${pkg.name}-`));
+    try {
+      const rebuild = spawnSync(
+        process.execPath,
+        [compiler, '-p', pkg.project, '--outDir', scratch],
+        { cwd: root, encoding: 'utf8', maxBuffer: 16 * 1024 * 1024 },
+      );
+      if (rebuild.status !== 0) {
+        fail(
+          `The tree does not build, so the gate cannot tell whether the build it exercises is the build of this tree: ${firstLine(rebuild.stderr || rebuild.stdout)}`,
+        );
         continue;
       }
-      if (statSync(file).mtimeMs > statSync(built).mtimeMs) {
-        fail(
-          `${relative(root, file)} is newer than the built ${relative(root, built)}, so the gate would be exercising an older product than the tree. Run "npm run build".`,
-        );
-      }
+      compareTheBuilds(pkg.name, buildDir, scratch);
+    } finally {
+      rmSync(scratch, { recursive: true, force: true });
     }
   }
+}
+
+/**
+ * The outputs of a build, and what each one says.
+ *
+ * Only the outputs that are executed and the declarations that are read are
+ * compared. The source maps are not: a map records the path from its own
+ * location to the source, so the same source built into a different directory
+ * produces a different map, and comparing maps would report a difference that
+ * is not one.
+ */
+function outputsOf(directory: string): Map<string, string> {
+  const outputs = new Map<string, string>();
+  for (const file of walk(directory)) {
+    const name = relative(directory, file);
+    if (!name.endsWith('.js') && !name.endsWith('.d.ts')) continue;
+    outputs.set(name, createHash('sha256').update(readFileSync(file)).digest('hex'));
+  }
+  return outputs;
+}
+
+/** Compare the build the gate exercises with the build of this tree. */
+function compareTheBuilds(name: string, buildDir: string, rebuiltDir: string): void {
+  const built = outputsOf(buildDir);
+  const rebuilt = outputsOf(rebuiltDir);
+
+  for (const file of [...built.keys()].sort()) {
+    if (!rebuilt.has(file)) {
+      fail(
+        `${name}'s build has ${file}, which this tree does not build, so the build the gate exercises is not the build of this tree.`,
+      );
+    }
+  }
+
+  for (const file of [...rebuilt.keys()].sort()) {
+    if (!built.has(file)) {
+      fail(
+        `${name}'s build has no ${file}, but this tree builds it, so the gate would not be exercising it.`,
+      );
+      continue;
+    }
+    if (built.get(file) !== rebuilt.get(file)) {
+      fail(
+        `${name}'s built ${file} is not what this tree builds, so the gate would be exercising a different product than the tree. Run "npm run build".`,
+      );
+    }
+  }
+}
+
+/** The first line of a compiler's complaint. */
+function firstLine(text: string): string {
+  const line = text.split('\n').find((entry) => entry.trim().length > 0) ?? '';
+  return line.trim();
 }
 
 /**
@@ -344,9 +432,66 @@ function checkTheRule(): void {
   }
 }
 
+/**
+ * The owner's server, as the gate needs it.
+ *
+ * The gate drives the owner's real surfaces, so it needs the real server. The
+ * waiting list the owner reads and the route that closes an automation's run
+ * are not re-implementations here: they are the ones the product serves, so
+ * what the gate proves is what the owner can do.
+ *
+ * The shape is the one the gate uses, not the server's whole surface. The
+ * server's own types are not the gate's business, and the gate says what it
+ * needs and nothing more.
+ */
+interface OwnerApp {
+  inject(options: {
+    method: string;
+    url: string;
+    headers?: Record<string, string>;
+    payload?: unknown;
+  }): Promise<{ statusCode: number; body: string; json(): unknown }>;
+  close(): Promise<void>;
+  /** The runtime the server built over its own database. */
+  services: { runtime: Runtime };
+}
+
+/** The answer the owner's API gave. */
+interface OwnerAnswer {
+  statusCode: number;
+  body: unknown;
+}
+
+/**
+ * Read the server's own build.
+ *
+ * The specifier is held in a variable on purpose, and the module is reached
+ * through a file URL, because the server's package exports do not name the
+ * application module: the gate reaches the built file the product runs
+ * rather than widening the package's published surface.
+ */
+async function loadServerApp(): Promise<{
+  buildApp: (options: { config: AppConfig }) => Promise<OwnerApp>;
+}> {
+  const specifier = pathToFileURL(join(findRepoRoot(), 'apps', 'server', 'dist', 'app.js')).href;
+  try {
+    const module = (await import(specifier)) as {
+      buildApp: (options: { config: AppConfig }) => Promise<OwnerApp>;
+    };
+    return module;
+  } catch (error) {
+    throw new Error(
+      `The gate needs the server built (apps/server/dist/app.js): ${
+        error instanceof Error ? error.message : String(error)
+      }`,
+    );
+  }
+}
+
 /** The fixture the scenarios share. */
 interface Fixture {
-  handle: DatabaseHandle;
+  /** The owner's own server, over the same database. */
+  app: OwnerApp;
   db: Database;
   queue: Queue;
   runtime: Runtime;
@@ -354,6 +499,8 @@ interface Fixture {
   run: (job: QueueJob) => Promise<{ status: string }>;
   /** Offer the next queued job to a worker and run it if there is one. */
   offerAndRun: (workerId: string) => Promise<boolean>;
+  /** Call the owner's API, as the owner calls it. */
+  asOwner: (options: { method: string; url: string; payload?: unknown }) => Promise<OwnerAnswer>;
 }
 
 async function withFixture(
@@ -367,37 +514,37 @@ async function withFixture(
     mkdtempSync(join(tmpdir(), 'personal-os-restart-effect-')),
     'side-effect.txt',
   );
-  const handle = createDatabase(join(dir, 'gate.db'));
-  runMigrations(handle.db);
-  const db = handle.db;
-  const queue = new Queue(db);
-  const events = new EventsService(db);
-  const audit = createAuditService(db);
 
   const config = loadConfig({
     ...process.env,
     PERSONAL_OS_DATA_DIR: dir,
-    PERSONAL_OS_OWNER_TOKEN: 'gate-token',
+    PERSONAL_OS_OWNER_TOKEN: OWNER_TOKEN,
     LOG_LEVEL: 'silent',
   } as NodeJS.ProcessEnv);
 
+  // The gate builds the product's own server over its own database, so the
+  // owner's surfaces it drives are the ones that ship.
+  const { buildApp } = await loadServerApp();
+  const app = await buildApp({ config });
+
+  const base = app.services.runtime;
+  const db = base.db;
+  const queue = base.queue;
+
+  // The worker the gate drives is the same product, with the fixture's
+  // runtime in place of a real one. Nothing else is replaced: the queue, the
+  // trail and the database are the product's own.
   const runtime: Runtime = {
-    config,
-    db,
-    sqlite: handle.sqlite,
+    ...base,
     registry: { create: () => adapter } as unknown as Runtime['registry'],
-    events,
-    queue,
-    audit,
     resolveSecret: async () =>
       JSON.stringify({ adapterType: 'echo', config: { reply: 'The gate answer.' } }),
-    close: () => handle.close(),
   };
 
   const worker = await loadWorker();
 
   const fixture: Fixture = {
-    handle,
+    app,
     db,
     queue,
     runtime,
@@ -408,13 +555,79 @@ async function withFixture(
       await worker.executeJob({ runtime }, job);
       return true;
     },
+    asOwner: (options) => asOwner(app, options),
   };
 
   try {
     await body(fixture);
   } finally {
-    handle.close();
+    await app.close();
   }
+}
+
+/**
+ * Call the owner's API as the owner.
+ *
+ * The owner is the owner because the request carries the owner's token, so
+ * the gate is calling the surface the owner calls and not a wider one.
+ */
+async function asOwner(
+  app: OwnerApp,
+  options: { method: string; url: string; payload?: unknown },
+): Promise<OwnerAnswer> {
+  const response = await app.inject({
+    method: options.method,
+    url: options.url,
+    headers: { authorization: `Bearer ${OWNER_TOKEN}` },
+    ...(options.payload === undefined ? {} : { payload: options.payload }),
+  });
+  let body: unknown = null;
+  if (response.body.length > 0) {
+    try {
+      body = response.json();
+    } catch {
+      body = response.body;
+    }
+  }
+  return { statusCode: response.statusCode, body };
+}
+
+/**
+ * The owner's waiting list.
+ *
+ * The list is the published surface: a question the owner cannot see is a
+ * question the owner cannot answer, so the gate reads the list the owner
+ * reads.
+ */
+async function ownerWaiting(fixture: Fixture): Promise<WaitingEntry[]> {
+  const answer = await fixture.asOwner({
+    method: 'GET',
+    url: `/api/waiting?workspaceId=${WORKSPACE}`,
+  });
+  if (answer.statusCode !== 200) {
+    fail(`The owner's waiting list answered ${answer.statusCode}, so the gate could not read it.`);
+    return [];
+  }
+  const items = (answer.body as { items?: unknown }).items;
+  // The list crosses the server-to-client boundary, so its shape is the
+  // contracts package's. The gate reads the four fields it checks.
+  return Array.isArray(items)
+    ? (items as { id: string; kind: string; reason: string; detail: string }[])
+    : [];
+}
+
+/** One entry on the owner's waiting list. */
+interface WaitingEntry {
+  id: string;
+  kind: string;
+  reason: string;
+  detail: string;
+}
+
+/** The runs an automation's own page carries. */
+function runsOf(body: unknown): { id: string; status: string }[] {
+  const runs = (body as { runs?: unknown }).runs;
+  return Array.isArray(runs) ? (runs as { id: string; status: string }[]) : [];
 }
 
 /**
@@ -859,7 +1072,8 @@ async function checkTheRecords(): Promise<void> {
   });
 
   // ---------------------------------------------------------------------
-  // 5. A task's turn is probed the same way a chat turn is.
+  // 5. A task's turn is probed the same way a chat turn is, and the
+  //    uncertainty reaches the task the owner works with.
   // ---------------------------------------------------------------------
   await withFixture(new SilentRuntime(), async (fixture) => {
     const { db, queue, runtime } = fixture;
@@ -872,7 +1086,7 @@ async function checkTheRecords(): Promise<void> {
         title: 'The gate task',
         description: '',
         assigneeId: null,
-        status: 'open',
+        status: 'active',
         acceptanceCriteria: [],
         evidenceResourceIds: [],
         dependsOnTaskIds: [],
@@ -902,16 +1116,60 @@ async function checkTheRecords(): Promise<void> {
       })
       .run();
 
+    // The payload is the one the product produces: the task, the turn and the
+    // agent the turn is for. A payload the product never sends would prove
+    // nothing about the branch the product takes, and a turn that carries an
+    // execution id is the branch the product takes.
     const job = queue.enqueue({
       workspaceId: WORKSPACE,
       type: 'factory.execute',
-      payload: { taskId: 'tsk_gate' },
+      payload: { taskId: 'tsk_gate', executionId: 'exe_task', agentConnectionId: 'agt_task' },
     });
     queue.claimNext('worker_dead');
     letTheWorkerDie(db, job.id);
 
+    // The agent did the work; the worker died before it recorded how it ended.
+    writeTheSideEffect();
+
     await reconcileStaleJobs(runtime);
 
+    // The turn is uncertain.
+    const execution = db
+      .select()
+      .from(schema.executions)
+      .where(eq(schema.executions.id, 'exe_task'))
+      .get();
+    if (execution?.status !== 'unknown') {
+      fail(
+        `A task's turn whose outcome could not be confirmed is published as "${execution?.status}", and it should be published as uncertain.`,
+      );
+    }
+
+    // And so is the task, because a task that stays active is a task the
+    // owner never hears about: the waiting list only shows a task that has
+    // reached `review`, `blocked` or `unknown`.
+    const task = db.select().from(schema.tasks).where(eq(schema.tasks.id, 'tsk_gate')).get();
+    if (task?.status !== 'unknown') {
+      fail(
+        `The task whose turn could not be confirmed is "${task?.status}", and it should be published as uncertain.`,
+      );
+    }
+
+    // The task is on the owner's waiting list, which is where the owner
+    // looks for something to check.
+    const waiting = await ownerWaiting(fixture);
+    const item = waiting.find((entry) => entry.id === 'task:tsk_gate');
+    if (!item) {
+      fail(
+        "The task whose turn could not be confirmed is not on the owner's waiting list, so the owner cannot see it.",
+      );
+    } else if (item.reason !== 'unknown') {
+      fail(
+        `The task on the owner's waiting list says "${item.reason}", and it should say that its outcome could not be confirmed.`,
+      );
+    }
+
+    // The work is not run again.
     const settled = db.select().from(schema.queueJobs).where(eq(schema.queueJobs.id, job.id)).get();
     if (settled?.status === 'queued') {
       fail('The job of a task whose turn had started was queued to run again.');
@@ -919,6 +1177,34 @@ async function checkTheRecords(): Promise<void> {
     const offered = await fixture.offerAndRun('worker_new');
     if (offered) {
       fail('The job of a task whose turn had started was offered to another worker.');
+    }
+    if (sideEffectCount() !== 1) {
+      fail(
+        `The work ran again after the worker died: the side effect happened ${sideEffectCount()} times, and it happened once before.`,
+      );
+    }
+
+    // The owner settles the task, on the task's own surface. An acceptance is
+    // how the owner answers a task whose outcome could not be confirmed.
+    const closed = await fixture.asOwner({
+      method: 'POST',
+      url: '/api/tasks/tsk_gate/accept',
+      payload: { satisfied: true, reason: 'It did run.' },
+    });
+    if (closed.statusCode !== 200) {
+      fail(
+        `The owner could not settle the task whose turn could not be confirmed: the route answered ${closed.statusCode}.`,
+      );
+    }
+    const settledTask = db.select().from(schema.tasks).where(eq(schema.tasks.id, 'tsk_gate')).get();
+    if (settledTask?.status !== 'done') {
+      fail(
+        `The owner's conclusion did not settle the task: the task is "${settledTask?.status}", and it still says its outcome could not be confirmed.`,
+      );
+    }
+    const after = await ownerWaiting(fixture);
+    if (after.some((entry) => entry.id === 'task:tsk_gate')) {
+      fail("The task is still on the owner's waiting list after the owner settled it.");
     }
   });
 
@@ -1007,7 +1293,8 @@ async function checkTheRecords(): Promise<void> {
   });
 
   // ---------------------------------------------------------------------
-  // 6b. An automation's run is probed the same way as a chat turn's.
+  // 6b. An automation's run is probed the same way as a chat turn's, and
+  //     the owner can close it.
   // ---------------------------------------------------------------------
   await withFixture(new SilentRuntime(), async (fixture) => {
     const { db, queue, runtime } = fixture;
@@ -1048,6 +1335,40 @@ async function checkTheRecords(): Promise<void> {
 
     await reconcileStaleJobs(runtime);
 
+    // The run is uncertain. A run that stayed `running` would be an
+    // automation that says it is still going for ever.
+    const uncertain = db
+      .select()
+      .from(schema.automationRuns)
+      .where(eq(schema.automationRuns.id, 'run_started'))
+      .get();
+    if (uncertain?.status !== 'unknown') {
+      fail(
+        `An automation's run whose outcome could not be confirmed is "${uncertain?.status}", and it should be published as uncertain.`,
+      );
+    }
+
+    // The owner reads it with the automation's other runs, because an
+    // automation's run has no conversation and no turn of its own.
+    const listed = await fixture.asOwner({
+      method: 'GET',
+      url: '/api/automations/aut_gate',
+    });
+    if (listed.statusCode !== 200) {
+      fail(
+        `The owner's automation page answered ${listed.statusCode}, so the gate could not read it.`,
+      );
+    }
+    const shown = runsOf(listed.body).find((run) => run.id === 'run_started');
+    if (!shown) {
+      fail("The uncertain run is not among the automation's runs, so the owner cannot see it.");
+    } else if (shown.status !== 'unknown') {
+      fail(
+        `The run on the owner's automation page says "${shown.status}", and it should say that its outcome could not be confirmed.`,
+      );
+    }
+
+    // The job is not offered to another worker.
     const settled = db
       .select()
       .from(schema.queueJobs)
@@ -1059,6 +1380,48 @@ async function checkTheRecords(): Promise<void> {
     const offered = await fixture.offerAndRun('worker_new');
     if (offered) {
       fail('The job of an automation whose run had started was offered to another worker.');
+    }
+
+    // The owner closes it, and the job that was held for it is settled with
+    // it: the owner's conclusion is the outcome.
+    const closed = await fixture.asOwner({
+      method: 'POST',
+      url: '/api/automations/aut_gate/runs/run_started/resolve',
+      payload: { outcome: 'completed', note: 'It did run.' },
+    });
+    if (closed.statusCode !== 200) {
+      fail(
+        `The owner could not close an automation's run whose outcome could not be confirmed: the route answered ${closed.statusCode}.`,
+      );
+    }
+    const settledRun = db
+      .select()
+      .from(schema.automationRuns)
+      .where(eq(schema.automationRuns.id, 'run_started'))
+      .get();
+    if (settledRun?.status !== 'completed') {
+      fail(
+        `The owner's conclusion did not settle the automation's run: the run is "${settledRun?.status}", and it still says its outcome could not be confirmed.`,
+      );
+    }
+    const settledJob = db
+      .select()
+      .from(schema.queueJobs)
+      .where(eq(schema.queueJobs.id, startedJob.id))
+      .get();
+    if (settledJob?.status !== 'done') {
+      fail(
+        `The owner's conclusion did not settle the job that was held for the run: the job is "${settledJob?.status}", and it still says the outcome was never confirmed.`,
+      );
+    }
+    const entries = runtime.audit.list(WORKSPACE, 100);
+    if (
+      !entries.some(
+        (entry) =>
+          entry.action === 'automation.run.outcome.resolved' && entry.targetId === 'run_started',
+      )
+    ) {
+      fail("The owner's conclusion about an automation's run was not written to the audit trail.");
     }
 
     // A run that never began is safe to run again.

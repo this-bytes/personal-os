@@ -259,7 +259,7 @@ describe('the published shapes', () => {
   it('names the routes that write no audit entry, and the code writes none on exactly those', () => {
     const routes = codeMutatingRoutes();
 
-    // Eight of the mutating routes write their audit entry from the service
+    // Nine of the mutating routes write their audit entry from the service
     // layer rather than the route; the entry names them.
     const fromTheServiceLayer = new Set([
       'POST /api/approvals/:id/decide',
@@ -267,6 +267,7 @@ describe('the published shapes', () => {
       'PATCH /api/tasks/:id',
       'POST /api/executions/:id/stop',
       'POST /api/executions/:id/resolve',
+      'POST /api/automations/:id/runs/:runId/resolve',
       'POST /api/tasks/:id/accept',
       'POST /api/resources/:id/publish',
       'POST /api/resources/:id/execute',

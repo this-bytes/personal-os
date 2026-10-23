@@ -4,7 +4,7 @@
  * `CONTRACTS.md` cites the code by line number, and the contract pointer gate
  * holds those citations to pointing at *code* — a line that is not blank and
  * not a comment. It cannot tell a citation that points at the wrong code from
- * one that points at the right code. `apps/server/src/app.ts:225` holds code
+ * one that points at the right code. `apps/server/src/app.ts:257` holds code
  * whether it is the registration or a line three lines away from it, and the
  * gate is content with either.
  *

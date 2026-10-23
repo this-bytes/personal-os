@@ -95,7 +95,13 @@ export async function buildApp(options: BuildAppOptions = {}): Promise<FastifyIn
     factory,
     allowPrivateTargets: config.allowPrivateTargets,
   });
-  const automations = createAutomationsService({ db: runtime.db });
+  const automations = createAutomationsService({
+    db: runtime.db,
+    // The queue and the trail are here so that the owner's conclusion about
+    // an uncertain run settles the job that was held for it.
+    queue: runtime.queue,
+    audit: runtime.audit,
+  });
   const approvals = createApprovalsService(runtime.db, events);
   const bots = createBotsService({
     db: runtime.db,

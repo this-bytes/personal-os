@@ -653,7 +653,9 @@ export function createResourcesService(options: ResourcesServiceOptions): Resour
         queue.enqueue({
           workspaceId: automation.workspaceId,
           type: 'automation.run',
-          payload: { automationId: automation.id },
+          // The run's id is on the job, so the product can find the run
+          // afterwards and say whether it had started.
+          payload: { automationId: automation.id, runId: newId('run') },
         });
         // The run is enqueued for the worker. It has not happened yet, and the
         // answer says so.

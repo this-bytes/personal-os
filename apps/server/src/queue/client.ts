@@ -1,4 +1,4 @@
-import { and, asc, desc, eq, lte, sql } from 'drizzle-orm';
+import { and, asc, desc, eq, lte, sql, type SQL } from 'drizzle-orm';
 import type { Database } from '../db/client.js';
 import { automationRuns, executions, queueJobs, tasks } from '../db/schema.js';
 import { newId } from '../lib/ids.js';
@@ -392,16 +392,31 @@ export class Queue {
    * failed, and it is not run again, because the work is accounted for.
    */
   settleHeldJob(executionId: string, reason: string): boolean {
+    return this.settleHeld(
+      sql`json_extract(${queueJobs.payload}, '$.executionId') = ${executionId}`,
+      reason,
+    );
+  }
+
+  /**
+   * Settle a job that was held for an outcome the owner has now settled.
+   *
+   * An automation's run has no execution, so the job carries the run's id
+   * instead. The job is held on the same terms: the owner's conclusion is the
+   * outcome, so the queue's record stops saying the outcome was never
+   * confirmed.
+   */
+  settleHeldRun(runId: string, reason: string): boolean {
+    return this.settleHeld(sql`json_extract(${queueJobs.payload}, '$.runId') = ${runId}`, reason);
+  }
+
+  /** The shared body of settling a held job. */
+  private settleHeld(matches: SQL, reason: string): boolean {
     const now = new Date().toISOString();
     const held = this.db
       .select()
       .from(queueJobs)
-      .where(
-        and(
-          eq(queueJobs.status, 'unknown'),
-          sql`json_extract(${queueJobs.payload}, '$.executionId') = ${executionId}`,
-        ),
-      )
+      .where(and(eq(queueJobs.status, 'unknown'), matches))
       .all();
     let settled = 0;
     for (const job of held) {
