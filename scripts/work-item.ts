@@ -458,20 +458,23 @@ function isRegenerableRuntimeData(entry: string, worktreePath: string): boolean 
   if (!isDirectory && base === 'secret.key') return true;
   if (isDirectory && (base === 'test-results' || base === 'playwright-report')) return true;
   if (isDirectory && base === 'data') {
-    return hasOnlyThrowawayDatabases(path.join(worktreePath, trimmed));
+    return holdsOnlyThrowawayRunData(path.join(worktreePath, trimmed));
   }
   return false;
 }
 
 /**
- * Whether a data directory holds only databases from throwaway runs.
+ * Whether a data directory holds nothing but throwaway run data.
  *
- * A database outside a folder named `e2e-*` is a real record, and a real
- * record is not disposable however the worktree came to be finished.
+ * A throwaway run writes under a folder named `e2e-*` — the harness makes one
+ * per port — so that is the shape of disposable data. Anything else inside
+ * the directory is somebody's: a record, a note, a file. The absence of a
+ * database is not evidence that the directory is empty of anything worth
+ * keeping, so the question is asked of every file rather than of the
+ * databases alone.
  */
-function hasOnlyThrowawayDatabases(directory: string): boolean {
+function holdsOnlyThrowawayRunData(directory: string): boolean {
   for (const file of filesUnder(directory)) {
-    if (!/\.(?:db|db-wal|db-shm)$/.test(file)) continue;
     const relative = path.relative(directory, file);
     const top = relative.split(path.sep)[0] ?? '';
     if (!top.startsWith('e2e-')) return false;
@@ -603,11 +606,12 @@ function cmdRemove(args: string[]): void {
   // branch instead would refuse every detached tree, and a refused tree is a
   // tree that stays forever.
   //
-  // The reference is origin/main rather than the local main, because the local
-  // ref goes stale the moment somebody else lands, and a stale ref refuses
-  // work that has in fact landed. The fetch above makes origin/main current.
+  // origin/main is the reference, because the local main goes stale the moment
+  // somebody else lands, and a stale ref refuses work that has in fact
+  // landed. The local main is still asked, because a repository that has no
+  // remote at all is a repository whose only record of what landed is local.
   const subject = branch || worktree.head;
-  if (!isIntegrated(subject, 'origin/main')) {
+  if (!isIntegrated(subject, 'origin/main') && !isIntegrated(subject, 'main')) {
     fail(
       `Kept ${worktree.path}: ${subject} is not integrated into origin/main. Fetch and verify integration first.`,
     );

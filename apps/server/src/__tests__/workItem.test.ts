@@ -50,7 +50,13 @@ function fixture() {
   return { repo, target, git, run, create, directory };
 }
 
-describe('work-item lifecycle preserves work', { timeout: 30_000 }, () => {
+// Each case builds a throwaway repository, creates a worktree in it and runs
+// the helper as a child process — Git and a TypeScript loader, several times
+// over. On a machine that is also running agents, that is slow but it is not
+// hung, and a timeout that fires on a loaded machine reports a defect that is
+// not there. Sixty seconds keeps the bound finite while leaving room for the
+// machine to be busy.
+describe('work-item lifecycle preserves work', { timeout: 60_000 }, () => {
   it('never deletes an existing directory without Git metadata', () => {
     const f = fixture();
     fs.mkdirSync(f.target, { recursive: true });
