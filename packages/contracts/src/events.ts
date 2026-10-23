@@ -1,4 +1,4 @@
-import { z } from 'zod';
+import { z } from 'zod/v3';
 import { isoDateSchema } from './common.js';
 import { agentEventSchema, agentConnectionStatusSchema, agentCapabilitiesSchema } from './agent.js';
 import { messageSchema } from './conversation.js';

@@ -1,5 +1,5 @@
 import type { FastifyInstance } from 'fastify';
-import { z } from 'zod';
+import { z } from 'zod/v3';
 import { SESSION_COOKIE } from '../modules/auth/service.js';
 import { errors } from '../lib/errors.js';
 import { audit, parseBody, requireAuth } from './helpers.js';

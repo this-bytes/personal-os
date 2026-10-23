@@ -1,5 +1,5 @@
 import type { FastifyInstance } from 'fastify';
-import { z } from 'zod';
+import { z } from 'zod/v3';
 import { audit, parseBody, parseQuery, requestAuthor, requireAuth } from './helpers.js';
 
 const workspaceQuerySchema = z.object({ workspaceId: z.string() });

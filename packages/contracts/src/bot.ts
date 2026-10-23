@@ -1,4 +1,4 @@
-import { z } from 'zod';
+import { z } from 'zod/v3';
 import { idSchema, isoDateSchema } from './common.js';
 
 /**

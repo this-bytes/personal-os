@@ -1,4 +1,4 @@
-import { z } from 'zod';
+import { z } from 'zod/v3';
 import { autonomyPolicySchema, idSchema, isoDateSchema } from './common.js';
 import { executionStatusSchema } from './agent.js';
 
