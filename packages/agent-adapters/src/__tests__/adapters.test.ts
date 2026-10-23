@@ -1,6 +1,14 @@
 import { describe, expect, it } from 'vitest';
 import { createDefaultRegistry } from '../index.js';
-import { asText, chunkText, getByPath, interpolate, parseSseData, readSseEvents } from '../util.js';
+import {
+  asText,
+  chunkText,
+  getByPath,
+  interpolate,
+  interpolateJson,
+  parseSseData,
+  readSseEvents,
+} from '../util.js';
 import { EchoAdapter } from '../echo.js';
 import { createCliAdapter } from '../cli.js';
 import { adapterTypeSchema, parseAdapterConfig } from '@personal-os/contracts';
@@ -155,6 +163,15 @@ describe('adapter helpers', () => {
   it('interpolates template placeholders', () => {
     expect(interpolate('{"m":"{{message}}"}', { message: 'hi' })).toBe('{"m":"hi"}');
     expect(interpolate('{{unknown}}', {})).toBe('{{unknown}}');
+  });
+
+  it('interpolates a JSON template without breaking the document', () => {
+    // A message with a newline in it is ordinary text. Substituted raw it
+    // makes the document invalid, and the turn fails on the way to the tool
+    // rather than on the tool's account.
+    const message = 'first line\nsecond line with "quotes"';
+    const rendered = interpolateJson('{"message":"{{message}}"}', { message });
+    expect(JSON.parse(rendered)).toEqual({ message });
   });
 
   it('splits text into chunks without losing characters', () => {

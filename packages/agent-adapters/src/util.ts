@@ -217,6 +217,24 @@ export function interpolate(template: string, vars: Record<string, string>): str
   });
 }
 
+/**
+ * Replace `{{name}}` placeholders in a JSON document.
+ *
+ * The templates the adapters publish are JSON documents — a tool's arguments
+ * and an HTTP request's body — so a value that goes into one has to be
+ * escaped for it. A message with a newline in it is ordinary text, and
+ * substituting it raw makes the document invalid: the turn then fails on the
+ * way to the tool, with a complaint about the template rather than about the
+ * message.
+ */
+export function interpolateJson(template: string, vars: Record<string, string>): string {
+  const escaped: Record<string, string> = {};
+  for (const [key, value] of Object.entries(vars)) {
+    escaped[key] = escapeJson(value);
+  }
+  return interpolate(template, escaped);
+}
+
 /** Escape a string for safe inclusion in a JSON document. */
 export function escapeJson(value: string): string {
   return JSON.stringify(value).slice(1, -1);
