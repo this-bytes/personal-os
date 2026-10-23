@@ -61,6 +61,26 @@ function quoteForCmd(argument: string): string {
 }
 
 /**
+ * How many candidates are looked for at once.
+ *
+ * The candidates are independent of each other, so they are looked for
+ * together rather than one after another. Looked for one at a time, a command
+ * that is not there costs one filesystem round trip per candidate, and a round
+ * trip is not cheap when the machine is busy: the lookup waits for the
+ * filesystem, and then waits again to be told the answer.
+ *
+ * A wave keeps the two ends of that trade-off. The candidates are still
+ * searched in PATH order, so the first one that is there is still the one that
+ * is returned, and a command that is found early is still found early. But a
+ * wave pays one round trip instead of one per candidate, so a PATH with a few
+ * hundred entries costs a few waits rather than a few hundred.
+ *
+ * The wave bounds how many lookups are outstanding at once, so a long PATH
+ * does not become an unbounded number of pending requests.
+ */
+const PROBE_WIDTH = 64;
+
+/**
  * Locate an executable on PATH without spawning it.
  *
  * Windows resolves a command through PATHEXT, so `codex` is `codex.cmd` there
@@ -84,16 +104,28 @@ export async function resolveExecutable(command: string): Promise<string | null>
       ? (process.env['PATHEXT'] ?? '.EXE;.CMD;.BAT;.COM').split(';').filter(Boolean)
       : [''];
 
+  const candidates: string[] = [];
   for (const dir of pathValue.split(path.delimiter).filter(Boolean)) {
     for (const extension of extensions) {
-      const candidate = path.join(dir, command + extension);
-      try {
-        await access(candidate, constants.X_OK);
-        return candidate;
-      } catch {
-        // keep looking
-      }
+      candidates.push(path.join(dir, command + extension));
     }
+  }
+
+  for (let start = 0; start < candidates.length; start += PROBE_WIDTH) {
+    const wave = candidates.slice(start, start + PROBE_WIDTH);
+    const found = await Promise.all(
+      wave.map(async (candidate) => {
+        try {
+          await access(candidate, constants.X_OK);
+          return candidate;
+        } catch {
+          return null;
+        }
+      }),
+    );
+    // The first of them in PATH order is the one a shell would have run.
+    const hit = found.find((candidate) => candidate !== null);
+    if (hit) return hit;
   }
   return null;
 }
