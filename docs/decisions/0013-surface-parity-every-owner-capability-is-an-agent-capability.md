@@ -11,16 +11,37 @@ makes the agent-facing surface the owner's seat, not a convenience port.
 Measured on main at `e038af8`, 2026-10-23: the server exposes roughly 62
 owner-facing REST routes across 14 domains (agents, approvals, audit,
 automations, autonomy, conversations, events, executions, factory, measures,
-resources, workspaces, …), while the MCP server registers **17 tools**
-(`packages/contracts/src/mcp.ts`): conversation post/read, resource
-create/get/update/templates, task create/get/update, automation
-create/inspect, agent.list, workspace.list, autonomy.read, bot.dispatch.
+resources, workspaces, …), while the MCP server registers **16 tools**
+(`packages/contracts/src/mcp.ts`): workspace.list, conversation read/post,
+resource create/get/update and the two resource templates, task
+create/get/update, automation create/inspect, agent.list, autonomy.read,
+bot.dispatch.
 
-Everything outside those 17 — answering an approval, inspecting or stopping an
+Everything outside those 16 — answering an approval, inspecting or stopping an
 execution, reading events, measures or audit, driving automations beyond
 creating them — exists for the human UI and is invisible to an agent. A
 feature that cannot be operated over MCP is, for the product's own stated
 purpose, not exposed.
+
+## 2026-10-23 — The lead: the tool count was wrong, and the round trip has landed
+
+This record said **17 tools**; the tree published **16**, and the enumeration
+above did not add up to seventeen either. The audit measured the difference
+(evidence E2 and E9 in `docs/spec/audit-2026-10-23.md`) and the number here
+is now the one the tree publishes.
+
+**The round trip this record asks for landed with SPEC-S1.** Seven tools were
+added — `approval.list`, `approval.decide`, `execution.list`, `execution.get`,
+`execution.stop`, `event.list` and `audit.list` — which makes 23 in all, and
+`npm run verify:mcp-parity` now exists and runs in CI, so the check this
+record promised is a check rather than a hope.
+
+**What is still open is named rather than closed.** The measures, the
+automations beyond creating them, and the assignment of work to an agent are
+still human-only. They are on the parity list with a written reason, and
+SPEC-S2 carries them in the audit's ranked order. The assignment is left
+there on purpose: an agent handing work to another agent is the autonomous
+team the owner has not asked for yet.
 
 ## Decision
 
