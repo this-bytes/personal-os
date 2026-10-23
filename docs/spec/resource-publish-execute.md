@@ -183,9 +183,11 @@ fails if it declares the support again instead of reading the published one.
 **The audit's rows.** _Publish a resource_ and _execute a resource_ are
 **human-only**: the owner path tells the truth, and no agent path exists —
 `mcpToolNames` publishes no `resource.publish` and no `resource.execute`. The
-audit's record now reads **23 exposed-paired, 43 human-only, 0 broken-window,
-17 exempt — 83 rows over 82 routes**, and the two rows are re-measured in the
-audit with the evidence of both readings.
+audit's record read **23 exposed-paired, 43 human-only, 0 broken-window,
+17 exempt — 83 rows over 82 routes** when this slice measured it. Later slices
+pair routes and the count moves, so the count to read is the one the audit
+carries; the two rows are re-measured in the audit with the evidence of both
+readings.
 `scripts/mcp-parity.json` keeps both routes `listed` against `SPEC-S2+`, with
 the reasons restated: the route runs or publishes what the kind can do and
 refuses the rest, and the agent path is SPEC-S2's question.
@@ -195,8 +197,10 @@ parity gate as reading **22 paired, 43 listed and 17 exempt**. That reading
 comes from seven rows that move from `listed` to `exempt` in
 `scripts/mcp-parity.json`: widening a tool grant, the three MCP-token routes,
 the secret inventory, the file upload and the AG-UI envelope. They landed
-separately, in PR #12, and `npm run verify:mcp-parity` reads 22/43/17 on `main`
-now. The two routes this slice re-measured stay `listed` against `SPEC-S2+`:
+separately, in PR #12, and `npm run verify:mcp-parity` read 22/43/17 on `main`
+then. **SPEC-S2 batch 1 has since paired three more routes, so the reading is
+now 25 paired, 40 listed and 17 exempt**; the two routes this slice
+re-measured stay `listed` against `SPEC-S2+`:
 the route runs or publishes what the kind can do and refuses the rest, and the
 agent path is SPEC-S2's question.
 

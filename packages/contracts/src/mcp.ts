@@ -22,6 +22,13 @@ export const mcpToolNames = [
   'task.create',
   'task.update',
   'task.get',
+  /**
+   * The acceptance decision on a task.
+   *
+   * It is not in the default grant set: a connection that may accept a task
+   * is a connection the owner has said may accept one.
+   */
+  'task.accept',
   'resource.create',
   'resource.get',
   'resource.update',
@@ -42,15 +49,25 @@ export const mcpToolNames = [
   'approval.list',
   'approval.decide',
   /**
-   * The turn, the activity behind it, and the stop request.
+   * The evidence a decision is taken against.
    *
-   * `execution.stop` is not in the default grant set, for the same reason
-   * `approval.decide` is not: a connection that may stop a turn is a
-   * connection the owner has said may stop a turn.
+   * It is in the default grant set: it is a read, and an agent whose turn is
+   * blocked on a decision has to be able to see what it is blocked on — the
+   * same ground `approval.list` is held to.
+   */
+  'approval.evidence',
+  /**
+   * The turn, the activity behind it, the stop request and the resolution.
+   *
+   * `execution.stop` and `execution.resolve` are not in the default grant set,
+   * for the same reason `approval.decide` is not: a connection that may stop a
+   * turn, or may close a turn whose outcome could not be confirmed, is a
+   * connection the owner has said may do that.
    */
   'execution.list',
   'execution.get',
   'execution.stop',
+  'execution.resolve',
   /**
    * The event log and the audit trail.
    *
@@ -72,8 +89,9 @@ export const mcpToolNameSchema = z.enum(mcpToolNames);
  * workspace it was granted, not across all of them.
  *
  * The destructive verbs are not here either: `bot.dispatch`,
- * `approval.decide` and `execution.stop` are the owner's to grant, one by
- * one, because each of them spends an authority the owner holds.
+ * `approval.decide`, `execution.stop`, `execution.resolve` and `task.accept`
+ * are the owner's to grant, one by one, because each of them spends an
+ * authority the owner holds.
  */
 export const defaultAgentToolGrants: McpToolName[] = [
   'conversation.read',
@@ -91,6 +109,7 @@ export const defaultAgentToolGrants: McpToolName[] = [
   'automation.inspect',
   'autonomy.read',
   'approval.list',
+  'approval.evidence',
   'execution.list',
   'execution.get',
   'event.list',

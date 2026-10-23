@@ -47,9 +47,8 @@
     },
     {
       "route": "GET /api/approvals/:id/evidence",
-      "kind": "listed",
-      "reason": "The evidence a decision is taken against: the tool calls and artifacts of the turn behind the approval. It is a read with its own shape, and S1 gives the agent the queue, the decision and the turn, not the owner's decision-support read.",
-      "spec": "SPEC-S2+"
+      "kind": "paired",
+      "tool": "approval.evidence"
     },
     {
       "route": "GET /api/audit",
@@ -366,9 +365,8 @@
     },
     {
       "route": "POST /api/executions/:id/resolve",
-      "kind": "listed",
-      "reason": "Closing a turn whose outcome could not be confirmed. That is the owner's own conclusion about work that may or may not have happened; the stop path reports what it did and never asserts what happened.",
-      "spec": "SPEC-S2+"
+      "kind": "paired",
+      "tool": "execution.resolve"
     },
     {
       "route": "POST /api/executions/:id/stop",
@@ -410,9 +408,8 @@
     },
     {
       "route": "POST /api/tasks/:id/accept",
-      "kind": "listed",
-      "reason": "Accepting a task is the owner's own decision about the work.",
-      "spec": "SPEC-S2+"
+      "kind": "paired",
+      "tool": "task.accept"
     },
     {
       "route": "POST /api/tasks/:id/assign",
