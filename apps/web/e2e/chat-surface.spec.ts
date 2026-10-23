@@ -46,6 +46,9 @@ async function createAgent(
 
 test.describe('the chat surface', () => {
   test('the owner reads Markdown, sees the trace, and stops a running turn', async ({ page }) => {
+    // The case waits for a turn that is deliberately held, so it is given
+    // room of its own.
+    test.setTimeout(45_000);
     await signIn(page);
     const workspaceId = await firstWorkspaceId(page);
     // The turn is slow on purpose. **The worker runs in this suite now**, so
@@ -54,7 +57,29 @@ test.describe('the chat surface', () => {
     // queue. The turn that had not started is proved by the server's own
     // test, `turn-activity.test.ts`, where the queue is under the test's
     // control.
-    const agentId = await createAgent(page, 'Echo', { reply: 'hi', delayMs: 5_000 });
+    //
+    // **The hold is fifteen seconds, and the length is the point.**
+    //
+    // The turn ends when the agent's hold runs out, and the panel hears
+    // about it from the server: the status region and the stop button are
+    // one payload, so when the turn ends the button is disabled with the
+    // server's own words ("The turn has already finished."), and a click
+    // asked after that waits for a button that will never be enabled again.
+    //
+    // So the stop has to be asked of a turn that is still running, and the
+    // hold has to outlast **all** of the case's own work -- the panel's
+    // refresh of the turn, and the click's own wait for the button to settle
+    // -- and not merely the milliseconds between the panel saying "running"
+    // and the click. The click's wait is not milliseconds when the machine is
+    // loaded: the trace grows as the turn is admitted, the panel re-renders,
+    // and the button is not stable, so the click retries. Five seconds was a
+    // hold a loaded machine could beat, and the case failed at the stop with
+    // the turn long over and the button greyed out by the server.
+    //
+    // The cost is the worker: it runs one turn at a time, so the worker is
+    // busy until the hold runs out. The case waits for the turn to be over
+    // before it ends, so the worker is free for the test that follows.
+    const agentId = await createAgent(page, 'Echo', { reply: 'hi', delayMs: 15_000 });
 
     const createdConversation = await page.request.post('/api/conversations', {
       data: {
@@ -95,6 +120,14 @@ test.describe('the chat surface', () => {
     // finish the turn it is in.
     await page.getByRole('button', { name: /stop/i }).click();
     await expect(page.getByText(/may finish the current turn/)).toBeVisible();
+
+    // The turn is over. The runtime finished the turn it was in -- which is
+    // what the server said may happen -- and the worker is free for the test
+    // that follows. The panel's word for a turn that is over is its own
+    // business; what this waits for is the stop no longer being pending.
+    await expect(page.getByRole('status')).not.toHaveText('stop requested', {
+      timeout: 20_000,
+    });
   });
 
   test('the panel says what the turn was admitted with', async ({ page }) => {
