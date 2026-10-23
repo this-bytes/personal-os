@@ -215,7 +215,7 @@ describe('the code, as the section describes it', () => {
       },
       {
         file: 'apps/server/src/modules/conversations/dispatch.ts',
-        at: [291, 291],
+        at: [315, 315],
         pattern: /result:\s*'unknown'/,
         what: 'the dispatch writes unknown',
       },

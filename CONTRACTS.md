@@ -200,7 +200,7 @@ expects the execution's word on the reply's word will be wrong.
 **The reply carries the server's own sentence.** `detail` is the account the server
 produced of how the turn ended, and it travels on the reply: the messages of that
 execution carry it when the execution is settled
-(`apps/server/src/modules/executions/service.ts:147-150`, and
+(`apps/server/src/modules/executions/service.ts:343-346`, and
 `apps/server/src/modules/approvals/resume.ts:197-201` for the turn that is closed
 rather than continued). **A client shows it as it is given**
 (`apps/web/src/components/ChatMessageList.tsx:136`): the account of what happened
@@ -227,7 +227,7 @@ execution's outcome could not be confirmed, so an execution that is no longer
 
 **The transition is written to the audit trail** as `execution.outcome.resolved`,
 beside the task path's `task.outcome.resolved`
-(`apps/server/src/modules/factory/service.ts:319`). It names who reached the
+(`apps/server/src/modules/factory/service.ts:449-458`). It names who reached the
 conclusion the way the task path's does — `actorType: 'human'` and the owner's
 id for the owner's own call, `actorType: 'agent'` and the connection's id for
 the agent's `execution.resolve` — and its metadata carries the transition,
@@ -253,7 +253,7 @@ route calls it through the shared capability API at
 `apps/server/src/api/executions.ts:27`, which the agent's `execution.resolve`
 calls too. **There are two
 writers of an execution's outcome, not one**: the other is `resolveExecution`
-(`apps/server/src/modules/approvals/service.ts:163`), which the approval
+(`apps/server/src/modules/approvals/service.ts:165`), which the approval
 decision path calls (`apps/server/src/modules/approvals/resume.ts:159`) and
 this route does not.
 
@@ -1314,9 +1314,9 @@ is one call — `assertOwnMemory` at
 `apps/server/src/modules/mcp/server.ts:259`, with `memoryOwner` at
 `apps/server/src/modules/mcp/server.ts:223` — and it
 answers the same way for the three resource tools: `resource.create` at
-`apps/server/src/modules/mcp/server.ts:555`,
-`resource.update` at `apps/server/src/modules/mcp/server.ts:624` and `resource.get`
-at `apps/server/src/modules/mcp/server.ts:589`. A memory's owner is
+`apps/server/src/modules/mcp/server.ts:600`,
+`resource.update` at `apps/server/src/modules/mcp/server.ts:669` and `resource.get`
+at `apps/server/src/modules/mcp/server.ts:634`. A memory's owner is
 `memoryOwner`'s answer, and an agent that is not that owner is refused with
 `forbidden` and the message "An agent may only reach its own memory."
 
@@ -1848,9 +1848,9 @@ against the execution when the turn ends**: the worker writes one unit for an
 agent turn and none for a turn that never reached the agent
 (`apps/worker/src/execution-owner.ts:703`).
 **The row is created with no spend units**, because the cost is not known until
-the turn has run (`apps/server/src/modules/conversations/dispatch.ts:217`,
-`apps/server/src/modules/factory/service.ts:474`), and the column defaults to zero
-(`apps/server/src/db/schema.ts:295`). **So the workspace's spend for the day is
+the turn has run (`apps/server/src/modules/conversations/dispatch.ts:216`,
+`apps/server/src/modules/factory/service.ts:482`), and the column defaults to zero
+(`apps/server/src/db/schema.ts:321`). **So the workspace's spend for the day is
 the sum of what its turns actually cost, and the cap bites.**
 
 **The mode is resolved, readable, and enforced nowhere.** It is carried through the
@@ -1971,7 +1971,7 @@ failure. It is the same word the unknown outcome uses
 the product produces it: the worker writes it when a turn's outcome cannot be
 confirmed (`apps/worker/src/execution-owner.ts:731`), and the conversation dispatch writes it
 when a turn stops for the same reason
-(`apps/server/src/modules/conversations/dispatch.ts:291`). **A vocabulary without
+(`apps/server/src/modules/conversations/dispatch.ts:315`). **A vocabulary without
 `unknown` would leave the unknown outcome unrepresentable in the trail**, and the
 trail is where it is recorded.
 
@@ -2386,7 +2386,7 @@ because a cancellation is a decision and not a fault
 **The spend units are recorded, and today they are zero.** A spend unit is an
 abstract cost counter, not currency (`packages/contracts/src/common.ts:58`). The
 execution is created with `spendUnits: 0`
-(`apps/server/src/modules/conversations/dispatch.ts:215`) and nothing writes the
+(`apps/server/src/modules/conversations/dispatch.ts:216`) and nothing writes the
 column afterwards — the turn count the router uses to enforce a spend limit is
 computed in memory and never stored
 (`apps/server/src/modules/conversations/routing.ts:307`). A client that shows
@@ -2554,8 +2554,8 @@ turn pins the same view, because there is one rule for it and it lives with
 the capability API, which is the one module that reads across every domain
 (`apps/server/src/modules/capabilities/capability-view.ts:29`). A conversation
 turn and a factory turn are pinned the same way
-(`apps/server/src/modules/conversations/dispatch.ts:207`,
-`apps/server/src/modules/factory/service.ts:470`).
+(`apps/server/src/modules/conversations/dispatch.ts:208`,
+`apps/server/src/modules/factory/service.ts:479`).
 
 **The turn's own view answers what the turn may do.** Whether a turn can be
 steered is asked of the view the turn was admitted with, and not of the
@@ -3648,10 +3648,10 @@ write one from the service layer — `POST /api/approvals/:id/decide` and `POST
 `apps/server/src/modules/approvals/resume.ts:55`, `PATCH /api/tasks/:id` at
 `apps/server/src/modules/factory/service.ts:424`, and that one only when the task
 leaves `unknown`, and `POST /api/executions/:id/stop` at
-`apps/server/src/modules/executions/service.ts:274` — which is where the agent's
+`apps/server/src/modules/executions/service.ts:277` — which is where the agent's
 own stop request is written too, so the request is in the trail whoever made it.
 `POST /api/executions/:id/resolve` writes at
-`apps/server/src/modules/executions/service.ts:338` and `POST /api/tasks/:id/accept`
+`apps/server/src/modules/executions/service.ts:352` and `POST /api/tasks/:id/accept`
 at `apps/server/src/modules/factory/service.ts:577`; both are written by the
 service layer so that the agent's `execution.resolve` and `task.accept` land in
 the same trail as the owner's own calls.

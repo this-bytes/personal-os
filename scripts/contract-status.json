@@ -52,6 +52,11 @@
           "kind": "present-pattern",
           "path": "apps/worker/src/execution-owner.ts",
           "value": "publishTerminalEvent"
+        },
+        {
+          "kind": "present-pattern",
+          "path": "apps/server/src/modules/events/turn-end.ts",
+          "value": "export function publishTurnEnd"
         }
       ]
     },
