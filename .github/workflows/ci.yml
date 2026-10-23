@@ -178,6 +178,39 @@ jobs:
       - name: "The contract's pointers point at code"
         run: npx tsx scripts/verify-contract-pointers.ts
 
+  mcp-parity:
+    name: The agent surface matches the owner's
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      # The gate is a TypeScript script, so it needs a runner. The one in the
+      # lockfile is the one it should get: an unpinned `npx` download would make
+      # a gate depend on the registry at the moment it runs, and fail for the
+      # wrong reason.
+      - name: Install dependencies
+        run: npm ci --ignore-scripts --no-audit --no-fund
+
+      # Every owner-facing route the published contract names is either matched
+      # by a registered MCP tool or named on the list with a written reason. A
+      # new human-only route that nobody paired fails the gate, so the gap
+      # between what the owner can do and what an agent can do cannot grow
+      # quietly.
+      #
+      # **The gate runs in this pipeline on purpose.** A gate that only runs on
+      # the machine that wrote it is not a gate, it is a habit — and this one
+      # was written into the registry without the workflow that would have run
+      # it, so it would have passed on nobody's machine.
+      - name: The agent surface matches the owner's
+        run: npm run verify:mcp-parity
+
   source-stack:
     name: Source hosting and restart
     runs-on: ubuntu-latest

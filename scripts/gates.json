@@ -43,6 +43,12 @@
       "about": "every citation in the contract points at code"
     },
     {
+      "name": "mcp-parity",
+      "command": "npm",
+      "args": ["run", "verify:mcp-parity"],
+      "about": "every owner-facing route is paired with a registered MCP tool, listed with a reason and the spec that will pair it, or exempt with a reason"
+    },
+    {
       "name": "smoke",
       "command": "npx",
       "args": ["tsx", "scripts/smoke.ts"],
