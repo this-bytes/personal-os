@@ -2894,9 +2894,9 @@ asked**, so every uncertain run is held for the owner, and the adapter matrix
 records that limit.
 
 **Implementation status.** SPEC-R0-4, and the code implements it — as of
-`c0a3f80`: work that had already started is not run again, an uncertain
-outcome is visible and the owner can settle it, and a run whose runtime
-survived is reconnected rather than started again.
+`4f0715d`: a job whose worker died is not run again when its work had started, an
+uncertain outcome is visible and the owner can settle it, and a run whose
+runtime survived is reconnected rather than started again.
 
 ### Steer and queue
 
