@@ -190,14 +190,19 @@ audit with the evidence of both readings.
 the reasons restated: the route runs or publishes what the kind can do and
 refuses the rest, and the agent path is SPEC-S2's question.
 
-**One thing about the audit's counts is not yet true on this branch alone.**
-The audit records the parity gate as reading **22 paired, 43 listed and 17
-exempt**. That reading comes from seven rows that move from `listed` to
-`exempt` in `scripts/mcp-parity.json`, and those seven are another branch's
-change, which lands separately. On this branch alone the gate reads **22
-paired, 50 listed, 10 exempt** — the seven exemptions are not in it, and they
-are not in this slice's scope. The audit is written against the corrected
-record, so the two agree once that branch lands.
+**The audit's counts and the coverage table now agree.** The audit records the
+parity gate as reading **22 paired, 43 listed and 17 exempt**. That reading
+comes from seven rows that move from `listed` to `exempt` in
+`scripts/mcp-parity.json`: widening a tool grant, the three MCP-token routes,
+the secret inventory, the file upload and the AG-UI envelope. They landed
+separately, in PR #12, and `npm run verify:mcp-parity` reads 22/43/17 on `main`
+now. The two routes this slice re-measured stay `listed` against `SPEC-S2+`:
+the route runs or publishes what the kind can do and refuses the rest, and the
+agent path is SPEC-S2's question.
+
+**The gate readings below are the ones this slice answered on.** The table
+records what each command answered on this slice's revision, before the seven
+exemptions landed. The current reading is the one in the paragraph above.
 
 **The commands, and what they answered.** The box was under load from a
 background CPU load and two other agents' suites, so the timings below are the
