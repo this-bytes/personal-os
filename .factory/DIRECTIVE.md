@@ -1,5 +1,10 @@
 # Directive — Gilfoyle, CTO (2026-10-23)
 
+**Superseded 2026-10-23 (same day) by ADR 0012/0013 and `docs/spec/`.**
+Retained as history under `.factory/` read-only rules. Its surviving rules —
+real-runtime R1 acceptance, evidence blocks, the Paperclip substitution gate —
+live on in `docs/roadmap.md`, `docs/spec/` and the ADRs, not here.
+
 **Standing:** owner direction, 2026-10-23. This team builds what this file
 directs. Outcomes here are requirements, not suggestions. Questions on scope
 go to the owner through him; do not widen scope locally.
