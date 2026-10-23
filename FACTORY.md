@@ -61,6 +61,17 @@ Locked worktrees stay protected by Git. Never remove a tree merely because its
 HEAD is old, reachable, or its Bot task says done. Preserve detached commits,
 uncommitted files and interrupted merges before any cleanup.
 
+The helper proves that a branch has landed rather than assuming it. Ancestry is
+the ordinary proof; a branch landed as a squash, a cherry-pick or a rebase is
+proved by its patches, or by the tree it left behind. A branch that holds a
+merge the base does not have is never released, because a merge resolution is
+not a patch that can be compared and it may exist nowhere else. When the content
+landed but the branch's own commits did not, the helper keeps those commits
+under `refs/keep/<branch>` before it deletes the branch, so a squash merge never
+destroys the commits it squashed. The main checkout is never removed, the
+integration branch is never deleted, and every check runs before anything is
+taken away, including the move of uncommitted files to `--preserve-to`.
+
 Enable GitHub's native automatic branch deletion for merged PRs. It does not
 clean direct-push branches or local worktrees. Review those explicitly after
 fetching; keep unmerged references. Windows and WSL must not prune each other's
