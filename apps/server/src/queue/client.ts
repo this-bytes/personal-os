@@ -271,6 +271,8 @@ export class Queue {
       executionId?: string;
       taskId?: string;
       automationId?: string;
+      /** The id of the run an automation job is going to make. */
+      runId?: string;
     };
 
     if (payload.executionId) {
@@ -288,25 +290,35 @@ export class Queue {
       if (!task) return { kind: 'none' };
       if (task.status === 'unknown') return { kind: 'unknown' };
       if (task.status === 'done' || task.status === 'cancelled') return { kind: 'settled' };
-      return task.status === 'open' ? { kind: 'not-started' } : { kind: 'started' };
+      if (task.status !== 'open') return { kind: 'started' };
+
+      // A task stays open for the whole of its agent turn, so the task's own
+      // status cannot say whether the work had started. The execution can: it
+      // is written before the adapter runs, and it is what says the turn began.
+      const execution = this.db
+        .select()
+        .from(executions)
+        .where(eq(executions.taskId, payload.taskId))
+        .get();
+      if (!execution) return { kind: 'not-started' };
+      return executionItemState(execution.status, execution.startedAt);
     }
 
     if (payload.automationId) {
-      // An automation run has no id in the job, so the run that belongs to
-      // this job is the one that started after the job was claimed.
-      const runs = this.db
+      // The job carries the id of the run it is going to make, so the run is
+      // found rather than guessed at. A run is written when it starts, so a
+      // run that is missing never began; a run that is `running` began and
+      // nothing recorded how it ended; a run that finished is finished.
+      if (!payload.runId) return { kind: 'none' };
+      const run = this.db
         .select()
         .from(automationRuns)
-        .where(eq(automationRuns.automationId, payload.automationId))
-        .all()
-        .filter((row) => row.startedAt >= (job.lockedAt ?? ''));
-      const run = runs.find((row) => row.status === 'unknown');
-      if (run) return { kind: 'unknown' };
-      const finished = runs.find((row) => row.status !== 'running' && row.status !== 'queued');
-      if (finished) return { kind: 'settled' };
-      const running = runs.find((row) => row.status === 'running');
-      if (running) return { kind: 'started' };
-      return { kind: 'not-started' };
+        .where(eq(automationRuns.id, payload.runId))
+        .get();
+      if (!run) return { kind: 'not-started' };
+      if (run.status === 'unknown') return { kind: 'unknown' };
+      if (run.status === 'running') return { kind: 'started' };
+      return { kind: 'settled' };
     }
 
     return { kind: 'none' };

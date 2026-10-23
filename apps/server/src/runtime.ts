@@ -29,6 +29,8 @@ export interface Runtime {
 
 export { Queue } from './queue/client.js';
 export type { QueueJob, JobType, EnqueueOptions } from './queue/client.js';
+export { decideStaleJob } from './queue/reconciliation.js';
+export type { StaleJobDecision, StaleJobItem } from './queue/reconciliation.js';
 export { EventsService } from './modules/events/service.js';
 export { createAuditService } from './modules/audit/service.js';
 export type { AuditService, AuditEntry } from './modules/audit/service.js';
