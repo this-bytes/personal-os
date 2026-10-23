@@ -62,7 +62,16 @@ try {
   assert.notEqual(run().status, 0);
   assert.equal(git(hosted, 'rev-parse', 'HEAD'), diverged);
   assert.equal(fs.readFileSync(log, 'utf8').trim().split('\n').length, 2);
-  console.log('Updater fast-forward, drain order and local-work safeguards passed.');
+  const config = path.join(temp, 'config');
+  const installerEnv = { ...env, XDG_CONFIG_HOME: config };
+  execFileSync('bash', ['deploy/install-service.sh'], { cwd: root, env: installerEnv });
+  const unitDir = path.join(config, 'systemd/user');
+  execFileSync(
+    'systemd-analyze',
+    ['verify', ...fs.readdirSync(unitDir).map((name) => path.join(unitDir, name))],
+    { stdio: 'inherit' },
+  );
+  console.log('Updater safeguards and generated systemd units passed.');
 } finally {
   fs.rmSync(temp, { recursive: true, force: true });
 }

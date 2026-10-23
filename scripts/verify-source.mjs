@@ -8,9 +8,40 @@ import net from 'node:net';
 import { randomBytes } from 'node:crypto';
 import assert from 'node:assert/strict';
 
-const root = path.resolve(import.meta.dirname, '..');
+const repository = path.resolve(import.meta.dirname, '..');
+const sandbox = fs.mkdtempSync(path.join(os.tmpdir(), 'personal-os-source-'));
+const root = path.join(sandbox, 'checkout');
+const data = path.join(sandbox, 'data');
+fs.mkdirSync(root);
+// Copy tracked working files, including local edits, without ignored secrets or
+// borrowed node_modules. Reload tests must never restart a hosted checkout.
+const files = execFileSync('git', ['ls-files', '-z'], { cwd: repository, encoding: 'utf8' })
+  .split('\0')
+  .filter(Boolean);
+for (const file of files) {
+  const source = path.join(repository, file);
+  if (!fs.existsSync(source)) continue;
+  const target = path.join(root, file);
+  fs.mkdirSync(path.dirname(target), { recursive: true });
+  fs.copyFileSync(source, target);
+}
+execFileSync('git', ['init', '-q', '-b', 'main'], { cwd: root });
+execFileSync(
+  'git',
+  [
+    '-c',
+    'user.name=Source test',
+    '-c',
+    'user.email=source@example.test',
+    'commit',
+    '-q',
+    '--allow-empty',
+    '-m',
+    'Source test snapshot',
+  ],
+  { cwd: root },
+);
 execFileSync(process.execPath, ['scripts/verify-update.mjs'], { cwd: root, stdio: 'inherit' });
-const data = fs.mkdtempSync(path.join(os.tmpdir(), 'personal-os-source-'));
 async function port() {
   const server = net.createServer();
   server.listen(0, '127.0.0.1');
@@ -127,5 +158,5 @@ try {
   console.log('Source hosting, reload, restart persistence and worker execution passed.');
 } finally {
   await stop();
-  fs.rmSync(data, { recursive: true, force: true });
+  fs.rmSync(sandbox, { recursive: true, force: true });
 }

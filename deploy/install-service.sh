@@ -9,14 +9,14 @@ mkdir -p "$config" "$units"
 if [ ! -f "$config/stack.env" ]; then
   install -m 600 "$root/deploy/.env.example" "$config/stack.env"
 fi
-# Quote systemd paths so a checkout path containing spaces remains usable.
+# ExecStart arguments and Environment assignments use systemd quoting.
 cat > "$units/personal-os-stack.service" <<EOF
 [Unit]
 Description=Personal OS source stack
 After=network-online.target
 StartLimitIntervalSec=0
 [Service]
-WorkingDirectory="$root"
+WorkingDirectory=$root
 Environment="PATH=$node_dir:/usr/local/bin:/usr/bin:/bin"
 Environment="PERSONAL_OS_ENV_FILE=$config/stack.env"
 ExecStart=/bin/bash "$root/deploy/source-stack.sh"
@@ -32,7 +32,7 @@ cat > "$units/personal-os-update.service" <<EOF
 Description=Pull Personal OS main and restart the source stack
 [Service]
 Type=oneshot
-WorkingDirectory="$root"
+WorkingDirectory=$root
 ExecStart=/bin/bash "$root/deploy/update.sh"
 TimeoutStartSec=2000
 EOF

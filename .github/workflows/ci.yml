@@ -188,7 +188,7 @@ jobs:
         with:
           node-version-file: .nvmrc
           cache: npm
-      - run: npm ci --no-audit --no-fund
+      # The verifier installs its own disposable source checkout.
       - run: npm run verify:source
 
   workflow-lint:
