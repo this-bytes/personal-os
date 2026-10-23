@@ -43,6 +43,7 @@
     "verify:mcp-parity": "tsx scripts/verify-mcp-parity.ts",
     "verify:session-references": "tsx scripts/verify-session-references.ts",
     "verify:restart-reconciliation": "tsx scripts/verify-restart-reconciliation.ts",
+    "verify:acp-permissions": "tsx scripts/verify-acp-permissions.ts",
     "gates": "tsx scripts/verify-gates.ts",
     "verify:stack": "tsx scripts/verify-stack.ts",
     "work:item": "tsx scripts/work-item.ts",

@@ -202,7 +202,7 @@ expects the execution's word on the reply's word will be wrong.
 produced of how the turn ended, and it travels on the reply: the messages of that
 execution carry it when the execution is settled
 (`apps/server/src/modules/executions/service.ts:351-354`, and
-`apps/server/src/modules/approvals/resume.ts:197-201` for the turn that is closed
+`apps/server/src/modules/approvals/resume.ts:202-206` for the turn that is closed
 rather than continued). **A client shows it as it is given**
 (`apps/web/src/components/ChatMessageList.tsx:136`): the account of what happened
 is the server's, and rewording it in the client would be the client telling the
@@ -255,7 +255,7 @@ route calls it through the shared capability API at
 calls too. **There are two
 writers of an execution's outcome, not one**: the other is `resolveExecution`
 (`apps/server/src/modules/approvals/service.ts:165`), which the approval
-decision path calls (`apps/server/src/modules/approvals/resume.ts:159`) and
+decision path calls (`apps/server/src/modules/approvals/resume.ts:164`) and
 this route does not.
 
 **Migration.** Nothing is reclassified, and no execution is closed by this
@@ -1917,9 +1917,9 @@ be told apart from the stored default. See
 
 **The limits, the allowed actions and the approvals are enforced.** The worker holds
 a turn to the effective policy: the chain's turn count
-(`apps/worker/src/executor.ts:1219`) and its spend
-(`apps/worker/src/executor.ts:1226`), and the workspace's spend for the day
-(`apps/worker/src/executor.ts:1233`), before the turn starts; the policy's duration
+(`apps/worker/src/executor.ts:1244`) and its spend
+(`apps/worker/src/executor.ts:1251`), and the workspace's spend for the day
+(`apps/worker/src/executor.ts:1258`), before the turn starts; the policy's duration
 limit caps the turn while it runs, and every action the agent announces is checked
 against what the policy allows. The MCP surface refuses an action the policy does not
 allow, and one the policy wants the owner to approve until the owner has decided. A
@@ -1928,8 +1928,8 @@ truncated.
 
 **A daily cap is a cap on the workspace.** The workspace's spend for the day is the
 sum of the spend units on the executions of that workspace since 00:00 UTC
-(`apps/worker/src/executor.ts:1256-1266`,
-`apps/worker/src/executor.ts:1260-1265`), and it is the same day for every workspace —
+(`apps/worker/src/executor.ts:1281-1291`,
+`apps/worker/src/executor.ts:1285-1290`), and it is the same day for every workspace —
 the system stores ISO timestamps everywhere and has no per-workspace timezone. A daily
 cap of zero is no cap, as it is for the chain's spend limit. The cap applies across
 the workspace's conversations and goals, and not per chain, which is the whole
@@ -2011,6 +2011,41 @@ signal.
 **The decision is recorded before the resume is attempted**, so an answer is never
 lost because the session could not be restored.
 
+**The owner's decision reaches the adapter in a form a runtime can be answered
+with.** The decision is the next input of the resumed turn, and it arrives
+twice: as the prose the agent reads, and as the structured decision an adapter
+needs to answer a runtime that asks for permission again.
+
+```ts
+interface AgentTurnInput {
+  // ...
+  approval?: {
+    /** Whether the owner approved the operation. */
+    approved: boolean;
+    /**
+     * The approval the decision was made on.
+     *
+     * It names the request the decision was about, so a runtime that asks
+     * about something else is asked about again instead of being answered
+     * with an answer the owner never gave it.
+     */
+    approvalId: string;
+  };
+}
+```
+
+**A turn without a decision asks the owner again.** The field is present only on
+a turn that continues one that asked. A turn written before the decision was
+structured carries none, and an adapter that has none asks again rather than
+guessing what the owner said.
+
+**A runtime's own permission request is the same approval.** An adapter whose
+protocol has the runtime ask the client for permission turns that ask into the
+product's approval: the same `approval.requested` event, the same row, the
+same decision path. There is no second approval path. The runtime's question
+and the product's approval are one thing, and the owner's decision on one is
+the decision on the other.
+
 **The external session id lives in `externalRef`**, the execution's existing
 external orchestrator reference. A blocked execution with no `externalRef` carries
 no session to resume.
@@ -2022,8 +2057,8 @@ supports, and the capability to do it is already modelled and negotiated.
 
 This entry is the contract for **WI-007**, and the code implements it — as of
 `5f019b9`. `resumeSession` is implemented at
-`packages/agent-adapters/src/acp.ts:238` and called at
-`apps/worker/src/executor.ts:406`, and the gate is the capability and the session
+`packages/agent-adapters/src/acp.ts:340` and called at
+`apps/worker/src/executor.ts:430`, and the gate is the capability and the session
 id together: `canResume = capabilities?.persistentSessions === true &&
 Boolean(execution.externalRef)`.
 

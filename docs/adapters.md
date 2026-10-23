@@ -76,6 +76,31 @@ of the two the owner has.
 conversation goes back into the same runtime session, and the transcript names
 that session so a reader can tell one session's answer from another's.
 
+### What the ACP route carries
+
+The ACP route is the one this repository has exercised against an installed
+runtime, so what it carries is written down here rather than left to the
+capability row alone.
+
+| Capability             | The ACP route | What that means                                                                                                                           |
+| ---------------------- | ------------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
+| Permission requests    | supported     | The runtime's own `session/request_permission` reaches the owner as the product's approval, and the owner's decision answers the runtime. |
+| Artifacts              | not supported | The route streams the agent's text and its tool calls, and makes no resource of either.                                                   |
+| Input files and images | not supported | **The ACP route sends text only.**                                                                                                        |
+
+**The ACP route sends text only.** The adapter's prompt is a single
+`type: 'text'` block. A message in the product carries an attachment as a
+reference to a resource, and the boundary an adapter is given carries text: a
+runtime that can read images reads them once the turn carries content parts,
+and not before. OpenCode's own capabilities include images, so the limit is
+the product's and not the runtime's.
+
+**What is proved where.** The permission path is proved by
+`scripts/verify-acp-permissions.ts`, which drives the built adapter against
+an agent that speaks the protocol. It has not been demonstrated against an
+installed runtime yet — that is SPEC-R1-2's demonstration, and the owner
+drives it.
+
 ## Common capability record
 
 For each pinned integration record supported/unsupported/unknown and evidence for:

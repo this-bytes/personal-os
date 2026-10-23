@@ -126,6 +126,11 @@ export function decideApproval(input: {
         depth,
         resume: {
           decision: decisionText(input.approved, input.reason),
+          // The decision in a form a runtime can be answered with. The prose
+          // above is what the agent reads; these two are what the adapter
+          // needs to answer the request the decision was made on.
+          approved: input.approved,
+          approvalId: approval.id,
           externalSessionId: execution.externalRef ?? '',
         },
       },

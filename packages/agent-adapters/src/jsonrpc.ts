@@ -101,12 +101,20 @@ export class JsonRpcStdioClient {
     this.child.stdin.write(`${JSON.stringify({ jsonrpc: '2.0', method, params })}\n`, 'utf8');
   }
 
-  /** Respond to a peer-initiated request. */
+  /**
+   * Respond to a peer-initiated request.
+   *
+   * A response to a transport that is already closed is not written: the peer
+   * is gone, and writing to its pipe would fail for a reason nobody is
+   * waiting for any more.
+   */
   respond(id: number | string, result: unknown): void {
+    if (this.closed) return;
     this.child.stdin.write(`${JSON.stringify({ jsonrpc: '2.0', id, result })}\n`, 'utf8');
   }
 
   respondError(id: number | string, code: number, message: string): void {
+    if (this.closed) return;
     this.child.stdin.write(
       `${JSON.stringify({ jsonrpc: '2.0', id, error: { code, message } })}\n`,
       'utf8',

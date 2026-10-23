@@ -149,6 +149,21 @@ interface ChatTurnPayload {
    */
   resume?: {
     decision: string;
+    /**
+     * Whether the owner approved the operation.
+     *
+     * The prose in `decision` is what the agent reads. This is what an
+     * adapter answers a runtime's own permission request with, so it has to
+     * be a decision and not a sentence.
+     */
+    approved?: boolean;
+    /**
+     * The approval the decision was made on.
+     *
+     * It names the request the decision was about, so an adapter can tell an
+     * answer to that request from an answer to another one.
+     */
+    approvalId?: string;
     externalSessionId: string;
   };
 }
@@ -365,6 +380,15 @@ async function executeChatTurn(context: ExecutorContext, job: QueueJob): Promise
   // the one the suspended turn was in.
   const turnMessage = payload.resume?.decision ?? parentText;
 
+  // The owner's decision, in the form an adapter can answer a runtime's own
+  // permission request with. A payload written before the decision was
+  // structured carries none, and a turn with no decision asks the owner
+  // again rather than guessing what they said.
+  const approvalDecision =
+    payload.resume && typeof payload.resume.approved === 'boolean' && payload.resume.approvalId
+      ? { approved: payload.resume.approved, approvalId: payload.resume.approvalId }
+      : null;
+
   // The reply of a resumed turn continues the reply of the suspended turn,
   // so what came before it is still part of it.
   let accumulated = existing
@@ -451,6 +475,7 @@ async function executeChatTurn(context: ExecutorContext, job: QueueJob): Promise
         signal,
         ...(externalSessionId ? { externalSessionId } : {}),
         ...(owner.acceptsSteering ? { steer: steerChannel.messages } : {}),
+        ...(approvalDecision ? { approval: approvalDecision } : {}),
       };
 
       // The owner's steers, taken while this turn runs.

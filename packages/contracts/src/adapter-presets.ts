@@ -191,8 +191,13 @@ const CAPABILITIES = {
     persistentSessions: true,
     backgroundTasks: true,
     cancel: true,
+    // The runtime's own permission request reaches the owner as the
+    // product's approval, and the owner's decision answers the runtime.
     approvals: true,
-    artifacts: true,
+    // The ACP route surfaces no artifact: the protocol's streamed updates
+    // carry the agent's text and its tool calls, and the adapter turns
+    // neither into a resource.
+    artifacts: false,
   },
   a2a: {
     chat: true,

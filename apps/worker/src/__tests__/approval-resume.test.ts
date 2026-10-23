@@ -351,4 +351,78 @@ describe('a turn that is waiting for a decision', () => {
     expect(text).toContain('May I delete the production database?');
     expect(text).toContain('And the work is done.');
   });
+
+  it('gives the adapter the decision, so a runtime can be answered with it', async () => {
+    await executeJob(
+      context,
+      job({
+        conversationId: 'cnv_1',
+        parentMessageId: 'msg_parent',
+        agentConnectionId: 'agt_1',
+        executionId: 'exe_1',
+        correlationId: 'cor_1',
+        depth: 1,
+      }),
+    );
+
+    await executeJob(
+      context,
+      job({
+        conversationId: 'cnv_1',
+        parentMessageId: 'msg_parent',
+        agentConnectionId: 'agt_1',
+        executionId: 'exe_1',
+        correlationId: 'cor_1',
+        depth: 1,
+        resume: {
+          decision: 'The owner approved this operation. Continue.',
+          approved: true,
+          approvalId: 'apr_1',
+          externalSessionId: 'sess_1',
+        },
+      }),
+    );
+
+    // The adapter is told what the owner decided and which request the
+    // decision was about: a runtime that asks again is answered with it, and
+    // one that asks about something else is not.
+    const resumed = adapter.turns[1];
+    expect(resumed?.approval).toEqual({ approved: true, approvalId: 'apr_1' });
+  });
+
+  it('gives the adapter no decision when the turn carries none', async () => {
+    await executeJob(
+      context,
+      job({
+        conversationId: 'cnv_1',
+        parentMessageId: 'msg_parent',
+        agentConnectionId: 'agt_1',
+        executionId: 'exe_1',
+        correlationId: 'cor_1',
+        depth: 1,
+      }),
+    );
+
+    await executeJob(
+      context,
+      job({
+        conversationId: 'cnv_1',
+        parentMessageId: 'msg_parent',
+        agentConnectionId: 'agt_1',
+        executionId: 'exe_1',
+        correlationId: 'cor_1',
+        depth: 1,
+        // A turn written before the decision was structured.
+        resume: {
+          decision: 'The owner approved this operation. Continue.',
+          externalSessionId: 'sess_1',
+        },
+      }),
+    );
+
+    // No decision is no decision. The adapter asks the owner again rather
+    // than guessing what they said.
+    const resumed = adapter.turns[1];
+    expect(resumed?.approval).toBeUndefined();
+  });
 });
