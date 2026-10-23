@@ -173,15 +173,17 @@ test`, `npm run format:check`, `npm run build`, `npx tsx scripts/smoke.ts`,
 `npm run verify:mcp-parity`.
 
 Measured on this machine, one package at a time: worker 106, server 717, web
-191, agent-adapters 50, contracts 48. The contract gate checks 28 claims and
+193, agent-adapters 50, contracts 48. The contract gate checks 28 claims and
 reports no failure; the pointer gate checks 190 pointers and reports none
 stale; the parity gate reports 82 published routes and 82 registered, 23
 tools, 22 paired, 50 listed and 10 exempt, with no failure.
 
-One measurement on this machine does not carry: `contractStatus.test.ts`
-runs the contract gate as a subprocess with a 60-second limit, and the gate
-takes longer than that on this Windows host, so that one case times out here
-and passes in CI. It is pre-existing, and it is the same case on `main`.
+One measurement needs a word about how it was taken. `contractStatus.test.ts`
+runs the contract gate as a subprocess with a 60-second limit, and that gate
+takes long enough to exceed it when the machine is busy: two runs of the
+server suite under load timed out on that one case and nothing else, and the
+same suite with the machine idle passes every case. It is a property of the
+host, not of the slice, and it is the same case on `main`.
 
 **The limits.** The owner covers the three callers that exist; a fourth
 caller is the thing that has to change. The grant decision taken at admission
