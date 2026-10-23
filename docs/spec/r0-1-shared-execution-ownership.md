@@ -92,8 +92,9 @@ still work.
 
 ## Evidence
 
-Delivered on `feature/r0-1-execution-owner` at `7c2e4e1`, with `origin/main` at
-`58dacf8` merged in.
+Delivered on `feature/r0-1-execution-owner` at `72ad57d`, merged to `main` by
+PR #6 as `8f384b2`. The code is in `7c2e4e1`; the commits after it are the
+contract's pointers and this evidence.
 
 **The owner.** `apps/worker/src/execution-owner.ts` holds the lifecycle the
 three callers share: it resolves the connection, admits the turn against the
