@@ -1,5 +1,5 @@
-import { spawn, type ChildProcessWithoutNullStreams } from 'node:child_process';
-import { terminateChild } from './util.js';
+import type { ChildProcessWithoutNullStreams } from 'node:child_process';
+import { spawnExecutable, terminateChild } from './util.js';
 
 interface JsonRpcMessage {
   jsonrpc?: string;
@@ -30,13 +30,10 @@ export class JsonRpcStdioClient {
   private closed = false;
 
   constructor(command: string, args: string[], options: { cwd?: string; env?: NodeJS.ProcessEnv }) {
-    this.child = spawn(command, args, {
-      cwd: options.cwd ?? process.cwd(),
+    this.child = spawnExecutable(command, args, {
+      cwd: options.cwd,
       env: options.env,
-      stdio: ['pipe', 'pipe', 'pipe'],
-      shell: false,
-      windowsHide: true,
-    }) as ChildProcessWithoutNullStreams;
+    });
 
     this.child.stdout.setEncoding('utf8');
     this.child.stdout.on('data', (chunk: string) => this.consume(chunk));

@@ -21,7 +21,15 @@ process.stdin.on('data', (chunk) => {
 });
 
 process.stdin.on('end', () => {
-  const asked = prompt.trim().slice(0, 120);
+  // The prompt carries the room's context as well as the owner's message.
+  // The answer echoes the question and not the room: an answer that repeated
+  // the room would name the agent again, and a message that names the agent
+  // is another turn.
+  const asked = prompt
+    .split('\n\n')[0]
+    .replace(/@\S+/g, '')
+    .trim()
+    .slice(0, 120);
   const events = [
     { type: 'thread.started', thread_id: 'fixture-thread' },
     { type: 'turn.started' },
