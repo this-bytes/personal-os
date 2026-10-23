@@ -1,13 +1,6 @@
 import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
-import type {
-  ChatActivityReadModel,
-  DelegatedTask,
-  RunControl,
-  StopTurnResult,
-} from '@personal-os/contracts';
-import { audit, notFound, parseBody, requireAuth } from './helpers.js';
-import * as activity from '../modules/executions/activity.js';
+import { audit, parseBody, requireAuth } from './helpers.js';
 
 const resolveSchema = z.object({
   /** The owner's own conclusion: it did run, or it did not. */
@@ -54,22 +47,6 @@ export function registerExecutionRoutes(app: FastifyInstance): void {
   });
 
   /**
-   * Whether the owner has already asked this turn to stop.
-   *
-   * The request is in the audit trail, so it survives a reload: a panel that
-   * forgot the request would offer the stop button again and say nothing about
-   * the one already made.
-   */
-  function stopWasRequested(workspaceId: string | null, executionId: string): boolean {
-    if (!workspaceId) return false;
-    return app.services.audit
-      .list(workspaceId, 200)
-      .some(
-        (entry) => entry.action === 'execution.stop.requested' && entry.targetId === executionId,
-      );
-  }
-
-  /**
    * The turn, with the activity behind it.
    *
    * The trace the panel draws is derived from the event log, so it is still
@@ -78,65 +55,12 @@ export function registerExecutionRoutes(app: FastifyInstance): void {
    * delegation tree and its committed revision, with the activity the turn
    * produced beside them.
    *
-   * **The delegation tree is part of the turn, not a second thing to look up
-   * under another name**: a turn that delegated work carries that work, and a
-   * turn that was delegated work carries the turn that delegated it. The
-   * capability view and the committed revision are absent rather than empty;
-   * they are published, and they are not implemented yet.
+   * The read model is the service's, and the agent's `execution.get` reads
+   * the same one: a person and an agent see the same turn.
    */
   app.get('/api/executions/:id', { preHandler: requireAuth }, async (request) => {
     const { id } = request.params as { id: string };
-    const db = app.services.runtime.db;
-
-    const turn = activity.readTurnRow(db, id);
-    if (!turn) notFound('Execution');
-
-    const activities = activity
-      .deriveActivities(activity.readTurnEvents(db, id))
-      .map((entry) => ({ ...entry, conversationId: turn.conversationId }));
-
-    const run = activity.runControlFor({
-      status: activity.turnStatusOf(turn.status),
-      stopRequested: stopWasRequested(turn.workspaceId, id),
-      // A turn can be steered when the capability set it was admitted with
-      // can take input while it runs. The set is pinned at admission, so a
-      // capability that changed after the turn started does not change the
-      // turn: it takes effect on the next one.
-      canSteer: activity.turnAcceptsSteering(db, turn),
-    });
-
-    const tree = app.services.bots.delegationTree(id);
-
-    const readModel: ChatActivityReadModel = {
-      turn: {
-        id: turn.id,
-        conversationId: turn.conversationId,
-        agentConnectionId: turn.agentConnectionId,
-        status: activity.turnStatusOf(turn.status),
-        error: turn.error,
-        spendUnits: turn.spendUnits,
-        startedAt: turn.startedAt,
-        finishedAt: turn.finishedAt,
-        // What the turn was admitted with. Absent rather than empty: a turn
-        // recorded before the view existed has none, and an empty view would
-        // say the agent had no tools.
-        capabilityView: turn.capabilityView,
-        // The work this turn handed over, and the work that handed over to it.
-        delegatedTasks:
-          tree.parent || tree.children.length > 0
-            ? [tree.parent, ...tree.children].filter(
-                (task): task is DelegatedTask => task !== undefined,
-              )
-            : null,
-        committedRevision: null,
-      },
-      activities,
-      run,
-      execution: app.services.executions.get(id),
-      delegationTree: tree,
-    };
-
-    return readModel;
+    return app.services.executions.read(id);
   });
 
   /**
@@ -147,6 +71,9 @@ export function registerExecutionRoutes(app: FastifyInstance): void {
    * session, and the API server never runs an agent, so there is no channel
    * from here to a running turn. The answer never presents the request as a
    * cancellation.
+   *
+   * The request is made through the service, and the agent's `execution.stop`
+   * makes the same request: one stop path, one trail, one set of words.
    */
   app.post('/api/executions/:id/stop', { preHandler: requireAuth }, async (request) => {
     const { id } = request.params as { id: string };
@@ -155,40 +82,12 @@ export function registerExecutionRoutes(app: FastifyInstance): void {
       note: z.string().max(2_000).optional(),
     });
     const body = parseBody(stopSchema, request.body ?? {});
-    const db = app.services.runtime.db;
-    const now = new Date().toISOString();
 
-    const before = activity.readTurnRow(db, id);
-    if (!before) notFound('Execution');
-
-    const result = activity.requestStop(db, id, now);
-
-    // The request is written to the audit trail whether or not it could be
-    // carried out: an ask that was recorded and did not stop the turn is
-    // still something the owner did, and the trail should show it.
-    audit(
-      request,
-      'execution.stop.requested',
-      { type: 'execution', id, workspaceId: before.workspaceId },
-      {
-        outcome: result.outcome,
-        ...(body.note?.trim() ? { note: body.note } : {}),
-      },
-    );
-
-    const after = activity.readTurnRow(db, id);
-    const run: RunControl = activity.runControlFor({
-      status: activity.turnStatusOf(after?.status ?? before.status),
-      stopRequested: result.outcome === 'requested',
-      canSteer: false,
-    });
-
-    const response: StopTurnResult = {
+    return app.services.executions.stop({
       executionId: id,
-      outcome: result.outcome,
-      detail: result.detail,
-      run,
-    };
-    return response;
+      note: body.note,
+      actorType: request.actorType ?? 'human',
+      actorId: request.user?.id ?? 'anonymous',
+    });
   });
 }

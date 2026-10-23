@@ -1,12 +1,16 @@
 import {
   type AgentConnectionDetail,
+  type Approval,
+  type ApprovalStatus,
   type Automation,
   type AutomationRun,
   type BotDispatchResult,
+  type ChatActivityReadModel,
   type ContentPart,
   type Conversation,
   type EffectiveAutonomyPolicy,
   type Evidence,
+  type ExecutionStatus,
   type FactoryTask,
   type Goal,
   type McpToolName,
@@ -16,10 +20,12 @@ import {
   type ResourceTemplate,
   type ResourceTemplateRef,
   type ResourceType,
+  type StopTurnResult,
   type Workspace,
 } from '@personal-os/contracts';
 import { errors } from '../../lib/errors.js';
 import type { Database } from '../../db/client.js';
+import type { Queue } from '../../queue/client.js';
 import type { Author } from '../../lib/author.js';
 import type { AuthenticatedUser } from '../auth/service.js';
 import type { ConversationsService, PostMessageResult } from '../conversations/service.js';
@@ -29,6 +35,10 @@ import type { FactoryService } from '../factory/service.js';
 import type { ResourceService } from '../resources/service.js';
 import type { AutomationsService } from '../automations/service.js';
 import type { ApprovalsService } from '../approvals/service.js';
+import { decideApproval, type ApprovalDecision } from '../approvals/resume.js';
+import type { AuditEntry, AuditService } from '../audit/service.js';
+import type { EventsService, StoredEvent } from '../events/service.js';
+import type { ExecutionDetail, ExecutionsService } from '../executions/service.js';
 import type { WorkspaceService } from '../workspaces/service.js';
 import { loadEffectiveAutonomyPolicy } from '../autonomy/service.js';
 
@@ -52,7 +62,13 @@ export interface Actor {
  * Each of them belongs to exactly one workspace, and that is the thing a
  * caller's scope is checked against.
  */
-export type ScopedObjectKind = 'conversation' | 'task' | 'resource' | 'automation';
+export type ScopedObjectKind =
+  | 'conversation'
+  | 'task'
+  | 'resource'
+  | 'automation'
+  | 'approval'
+  | 'execution';
 
 /**
  * The author an actor stands for.
@@ -192,6 +208,80 @@ export interface CapabilitiesService {
   goalList(workspaceId: string): Goal[];
 
   /**
+   * The approval queue of a workspace, or one approval of it.
+   *
+   * The queue the owner reads is the same queue this reads: the list is the
+   * owner's waiting list, narrowed to a workspace. `approvalId` names one row
+   * of it, and a row that is not in the named workspace is not in that queue.
+   */
+  approvalList(input: {
+    workspaceId?: string;
+    status?: ApprovalStatus;
+    approvalId?: string;
+  }): Approval[];
+
+  /**
+   * The decision on an approval, and the turn it answers.
+   *
+   * This is the owner's own decision path, used as it is: the decision is
+   * recorded first, the turn is continued in the session it was in when it can
+   * be, and it is closed when it cannot. A turn that is closed is closed with
+   * the answer still on record, and the answer says so.
+   *
+   * `decidedBy` and `actorType` say who decided. The grant that stands behind
+   * an agent's decision is the owner's grant, and the record names the agent
+   * that made the call, so the trail says who acted.
+   */
+  approvalDecide(input: {
+    approvalId: string;
+    approved: boolean;
+    reason?: string;
+    /** Who decided. */
+    decidedBy: string;
+    actorType: 'human' | 'agent';
+  }): ApprovalDecision;
+
+  /**
+   * The turns of a workspace, newest first.
+   */
+  executionList(input: {
+    workspaceId: string;
+    status?: ExecutionStatus;
+    limit?: number;
+  }): ExecutionDetail[];
+
+  /**
+   * The turn with the activity behind it.
+   */
+  executionRead(executionId: string): ChatActivityReadModel;
+
+  /**
+   * Ask a turn to stop.
+   *
+   * The answer says what was actually done: `cancelled` when the turn had not
+   * started and will not run, `requested` when the runtime was asked and may
+   * still finish the turn, and `not_running` when there was nothing to stop.
+   * It never claims a turn stopped when only a request was made, and it never
+   * guesses at a turn whose outcome could not be confirmed.
+   */
+  executionStop(input: {
+    executionId: string;
+    note?: string;
+    actorType: 'human' | 'agent';
+    actorId: string;
+  }): StopTurnResult;
+
+  /**
+   * The event log of a workspace.
+   */
+  eventList(input: { workspaceId: string; limit?: number }): StoredEvent[];
+
+  /**
+   * The audit trail of a workspace.
+   */
+  auditList(workspaceId: string, limit?: number): AuditEntry[];
+
+  /**
    * The policy in force for a scope.
    *
    * The strictest of the workspace's policy, the goal's policy and the
@@ -241,6 +331,10 @@ export interface CapabilitiesServiceOptions {
   resources: ResourceService;
   automations: AutomationsService;
   approvals: ApprovalsService;
+  executions: ExecutionsService;
+  audit: AuditService;
+  events: EventsService;
+  queue: Queue;
 }
 
 export function createCapabilitiesService(
@@ -256,6 +350,10 @@ export function createCapabilitiesService(
     resources,
     automations,
     approvals,
+    executions,
+    audit,
+    events,
+    queue,
   } = options;
 
   /**
@@ -270,6 +368,8 @@ export function createCapabilitiesService(
     task: (id) => factory.getTask(id).workspaceId,
     resource: (id) => resources.get(id).workspaceId,
     automation: (id) => automations.get(id).workspaceId,
+    approval: (id) => approvals.get(id).workspaceId,
+    execution: (id) => executions.get(id).workspaceId,
   };
 
   return {
@@ -401,6 +501,52 @@ export function createCapabilitiesService(
 
     goalList(workspaceId): Goal[] {
       return factory.listGoals(workspaceId);
+    },
+
+    approvalList(input): Approval[] {
+      if (input.approvalId) {
+        const approval = approvals.get(input.approvalId);
+        // A row of another workspace is not in this queue.
+        if (input.workspaceId && approval.workspaceId !== input.workspaceId) return [];
+        return [approval];
+      }
+      if (!input.workspaceId) return [];
+      return approvals.list(input.workspaceId, input.status);
+    },
+
+    approvalDecide(input): ApprovalDecision {
+      return decideApproval({
+        db,
+        queue,
+        audit,
+        events,
+        approvals,
+        approvalId: input.approvalId,
+        approved: input.approved,
+        reason: input.reason ?? '',
+        decidedBy: input.decidedBy,
+        actorType: input.actorType,
+      });
+    },
+
+    executionList(input): ExecutionDetail[] {
+      return executions.list(input);
+    },
+
+    executionRead(executionId): ChatActivityReadModel {
+      return executions.read(executionId);
+    },
+
+    executionStop(input): StopTurnResult {
+      return executions.stop(input);
+    },
+
+    eventList(input): StoredEvent[] {
+      return events.recent(input.workspaceId, input.limit ?? 200);
+    },
+
+    auditList(workspaceId, limit): AuditEntry[] {
+      return audit.list(workspaceId, limit);
     },
 
     effectiveAutonomyPolicy(scope): EffectiveAutonomyPolicy {
