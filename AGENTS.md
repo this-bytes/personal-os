@@ -11,9 +11,13 @@ factory. Before implementing anything, read:
 1. [PRODUCT.md](PRODUCT.md) — what the product owns and what it does not.
 2. [ARCHITECTURE.md](ARCHITECTURE.md) — how the pieces fit together.
 3. [CONTRACTS.md](CONTRACTS.md) — the published contracts.
-4. [FACTORY.md](FACTORY.md) — the independent development workflow.
+4. [docs/spec/](docs/spec/) — the work queue: specs are the unit of work.
+   [docs/decisions/](docs/decisions/) — accepted ADRs; the build is driven by
+   specs and ADRs per ADR 0012, and the old out-of-band workflow in
+   [FACTORY.md](FACTORY.md) is retained as history, not as process.
 5. [docs/roadmap.md](docs/roadmap.md) — the active recovery sequence; use
    [docs/feature-guide.md](docs/feature-guide.md) when implementing a slice.
+   A capability without an agent-operable surface is not exposed (ADR 0013).
 6. The relevant module's source. The contract definitions live in
    `packages/contracts`; the schema lives in `apps/server/src/db/schema.ts`.
 
