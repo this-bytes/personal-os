@@ -9,7 +9,7 @@ import {
 import { JsonRpcStdioClient } from './jsonrpc.js';
 import { AdapterLifecycle, notConnectedEvent } from './lifecycle.js';
 import type { AdapterContext } from './types.js';
-import { buildSanitizedEnv, interpolate, parseSseData, readSseEvents } from './util.js';
+import { buildSanitizedEnv, interpolateJson, parseSseData, readSseEvents } from './util.js';
 
 /**
  * An agent that is an MCP server.
@@ -254,7 +254,7 @@ export class McpAdapter implements AgentAdapter {
 
     let args: unknown;
     try {
-      const rendered = interpolate(this.config.argumentTemplate, {
+      const rendered = interpolateJson(this.config.argumentTemplate, {
         message: input.message,
         context: input.context,
         conversationId: input.conversationId,

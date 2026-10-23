@@ -208,8 +208,8 @@ describe('the code, as the section describes it', () => {
         what: 'the route helper writes success',
       },
       {
-        file: 'apps/worker/src/executor.ts',
-        at: [118, 118],
+        file: 'apps/worker/src/execution-owner.ts',
+        at: [585, 585],
         pattern: /result:\s*'unknown'/,
         what: 'the worker writes unknown',
       },
