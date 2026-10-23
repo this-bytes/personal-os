@@ -183,9 +183,11 @@ fails if it declares the support again instead of reading the published one.
 **The audit's rows.** _Publish a resource_ and _execute a resource_ are
 **human-only**: the owner path tells the truth, and no agent path exists —
 `mcpToolNames` publishes no `resource.publish` and no `resource.execute`. The
-audit's record now reads **23 exposed-paired, 43 human-only, 0 broken-window,
-17 exempt — 83 rows over 82 routes**, and the two rows are re-measured in the
-audit with the evidence of both readings.
+audit's record read **23 exposed-paired, 43 human-only, 0 broken-window,
+17 exempt — 83 rows over 82 routes** when this slice measured it. Later slices
+pair routes and the count moves, so the count to read is the one the audit
+carries; the two rows are re-measured in the audit with the evidence of both
+readings.
 `scripts/mcp-parity.json` keeps both routes `listed` against `SPEC-S2+`, with
 the reasons restated: the route runs or publishes what the kind can do and
 refuses the rest, and the agent path is SPEC-S2's question.
