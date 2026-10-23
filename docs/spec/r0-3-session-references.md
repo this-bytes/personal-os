@@ -106,7 +106,7 @@ The gate runs in CI on the delivered revision.
 ## Evidence
 
 **Revision.** Delivered on `feature/r0-3-session-references`. The code is in
-`<COMMIT>`; the commit after it is the contract's claim for it and this
+`2c00452`; the commit after it is the contract's claim for it and this
 evidence. `origin/main` at `ece75fd` is merged in.
 
 ### What landed
@@ -172,13 +172,13 @@ rebuilt where the built code carries it and each one run against
 what it found. The file was restored from a byte-for-byte backup after each
 one, and the gate passes again on the restored tree.
 
-| The mutation                                                     | What the gate said                                                                                             |
-| ---------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------- |
-| the dispatch stops recognising the run it started last time     | `UNIQUE constraint failed: executions.idempotency_key`                                                          |
-| the recorded session reference names no session                 | `A session reference names no session.`                                                                         |
-| the owner publishes the ending twice                            | `A turn (exe_…) ended more than once: committed, committed.` and `A turn ended 2 times; it must end once.`      |
-| the turn stores a revision nobody wrote                         | `A committed turn (exe_…) carries a revision that is not the revision of the history it committed to.`           |
-| the server defines its own terminal-event rule                  | `apps/server/src/modules/executions/activity.ts defines its own terminal-event rule; it must read the shared one.` |
+| The mutation                                                | What the gate said                                                                                                 |
+| ----------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------ |
+| the dispatch stops recognising the run it started last time | `UNIQUE constraint failed: executions.idempotency_key`                                                             |
+| the recorded session reference names no session             | `A session reference names no session.`                                                                            |
+| the owner publishes the ending twice                        | `A turn (exe_…) ended more than once: committed, committed.` and `A turn ended 2 times; it must end once.`         |
+| the turn stores a revision nobody wrote                     | `A committed turn (exe_…) carries a revision that is not the revision of the history it committed to.`             |
+| the server defines its own terminal-event rule              | `apps/server/src/modules/executions/activity.ts defines its own terminal-event rule; it must read the shared one.` |
 
 The unit tests beside the gate are
 `apps/server/src/__tests__/session-references.test.ts` (the reference is
