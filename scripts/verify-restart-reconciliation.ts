@@ -203,21 +203,31 @@ class AnsweringRuntime extends GateRuntimeBase {
   }
 }
 
-/** Read the worker's own code, which the gate drives. */
+/**
+ * Read the worker's own code, which the gate drives.
+ *
+ * The specifiers are held in variables on purpose. The scripts are typechecked
+ * before the worker is built, so a literal specifier would be a module that
+ * cannot be found — and the typecheck would fail for a reason that has
+ * nothing to do with the code it is checking. This is the pattern the other
+ * gate that drives the worker already uses.
+ */
 async function loadWorker(): Promise<{
   reconcileStaleJobs: (runtime: Runtime, olderThanMs?: number) => Promise<number>;
   executeJob: (context: { runtime: Runtime }, job: QueueJob) => Promise<{ status: string }>;
   Scheduler: new (runtime: Runtime) => { tick(now?: Date): Promise<number> };
 }> {
-  const specifier = '@personal-os/worker/dist/reconcile.js';
+  const reconcileSpecifier = '@personal-os/worker/dist/reconcile.js';
+  const executorSpecifier = '@personal-os/worker/dist/executor.js';
+  const schedulerSpecifier = '@personal-os/worker/dist/scheduler.js';
   try {
-    const reconcile = (await import(specifier)) as {
+    const reconcile = (await import(reconcileSpecifier)) as {
       reconcileStaleJobs: (runtime: Runtime, olderThanMs?: number) => Promise<number>;
     };
-    const executor = (await import('@personal-os/worker/dist/executor.js')) as {
+    const executor = (await import(executorSpecifier)) as {
       executeJob: (context: { runtime: Runtime }, job: QueueJob) => Promise<{ status: string }>;
     };
-    const scheduler = (await import('@personal-os/worker/dist/scheduler.js')) as {
+    const scheduler = (await import(schedulerSpecifier)) as {
       Scheduler: new (runtime: Runtime) => { tick(now?: Date): Promise<number> };
     };
     return {
@@ -227,7 +237,7 @@ async function loadWorker(): Promise<{
     };
   } catch (error) {
     throw new Error(
-      `The gate needs the worker built (${specifier}): ${
+      `The gate needs the worker built (${reconcileSpecifier}): ${
         error instanceof Error ? error.message : String(error)
       }`,
     );
