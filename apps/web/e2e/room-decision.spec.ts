@@ -57,7 +57,9 @@ test.describe('a request answered in the room', () => {
     // The request shows up in the room itself, not on another page.
     const waiting = page.getByText('Waiting on you');
     await expect(waiting.first()).toBeVisible({ timeout: 30_000 });
-    await expect(page.getByText('May I read the project?')).toBeVisible();
+    // The request is in the row and in the trace, so the first of them is
+    // the one this test looks at.
+    await expect(page.getByText('May I read the project?').first()).toBeVisible();
 
     // The owner answers it where the request was made.
     await page.getByRole('button', { name: 'Approve' }).click();

@@ -59,7 +59,8 @@ async function createConversation(title: string): Promise<string> {
     headers: { cookie: sessionCookie },
     payload: { workspaceId, title, routingMode: 'mentions' },
   });
-  expect(response.statusCode).toBe(200);
+  // The route creates the conversation, so it answers 201.
+  expect(response.statusCode).toBe(201);
   return response.json().conversation.id as string;
 }
 
