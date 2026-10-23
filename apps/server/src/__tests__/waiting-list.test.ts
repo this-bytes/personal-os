@@ -1,6 +1,5 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import fs from 'node:fs';
-import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import type { FastifyInstance } from 'fastify';
@@ -8,6 +7,7 @@ import { buildApp } from '../app.js';
 import { loadConfig } from '../config.js';
 import { executions, messages } from '../db/schema.js';
 import type { WaitingItem } from '../api/waiting.js';
+import { createTestDataDir } from './helpers.js';
 
 /**
  * The waiting list.
@@ -256,7 +256,7 @@ async function createTask(title: string, status?: string): Promise<string> {
 }
 
 beforeAll(async () => {
-  const dataDir = fs.mkdtempSync(path.join(os.tmpdir(), 'pos-waiting-'));
+  const dataDir = createTestDataDir('pos-waiting-');
   const config = loadConfig({
     ...process.env,
     PERSONAL_OS_DATA_DIR: dataDir,
