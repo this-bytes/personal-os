@@ -98,8 +98,36 @@ export interface GateResult {
 /** The gate could not run: a published file is missing or unreadable. */
 export class GateError extends Error {}
 
-/** The spec that pairs a listed route is named, so a row cannot be forgotten. */
-const SPEC = /^SPEC-S\d+\+?$/;
+/**
+ * The parity sequence, which a row may point at for a slice not cut yet.
+ *
+ * A row may name a later slice — `SPEC-S2+` means "the sequence, wherever it
+ * gets there" — so the sequence is accepted without a file to point at.
+ */
+const SPEC_SEQUENCE = /^SPEC-S\d+\+?$/;
+
+/**
+ * The specs in the queue.
+ *
+ * A row that names a spec names one that has to be there: a spec that is not in
+ * the queue is a promise nobody made. The queue is `docs/spec`, and a spec
+ * names itself in the title of its own file.
+ *
+ * A queue that is not in the tree holds no specs, so a row naming one fails
+ * rather than passing on the strength of the name alone.
+ */
+function readSpecNames(root: string): Set<string> {
+  const names = new Set<string>();
+  const queue = path.join(root, 'docs', 'spec');
+  if (!fs.existsSync(queue)) return names;
+  for (const file of fs.readdirSync(queue)) {
+    if (!file.endsWith('.md')) continue;
+    const title = fs.readFileSync(path.join(queue, file), 'utf8').split('\n', 1)[0] ?? '';
+    const named = /^#\s+(SPEC-[A-Z0-9-]+)\b/.exec(title);
+    if (named?.[1]) names.add(named[1]);
+  }
+  return names;
+}
 
 /** The key a route is known by: the method and the path. */
 const routeKey = (method: string, routePath: string): string => `${method} ${routePath}`;
@@ -262,6 +290,8 @@ export function runGate(options: GateOptions): GateResult {
   const publishedTools = readPublishedTools(fs.readFileSync(contractsPath, 'utf8'));
   const implementedTools = readImplementedTools(fs.readFileSync(mcpServerPath, 'utf8'));
   const codeRoutes = readCodeRoutes(root);
+  /** The specs a row may name as the one that will pair it. */
+  const specs = readSpecNames(root);
 
   let coverageFile: CoverageFile;
   try {
@@ -293,10 +323,17 @@ export function runGate(options: GateOptions): GateResult {
         findings.push({ subject: key, reason: 'listed, but no reason is written' });
         continue;
       }
-      if (!entry.spec || !SPEC.test(entry.spec)) {
+      if (!entry.spec) {
         findings.push({
           subject: key,
           reason: 'listed, but no spec that will pair it is named',
+        });
+        continue;
+      }
+      if (!SPEC_SEQUENCE.test(entry.spec) && !specs.has(entry.spec)) {
+        findings.push({
+          subject: key,
+          reason: `listed, but the spec it names ("${entry.spec}") is not in the queue`,
         });
         continue;
       }

@@ -148,6 +148,12 @@ function treeWith(options: {
     'apps/server/src/api/thing.ts',
     options.code ?? ["app.get('/api/thing');", "app.get('/api/other');", ''].join('\n'),
   );
+  // The queue of specs, so a row may name one that is really there.
+  write(
+    root,
+    'docs/spec/resource-publish-execute.md',
+    '# SPEC-RESOURCE-RUN — Publishing and executing a resource stop claiming they happened\n',
+  );
   return root;
 }
 
@@ -315,6 +321,43 @@ describe('a claim in the table that is false', () => {
 
     expect(result.status).toBe(1);
     expect(result.stdout).toContain('no spec that will pair it is named');
+  }, 60_000);
+
+  it('fails when a listed route names a spec that is not in the queue', async () => {
+    // A row that names a spec names a promise somebody made. A name that no
+    // spec in the queue answers to is a promise nobody made, and the gate
+    // cannot tell a promise that will be kept from one that will not.
+    const root = treeWith({
+      entries: [
+        { route: 'GET /api/thing', kind: 'paired', tool: 'thing.read' },
+        { route: 'GET /api/other', kind: 'listed', reason: 'Not yet.', spec: 'SPEC-NOWHERE' },
+      ],
+    });
+
+    const result = await runGate(['--root', root]);
+
+    expect(result.status).toBe(1);
+    expect(result.stdout).toContain('is not in the queue');
+  }, 60_000);
+
+  it('passes when a listed route names a spec that is in the queue', async () => {
+    // The broken windows have a spec of their own, and a row that names it is
+    // pointing at the spec that will really do the work.
+    const root = treeWith({
+      entries: [
+        { route: 'GET /api/thing', kind: 'paired', tool: 'thing.read' },
+        {
+          route: 'GET /api/other',
+          kind: 'listed',
+          reason: 'Not yet.',
+          spec: 'SPEC-RESOURCE-RUN',
+        },
+      ],
+    });
+
+    const result = await runGate(['--root', root]);
+
+    expect(result.status).toBe(0);
   }, 60_000);
 
   it('fails when an exempt route carries no reason', async () => {
