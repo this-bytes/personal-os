@@ -639,6 +639,7 @@ export function ConversationDetail(): React.JSX.Element {
                 view={turn.data?.turn.capabilityView ?? null}
                 agents={agents.data ?? []}
                 hasTurn={Boolean(activeExecutionId)}
+                sessionRefs={current.sessionRefs ?? []}
               />
             </CardContent>
           </Card>

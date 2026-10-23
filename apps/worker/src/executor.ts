@@ -1,4 +1,4 @@
-import { and, desc, eq, gte, sql } from 'drizzle-orm';
+import { and, asc, desc, eq, gte, sql } from 'drizzle-orm';
 import { z } from 'zod';
 import {
   actionNeedsApproval,
@@ -36,6 +36,7 @@ import {
 import {
   assertReadableQuery,
   assertSafeUrl,
+  computeHistoryRevision,
   createBotsService,
   createConversationsService,
   createFactoryService,
@@ -43,6 +44,8 @@ import {
   loadEffectiveAutonomyPolicy,
   newId,
   planAndDispatch,
+  readSessionReference,
+  recordSessionReference,
   type BotsService,
   type QueueJob,
   type Runtime,
@@ -77,8 +80,12 @@ export interface ExecutionOutcome {
    * `blocked` means the work is suspended, not over: the agent is waiting for
    * the owner to decide something. The turn continues in a new turn when the
    * decision arrives, and it is never retried on its own.
+   *
+   * `committed` means the work ended and its output was written into a
+   * canonical history. It is a success, and it is a different fact from
+   * `completed`, which means the work ended with nothing committed.
    */
-  status: 'completed' | 'failed' | 'cancelled' | 'unknown' | 'blocked';
+  status: 'completed' | 'committed' | 'failed' | 'cancelled' | 'unknown' | 'blocked';
   error?: string;
 }
 
@@ -289,6 +296,21 @@ async function executeChatTurn(context: ExecutorContext, job: QueueJob): Promise
     depth: payload.depth,
   };
 
+  /**
+   * The session this conversation is in, when the runtime keeps one.
+   *
+   * The reference is durable: it is what an earlier turn established, and the
+   * next turn continues it when the runtime said it could. A runtime that said
+   * nothing has no session to continue, and the product does not claim one.
+   */
+  const sessionReference = readSessionReference(db, {
+    conversationId: payload.conversationId,
+    agentConnectionId: payload.agentConnectionId,
+  });
+
+  /** The session this turn ran in, when it continued one. */
+  let continuedSessionId: string | undefined;
+
   // A turn that was suspended on an approval already has its reply. The
   // resumed turn continues that message rather than starting another one.
   const existing =
@@ -369,7 +391,14 @@ async function executeChatTurn(context: ExecutorContext, job: QueueJob): Promise
       // The session is restored before the turn continues in it. A session that
       // cannot be restored is not a failure of the turn: the turn closes, and
       // the owner's decision is already recorded.
-      let externalSessionId = payload.resume?.externalSessionId;
+      //
+      // A turn that was suspended on the owner's decision continues the session
+      // it was suspended in. A turn that is simply the next one in the
+      // conversation continues the session the conversation is in, when the
+      // runtime said it keeps sessions and the reference says so too.
+      let externalSessionId =
+        payload.resume?.externalSessionId ??
+        (sessionReference?.continuity === 'resumable' ? sessionReference.sessionId : undefined);
       if (externalSessionId) {
         const extras = adapter as {
           resumeSession?: (connection: AgentConnection, sessionId: string) => Promise<string>;
@@ -386,6 +415,7 @@ async function executeChatTurn(context: ExecutorContext, job: QueueJob): Promise
           externalSessionId,
         );
         if (restored) externalSessionId = restored;
+        continuedSessionId = externalSessionId;
       }
 
       // A steer the owner sent while this turn was running comes in on this
@@ -462,6 +492,85 @@ async function executeChatTurn(context: ExecutorContext, job: QueueJob): Promise
       targetId: payload.executionId,
       metadata: { messageId, conversationId: payload.conversationId },
     },
+    /**
+     * The commit.
+     *
+     * The reply enters canonical history here, and the commit is acknowledged
+     * by reading that history back: the revision the read-back holds is the
+     * revision the turn committed to. The hook runs before the owner records
+     * the turn's terminal state, so the state and the event that names it
+     * describe the history the turn actually left behind.
+     */
+    commit: async ({ status, refusal, sessionId }) => {
+      const failed = status === 'failed';
+      const unknown = status === 'unknown';
+      const finalContent: ContentPart[] =
+        accumulated.length > 0 ? [{ type: 'text', text: accumulated }] : [];
+
+      db.update(messages)
+        .set({
+          content: finalContent,
+          status: unknown ? 'unknown' : failed ? 'failed' : 'complete',
+          // The reason the policy refused the turn goes on the reply as well
+          // as on the execution: the owner reads the reply, and the execution
+          // says why it stopped.
+          ...(refusal !== undefined ? { detail: refusal } : {}),
+          // The transcript names the session the reply came out of.
+          ...(sessionId !== undefined ? { origin: { ...origin, sessionId } } : {}),
+        })
+        .where(eq(messages.id, messageId))
+        .run();
+
+      const committed = db.select().from(messages).where(eq(messages.id, messageId)).get();
+      if (committed) {
+        events.publish(
+          {
+            type: 'message.updated',
+            message: {
+              id: committed.id,
+              conversationId: committed.conversationId,
+              senderId: committed.senderId,
+              targetParticipantIds: committed.targetParticipantIds,
+              replyToId: committed.replyToId ?? undefined,
+              kind: committed.kind as never,
+              content: committed.content as ContentPart[],
+              status: committed.status as never,
+              correlationId: committed.correlationId ?? undefined,
+              origin: committed.origin ?? undefined,
+              executionId: committed.executionId ?? undefined,
+              createdAt: committed.createdAt,
+            },
+          },
+          { workspaceId: conversation.workspaceId, conversationId: payload.conversationId },
+        );
+      }
+
+      // The read-back. Canonical history is read in the same lane the mutation
+      // was made in, and the revision it holds is the revision the commit
+      // produced.
+      if (status !== 'completed') return {};
+
+      const history = db
+        .select({
+          id: messages.id,
+          createdAt: messages.createdAt,
+          senderId: messages.senderId,
+          status: messages.status,
+          correlationId: messages.correlationId,
+          content: messages.content,
+        })
+        .from(messages)
+        .where(eq(messages.conversationId, payload.conversationId))
+        .orderBy(asc(messages.createdAt))
+        .all();
+
+      return {
+        committedRevision: computeHistoryRevision(
+          history.map((row) => ({ ...row, content: row.content as ContentPart[] })),
+          messageId,
+        ),
+      };
+    },
   });
 
   if (outcome.externalRef !== undefined) {
@@ -484,11 +593,23 @@ async function executeChatTurn(context: ExecutorContext, job: QueueJob): Promise
     return { status: 'blocked' };
   }
 
-  if (outcome.refusal !== undefined) {
-    // The policy refused an action the agent took, so the turn is over. The
-    // reason goes on the reply as well as on the execution: the owner reads
-    // the reply, and the execution says why it stopped.
-    db.update(messages).set({ detail: outcome.refusal }).where(eq(messages.id, messageId)).run();
+  /**
+   * The session the conversation is in now.
+   *
+   * A turn that continued the conversation's session keeps it, and a turn that
+   * established one names it. The reference says whether the next turn may
+   * continue it, which is what the runtime reported about itself.
+   */
+  const sessionId = outcome.sessionId ?? continuedSessionId;
+  if (sessionId !== undefined) {
+    recordSessionReference(db, {
+      workspaceId: conversation.workspaceId,
+      conversationId: payload.conversationId,
+      agentConnectionId: payload.agentConnectionId,
+      sessionId,
+      capabilities: owner.capabilityView?.capabilities ?? null,
+      capabilitiesRevision: owner.capabilityView?.capabilitiesRevision ?? null,
+    });
   }
 
   // The deadline passed: the agent may already have had its side effect, so
@@ -496,40 +617,9 @@ async function executeChatTurn(context: ExecutorContext, job: QueueJob): Promise
   const failed = outcome.status === 'failed';
   const unknown = outcome.status === 'unknown';
   const explanation = outcome.error;
-  const finalContent: ContentPart[] =
-    accumulated.length > 0 ? [{ type: 'text', text: accumulated }] : [];
-
-  db.update(messages)
-    .set({
-      content: finalContent,
-      status: unknown ? 'unknown' : failed ? 'failed' : 'complete',
-    })
-    .where(eq(messages.id, messageId))
-    .run();
 
   const updated = db.select().from(messages).where(eq(messages.id, messageId)).get();
   if (updated) {
-    events.publish(
-      {
-        type: 'message.updated',
-        message: {
-          id: updated.id,
-          conversationId: updated.conversationId,
-          senderId: updated.senderId,
-          targetParticipantIds: updated.targetParticipantIds,
-          replyToId: updated.replyToId ?? undefined,
-          kind: updated.kind as never,
-          content: updated.content as ContentPart[],
-          status: updated.status as never,
-          correlationId: updated.correlationId ?? undefined,
-          origin: updated.origin ?? undefined,
-          executionId: updated.executionId ?? undefined,
-          createdAt: updated.createdAt,
-        },
-      },
-      { workspaceId: conversation.workspaceId, conversationId: payload.conversationId },
-    );
-
     // The reply goes through the same routing rules as any other message.
     // A mention inside an agent's answer is a delegation, and the depth of
     // the chain is what stops two agents talking to each other forever.
@@ -597,7 +687,9 @@ async function executeChatTurn(context: ExecutorContext, job: QueueJob): Promise
     ? { status: 'failed', error: explanation }
     : unknown
       ? { status: 'unknown', error: explanation }
-      : { status: 'completed' };
+      : outcome.status === 'committed'
+        ? { status: 'committed' }
+        : { status: 'completed' };
 }
 
 /**

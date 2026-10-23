@@ -568,7 +568,9 @@ describe('a turn held to the effective policy', () => {
   it('runs when the policy allows it', async () => {
     const outcome = await runTurn();
 
-    expect(outcome.status).toBe('completed');
+    // A chat turn's output is written into the conversation's canonical
+    // history, so the turn is committed rather than merely completed.
+    expect(outcome.status).toBe('committed');
   });
 
   it('does not start when the chain has used the turn budget', async () => {
@@ -705,7 +707,9 @@ describe('a turn held to the daily spend cap', () => {
 
     const outcome = await runTurn();
 
-    expect(outcome.status).toBe('completed');
+    // A chat turn's output is written into the conversation's canonical
+    // history, so the turn is committed rather than merely completed.
+    expect(outcome.status).toBe('committed');
   });
 
   it('imposes no limit when the daily spend limit is zero', async () => {
@@ -716,7 +720,9 @@ describe('a turn held to the daily spend cap', () => {
 
     const outcome = await runTurn();
 
-    expect(outcome.status).toBe('completed');
+    // A chat turn's output is written into the conversation's canonical
+    // history, so the turn is committed rather than merely completed.
+    expect(outcome.status).toBe('committed');
   });
 
   it('counts the spend of every conversation in the workspace', async () => {
@@ -767,7 +773,9 @@ describe('a turn held to the daily spend cap', () => {
 
     const outcome = await runTurn();
 
-    expect(outcome.status).toBe('completed');
+    // A chat turn's output is written into the conversation's canonical
+    // history, so the turn is committed rather than merely completed.
+    expect(outcome.status).toBe('committed');
   });
 
   it('counts the spend recorded at the first minute of the UTC day', async () => {
@@ -789,7 +797,7 @@ describe('a turn held to the daily spend cap', () => {
     const outcome = await runTurn();
 
     // Yesterday's spend is not today's spend, so the turn runs.
-    expect(outcome.status).toBe('completed');
+    expect(outcome.status).toBe('committed');
   });
 });
 
@@ -797,7 +805,9 @@ describe('the spend a turn records', () => {
   it('records the cost of a conversation turn on its own execution', async () => {
     const outcome = await runTurn();
 
-    expect(outcome.status).toBe('completed');
+    // A chat turn's output is written into the conversation's canonical
+    // history, so the turn is committed rather than merely completed.
+    expect(outcome.status).toBe('committed');
 
     const execution = handle.db.select().from(executions).where(eq(executions.id, 'exe_1')).get();
     expect(execution?.spendUnits).toBe(1);
@@ -834,7 +844,7 @@ describe('the spend a turn records', () => {
     addExecution('exe_3');
 
     const first = await runTurn('exe_2');
-    expect(first.status).toBe('completed');
+    expect(first.status).toBe('committed');
 
     // The turn wrote its own cost, and the next turn is refused because of
     // it. No spend is written by hand anywhere in this case.
