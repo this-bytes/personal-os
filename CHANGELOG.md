@@ -42,21 +42,26 @@ Entries describe what a user can now do, not which commits landed.
 - **An open-source project surface.** MIT licence, contribution guide, code of
   conduct, security policy, issue and pull-request templates, editor config,
   Dependabot and CodeQL.
-- **CI that runs the product.** The pipeline builds, typechecks, tests,
-  formats, runs the end-to-end smoke test, boots the compiled server, runs
-  the browser suite, audits the dependency tree, and starts the container
-  stack to prove the shipped image serves the client.
+- **CI that runs the product.** The pipeline typechecks, formats, checks the
+  published contract, the contract's pointers and the agent surface, and audits
+  the dependency tree on every push. The full proof — the test suite, the
+  compiled build, the browser suite, the end-to-end smoke test and the gates
+  that drive the built product — is in the same workflow and runs from it when
+  it is dispatched by hand, and `npm run gates` runs it all locally. The two
+  lanes exist because a full proof took longer than the change it was judging,
+  and a branch that waits for a proof bigger than its change waits for nothing.
 - **A bundle budget that is enforced.** Vite only warns when a chunk is too
   large, and it still exits zero, so the rules are enforced by a gate that
   fails: no chunk may exceed 300 kB, every declared vendor chunk must
   actually be emitted, the first paint may not carry a page chunk, and the
   first paint must stay below the 584 kB the single-bundle client used to
-  download. `npm run verify:bundle` runs it, and CI runs it on every pull
-  request.
+  download. `npm run verify:bundle` runs it, and the pipeline runs it when it
+  is dispatched.
 - **A check that a running deployment actually works.** `npm run
 verify:stack` signs in, registers an agent, posts a message to it and waits
   for the worker's reply. A health check says the server answers; this says
-  the worker is alive and executing. CI runs it against the container stack.
+  the worker is alive and executing. The pipeline runs it against the container
+  stack when it is dispatched.
 - **A lint for the workflow definitions.** actionlint checks that every
   workflow parses, that every action input exists, and that every shell
   snippet is sound. It runs in CI, so a broken workflow is caught on the

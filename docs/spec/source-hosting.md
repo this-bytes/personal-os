@@ -8,11 +8,13 @@ Updates drain before changing files, install changed dependencies and restart.
 Data and the encryption key live outside the checkout. Dirty or diverged main
 is refused rather than reset. No API or resource contracts change.
 
-CI runs `npm run verify:source` in a disposable source checkout with its own
-dependencies, disposable data and free ports, checking
+The pipeline runs `npm run verify:source` in a disposable source checkout with
+its own dependencies, disposable data and free ports, checking
 UI serving, a real worker turn, source reload, persistence across restart,
-dependency installation after a manifest change, and safe updater behavior.
-Existing typecheck, tests, format, build and smoke gates continue to apply.
+dependency installation after a manifest change, and safe updater behavior. It
+is in the workflow's heavy lane, so it runs when the workflow is dispatched by
+hand rather than on every push. Existing typecheck, tests, format, build and
+smoke gates continue to apply.
 
 Out of scope: zero-downtime updates, Windows firewall automation, container
 hosting, runtime restart reconciliation and automatic deletion of old data.
