@@ -127,7 +127,9 @@ describe('the runtime presets', () => {
     expect(openclaw?.description).toContain('ACP');
     expect(opencode?.adapterType).toBe('acp');
     expect(opencode?.description.toLowerCase()).toContain('http');
-    expect(codex?.adapterType).toBe('cli');
+    // Codex speaks its own event stream, so it has its own adapter rather than
+    // the generic one that reads standard output as text.
+    expect(codex?.adapterType).toBe('codex');
     expect(codex?.description).toContain('App Server');
   });
 

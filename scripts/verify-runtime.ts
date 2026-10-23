@@ -120,7 +120,6 @@ const adapter = registry.create(config, ctx);
 
 process.stdout.write(`Runtime:  ${preset.runtime ?? preset.id} — ${preset.name}\n`);
 process.stdout.write(`Adapter:  ${preset.adapterType}\n`);
-process.stdout.write(`Command:  ${describeCommand(config)}\n`);
 process.stdout.write('\n-- the handshake --\n');
 
 let capabilities: AgentCapabilities;
@@ -142,6 +141,11 @@ try {
 for (const [key, value] of Object.entries(capabilities)) {
   process.stdout.write(`  ${key}: ${String(value)}\n`);
 }
+
+// The command line is printed after the handshake, because the adapter
+// resolves it while connecting: the path the turn will really start is not
+// known before then.
+process.stdout.write(`\nCommand:  ${describeCommand(config, adapter)}\n`);
 
 if (probeOnly) {
   process.stdout.write('\nThe handshake answered. No turn was run (--probe-only).\n');
@@ -192,7 +196,12 @@ process.stdout.write('The runtime produced an answer.\n');
 process.exit(0);
 
 /** The command the adapter will run, as the owner would read it. */
-function describeCommand(config: AdapterConfig): string {
+function describeCommand(config: AdapterConfig, adapter: unknown): string {
+  // An adapter that builds its own arguments knows the whole line; the
+  // configuration alone does not.
+  const described = (adapter as { describeCommand?: () => string }).describeCommand;
+  if (typeof described === 'function') return described.call(adapter);
+
   const command = (config as { command?: string }).command;
   const args = (config as { args?: string[] }).args ?? [];
   if (!command) return 'none';

@@ -1,6 +1,5 @@
 import { spawn, type ChildProcessWithoutNullStreams } from 'node:child_process';
-import { access, mkdtemp, rm, writeFile } from 'node:fs/promises';
-import { constants } from 'node:fs';
+import { mkdtemp, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import {
@@ -13,7 +12,7 @@ import {
 } from '@personal-os/contracts';
 import type { AdapterContext } from './types.js';
 import { AdapterLifecycle, notConnectedEvent } from './lifecycle.js';
-import { buildSanitizedEnv, terminateChild } from './util.js';
+import { buildSanitizedEnv, resolveExecutable, terminateChild } from './util.js';
 
 /**
  * Local command-line agents.
@@ -269,38 +268,6 @@ export function createCliAdapter(
  * Build a minimal environment for the child process. Server secrets are
  * never inherited; only an explicit allow-list plus the configured values.
  */
-
-/** Locate an executable on PATH without spawning it. */
-async function resolveExecutable(command: string): Promise<string | null> {
-  const hasSeparator = command.includes('/') || command.includes('\\');
-  if (hasSeparator) {
-    try {
-      await access(command, constants.X_OK);
-      return command;
-    } catch {
-      return null;
-    }
-  }
-
-  const pathValue = process.env['PATH'] ?? '';
-  const extensions =
-    process.platform === 'win32'
-      ? (process.env['PATHEXT'] ?? '.EXE;.CMD;.BAT;.COM').split(';').filter(Boolean)
-      : [''];
-
-  for (const dir of pathValue.split(path.delimiter).filter(Boolean)) {
-    for (const extension of extensions) {
-      const candidate = path.join(dir, command + extension);
-      try {
-        await access(candidate, constants.X_OK);
-        return candidate;
-      } catch {
-        // keep looking
-      }
-    }
-  }
-  return null;
-}
 
 function delay(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
