@@ -3870,15 +3870,15 @@
     {
       "lockPath": "node_modules/body-parser",
       "name": "body-parser",
-      "version": "2.3.0",
+      "version": "2.4.0",
       "spdxId": "MIT",
       "source": {
         "kind": "licence-file",
         "file": "node_modules/body-parser/LICENSE",
         "evidence": "(The MIT License) Copyright (c) 2014 Jonathan Ong <me@jongleberry.com>",
-        "readOn": "2026-10-21"
+        "readOn": "2026-10-24"
       },
-      "readOn": "2026-10-21",
+      "readOn": "2026-10-24",
       "licence": "MIT License",
       "permits": "Grants anyone permission to use, copy, modify, merge, publish, distribute, sublicense and sell copies of the software, without restriction.",
       "requires": "Requires the copyright notice and the permission notice to be included in all copies or substantial portions of the software.",
