@@ -1,6 +1,7 @@
 import {
   type AgentConnectionDetail,
   type Approval,
+  type ApprovalEvidence,
   type ApprovalStatus,
   type Automation,
   type AutomationRun,
@@ -38,7 +39,12 @@ import type { ApprovalsService } from '../approvals/service.js';
 import { decideApproval, type ApprovalDecision } from '../approvals/resume.js';
 import type { AuditEntry, AuditService } from '../audit/service.js';
 import type { EventsService, StoredEvent } from '../events/service.js';
-import type { ExecutionDetail, ExecutionsService } from '../executions/service.js';
+import type {
+  ExecutionDetail,
+  ExecutionOutcome,
+  ExecutionResolution,
+  ExecutionsService,
+} from '../executions/service.js';
 import type { WorkspaceService } from '../workspaces/service.js';
 import { loadEffectiveAutonomyPolicy } from '../autonomy/service.js';
 
@@ -242,6 +248,16 @@ export interface CapabilitiesService {
   }): ApprovalDecision;
 
   /**
+   * The evidence a decision is taken against.
+   *
+   * It is the owner's decision-support read: the calls the turn made, the
+   * things it produced and what it cost. A read, and nothing more — it decides
+   * nothing and changes nothing, so the route and the tool answer with the
+   * same evidence.
+   */
+  approvalEvidence(approvalId: string): ApprovalEvidence;
+
+  /**
    * The turns of a workspace, newest first.
    */
   executionList(input: {
@@ -270,6 +286,44 @@ export interface CapabilitiesService {
     actorType: 'human' | 'agent';
     actorId: string;
   }): StopTurnResult;
+
+  /**
+   * The conclusion about a turn whose outcome could not be confirmed.
+   *
+   * It is the owner's own answer to the question the worker could not answer:
+   * it did run, or it did not. The turn leaves the unknown state and the reply
+   * follows the conclusion.
+   *
+   * `actorType` and `actorId` say who reached the conclusion, and the entry
+   * written to the trail names them. The authority behind an agent's
+   * conclusion is the owner's grant of this one verb.
+   */
+  executionResolve(input: {
+    executionId: string;
+    outcome: ExecutionOutcome;
+    /** The words that go with the conclusion, when there are any. */
+    note?: string;
+    actorType: 'human' | 'agent';
+    actorId: string;
+  }): ExecutionResolution;
+
+  /**
+   * The acceptance decision on a task.
+   *
+   * An agent reporting completion is not acceptance: the acceptance is an
+   * explicit judgement, recorded against the task, and it is what closes it.
+   *
+   * `actorType` and `actorId` say who accepted, and the entry written to the
+   * trail names them. The authority behind an agent's acceptance is the
+   * owner's grant of this one verb.
+   */
+  taskAccept(input: {
+    taskId: string;
+    satisfied: boolean;
+    reason?: string;
+    actorType: 'human' | 'agent';
+    actorId: string;
+  }): FactoryTask;
 
   /**
    * The event log of a workspace.
@@ -529,6 +583,10 @@ export function createCapabilitiesService(
       });
     },
 
+    approvalEvidence(approvalId): ApprovalEvidence {
+      return approvals.evidence(approvalId);
+    },
+
     executionList(input): ExecutionDetail[] {
       return executions.list(input);
     },
@@ -539,6 +597,25 @@ export function createCapabilitiesService(
 
     executionStop(input): StopTurnResult {
       return executions.stop(input);
+    },
+
+    executionResolve(input): ExecutionResolution {
+      return executions.resolve({
+        executionId: input.executionId,
+        outcome: input.outcome,
+        note: input.note,
+        actorType: input.actorType,
+        actorId: input.actorId,
+      });
+    },
+
+    taskAccept(input): FactoryTask {
+      return factory.acceptTask(input.taskId, {
+        satisfied: input.satisfied,
+        reason: input.reason ?? '',
+        acceptedBy: input.actorId,
+        actorType: input.actorType,
+      });
     },
 
     eventList(input): StoredEvent[] {

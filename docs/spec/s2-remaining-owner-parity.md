@@ -15,11 +15,17 @@ queue, an agent's own memory, the rooms, the workspaces, the schedules, and
 the reads the panel does.
 
 The parity gate (`npm run verify:mcp-parity`) is the measure. Its coverage
-table already answers for all 82 published owner-facing routes: 22 paired
-with a registered tool, 43 listed with a reason and the spec that will pair
-them, and 17 exempt with a reason. **This spec moves the listed ones to
+table already answers for all 82 published owner-facing routes: **25 paired
+with a registered tool, 40 listed with a reason and the spec that will pair
+them, and 17 exempt with a reason.** **This spec moves the listed ones to
 paired, in the ranked order, and the gate refuses to pass while any remain
 listed under it.**
+
+**Batch 1 is delivered.** Three of the four rows in it are paired now —
+`approval.evidence`, `execution.resolve` and `task.accept` — and the gate's
+counts have moved from 22 paired and 43 listed to **25 paired and 40 listed**.
+The fourth row, _assign a task to an agent_, stays listed, and the reason is
+written down below.
 
 ## The scope, and where it came from
 
@@ -39,11 +45,20 @@ not the one the audit was first written with.
 The rows are delivered in the audit's order, because the audit ordered them
 by what the owner loses when an agent cannot do it.
 
+**The numbers below are the audit's numbers as this spec was written, before
+batch 1 landed.** The audit's live ranked list renumbers as rows leave it, the
+way it did when SPEC-S1 delivered eight. A row's number here is the number it
+was given in the ranking this spec was written against; the audit's current
+list is the live one.
+
 **Batch 1 — the authority loop's own detail.** _read the evidence a
 decision is taken against_ (#1), _close a turn whose outcome cannot be
 confirmed_ (#2), _record an acceptance decision_ (#3), _assign a task to an
 agent_ (#4). These are the rows where the owner is the only one who can
-finish what an agent started.
+finish what an agent started. **Delivered, three of the four:** `approval.evidence`,
+`execution.resolve` and `task.accept`. The grant rule split them — `approval.evidence`
+is a read and joins the default grant set; `execution.resolve` and `task.accept`
+spend the owner's authority and are granted by name.
 
 _Assign a task to an agent_ (#4) is **deferred**. Handing work from one agent
 to another is the autonomous-team direction the owner has not asked for, and
@@ -145,3 +160,81 @@ counts, so the movement is visible rather than asserted.
   rules.
 - The factory's goals and tasks rollup as a domain. The rows are about the
   agent being able to read the board, not about the board growing.
+
+## Evidence
+
+**Batch 1, delivered on `feature/s2-batch-1`.** Three of the four rows in
+batch 1 are paired: `approval.evidence`, `execution.resolve` and `task.accept`.
+The fourth, _assign a task to an agent_, stays `listed` with its reason, and
+the gate reads it as one of the 40.
+
+**The gate's own report, on the delivered tree.** `npm run verify:mcp-parity`
+reads 82 published routes and 82 registered, 26 published tools, **25 paired,
+40 listed, 17 exempt, 0 failures**. Before this batch it read 22 paired, 43
+listed and 17 exempt.
+
+**The grant rule, held in two halves.** `approval.evidence` is a read, so it is
+in the default grant set: a connection with no explicit grants has it, and
+`tools/list` says so. `execution.resolve` and `task.accept` spend the owner's
+authority, so they are not in the default set, and a connection that was not
+given them by name does not have them registered at all — the call is refused
+with the MCP server's own "not found", and the refusal is recorded in
+`blocked_capabilities` so the owner finds the agent on the waiting list. A
+connection granted them by name has them registered and can call them.
+
+**The scope rule, held on all three.** Each of the three names an id, so each
+names an object: the object's own row is read to find its workspace, and a
+workspace the caller was not granted is refused with the guard's own sentence —
+"This agent has no access to that workspace." A refusal leaks nothing: no
+summary, no title, and no marker's text. Inside the agent's own workspace the
+same three calls still work.
+
+**The same operation, the same objects, the same answer.** The route and the
+tool are thin adapters over one shared capability, and the tests compare them
+member for member: `approval.evidence` answers with the same
+`ApprovalEvidence` the route answers with, `execution.resolve` answers with the
+same `{ execution, outcome, detail }` and the same conclusion sentence, and
+`task.accept` answers with the same `{ task }`.
+
+**The record names who acted.** `execution.resolve` writes
+`execution.outcome.resolved` and `task.accept` writes `task.accepted` (or
+`task.rejected`), each with the caller's `actorType` — `human` for the owner's
+own route, `agent` for the agent's tool — and the caller's id. The authority
+behind an agent's call is the owner's grant of that one verb.
+
+**The policy still governs.** `execution.resolve` and `task.accept` are subject
+to the autonomy policy's allowed-actions list and to its approval gate, exactly
+as `execution.stop` is. Only `approval.decide` is exempt from the approval
+gate, because asking for an approval in order to answer one is a deadlock the
+owner cannot break. Nothing in this batch changes the guard.
+
+**The test that holds it.** `apps/server/src/__tests__/mcp-authority-detail-parity.test.ts`
+drives the MCP surface itself — 15 cases over the three tools — so the code and
+the rule it states cannot drift apart quietly.
+
+**The gates, on the delivered tree.** `npm run typecheck`, `npm run build`,
+`npm run format:check`, `npm run verify:contracts` (28 claims),
+`npx tsx scripts/verify-contract-pointers.ts` (198 pointers),
+`npm run verify:mcp-parity` and `npx tsx scripts/smoke.ts` all pass. The suites
+pass one package at a time: contracts 48, agent-adapters 50, server 770,
+worker 106, web 207.
+
+**The teeth, shown.** Each of the six rules was broken on purpose, one at a
+time, and the named case failed; every break was reverted before the tree was
+committed. Dropping `approval.evidence` from the default grant set failed
+"gives the default set the read and withholds the two that spend the owner's
+authority". Adding `execution.resolve` to it failed that case **and** "refuses a
+resolution the connection was not granted" — the ungranted agent closed the
+turn. Adding `task.accept` to it failed "refuses an acceptance the connection
+was not granted". Removing the scope assertion from `approval.evidence` failed
+"refuses the evidence of an approval in a workspace it was not granted";
+removing it from `execution.resolve` failed "refuses to close a turn in a
+workspace it was not granted, and changes nothing"; removing it from
+`task.accept` failed "refuses to accept a task in a workspace it was not
+granted, and changes nothing".
+
+**What is not in this batch.** The owner-facing panel does not change: the
+grant editor lists the tools it reads from the contracts package, so the three
+new verbs are in the owner's grant list the moment they are published, and the
+owner's own decision to widen a grant is the same decision it always was. The
+web client needed no change, so no bundle or browser gate was run for it.
