@@ -1,5 +1,5 @@
 import type { FastifyInstance } from 'fastify';
-import { z } from 'zod';
+import { z } from 'zod/v3';
 import { parseBody, parseQuery, requireAuth } from './helpers.js';
 import { decideApproval } from '../modules/approvals/resume.js';
 import { errors } from '../lib/errors.js';

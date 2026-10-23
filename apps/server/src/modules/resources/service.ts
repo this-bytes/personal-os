@@ -22,7 +22,7 @@ import {
   type ResourceTemplateRef,
   type ResourceType,
 } from '@personal-os/contracts';
-import { z } from 'zod';
+import { z } from 'zod/v3';
 import type { Database } from '../../db/client.js';
 import { automations, resources as resourcesTable } from '../../db/schema.js';
 import { authorOf, type Author } from '../../lib/author.js';
