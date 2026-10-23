@@ -22,14 +22,76 @@ export const mcpToolNames = [
   'task.create',
   'task.update',
   'task.get',
+  /**
+   * The acceptance decision on a task.
+   *
+   * It is not in the default grant set: a connection that may accept a task
+   * is a connection the owner has said may accept one.
+   */
+  'task.accept',
   'resource.create',
   'resource.get',
   'resource.update',
+  /**
+   * The two acts a resource may have: publish it, or run it.
+   *
+   * Neither is in the default grant set, and the coverage table gives the
+   * reason for each. Publishing makes a resource visible to everyone: it is
+   * the act of the owner, and publishing an automation is what makes it
+   * active, so an active automation runs the work of the owner. Running a
+   * resource is running it now: an automation run is enqueued for the worker
+   * and its action may prompt an agent, and a data source query makes the
+   * outbound request that the configuration of the owner describes. Both
+   * spend an authority the owner holds, so the owner grants each of them by
+   * name.
+   */
+  'resource.publish',
+  'resource.execute',
   'resource.template.list',
   'resource.template.get',
   'automation.create',
   'automation.inspect',
   'autonomy.read',
+  /**
+   * The approval queue, and the decision on it.
+   *
+   * `approval.list` is in the default grant set: an agent whose turn is
+   * blocked on the owner has to be able to see what it is blocked on.
+   * `approval.decide` is not. A connection that may answer an approval is a
+   * connection the owner has said may answer an approval, so the owner grants
+   * that one verb explicitly — the same rule `bot.dispatch` is held to.
+   */
+  'approval.list',
+  'approval.decide',
+  /**
+   * The evidence a decision is taken against.
+   *
+   * It is in the default grant set: it is a read, and an agent whose turn is
+   * blocked on a decision has to be able to see what it is blocked on — the
+   * same ground `approval.list` is held to.
+   */
+  'approval.evidence',
+  /**
+   * The turn, the activity behind it, the stop request and the resolution.
+   *
+   * `execution.stop` and `execution.resolve` are not in the default grant set,
+   * for the same reason `approval.decide` is not: a connection that may stop a
+   * turn, or may close a turn whose outcome could not be confirmed, is a
+   * connection the owner has said may do that.
+   */
+  'execution.list',
+  'execution.get',
+  'execution.stop',
+  'execution.resolve',
+  /**
+   * The event log and the audit trail.
+   *
+   * Both are read-only records of what happened in the caller's own
+   * workspace, and both are in the default grant set: an agent that has just
+   * acted needs to be able to read what it did.
+   */
+  'event.list',
+  'audit.list',
 ] as const;
 
 export type McpToolName = (typeof mcpToolNames)[number];
@@ -40,6 +102,11 @@ export const mcpToolNameSchema = z.enum(mcpToolNames);
  * The tools an agent connection may use unless the owner narrows them
  * down. An agent never gets the workspace listing: it works inside the
  * workspace it was granted, not across all of them.
+ *
+ * The destructive verbs are not here either: `bot.dispatch`,
+ * `approval.decide`, `execution.stop`, `execution.resolve`, `task.accept`,
+ * `resource.publish` and `resource.execute` are the owner's to grant, one by
+ * one, because each of them spends an authority the owner holds.
  */
 export const defaultAgentToolGrants: McpToolName[] = [
   'conversation.read',
@@ -56,6 +123,12 @@ export const defaultAgentToolGrants: McpToolName[] = [
   'automation.create',
   'automation.inspect',
   'autonomy.read',
+  'approval.list',
+  'approval.evidence',
+  'execution.list',
+  'execution.get',
+  'event.list',
+  'audit.list',
 ];
 
 /** The tools the owner may use through MCP. */

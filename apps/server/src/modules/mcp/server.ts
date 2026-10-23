@@ -122,6 +122,16 @@ export async function createMcpServer(options: McpServerOptions): Promise<McpSer
       });
     }
 
+    // **The decision on an approval is not one of the actions the policy asks
+    // the owner to approve.** It is the answer to an approval, and asking for
+    // an approval in order to answer one is a deadlock the owner cannot break
+    // — the waiting list would carry a request to decide a request to decide.
+    // What stands behind an agent's decision is the owner's grant of this one
+    // verb, which is not a stored list the agent can widen. The allowed
+    // actions above still apply: a policy that forbids tool calls still
+    // forbids this one.
+    if (tool === 'approval.decide') return;
+
     if (actionNeedsApproval(policy, action)) {
       const decision = options.capabilities.requestActionApproval({
         workspaceId,
@@ -170,6 +180,15 @@ export async function createMcpServer(options: McpServerOptions): Promise<McpSer
       throw new AppError('forbidden', 'This agent has no access to that workspace.', 403);
     }
   };
+
+  /**
+   * Who the owner is, for a record that names the decider.
+   *
+   * The owner may be authenticated by the static owner token or by a session,
+   * and the session carries the owner's own id. The record names the owner
+   * when the request carried one, and the owner otherwise.
+   */
+  const decidedBy = (): string => actor.user?.id ?? 'owner';
 
   /**
    * An agent may only reach an object inside a workspace it has been granted.
@@ -495,6 +514,51 @@ export async function createMcpServer(options: McpServerOptions): Promise<McpSer
     );
   }
 
+  /**
+   * The acceptance decision on a task.
+   *
+   * An agent reporting completion is not acceptance: the acceptance is an
+   * explicit judgement, and a satisfied acceptance is what closes the task.
+   * The tool does the same thing the route does, on the same task, and writes
+   * the same trail.
+   *
+   * The tool is not in the default grant set: a connection that may accept a
+   * task is a connection the owner has said may accept one. The record names
+   * the agent that made the call, and the authority behind the acceptance is
+   * the owner's grant of this one verb.
+   */
+  if (granted.has('task.accept')) {
+    server.registerTool(
+      'task.accept',
+      {
+        description:
+          'Record an acceptance decision on a task: satisfied, which closes it, or not satisfied, ' +
+          'which does not. Reporting completion is not acceptance; this is the judgement.',
+        inputSchema: {
+          taskId: z.string(),
+          satisfied: z.boolean(),
+          reason: z.string().max(2_000).optional(),
+        },
+      },
+      async ({ taskId, satisfied, reason }) => {
+        try {
+          await guard('task.accept');
+          await assertObjectScope('task', taskId);
+          const task = options.capabilities.taskAccept({
+            taskId,
+            satisfied,
+            reason,
+            actorType: actor.kind === 'agent' ? 'agent' : 'human',
+            actorId: actor.kind === 'agent' ? (actor.agentConnectionId as string) : decidedBy(),
+          });
+          return jsonResult({ task });
+        } catch (error) {
+          return errorResult(error);
+        }
+      },
+    );
+  }
+
   if (granted.has('resource.create')) {
     server.registerTool(
       'resource.create',
@@ -615,6 +679,74 @@ export async function createMcpServer(options: McpServerOptions): Promise<McpSer
               expectedRevision: args.expectedRevision,
               title: args.title,
               data: args.data,
+            }),
+          );
+        } catch (error) {
+          return errorResult(error);
+        }
+      },
+    );
+  }
+
+  /**
+   * The two acts a resource may have.
+   *
+   * They are the owner's to grant, one by one, and neither is in the default
+   * grant set: publishing "makes a resource visible to everyone; it is the
+   * owner's own act", and running a resource now runs the owner's work — an
+   * automation's run is enqueued for the worker and its action may prompt an
+   * agent, and a data source's query makes the outbound request the owner's
+   * configuration describes. A connection that was not granted one of them
+   * does not have it registered at all, so the call is refused and the refusal
+   * is recorded the way every other ungranted call is recorded.
+   *
+   * A kind that has no such act is refused with the reason the owner can read,
+   * and it is the same refusal the route makes: the route and the tool are
+   * thin adapters over one shared capability.
+   */
+  if (granted.has('resource.publish')) {
+    server.registerTool(
+      'resource.publish',
+      {
+        description:
+          'Publish a resource: make a dashboard visible, or make an automation active. Only the kinds that have a publish act can be published — a kind that has none is refused, and the refusal names the kinds that do.',
+        inputSchema: { resourceId: z.string() },
+      },
+      async ({ resourceId }) => {
+        try {
+          await guard('resource.publish');
+          await assertObjectScope('resource', resourceId);
+          return jsonResult(
+            options.capabilities.resourcePublish({
+              resourceId,
+              actorType: actor.kind === 'agent' ? 'agent' : 'human',
+              actorId: actor.kind === 'agent' ? (actor.agentConnectionId as string) : decidedBy(),
+            }),
+          );
+        } catch (error) {
+          return errorResult(error);
+        }
+      },
+    );
+  }
+
+  if (granted.has('resource.execute')) {
+    server.registerTool(
+      'resource.execute',
+      {
+        description:
+          "Run a resource now: an automation's run is enqueued for the worker, a data source's query runs, and a dashboard's widgets' sources run. Only the kinds that have a run can be executed — a kind that has none is refused, and the refusal names the kinds that do.",
+        inputSchema: { resourceId: z.string() },
+      },
+      async ({ resourceId }) => {
+        try {
+          await guard('resource.execute');
+          await assertObjectScope('resource', resourceId);
+          return jsonResult(
+            await options.capabilities.resourceExecute({
+              resourceId,
+              actorType: actor.kind === 'agent' ? 'agent' : 'human',
+              actorId: actor.kind === 'agent' ? (actor.agentConnectionId as string) : decidedBy(),
             }),
           );
         } catch (error) {
@@ -771,6 +903,368 @@ export async function createMcpServer(options: McpServerOptions): Promise<McpSer
               ...(conversationId ? { conversationId } : {}),
             }),
           );
+        } catch (error) {
+          return errorResult(error);
+        }
+      },
+    );
+  }
+
+  /**
+   * The approval queue.
+   *
+   * The queue the owner reads is the queue the agent reads: the same
+   * approvals, the same rows, narrowed to the caller's workspace. An agent
+   * whose turn is blocked on the owner needs to see what it is blocked on.
+   */
+  if (granted.has('approval.list')) {
+    server.registerTool(
+      'approval.list',
+      {
+        description:
+          'List the approvals in a workspace, newest first, or read one approval of it by id.',
+        inputSchema: {
+          workspaceId: z.string().optional(),
+          status: z.enum(['pending', 'approved', 'rejected']).optional(),
+          approvalId: z.string().optional(),
+        },
+      },
+      async ({ workspaceId, status, approvalId }) => {
+        try {
+          await guard('approval.list');
+          if (approvalId) {
+            // A tool that names an id names an object, not a workspace: the
+            // approval is checked against the caller's own scope, and the
+            // queue it belongs to is the approval's own.
+            await assertObjectScope('approval', approvalId);
+            return jsonResult({
+              approvals: options.capabilities.approvalList({
+                ...(workspaceId ? { workspaceId } : {}),
+                approvalId,
+              }),
+            });
+          }
+          const scope = workspaceId ?? (await defaultWorkspace());
+          await assertWorkspace(scope);
+          return jsonResult({
+            approvals: options.capabilities.approvalList({
+              workspaceId: scope,
+              ...(status ? { status } : {}),
+            }),
+          });
+        } catch (error) {
+          return errorResult(error);
+        }
+      },
+    );
+  }
+
+  /**
+   * The decision on an approval.
+   *
+   * It is the owner's decision path, used as it is: the answer is recorded
+   * first, and the turn is continued in the session it was in when it can be
+   * and closed when it cannot. The tool is not in the default grant set — a
+   * connection that may answer an approval is a connection the owner has said
+   * may answer an approval — and an ungranted call is refused and recorded
+   * like every other ungranted call.
+   *
+   * The record names the agent that made the call, and the authority behind
+   * the decision is the owner's grant of this verb.
+   */
+  if (granted.has('approval.decide')) {
+    server.registerTool(
+      'approval.decide',
+      {
+        description:
+          'Decide an approval: approve it or reject it, with a reason. The decision is ' +
+          'recorded and the turn it refers to continues in the session it was in, or is closed ' +
+          'with the answer on record.',
+        inputSchema: {
+          approvalId: z.string(),
+          approved: z.boolean(),
+          reason: z.string().max(2_000).optional(),
+        },
+      },
+      async ({ approvalId, approved, reason }) => {
+        try {
+          await guard('approval.decide');
+          await assertObjectScope('approval', approvalId);
+          const decision = options.capabilities.approvalDecide({
+            approvalId,
+            approved,
+            reason,
+            decidedBy: actor.kind === 'agent' ? (actor.agentConnectionId as string) : decidedBy(),
+            actorType: actor.kind === 'agent' ? 'agent' : 'human',
+          });
+          return jsonResult({
+            approval: decision.approval,
+            execution: decision.execution,
+            outcome: decision.outcome,
+            detail: decision.detail,
+          });
+        } catch (error) {
+          return errorResult(error);
+        }
+      },
+    );
+  }
+
+  /**
+   * The evidence a decision is taken against.
+   *
+   * It is a read: the calls the turn made, the things it produced and what it
+   * cost. The owner's route answers with the same evidence, so an agent and a
+   * person look at the same thing before the same decision.
+   *
+   * It is in the default grant set: it decides nothing and changes nothing.
+   */
+  if (granted.has('approval.evidence')) {
+    server.registerTool(
+      'approval.evidence',
+      {
+        description:
+          'Read the evidence a decision is taken against: the turn behind the approval, the tool ' +
+          'calls it made, the things it produced and what it cost.',
+        inputSchema: { approvalId: z.string() },
+      },
+      async ({ approvalId }) => {
+        try {
+          await guard('approval.evidence');
+          // A tool that names an id names an object, not a workspace: the
+          // approval is checked against the caller's own scope, and the
+          // evidence it returns is the approval's own.
+          await assertObjectScope('approval', approvalId);
+          return jsonResult(options.capabilities.approvalEvidence(approvalId));
+        } catch (error) {
+          return errorResult(error);
+        }
+      },
+    );
+  }
+
+  /**
+   * The turns of a workspace.
+   *
+   * A listing is scoped to a workspace and never wider: an agent sees the
+   * turns of the workspace it was granted and nothing else.
+   */
+  if (granted.has('execution.list')) {
+    server.registerTool(
+      'execution.list',
+      {
+        description: 'List the turns of a workspace, newest first.',
+        inputSchema: {
+          workspaceId: z.string().optional(),
+          status: z
+            .enum([
+              'queued',
+              'running',
+              'blocked',
+              'completed',
+              'committed',
+              'failed',
+              'cancelled',
+              'unknown',
+            ])
+            .optional(),
+          limit: z.number().int().min(1).max(200).optional(),
+        },
+      },
+      async ({ workspaceId, status, limit }) => {
+        try {
+          await guard('execution.list');
+          const scope = workspaceId ?? (await defaultWorkspace());
+          await assertWorkspace(scope);
+          return jsonResult({
+            executions: options.capabilities.executionList({
+              workspaceId: scope,
+              ...(status ? { status } : {}),
+              ...(limit ? { limit } : {}),
+            }),
+          });
+        } catch (error) {
+          return errorResult(error);
+        }
+      },
+    );
+  }
+
+  /**
+   * The turn, with the activity behind it.
+   *
+   * It is the same read model the owner's route answers with, so an agent and
+   * a person see the same turn.
+   */
+  if (granted.has('execution.get')) {
+    server.registerTool(
+      'execution.get',
+      {
+        description:
+          'Read a turn: its status, the activity it produced, and what may be done with it.',
+        inputSchema: { executionId: z.string() },
+      },
+      async ({ executionId }) => {
+        try {
+          await guard('execution.get');
+          await assertObjectScope('execution', executionId);
+          return jsonResult(options.capabilities.executionRead(executionId));
+        } catch (error) {
+          return errorResult(error);
+        }
+      },
+    );
+  }
+
+  /**
+   * Ask a turn to stop.
+   *
+   * The answer says what was actually done. `cancelled` is the only outcome
+   * that says the turn is over: it is used when the turn had not started and
+   * its queued job was cancelled. `requested` says the runtime was asked and
+   * may still finish the turn, and `not_running` says there was nothing to
+   * stop. The tool never claims a turn stopped when only a request was made.
+   *
+   * The tool is not in the default grant set: a connection that may stop a
+   * turn is a connection the owner has said may stop a turn.
+   */
+  if (granted.has('execution.stop')) {
+    server.registerTool(
+      'execution.stop',
+      {
+        description:
+          'Ask a turn to stop. A turn that had not started is cancelled; a running turn is only ' +
+          'asked, and the answer says which of the two happened.',
+        inputSchema: {
+          executionId: z.string(),
+          note: z.string().max(2_000).optional(),
+        },
+      },
+      async ({ executionId, note }) => {
+        try {
+          await guard('execution.stop');
+          await assertObjectScope('execution', executionId);
+          return jsonResult(
+            options.capabilities.executionStop({
+              executionId,
+              note,
+              actorType: actor.kind === 'agent' ? 'agent' : 'human',
+              actorId: actor.kind === 'agent' ? (actor.agentConnectionId as string) : decidedBy(),
+            }),
+          );
+        } catch (error) {
+          return errorResult(error);
+        }
+      },
+    );
+  }
+
+  /**
+   * Close a turn whose outcome could not be confirmed.
+   *
+   * The worker stopped and could not say how the turn ended, so the turn is a
+   * question. The conclusion is somebody's — it did run, or it did not — and
+   * the reply follows it. The tool does the same thing the route does, on the
+   * same turn, and writes the same trail.
+   *
+   * The tool is not in the default grant set: a connection that may close an
+   * unknown turn is a connection the owner has said may close one. The record
+   * names the agent that made the call, and the authority behind the
+   * conclusion is the owner's grant of this one verb.
+   */
+  if (granted.has('execution.resolve')) {
+    server.registerTool(
+      'execution.resolve',
+      {
+        description:
+          'Close a turn whose outcome could not be confirmed: completed if it did run, failed if ' +
+          'it did not. The turn leaves the unknown state and its reply follows the conclusion.',
+        inputSchema: {
+          executionId: z.string(),
+          outcome: z.enum(['completed', 'failed']),
+          note: z.string().max(2_000).optional(),
+        },
+      },
+      async ({ executionId, outcome, note }) => {
+        try {
+          await guard('execution.resolve');
+          await assertObjectScope('execution', executionId);
+          const resolution = options.capabilities.executionResolve({
+            executionId,
+            outcome,
+            note,
+            actorType: actor.kind === 'agent' ? 'agent' : 'human',
+            actorId: actor.kind === 'agent' ? (actor.agentConnectionId as string) : decidedBy(),
+          });
+          return jsonResult({
+            execution: resolution.execution,
+            outcome: resolution.outcome,
+            detail: resolution.detail,
+          });
+        } catch (error) {
+          return errorResult(error);
+        }
+      },
+    );
+  }
+
+  /**
+   * The event log of a workspace.
+   *
+   * The same log the server-to-client stream is built from, read as a list.
+   */
+  if (granted.has('event.list')) {
+    server.registerTool(
+      'event.list',
+      {
+        description: 'List the events of a workspace, oldest first.',
+        inputSchema: {
+          workspaceId: z.string().optional(),
+          limit: z.number().int().min(1).max(500).optional(),
+        },
+      },
+      async ({ workspaceId, limit }) => {
+        try {
+          await guard('event.list');
+          const scope = workspaceId ?? (await defaultWorkspace());
+          await assertWorkspace(scope);
+          return jsonResult({
+            events: options.capabilities.eventList({
+              workspaceId: scope,
+              ...(limit ? { limit } : {}),
+            }),
+          });
+        } catch (error) {
+          return errorResult(error);
+        }
+      },
+    );
+  }
+
+  /**
+   * The audit trail of a workspace.
+   *
+   * The trail is append-only and is written by the server as the actions
+   * happen, so it is the record of what was done and by whom.
+   */
+  if (granted.has('audit.list')) {
+    server.registerTool(
+      'audit.list',
+      {
+        description: 'List the audit entries of a workspace, newest first.',
+        inputSchema: {
+          workspaceId: z.string().optional(),
+          limit: z.number().int().min(1).max(1000).optional(),
+        },
+      },
+      async ({ workspaceId, limit }) => {
+        try {
+          await guard('audit.list');
+          const scope = workspaceId ?? (await defaultWorkspace());
+          await assertWorkspace(scope);
+          return jsonResult({
+            entries: options.capabilities.auditList(scope, limit),
+          });
         } catch (error) {
           return errorResult(error);
         }

@@ -202,7 +202,7 @@ describe('an outcome that could not be confirmed', () => {
 
     // The turn started and its outcome could not be confirmed. The job is
     // held, not requeued.
-    queue.hold(job.id, 'The outcome could not be confirmed.');
+    queue.hold(job.id, 'worker_1', 'The outcome could not be confirmed.');
 
     const after = queue.claimNext('worker_1');
     expect(after).toBeNull();

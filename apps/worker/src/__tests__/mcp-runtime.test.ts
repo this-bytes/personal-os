@@ -235,7 +235,9 @@ describe('the worker reaches the runtime the turn runs on', () => {
     await executeJob(context, turn());
 
     const row = executionRow();
-    expect(row.status, `the turn did not finish: ${row.error ?? ''}`).toBe('completed');
+    // The reply went into the conversation's canonical history, so the turn is
+    // committed rather than merely completed.
+    expect(row.status, `the turn did not finish: ${row.error ?? ''}`).toBe('committed');
     expect(row.error).toBeNull();
 
     // The server's own answer, not the worker's.

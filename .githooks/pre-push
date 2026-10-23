@@ -75,8 +75,36 @@ for update in "$@"; do
     elif git merge-base --is-ancestor "$remote_sha" "refs/remotes/$remote_name/main" 2>/dev/null; then
       printf 'Deleting merged topic branch %s.\n' "$remote_ref"
     else
-      printf 'PUSH BLOCKED: %s is not proven merged into %s/main. Fetch and preserve unmerged work.\n' "$remote_ref" "$remote_name"
-      failed=1
+      base="refs/remotes/$remote_name/main"
+      # A branch that holds a merge the base does not have cannot be proven
+      # by patch equivalence: `git cherry` never reports a merge, and a merge
+      # resolution is not a patch anybody can compare. Such a branch is kept,
+      # because the resolution may exist nowhere else.
+      merges=$(git rev-list --merges "$base..$remote_sha" 2>/dev/null)
+      if [ -n "$merges" ]; then
+        printf 'PUSH BLOCKED: %s holds a merge that %s/main does not have.\n' "$remote_ref" "$remote_name"
+        printf 'A merge resolution is not a patch that can be compared. Land the merge itself.\n'
+        failed=1
+      else
+        cherry=$(git cherry "$base" "$remote_sha" 2>/dev/null) || cherry='+unproven'
+        if printf '%s\n' "$cherry" | grep -q '^+'; then
+          # A squash merge lands the branch's content as one commit, so none
+          # of the branch's patches matches and the patch proof cannot see
+          # the landing. The tree can: the squashed commit carries exactly
+          # the tree the branch left behind.
+          fork=$(git merge-base "$base" "$remote_sha" 2>/dev/null)
+          tip_tree=$(git rev-parse --verify "$remote_sha^{tree}" 2>/dev/null)
+          trees=$(git log --format=%T "$fork..$base" 2>/dev/null)
+          if [ -n "$tip_tree" ] && printf '%s\n' "$trees" | grep -qx "$tip_tree"; then
+            printf 'Deleting topic branch %s (its content is in %s/main; its own commits are not).\n' "$remote_ref" "$remote_name"
+          else
+            printf 'PUSH BLOCKED: %s is not proven merged into %s/main. Fetch and preserve unmerged work.\n' "$remote_ref" "$remote_name"
+            failed=1
+          fi
+        else
+          printf 'Deleting topic branch %s (every patch git cherry can see is already in %s/main).\n' "$remote_ref" "$remote_name"
+        fi
+      fi
     fi
     continue
   fi

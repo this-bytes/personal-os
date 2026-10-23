@@ -1,0 +1,454 @@
+{
+  "contract": "CONTRACTS.md",
+  "about": "The coverage table the MCP parity gate checks. Every owner-facing route in the contract's HTTP surface is listed here once, and every entry says which of three things it is. `paired`: a registered MCP tool performs the same operation on the same objects, and names it. `listed`: the route is not agent-operable yet, and says why it is not and which spec will pair it — a listed route is the visible backlog, not a silent gap. `exempt`: the route is not an owner capability an agent should have, and says why; ADR 0013 allows an exemption for an auth flow, a pure-UI read, or the owner's own authority over what an agent may do, and for nothing else. A route that is not in this table fails the gate, so a new human-only route cannot be added to the contract without being answered for here.",
+  "routes": [
+    {
+      "route": "ANY /mcp",
+      "kind": "exempt",
+      "reason": "The transport the tools are served over. It is the agent surface, not an owner capability."
+    },
+    {
+      "route": "GET /api/agent-presets",
+      "kind": "listed",
+      "reason": "The adapter preset catalogue: a template the owner chooses from, not an operation on the owner's own objects.",
+      "spec": "SPEC-S2+"
+    },
+    {
+      "route": "GET /api/agents",
+      "kind": "paired",
+      "tool": "agent.list"
+    },
+    {
+      "route": "GET /api/agents/:id",
+      "kind": "listed",
+      "reason": "One connection's own record, including its adapter configuration.",
+      "spec": "SPEC-S2+"
+    },
+    {
+      "route": "GET /api/agents/:id/memories",
+      "kind": "listed",
+      "reason": "The connection's own memories and its brief. The agent's memory rule is about writing, not about the owner's read model.",
+      "spec": "SPEC-S2+"
+    },
+    {
+      "route": "GET /api/agents/:id/tokens",
+      "kind": "exempt",
+      "reason": "The MCP tokens of a connection. Minting and revoking a token is the owner's own authority over who may call as that connection."
+    },
+    {
+      "route": "GET /api/approvals",
+      "kind": "paired",
+      "tool": "approval.list"
+    },
+    {
+      "route": "GET /api/approvals/:id",
+      "kind": "paired",
+      "tool": "approval.list"
+    },
+    {
+      "route": "GET /api/approvals/:id/evidence",
+      "kind": "paired",
+      "tool": "approval.evidence"
+    },
+    {
+      "route": "GET /api/audit",
+      "kind": "paired",
+      "tool": "audit.list"
+    },
+    {
+      "route": "GET /api/auth/me",
+      "kind": "exempt",
+      "reason": "The owner's own identity."
+    },
+    {
+      "route": "GET /api/auth/status",
+      "kind": "exempt",
+      "reason": "Whether the owner account exists yet."
+    },
+    {
+      "route": "GET /api/autonomy-policy",
+      "kind": "paired",
+      "tool": "autonomy.read"
+    },
+    {
+      "route": "GET /api/automations",
+      "kind": "listed",
+      "reason": "Listing the automations of a workspace.",
+      "spec": "SPEC-S2+"
+    },
+    {
+      "route": "GET /api/automations/:id",
+      "kind": "paired",
+      "tool": "automation.inspect"
+    },
+    {
+      "route": "GET /api/conversations",
+      "kind": "listed",
+      "reason": "Listing the rooms of a workspace.",
+      "spec": "SPEC-S2+"
+    },
+    {
+      "route": "GET /api/conversations/:id",
+      "kind": "paired",
+      "tool": "conversation.read"
+    },
+    {
+      "route": "GET /api/conversations/:id/bots",
+      "kind": "listed",
+      "reason": "The team of a room, and registering or changing one.",
+      "spec": "SPEC-S2+"
+    },
+    {
+      "route": "GET /api/conversations/:id/messages",
+      "kind": "paired",
+      "tool": "conversation.read"
+    },
+    {
+      "route": "GET /api/events",
+      "kind": "paired",
+      "tool": "event.list"
+    },
+    {
+      "route": "GET /api/executions/:id",
+      "kind": "paired",
+      "tool": "execution.get"
+    },
+    {
+      "route": "GET /api/features/bots/team",
+      "kind": "exempt",
+      "reason": "The bot feature's read model for the panel."
+    },
+    {
+      "route": "GET /api/features/map",
+      "kind": "exempt",
+      "reason": "The map feature's read model for the panel."
+    },
+    {
+      "route": "GET /api/goals",
+      "kind": "listed",
+      "reason": "The goals of a workspace.",
+      "spec": "SPEC-S2+"
+    },
+    {
+      "route": "GET /api/goals/:id",
+      "kind": "listed",
+      "reason": "One goal of a workspace.",
+      "spec": "SPEC-S2+"
+    },
+    {
+      "route": "GET /api/goals/:id/view",
+      "kind": "listed",
+      "reason": "A goal with its work and its dependencies.",
+      "spec": "SPEC-S2+"
+    },
+    {
+      "route": "GET /api/goals/overview",
+      "kind": "listed",
+      "reason": "The goals of a workspace with the counts under each.",
+      "spec": "SPEC-S2+"
+    },
+    {
+      "route": "GET /api/health",
+      "kind": "exempt",
+      "reason": "Liveness and setup state, answered before anyone signs in."
+    },
+    {
+      "route": "GET /api/measures",
+      "kind": "listed",
+      "reason": "The product's two measures of itself. S1 does not pair it; SPEC-S2 publishes `measure.read`.",
+      "spec": "SPEC-S2"
+    },
+    {
+      "route": "GET /api/resources",
+      "kind": "listed",
+      "reason": "Listing the resources of a workspace. The agent reads a resource it knows by id.",
+      "spec": "SPEC-S2+"
+    },
+    {
+      "route": "GET /api/resources/:id",
+      "kind": "paired",
+      "tool": "resource.get"
+    },
+    {
+      "route": "GET /api/resources/:id/content",
+      "kind": "listed",
+      "reason": "The bytes of a resource that is a file.",
+      "spec": "SPEC-S2+"
+    },
+    {
+      "route": "GET /api/resources/:id/inspect",
+      "kind": "listed",
+      "reason": "Validating a resource without changing it.",
+      "spec": "SPEC-S2+"
+    },
+    {
+      "route": "GET /api/secrets",
+      "kind": "exempt",
+      "reason": "The secret configurations' metadata. A secret's value never leaves the owner's hands, and the list that names them is the owner's."
+    },
+    {
+      "route": "GET /api/tasks",
+      "kind": "listed",
+      "reason": "Listing the tasks of a workspace.",
+      "spec": "SPEC-S2+"
+    },
+    {
+      "route": "GET /api/tasks/:id",
+      "kind": "paired",
+      "tool": "task.get"
+    },
+    {
+      "route": "GET /api/tasks/dependencies",
+      "kind": "listed",
+      "reason": "What the workspace's tasks wait on.",
+      "spec": "SPEC-S2+"
+    },
+    {
+      "route": "GET /api/waiting",
+      "kind": "listed",
+      "reason": "Everything waiting on the owner across every domain, in one list. S1 pairs the domains it names; the whole waiting list is S2's.",
+      "spec": "SPEC-S2+"
+    },
+    {
+      "route": "GET /api/workspaces",
+      "kind": "paired",
+      "tool": "workspace.list"
+    },
+    {
+      "route": "GET /api/workspaces/:id",
+      "kind": "listed",
+      "reason": "One workspace's own settings.",
+      "spec": "SPEC-S2+"
+    },
+    {
+      "route": "GET /api/agui/events",
+      "kind": "exempt",
+      "reason": "The same event log in the AG-UI envelope. The MCP surface reads the records themselves."
+    },
+    {
+      "route": "PATCH /api/agents/:id",
+      "kind": "listed",
+      "reason": "Changing a connection, including the adapter configuration it runs on.",
+      "spec": "SPEC-S2+"
+    },
+    {
+      "route": "PATCH /api/automations/:id",
+      "kind": "listed",
+      "reason": "Changing an automation.",
+      "spec": "SPEC-S2+"
+    },
+    {
+      "route": "PATCH /api/conversations/:id",
+      "kind": "listed",
+      "reason": "Changing a room's own settings.",
+      "spec": "SPEC-S2+"
+    },
+    {
+      "route": "PATCH /api/conversations/:id/participants/:participantId",
+      "kind": "listed",
+      "reason": "A participant's persona override.",
+      "spec": "SPEC-S2+"
+    },
+    {
+      "route": "PATCH /api/resources/:id",
+      "kind": "paired",
+      "tool": "resource.update"
+    },
+    {
+      "route": "PATCH /api/tasks/:id",
+      "kind": "paired",
+      "tool": "task.update"
+    },
+    {
+      "route": "PATCH /api/workspaces/:id",
+      "kind": "listed",
+      "reason": "Renaming or reconfiguring a workspace.",
+      "spec": "SPEC-S2+"
+    },
+    {
+      "route": "POST /api/agents",
+      "kind": "listed",
+      "reason": "Registering a connection. The adapter credentials it needs are the owner's, and the secret never leaves their hands.",
+      "spec": "SPEC-S2+"
+    },
+    {
+      "route": "POST /api/agents/:id/grants",
+      "kind": "exempt",
+      "reason": "Widening a tool grant. The grant is the owner's authority over what an agent may do, and widening it stays the owner's act."
+    },
+    {
+      "route": "POST /api/agents/:id/probe",
+      "kind": "listed",
+      "reason": "Re-running capability discovery against an adapter.",
+      "spec": "SPEC-S2+"
+    },
+    {
+      "route": "POST /api/agents/:id/tokens",
+      "kind": "exempt",
+      "reason": "Issuing an MCP token for a connection. Credential issuance is the owner's act."
+    },
+    {
+      "route": "POST /api/agui/runs/:runId/resume",
+      "kind": "listed",
+      "reason": "The AG-UI protocol's own answer to an interrupt. S1 pairs the MCP surface's answer, which is the approval decision.",
+      "spec": "SPEC-S2+"
+    },
+    {
+      "route": "POST /api/approvals/:id/decide",
+      "kind": "paired",
+      "tool": "approval.decide"
+    },
+    {
+      "route": "POST /api/auth/login",
+      "kind": "exempt",
+      "reason": "The owner signs in with a password. An agent is given a token; it never holds the owner's."
+    },
+    {
+      "route": "POST /api/auth/logout",
+      "kind": "exempt",
+      "reason": "Ending the owner's session."
+    },
+    {
+      "route": "POST /api/auth/owner-token",
+      "kind": "exempt",
+      "reason": "Mints the owner's own token. An agent token is scoped to one connection and cannot mint the owner's."
+    },
+    {
+      "route": "POST /api/auth/setup",
+      "kind": "exempt",
+      "reason": "Creating the owner account, once per instance. There is no agent to create one."
+    },
+    {
+      "route": "POST /api/automations",
+      "kind": "paired",
+      "tool": "automation.create"
+    },
+    {
+      "route": "POST /api/automations/:id/disable",
+      "kind": "listed",
+      "reason": "Turning scheduling off.",
+      "spec": "SPEC-S2+"
+    },
+    {
+      "route": "POST /api/automations/:id/enable",
+      "kind": "listed",
+      "reason": "Turning scheduling on.",
+      "spec": "SPEC-S2+"
+    },
+    {
+      "route": "POST /api/conversations",
+      "kind": "listed",
+      "reason": "Opening a room.",
+      "spec": "SPEC-S2+"
+    },
+    {
+      "route": "POST /api/conversations/:id/bots",
+      "kind": "listed",
+      "reason": "Registering or changing an agent in a room.",
+      "spec": "SPEC-S2+"
+    },
+    {
+      "route": "POST /api/conversations/:id/bots/dispatch",
+      "kind": "paired",
+      "tool": "bot.dispatch"
+    },
+    {
+      "route": "POST /api/conversations/:id/messages",
+      "kind": "paired",
+      "tool": "conversation.post"
+    },
+    {
+      "route": "POST /api/conversations/:id/participants",
+      "kind": "listed",
+      "reason": "Adding a participant to a room.",
+      "spec": "SPEC-S2+"
+    },
+    {
+      "route": "POST /api/executions/:id/resolve",
+      "kind": "paired",
+      "tool": "execution.resolve"
+    },
+    {
+      "route": "POST /api/executions/:id/stop",
+      "kind": "paired",
+      "tool": "execution.stop"
+    },
+    {
+      "route": "POST /api/goals",
+      "kind": "listed",
+      "reason": "Setting a goal.",
+      "spec": "SPEC-S2+"
+    },
+    {
+      "route": "POST /api/resources",
+      "kind": "paired",
+      "tool": "resource.create"
+    },
+    {
+      "route": "POST /api/resources/:id/execute",
+      "kind": "paired",
+      "tool": "resource.execute"
+    },
+    {
+      "route": "POST /api/resources/:id/publish",
+      "kind": "paired",
+      "tool": "resource.publish"
+    },
+    {
+      "route": "POST /api/resources/upload",
+      "kind": "exempt",
+      "reason": "Storing a file's bytes from the owner's own machine. There is no agent-side equivalent to a file picker."
+    },
+    {
+      "route": "POST /api/tasks",
+      "kind": "paired",
+      "tool": "task.create"
+    },
+    {
+      "route": "POST /api/tasks/:id/accept",
+      "kind": "paired",
+      "tool": "task.accept"
+    },
+    {
+      "route": "POST /api/tasks/:id/assign",
+      "kind": "listed",
+      "reason": "Assigning work to an agent.",
+      "spec": "SPEC-S2+"
+    },
+    {
+      "route": "POST /api/workspaces",
+      "kind": "listed",
+      "reason": "Opening a workspace is the owner's own act; the agent works inside one it was granted.",
+      "spec": "SPEC-S2+"
+    },
+    {
+      "route": "DELETE /api/agents/:id",
+      "kind": "listed",
+      "reason": "Removing a connection.",
+      "spec": "SPEC-S2+"
+    },
+    {
+      "route": "DELETE /api/agents/:id/tokens/:tokenId",
+      "kind": "exempt",
+      "reason": "Revoking an MCP token. Credential revocation is the owner's act."
+    },
+    {
+      "route": "DELETE /api/automations/:id",
+      "kind": "listed",
+      "reason": "Removing an automation.",
+      "spec": "SPEC-S2+"
+    },
+    {
+      "route": "DELETE /api/conversations/:id",
+      "kind": "listed",
+      "reason": "Removing a room.",
+      "spec": "SPEC-S2+"
+    },
+    {
+      "route": "DELETE /api/conversations/:id/participants/:participantId",
+      "kind": "listed",
+      "reason": "Removing a participant from a room.",
+      "spec": "SPEC-S2+"
+    }
+  ]
+}

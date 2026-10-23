@@ -12,6 +12,7 @@ import type {
   MessageDelivery,
   MessageOrigin,
   Persona,
+  SessionContinuity,
   TurnCapabilityView,
 } from '@personal-os/contracts';
 
@@ -292,6 +293,31 @@ export const executions = sqliteTable(
     capabilityView: text('capability_view', { mode: 'json' }).$type<TurnCapabilityView | null>(),
     status: text('status').$type<ExecutionStatus>().notNull().default('queued'),
     error: text('error'),
+    /**
+     * The revision of the conversation's canonical history at the moment this
+     * turn's output was committed into it.
+     *
+     * It is null until the commit is acknowledged, and it stays null for a
+     * turn whose output is not in a canonical history — a task turn, an
+     * automation's run. The contract promises the revision "when the turn's
+     * output is canonical", and this is where that promise is kept.
+     */
+    committedRevision: text('committed_revision'),
+    /**
+     * The identity of the dispatch that started this run.
+     *
+     * Two dispatches with the same key are the same dispatch, so a repeated
+     * dispatch finds this row and does not start a second run. Null for a run
+     * that was not started by a conversation dispatch.
+     */
+    idempotencyKey: text('idempotency_key'),
+    /**
+     * The correlation id the turn carries.
+     *
+     * It ties the run, the events it publishes and the message it writes
+     * together, so a reader can follow one turn through the log.
+     */
+    correlationId: text('correlation_id'),
     spendUnits: integer('spend_units').notNull().default(0),
     startedAt: text('started_at'),
     finishedAt: text('finished_at'),
@@ -301,6 +327,49 @@ export const executions = sqliteTable(
     index('executions_workspace_idx').on(table.workspaceId),
     index('executions_conversation_idx').on(table.conversationId),
     index('executions_task_idx').on(table.taskId),
+    index('executions_correlation_idx').on(table.correlationId),
+    uniqueIndex('executions_idempotency_key_idx').on(table.idempotencyKey),
+  ],
+);
+
+/**
+ * A conversation's durable reference to the runtime session behind it.
+ *
+ * The reference is what lets a second turn in the same conversation continue
+ * the same native session, and it is what a client reads to know which session
+ * it is looking at. One row per conversation and agent connection: the
+ * reference is per agent, because two agents in one room keep two sessions.
+ */
+export const conversationSessions = sqliteTable(
+  'conversation_sessions',
+  {
+    id: text('id').primaryKey(),
+    workspaceId: text('workspace_id').notNull(),
+    conversationId: text('conversation_id')
+      .notNull()
+      .references(() => conversations.id, { onDelete: 'cascade' }),
+    /** The agent connection whose runtime holds the session. */
+    agentConnectionId: text('agent_connection_id').notNull(),
+    /** The runtime's own name for the session. */
+    sessionId: text('session_id').notNull(),
+    /**
+     * Whether the next turn can continue this session.
+     *
+     * `fresh` means the runtime keeps no session to continue, and the product
+     * says so rather than claiming a continuity that does not exist.
+     */
+    continuity: text('continuity').$type<SessionContinuity>().notNull().default('fresh'),
+    /** The revision of the connection's capability set when the session was established. */
+    capabilitiesRevision: integer('capabilities_revision'),
+    establishedAt: text('established_at').notNull(),
+    updatedAt: text('updated_at').notNull(),
+  },
+  (table) => [
+    uniqueIndex('conversation_sessions_conversation_agent_idx').on(
+      table.conversationId,
+      table.agentConnectionId,
+    ),
+    index('conversation_sessions_workspace_idx').on(table.workspaceId),
   ],
 );
 

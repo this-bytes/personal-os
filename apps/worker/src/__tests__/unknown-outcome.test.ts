@@ -22,6 +22,7 @@ import {
   type Runtime,
 } from '@personal-os/server/runtime';
 import type { AgentAdapter, AgentEvent, AgentTurnInput } from '@personal-os/contracts';
+import { reconcileStaleJobs } from '../reconcile.js';
 import { executeJob, type ExecutionOutcome, type ExecutorContext } from '../executor.js';
 
 /**
@@ -311,13 +312,18 @@ describe('a turn that ran out of time', () => {
  * `apps/worker/src/index.ts`, so that the test observes what the queue is
  * actually told rather than what the executor meant.
  */
-function dispatchAsTheWorkerDoes(queue: Queue, outcome: ExecutionOutcome, jobId: string): void {
+function dispatchAsTheWorkerDoes(
+  queue: Queue,
+  outcome: ExecutionOutcome,
+  jobId: string,
+  workerId: string,
+): void {
   if (outcome.status === 'completed' || outcome.status === 'cancelled') {
-    queue.complete(jobId);
+    queue.complete(jobId, workerId);
   } else if (outcome.status === 'unknown') {
-    queue.hold(jobId, outcome.error ?? 'The outcome could not be confirmed.');
+    queue.hold(jobId, workerId, outcome.error ?? 'The outcome could not be confirmed.');
   } else {
-    queue.fail(jobId, outcome.error ?? 'The job failed.');
+    queue.fail(jobId, workerId, outcome.error ?? 'The job failed.');
   }
 }
 
@@ -411,7 +417,7 @@ describe('a job whose outcome is unknown', () => {
     expect(job?.id).toBe(enqueued.id);
 
     const outcome = await executeJob(context, job!);
-    dispatchAsTheWorkerDoes(runtime.queue, outcome, job!.id);
+    dispatchAsTheWorkerDoes(runtime.queue, outcome, job!.id, 'worker_1');
 
     // The job is finished and it is not scheduled to run again.
     expect(jobRow(enqueued.id)?.status, 'the job was not held').toBe('unknown');
@@ -448,8 +454,8 @@ describe('a job whose outcome is unknown', () => {
       .where(eq(queueJobs.id, enqueued.id))
       .run();
 
-    // The next worker reaps the stale lease and takes the job again.
-    runtime.queue.reapStaleJobs();
+    // The next worker settles the stale lease, and the rule keeps the job.
+    await reconcileStaleJobs(runtime);
 
     expect(
       runtime.queue.claimNext('worker_2'),
@@ -488,7 +494,7 @@ describe('a job whose outcome is unknown', () => {
     const job = runtime.queue.claimNext('worker_1');
 
     const outcome = await executeJob(context, job!);
-    dispatchAsTheWorkerDoes(runtime.queue, outcome, job!.id);
+    dispatchAsTheWorkerDoes(runtime.queue, outcome, job!.id, 'worker_1');
 
     // The job is finished, and it is not scheduled to run again.
     expect(jobRow(enqueued.id)?.status, 'the job was not held').toBe('unknown');
@@ -505,7 +511,7 @@ describe('a job whose outcome is unknown', () => {
     const job = runtime.queue.claimNext('worker_1');
 
     const outcome = await executeJob(context, job!);
-    dispatchAsTheWorkerDoes(runtime.queue, outcome, job!.id);
+    dispatchAsTheWorkerDoes(runtime.queue, outcome, job!.id, 'worker_1');
 
     // When the retry window has passed, there is nothing left to pick up.
     await new Promise((resolve) => setTimeout(resolve, 5_200));
@@ -547,7 +553,7 @@ describe('a job whose outcome is unknown', () => {
     const job = runtime.queue.claimNext('worker_1');
 
     const outcome = await executeJob(context, job!);
-    dispatchAsTheWorkerDoes(runtime.queue, outcome, job!.id);
+    dispatchAsTheWorkerDoes(runtime.queue, outcome, job!.id, 'worker_1');
 
     await new Promise((resolve) => setTimeout(resolve, 5_200));
     expect(

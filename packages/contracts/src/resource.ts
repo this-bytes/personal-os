@@ -70,6 +70,101 @@ export const resourceOperationSchema = z.enum([
 ]);
 export type ResourceOperation = z.infer<typeof resourceOperationSchema>;
 
+/**
+ * What a kind of resource is called in a sentence.
+ *
+ * The name is published here because two readers need the same word for the
+ * same kind: the server, whose refusal names the kind, and the panel, whose
+ * line names it too. Two copies of this map are two vocabularies, and the one
+ * that drifts is the one the owner reads.
+ */
+export const resourceTypeNames: Record<ResourceType, string> = {
+  dashboard: 'dashboard',
+  document: 'document',
+  'data-source': 'data source',
+  automation: 'automation',
+  memory: 'memory',
+  task: 'task',
+};
+
+/**
+ * What each kind of resource supports, and what it does not.
+ *
+ * Publishing makes a resource live; executing runs it. Only some kinds have
+ * either act. A dashboard becomes visible and an automation becomes active when
+ * it is published; an automation, a data source and a dashboard can be run.
+ * The rest have no such act, and saying so is the point: a kind with no publish
+ * pipeline is refused with a reason the owner can read, rather than reported as
+ * published.
+ *
+ * **The declaration is the contract.** The server refuses a kind that does not
+ * support the operation, and the panel offers only the actions that can
+ * succeed. Both read this one record, so neither can describe a truth the
+ * other does not hold.
+ *
+ * The record is keyed by every published kind, so a kind added to
+ * `resourceTypeSchema` does not compile until it has been answered for here.
+ */
+export const resourceOperationSupport: Record<
+  ResourceType,
+  { readonly publish: boolean; readonly execute: boolean }
+> = {
+  dashboard: { publish: true, execute: true },
+  document: { publish: false, execute: false },
+  automation: { publish: true, execute: true },
+  'data-source': { publish: false, execute: true },
+  task: { publish: false, execute: false },
+  memory: { publish: false, execute: false },
+};
+
+/**
+ * The support a kind has, or `undefined` when the kind is not a published one.
+ *
+ * The lookup is guarded rather than indexed: a row written before a kind was
+ * removed, or a name that was never one, must not read as support.
+ */
+function supportOf(type: ResourceType): { publish: boolean; execute: boolean } | undefined {
+  return Object.hasOwn(resourceOperationSupport, type) ? resourceOperationSupport[type] : undefined;
+}
+
+/** Whether a kind of resource can be published. */
+export function canPublishResource(type: ResourceType): boolean {
+  return supportOf(type)?.publish === true;
+}
+
+/** Whether a kind of resource can be executed. */
+export function canExecuteResource(type: ResourceType): boolean {
+  return supportOf(type)?.execute === true;
+}
+
+/**
+ * What an operation on a resource actually did.
+ *
+ * `published` means the resource is live. `queued` means the action was
+ * accepted and has not finished — the run of an automation is enqueued for the
+ * worker, and it has not happened yet. `succeeded` means the action ran and
+ * produced its output.
+ *
+ * The vocabulary is per action, not per route: one route records `queued` for
+ * one kind and `succeeded` for another.
+ */
+export const resourceOperationOutcomeSchema = z.enum(['published', 'queued', 'succeeded']);
+export type ResourceOperationOutcome = z.infer<typeof resourceOperationOutcomeSchema>;
+
+/** The answer a publish gives when it published. */
+export const resourcePublishResponseSchema = z.object({
+  outcome: z.literal('published'),
+  resource: resourceSchema,
+});
+export type ResourcePublishResponse = z.infer<typeof resourcePublishResponseSchema>;
+
+/** The answer an execute gives when it ran, or when it was queued to run. */
+export const resourceExecuteResponseSchema = z.object({
+  outcome: z.enum(['queued', 'succeeded']),
+  result: z.object({ output: z.unknown() }),
+});
+export type ResourceExecuteResponse = z.infer<typeof resourceExecuteResponseSchema>;
+
 /** Optimistic concurrency contract: writers present the revision they read. */
 export interface ResourceProvider<T> {
   validate(data: unknown): T;

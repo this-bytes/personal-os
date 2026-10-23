@@ -140,17 +140,17 @@ export function registerFactoryRoutes(app: FastifyInstance): void {
   app.post('/api/tasks/:id/accept', { preHandler: requireAuth }, async (request) => {
     const { id } = request.params as { id: string };
     const body = parseBody(acceptanceSchema, request.body);
-    const task = app.services.factory.acceptTask(id, {
+
+    // It is the shared capability API that accepts, so the owner's acceptance
+    // here and the agent's `task.accept` are the same path: one place where
+    // the judgement is recorded and the trail is written.
+    const task = app.services.capabilities.taskAccept({
+      taskId: id,
       satisfied: body.satisfied,
       reason: body.reason,
-      acceptedBy: request.user?.id ?? 'owner',
+      actorType: request.actorType ?? 'human',
+      actorId: request.user?.id ?? 'owner',
     });
-    audit(
-      request,
-      body.satisfied ? 'task.accepted' : 'task.rejected',
-      { type: 'task', id, workspaceId: task.workspaceId },
-      { reason: body.reason },
-    );
     return { task };
   });
 }

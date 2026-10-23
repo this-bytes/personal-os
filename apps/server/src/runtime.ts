@@ -36,7 +36,16 @@ export { createAuthService } from './modules/auth/service.js';
 export type { AuthenticatedUser } from './modules/auth/service.js';
 export { planAndDispatch } from './modules/conversations/dispatch.js';
 export { planRouting, deriveChainState } from './modules/conversations/routing.js';
+export {
+  readSessionReference,
+  listSessionReferences,
+  recordSessionReference,
+} from './modules/conversations/session-refs.js';
+export type { SessionReferenceInput } from './modules/conversations/session-refs.js';
+export { computeHistoryRevision } from './modules/conversations/history-revision.js';
+export type { HistoryMessage } from './modules/conversations/history-revision.js';
 export { createConversationsService } from './modules/conversations/service.js';
+export { createExecutionsService } from './modules/executions/service.js';
 export {
   createBotsService,
   authorityExcess,
@@ -50,6 +59,7 @@ export type {
   DispatchScopeDecision,
 } from './modules/conversations/bots.js';
 export { createFactoryService } from './modules/factory/service.js';
+export { pinCapabilityView, turnAcceptsSteering } from './modules/capabilities/capability-view.js';
 export { loadEffectiveAutonomyPolicy } from './modules/autonomy/service.js';
 export type { EffectivePolicyScope } from './modules/autonomy/service.js';
 export { listAgentMemories } from './modules/resources/agent-memory.js';

@@ -97,3 +97,44 @@ describe('the turn capability panel', () => {
     expect(screen.getByText(/cannot be steered/)).toBeInTheDocument();
   });
 });
+
+describe('the runtime session the panel shows', () => {
+  const REFERENCE = {
+    id: 'ses_1',
+    workspaceId: 'wsp_1',
+    conversationId: 'cnv_1',
+    agentConnectionId: 'agt_wren',
+    sessionId: 'sess_7f3a',
+    continuity: 'resumable' as const,
+    capabilitiesRevision: 7,
+    establishedAt: '2026-10-23T09:00:00.000Z',
+    updatedAt: '2026-10-23T09:00:00.000Z',
+  };
+
+  it('names the session and says the next turn continues it', () => {
+    render(<TurnCapabilityPanel view={VIEW} agents={[]} hasTurn sessionRefs={[REFERENCE]} />);
+
+    expect(screen.getByText('sess_7f3a')).toBeInTheDocument();
+    expect(screen.getByText(/the next turn continues it/)).toBeInTheDocument();
+  });
+
+  it('says a runtime that keeps no session keeps none', () => {
+    render(
+      <TurnCapabilityPanel
+        view={VIEW}
+        agents={[]}
+        hasTurn
+        sessionRefs={[{ ...REFERENCE, continuity: 'fresh' }]}
+      />,
+    );
+
+    expect(screen.getByText('sess_7f3a')).toBeInTheDocument();
+    expect(screen.getByText(/no session to continue/)).toBeInTheDocument();
+  });
+
+  it('says there is no session yet, rather than naming one', () => {
+    render(<TurnCapabilityPanel view={VIEW} agents={[]} hasTurn sessionRefs={[]} />);
+
+    expect(screen.getByText(/No runtime session yet/)).toBeInTheDocument();
+  });
+});

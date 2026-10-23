@@ -192,27 +192,46 @@ export function registerResourceRoutes(app: FastifyInstance): void {
     return { resource };
   });
 
+  /**
+   * Publish a resource.
+   *
+   * The answer says what happened: a resource that was published answers
+   * `published` and carries the live resource. A kind with no publish act is
+   * refused with a reason the owner can read — the service throws, and the
+   * error handler answers with the shared envelope, so a refusal is never the
+   * same 200 as a success.
+   *
+   * It is the shared capability API that publishes, so the owner's publish here
+   * and the agent's `resource.publish` are the same path: one place where the
+   * act happens and the trail is written.
+   */
   app.post('/api/resources/:id/publish', { preHandler: requireAuth }, async (request) => {
     const { id } = request.params as { id: string };
-    const resource = app.services.resources.publish(id);
-    audit(request, 'resource.published', {
-      type: 'resource',
-      id,
-      workspaceId: resource.workspaceId,
+    return app.services.capabilities.resourcePublish({
+      resourceId: id,
+      actorType: request.actorType ?? 'human',
+      actorId: request.user?.id ?? 'owner',
     });
-    return { resource };
   });
 
+  /**
+   * Execute a resource.
+   *
+   * The answer says what happened: a run that was enqueued answers `queued`
+   * and one that ran answers `succeeded`. A kind with no run is refused with a
+   * reason the owner can read, so a refusal is never the same 200 as a success
+   * that did not happen.
+   *
+   * It is the shared capability API that runs, so the owner's run here and the
+   * agent's `resource.execute` are the same path.
+   */
   app.post('/api/resources/:id/execute', { preHandler: requireAuth }, async (request) => {
     const { id } = request.params as { id: string };
-    const resource = app.services.resources.get(id);
-    const result = await app.services.resources.execute(id);
-    audit(request, 'resource.executed', {
-      type: 'resource',
-      id,
-      workspaceId: resource.workspaceId,
+    return app.services.capabilities.resourceExecute({
+      resourceId: id,
+      actorType: request.actorType ?? 'human',
+      actorId: request.user?.id ?? 'owner',
     });
-    return { result };
   });
 
   app.get('/api/resources/:id/inspect', { preHandler: requireAuth }, async (request) => {

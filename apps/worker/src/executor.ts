@@ -1,4 +1,4 @@
-import { and, desc, eq, gte, sql } from 'drizzle-orm';
+import { and, asc, desc, eq, gte, sql } from 'drizzle-orm';
 import { z } from 'zod';
 import {
   actionNeedsApproval,
@@ -8,16 +8,11 @@ import {
   dataSourceSpecSchema,
   defaultAgentToolGrants,
   isActionAllowed,
-  parseAdapterConfig,
   resolvePersona,
-  type AdapterConfig,
-  type AgentAdapter,
   type AgentConnection,
-  type AgentEvent,
   type AgentMemoryBrief,
   type AgentTurnInput,
   type AutonomyAction,
-  type AutonomyPolicyLevel,
   type ContentPart,
   type EffectiveAutonomyPolicy,
   type MessageOrigin,
@@ -27,7 +22,6 @@ import {
 import { listAgentMemories } from '@personal-os/server/runtime';
 import {
   agentConnections,
-  approvals,
   automations,
   automationRuns,
   conversations,
@@ -42,6 +36,7 @@ import {
 import {
   assertReadableQuery,
   assertSafeUrl,
+  computeHistoryRevision,
   createBotsService,
   createConversationsService,
   createFactoryService,
@@ -49,11 +44,23 @@ import {
   loadEffectiveAutonomyPolicy,
   newId,
   planAndDispatch,
+  readSessionReference,
+  recordSessionReference,
   type BotsService,
   type QueueJob,
   type Runtime,
 } from '@personal-os/server/runtime';
 import { createSteerChannel, feedSteers, recordLateSteers } from './steer.js';
+import {
+  actionRefusal,
+  createTurnExecution,
+  openTurn,
+  recordPolicyRefusal,
+  recordTurnFailure,
+  type ExecutorContext,
+} from './execution-owner.js';
+
+export type { ExecutorContext } from './execution-owner.js';
 
 /**
  * Job execution.
@@ -62,10 +69,6 @@ import { createSteerChannel, feedSteers, recordLateSteers } from './steer.js';
  * only decides *what* should run and records the outcome. A failing or
  * hostile agent therefore cannot take the API server down with it.
  */
-
-export interface ExecutorContext {
-  runtime: Runtime;
-}
 
 export interface ExecutionOutcome {
   /**
@@ -77,47 +80,13 @@ export interface ExecutionOutcome {
    * `blocked` means the work is suspended, not over: the agent is waiting for
    * the owner to decide something. The turn continues in a new turn when the
    * decision arrives, and it is never retried on its own.
+   *
+   * `committed` means the work ended and its output was written into a
+   * canonical history. It is a success, and it is a different fact from
+   * `completed`, which means the work ended with nothing committed.
    */
-  status: 'completed' | 'failed' | 'cancelled' | 'unknown' | 'blocked';
+  status: 'completed' | 'committed' | 'failed' | 'cancelled' | 'unknown' | 'blocked';
   error?: string;
-}
-
-/**
- * How one agent turn ended.
- *
- * `failed` means the turn was refused or broke before it could do anything.
- * `unknown` means the turn started and we cannot confirm how it ended.
- */
-type TurnOutcome = 'completed' | 'failed' | 'unknown';
-
-/**
- * Write a transition into `unknown` to the audit trail.
- *
- * The owner has to be able to find these: an outcome we cannot confirm is
- * not a failure to retry, it is a question to answer.
- */
-function recordUnknownOutcome(
-  runtime: Runtime,
-  input: {
-    workspaceId: string;
-    agentConnectionId: string;
-    action: string;
-    targetType: string;
-    targetId: string;
-    reason: string;
-    metadata?: Record<string, unknown>;
-  },
-): void {
-  runtime.audit.record({
-    workspaceId: input.workspaceId,
-    actorType: 'agent',
-    actorId: input.agentConnectionId,
-    action: input.action,
-    targetType: input.targetType,
-    targetId: input.targetId,
-    result: 'unknown',
-    metadata: { reason: input.reason, ...(input.metadata ?? {}) },
-  });
 }
 
 /**
@@ -189,19 +158,6 @@ async function executeChatTurn(context: ExecutorContext, job: QueueJob): Promise
   const payload = job.payload as unknown as ChatTurnPayload;
   const { db, events } = runtime;
 
-  const connection = db
-    .select()
-    .from(agentConnections)
-    .where(eq(agentConnections.id, payload.agentConnectionId))
-    .get();
-
-  if (!connection) {
-    return fail(context, payload.executionId, 'The agent connection no longer exists.');
-  }
-  if (!connection.enabled) {
-    return fail(context, payload.executionId, 'The agent connection is disabled.');
-  }
-
   const conversation = db
     .select()
     .from(conversations)
@@ -213,6 +169,20 @@ async function executeChatTurn(context: ExecutorContext, job: QueueJob): Promise
   if (conversation.paused) {
     return { status: 'cancelled', error: 'The conversation was paused.' };
   }
+
+  // The owner resolves the connection and admits the turn against the
+  // capability set it runs against. A connection that is gone or switched off
+  // is refused here, on this path as on every other.
+  const opened = await openTurn(context, {
+    executionId: payload.executionId,
+    agentConnectionId: payload.agentConnectionId,
+    workspaceId: conversation.workspaceId,
+    conversationId: payload.conversationId,
+  });
+  if (!opened.ok) {
+    return { status: 'failed', error: opened.reason };
+  }
+  const owner = opened.owner;
 
   // The policy in force for this turn. The workspace's policy, the goal's
   // policy and the conversation's own safeguards are resolved in one place,
@@ -308,14 +278,14 @@ async function executeChatTurn(context: ExecutorContext, job: QueueJob): Promise
   // owner set one, otherwise the connection's base.
   const persona = resolvePersona({
     override: participant?.personaOverride,
-    base: connection.persona,
+    base: owner.connection.persona,
   });
 
   // The agent's own memory. It belongs to the connection, so it follows the
   // agent into every conversation it takes part in, and it is budgeted so it
   // cannot crowd out the conversation itself.
   const memoryBrief = buildAgentMemoryBrief(
-    listAgentMemories(db, connection.workspaceId, connection.id),
+    listAgentMemories(db, owner.connectionWorkspaceId, owner.connection.id),
   );
 
   const now = new Date().toISOString();
@@ -325,6 +295,21 @@ async function executeChatTurn(context: ExecutorContext, job: QueueJob): Promise
     agentConnectionId: payload.agentConnectionId,
     depth: payload.depth,
   };
+
+  /**
+   * The session this conversation is in, when the runtime keeps one.
+   *
+   * The reference is durable: it is what an earlier turn established, and the
+   * next turn continues it when the runtime said it could. A runtime that said
+   * nothing has no session to continue, and the product does not claim one.
+   */
+  const sessionReference = readSessionReference(db, {
+    conversationId: payload.conversationId,
+    agentConnectionId: payload.agentConnectionId,
+  });
+
+  /** The session this turn ran in, when it continued one. */
+  let continuedSessionId: string | undefined;
 
   // A turn that was suspended on an approval already has its reply. The
   // resumed turn continues that message rather than starting another one.
@@ -376,39 +361,9 @@ async function executeChatTurn(context: ExecutorContext, job: QueueJob): Promise
     );
   }
 
-  db.update(executions)
-    .set({ status: 'running', startedAt: sql`coalesce(${executions.startedAt}, ${now})` })
-    .where(eq(executions.id, payload.executionId))
-    .run();
-
-  // When this turn started. A steer the owner sent before that belongs to
-  // another turn, not to this one.
-  const turnStartedAt =
-    db
-      .select({ startedAt: executions.startedAt })
-      .from(executions)
-      .where(eq(executions.id, payload.executionId))
-      .get()?.startedAt ?? now;
-
   // The decision is the next input of the resumed turn, and the session is
   // the one the suspended turn was in.
   const turnMessage = payload.resume?.decision ?? parentText;
-
-  const controller = new AbortController();
-  const adapterConfig = await loadAdapterConfig(context, payload.agentConnectionId);
-  const timeoutSeconds = adapterTimeout(adapterConfig);
-  // The deadline for this turn. The adapter's own timeout and the policy's
-  // duration limit are both deadlines, and the earlier one is the one that
-  // applies: a policy may tighten the adapter's budget, and it may never
-  // widen it.
-  const deadlineSeconds = Math.min(timeoutSeconds, policy.maxDurationSeconds);
-  // The deadline is the one moment where we stop waiting for an agent that
-  // may already be doing something. Past it we cannot confirm the outcome.
-  let timedOut = false;
-  const timeout = setTimeout(() => {
-    timedOut = true;
-    controller.abort();
-  }, deadlineSeconds * 1000);
 
   // The reply of a resumed turn continues the reply of the suspended turn,
   // so what came before it is still part of it.
@@ -418,265 +373,253 @@ async function executeChatTurn(context: ExecutorContext, job: QueueJob): Promise
         .map((part) => part.text)
         .join('')
     : '';
-  let failure: string | undefined;
-  let adapter: AgentAdapter | null = null;
-  let suspended = false;
-  let refusal: string | undefined;
 
-  try {
-    adapter = runtime.registry.create(adapterConfig, {
-      resolveSecret: runtime.resolveSecret,
-      logger: {
-        info: () => undefined,
-        warn: () => undefined,
-        error: () => undefined,
-      },
-    });
+  // The channel the owner's steers come in on, and the feeder that takes
+  // them. Both are let go when the turn ends, whatever ended it.
+  let steerChannel: ReturnType<typeof createSteerChannel> | null = null;
+  let feederController: AbortController | null = null;
+  let feeder: Promise<void> | null = null;
 
-    // The runtime this turn runs on is established here, on the instance that
-    // runs it. A probe on another instance says nothing about this one.
-    await connectForTurn(adapter, asAdapterConnection(connection));
-
-    // The session is restored before the turn continues in it. A session that
-    // cannot be restored is not a failure of the turn: the turn closes, and
-    // the owner's decision is already recorded.
-    let externalSessionId = payload.resume?.externalSessionId;
-    if (externalSessionId) {
-      const extras = adapter as {
-        resumeSession?: (connection: AgentConnection, sessionId: string) => Promise<string>;
-      };
-      const restored = await extras.resumeSession?.(
-        {
-          id: connection.id,
-          name: connection.name,
-          adapterType: connection.adapterType as AgentConnection['adapterType'],
-          configRef: connection.configRef,
-          enabled: connection.enabled,
-          persona: connection.persona ?? undefined,
-        },
-        externalSessionId,
-      );
-      if (restored) externalSessionId = restored;
-    }
-
-    // A steer the owner sent while this turn was running comes in on this
-    // channel.
-    //
-    // **The connection says whether it can take one.** A connection that
-    // reports nothing is never sent one, and a steer for it waits for the
-    // next turn instead of being taken by one that cannot use it.
-    const steerChannel = createSteerChannel();
-    const steerable = connection.capabilities?.acceptsSteering === true;
-    const feederController = new AbortController();
-
-    if (steerable && participant) {
-      // A steer that arrived before this turn was never taken by the turn
-      // that was running, and it waits for this one.
-      recordLateSteers({
-        db,
-        conversationId: payload.conversationId,
-        participantId: participant.id,
-        since: turnStartedAt,
-      });
-    }
-
-    const turn: AgentTurnInput = {
-      conversationId: payload.conversationId,
-      message: turnMessage,
-      context: frameWithPersona(frameWithAgentMemory(contextText, memoryBrief), persona.persona),
-      executionId: payload.executionId,
-      signal: controller.signal,
-      ...(externalSessionId ? { externalSessionId } : {}),
-      ...(steerable ? { steer: steerChannel.messages } : {}),
-    };
-
-    // The owner's steers, taken while this turn runs.
-    //
-    // The connection says whether it can take one: a connection that reports
-    // nothing is never sent one, and a steer for it waits for the next turn
-    // instead.
-    const feeder =
-      steerable && participant
-        ? feedSteers({
-            db,
-            events,
-            workspaceId: conversation.workspaceId,
-            conversationId: payload.conversationId,
-            participantId: participant.id,
-            since: turnStartedAt,
-            channel: steerChannel,
-            signal: feederController.signal,
-          })
-        : null;
-
-    try {
-      for await (const event of adapter.send(turn)) {
-        const handled = await handleAgentEvent(context, event, {
-          messageId,
-          conversationId: payload.conversationId,
-          workspaceId: conversation.workspaceId,
-          executionId: payload.executionId,
-          agentConnectionId: payload.agentConnectionId,
-          policy,
-          onText: (text) => {
-            accumulated += text;
+  // The owner runs the turn. The adapter that runs it is built, connected and
+  // released by the owner; the reply is written here.
+  const outcome = await owner.run({
+    policy,
+    // A chat turn has somewhere to continue: the decision arrives and the
+    // turn continues in a new turn.
+    approval: 'suspend',
+    buildTurn: async ({ adapter, signal }) => {
+      // The session is restored before the turn continues in it. A session that
+      // cannot be restored is not a failure of the turn: the turn closes, and
+      // the owner's decision is already recorded.
+      //
+      // A turn that was suspended on the owner's decision continues the session
+      // it was suspended in. A turn that is simply the next one in the
+      // conversation continues the session the conversation is in, when the
+      // runtime said it keeps sessions and the reference says so too.
+      let externalSessionId =
+        payload.resume?.externalSessionId ??
+        (sessionReference?.continuity === 'resumable' ? sessionReference.sessionId : undefined);
+      if (externalSessionId) {
+        const extras = adapter as {
+          resumeSession?: (connection: AgentConnection, sessionId: string) => Promise<string>;
+        };
+        const restored = await extras.resumeSession?.(
+          {
+            id: owner.connection.id,
+            name: owner.connection.name,
+            adapterType: owner.connection.adapterType,
+            configRef: owner.connection.configRef,
+            enabled: owner.connection.enabled,
+            persona: owner.connection.persona,
           },
-          onRefusal: (reason) => {
-            refusal = reason;
-          },
-          onFailure: (reason) => {
-            failure = failure ?? reason;
-          },
-        });
-        // The agent is waiting for the owner. The turn stops here and continues
-        // in a new turn when the decision arrives.
-        if (handled === 'suspended') {
-          suspended = true;
-          break;
-        }
-        // The policy refused the action. The turn stops here too, and the
-        // refusal is recorded rather than the agent simply going quiet.
-        if (handled === 'refused') {
-          break;
-        }
+          externalSessionId,
+        );
+        if (restored) externalSessionId = restored;
+        continuedSessionId = externalSessionId;
       }
-    } finally {
+
+      // A steer the owner sent while this turn was running comes in on this
+      // channel.
+      steerChannel = createSteerChannel();
+      feederController = new AbortController();
+
+      // When this turn started. A steer the owner sent before that belongs to
+      // another turn, not to this one.
+      const turnStartedAt =
+        db
+          .select({ startedAt: executions.startedAt })
+          .from(executions)
+          .where(eq(executions.id, payload.executionId))
+          .get()?.startedAt ?? now;
+
+      if (owner.acceptsSteering && participant) {
+        // A steer that arrived before this turn was never taken by the turn
+        // that was running, and it waits for this one.
+        recordLateSteers({
+          db,
+          conversationId: payload.conversationId,
+          participantId: participant.id,
+          since: turnStartedAt,
+        });
+      }
+
+      const turn: AgentTurnInput = {
+        conversationId: payload.conversationId,
+        message: turnMessage,
+        context: frameWithPersona(frameWithAgentMemory(contextText, memoryBrief), persona.persona),
+        executionId: payload.executionId,
+        signal,
+        ...(externalSessionId ? { externalSessionId } : {}),
+        ...(owner.acceptsSteering ? { steer: steerChannel.messages } : {}),
+      };
+
+      // The owner's steers, taken while this turn runs.
+      feeder =
+        owner.acceptsSteering && participant
+          ? feedSteers({
+              db,
+              events,
+              workspaceId: conversation.workspaceId,
+              conversationId: payload.conversationId,
+              participantId: participant.id,
+              since: turnStartedAt,
+              channel: steerChannel,
+              signal: feederController.signal,
+            })
+          : null;
+
+      return turn;
+    },
+    onText: (text) => {
+      accumulated += text;
+      const current = db.select().from(messages).where(eq(messages.id, messageId)).get();
+      const written = (current?.content as ContentPart[] | undefined) ?? [];
+      db.update(messages)
+        .set({ content: [...written, { type: 'text', text }] })
+        .where(eq(messages.id, messageId))
+        .run();
+    },
+    onTurnEnd: async () => {
       // The turn is over: nothing more arrives for it, and the owner who
       // steers now is steering the next turn.
-      steerChannel.close();
-      feederController.abort();
+      steerChannel?.close();
+      feederController?.abort();
       await feeder;
-    }
+    },
+    unknownOutcome: {
+      action: 'execution.outcome.unknown',
+      targetType: 'execution',
+      targetId: payload.executionId,
+      metadata: { messageId, conversationId: payload.conversationId },
+    },
+    /**
+     * The commit.
+     *
+     * The reply enters canonical history here, and the commit is acknowledged
+     * by reading that history back: the revision the read-back holds is the
+     * revision the turn committed to. The hook runs before the owner records
+     * the turn's terminal state, so the state and the event that names it
+     * describe the history the turn actually left behind.
+     */
+    commit: async ({ status, refusal, sessionId }) => {
+      const failed = status === 'failed';
+      const unknown = status === 'unknown';
+      const finalContent: ContentPart[] =
+        accumulated.length > 0 ? [{ type: 'text', text: accumulated }] : [];
 
+      db.update(messages)
+        .set({
+          content: finalContent,
+          status: unknown ? 'unknown' : failed ? 'failed' : 'complete',
+          // The reason the policy refused the turn goes on the reply as well
+          // as on the execution: the owner reads the reply, and the execution
+          // says why it stopped.
+          ...(refusal !== undefined ? { detail: refusal } : {}),
+          // The transcript names the session the reply came out of.
+          ...(sessionId !== undefined ? { origin: { ...origin, sessionId } } : {}),
+        })
+        .where(eq(messages.id, messageId))
+        .run();
+
+      const committed = db.select().from(messages).where(eq(messages.id, messageId)).get();
+      if (committed) {
+        events.publish(
+          {
+            type: 'message.updated',
+            message: {
+              id: committed.id,
+              conversationId: committed.conversationId,
+              senderId: committed.senderId,
+              targetParticipantIds: committed.targetParticipantIds,
+              replyToId: committed.replyToId ?? undefined,
+              kind: committed.kind as never,
+              content: committed.content as ContentPart[],
+              status: committed.status as never,
+              correlationId: committed.correlationId ?? undefined,
+              origin: committed.origin ?? undefined,
+              executionId: committed.executionId ?? undefined,
+              createdAt: committed.createdAt,
+            },
+          },
+          { workspaceId: conversation.workspaceId, conversationId: payload.conversationId },
+        );
+      }
+
+      // The read-back. Canonical history is read in the same lane the mutation
+      // was made in, and the revision it holds is the revision the commit
+      // produced.
+      if (status !== 'completed') return {};
+
+      const history = db
+        .select({
+          id: messages.id,
+          createdAt: messages.createdAt,
+          senderId: messages.senderId,
+          status: messages.status,
+          correlationId: messages.correlationId,
+          content: messages.content,
+        })
+        .from(messages)
+        .where(eq(messages.conversationId, payload.conversationId))
+        .orderBy(asc(messages.createdAt))
+        .all();
+
+      return {
+        committedRevision: computeHistoryRevision(
+          history.map((row) => ({ ...row, content: row.content as ContentPart[] })),
+          messageId,
+        ),
+      };
+    },
+  });
+
+  if (outcome.externalRef !== undefined) {
     // An external orchestrator keeps its own task identifier, and a session
     // the adapter can restore is the execution's external reference. Personal
     // OS stores the reference instead of mirroring the work.
-    const externalRef = await readExternalTaskId(adapter, payload.agentConnectionId);
-    if (externalRef) {
-      db.update(executions)
-        .set({ externalRef })
-        .where(eq(executions.id, payload.executionId))
-        .run();
-    } else {
-      const sessionRef = await readExternalSessionId(adapter, payload.executionId);
-      if (sessionRef) {
-        db.update(executions)
-          .set({ externalRef: sessionRef })
-          .where(eq(executions.id, payload.executionId))
-          .run();
-      }
-    }
-  } catch (error) {
-    failure = error instanceof Error ? error.message : String(error);
-  } finally {
-    clearTimeout(timeout);
-    await releaseTurn(adapter);
-  }
-
-  if (suspended) {
-    // The turn is not over. The reply stays unfinished and the execution
-    // stays blocked until the owner decides.
+    //
+    // It is written before the turn is judged, because a turn that waits for
+    // the owner's decision is the turn that has to carry the session the
+    // decision continues in.
     db.update(executions)
-      .set({
-        status: 'blocked',
-        error: null,
-        // The turn ran, so it cost what a turn costs. It is written here as
-        // well as at the end of the turn, because a turn that waits for the
-        // owner may never be continued.
-        spendUnits: agentTurns(db, payload.executionId),
-      })
+      .set({ externalRef: outcome.externalRef })
       .where(eq(executions.id, payload.executionId))
       .run();
+  }
+
+  if (outcome.status === 'blocked') {
+    // The turn is not over. The reply stays unfinished and the execution
+    // stays blocked until the owner decides.
     return { status: 'blocked' };
   }
 
-  if (refusal !== undefined) {
-    // The policy refused an action the agent took, so the turn is over. The
-    // reason goes on the reply as well as on the execution: the owner reads
-    // the reply, and the execution says why it stopped.
-    failure = refusal;
-    db.update(messages).set({ detail: refusal }).where(eq(messages.id, messageId)).run();
+  /**
+   * The session the conversation is in now.
+   *
+   * A turn that continued the conversation's session keeps it, and a turn that
+   * established one names it. The reference says whether the next turn may
+   * continue it, which is what the runtime reported about itself.
+   */
+  const sessionId = outcome.sessionId ?? continuedSessionId;
+  if (sessionId !== undefined) {
+    recordSessionReference(db, {
+      workspaceId: conversation.workspaceId,
+      conversationId: payload.conversationId,
+      agentConnectionId: payload.agentConnectionId,
+      sessionId,
+      capabilities: owner.capabilityView?.capabilities ?? null,
+      capabilitiesRevision: owner.capabilityView?.capabilitiesRevision ?? null,
+    });
   }
 
   // The deadline passed: the agent may already have had its side effect, so
   // the honest answer is that we do not know how it ended.
-  const outcome: TurnOutcome = timedOut
-    ? 'unknown'
-    : failure !== undefined
-      ? 'failed'
-      : 'completed';
-  const failed = outcome === 'failed';
-  const unknown = outcome === 'unknown';
-  const explanation = unknown
-    ? `The agent did not finish within ${deadlineSeconds}s.${
-        policy.maxDurationSeconds < timeoutSeconds
-          ? ` The autonomy policy's limit of ${policy.maxDurationSeconds}s is the deadline.`
-          : ''
-      } It was stopped, and it may already have had its side effect.`
-    : failure;
-  const finalContent: ContentPart[] =
-    accumulated.length > 0 ? [{ type: 'text', text: accumulated }] : [];
-
-  db.update(messages)
-    .set({
-      content: finalContent,
-      status: unknown ? 'unknown' : failed ? 'failed' : 'complete',
-    })
-    .where(eq(messages.id, messageId))
-    .run();
-
-  db.update(executions)
-    .set({
-      status: unknown ? 'unknown' : failed ? 'failed' : 'completed',
-      error: explanation ?? null,
-      finishedAt: new Date().toISOString(),
-      // What the turn cost. The unit is one agent turn, and the count is over
-      // the execution's own messages, so a turn that was suspended and then
-      // continued is still one turn and is not counted twice.
-      spendUnits: agentTurns(db, payload.executionId),
-    })
-    .where(eq(executions.id, payload.executionId))
-    .run();
-
-  if (unknown) {
-    recordUnknownOutcome(runtime, {
-      workspaceId: conversation.workspaceId,
-      agentConnectionId: payload.agentConnectionId,
-      action: 'execution.outcome.unknown',
-      targetType: 'execution',
-      targetId: payload.executionId,
-      reason: explanation ?? 'The outcome could not be confirmed.',
-      metadata: {
-        messageId,
-        conversationId: payload.conversationId,
-        timeoutSeconds: deadlineSeconds,
-      },
-    });
-  }
+  const failed = outcome.status === 'failed';
+  const unknown = outcome.status === 'unknown';
+  const explanation = outcome.error;
 
   const updated = db.select().from(messages).where(eq(messages.id, messageId)).get();
   if (updated) {
-    events.publish(
-      {
-        type: 'message.updated',
-        message: {
-          id: updated.id,
-          conversationId: updated.conversationId,
-          senderId: updated.senderId,
-          targetParticipantIds: updated.targetParticipantIds,
-          replyToId: updated.replyToId ?? undefined,
-          kind: updated.kind as never,
-          content: updated.content as ContentPart[],
-          status: updated.status as never,
-          correlationId: updated.correlationId ?? undefined,
-          origin: updated.origin ?? undefined,
-          executionId: updated.executionId ?? undefined,
-          createdAt: updated.createdAt,
-        },
-      },
-      { workspaceId: conversation.workspaceId, conversationId: payload.conversationId },
-    );
-
     // The reply goes through the same routing rules as any other message.
     // A mention inside an agent's answer is a delegation, and the depth of
     // the chain is what stops two agents talking to each other forever.
@@ -728,7 +671,7 @@ async function executeChatTurn(context: ExecutorContext, job: QueueJob): Promise
     result:
       accumulated.trim().length > 0
         ? accumulated.trim()
-        : (explanation ?? failure ?? 'The delegated work ended without an answer.'),
+        : (explanation ?? 'The delegated work ended without an answer.'),
     outputRef: messageId,
   });
 
@@ -741,32 +684,12 @@ async function executeChatTurn(context: ExecutorContext, job: QueueJob): Promise
   }
 
   return failed
-    ? { status: 'failed', error: failure }
+    ? { status: 'failed', error: explanation }
     : unknown
       ? { status: 'unknown', error: explanation }
-      : { status: 'completed' };
-}
-
-interface EventContext {
-  messageId: string;
-  conversationId: string;
-  workspaceId: string;
-  executionId: string;
-  agentConnectionId: string;
-  /** The policy in force for this turn. */
-  policy: EffectiveAutonomyPolicy;
-  onText: (text: string) => void;
-  /** The policy refused the action. The turn stops, and the refusal is kept. */
-  onRefusal: (reason: string) => void;
-  /**
-   * The adapter reported that the turn failed.
-   *
-   * An adapter says so in its own vocabulary — an `execution.error` with the
-   * reason, or an `execution.status` of `failed`. The turn's outcome is the
-   * adapter's outcome: a turn the agent failed is a failed turn, and the
-   * reason it gave is the reason the owner reads.
-   */
-  onFailure: (reason: string) => void;
+      : outcome.status === 'committed'
+        ? { status: 'committed' }
+        : { status: 'completed' };
 }
 
 /**
@@ -838,131 +761,6 @@ function consumeDeliveredResult(runtime: Runtime, parentMessageId: string): void
   botsService(runtime).consumeDelivery(parentMessageId);
 }
 
-/**
- * The action an agent event stands for.
- *
- * The vocabulary is about what the agent does, not about how it reports it,
- * so an event that is not an action is not gated.
- */
-function actionForEvent(event: AgentEvent): AutonomyAction | undefined {
-  switch (event.type) {
-    case 'message.delta':
-    case 'message.completed':
-      return 'message.send';
-    case 'tool.started':
-    case 'tool.completed':
-      return 'tool.call';
-    case 'artifact.created':
-      return 'artifact.create';
-    default:
-      return undefined;
-  }
-}
-
-/**
- * Handle one event from the agent.
- *
- * Returns `suspended` when the agent is waiting for the owner: the turn stops
- * there and continues in a new turn when the decision arrives. Returns
- * `refused` when the policy does not allow the action the agent took.
- */
-async function handleAgentEvent(
-  context: ExecutorContext,
-  event: AgentEvent,
-  eventContext: EventContext,
-): Promise<'handled' | 'suspended' | 'refused'> {
-  const { db, events } = context.runtime;
-
-  // What the agent is about to do, and what the policy says about it. The
-  // check comes first: an action the policy refuses does not happen, and
-  // nothing about it is written.
-  const action = actionForEvent(event);
-  if (action) {
-    if (!isActionAllowed(eventContext.policy, action)) {
-      const reason = actionRefusal(eventContext.policy, action);
-      recordPolicyRefusal(context.runtime, {
-        workspaceId: eventContext.workspaceId,
-        agentConnectionId: eventContext.agentConnectionId,
-        executionId: eventContext.executionId,
-        reason,
-        action,
-      });
-      eventContext.onRefusal(reason);
-      return 'refused';
-    }
-
-    if (actionNeedsApproval(eventContext.policy, action)) {
-      // The policy asks the owner to decide. The turn stops here and
-      // continues when the decision arrives, which is the same shape as the
-      // approval the agent asked for itself.
-      raiseApproval(context, eventContext, {
-        approvalId: newId('apr'),
-        summary: `The agent wants to "${action}", and the autonomy policy requires the owner's decision.`,
-        details: {
-          action,
-          allowedActions: eventContext.policy.allowedActions,
-          approvalRequired: eventContext.policy.approvalRequired,
-        },
-      });
-      return 'suspended';
-    }
-  }
-
-  if (event.type === 'message.delta') {
-    eventContext.onText(event.text);
-    const current = db.select().from(messages).where(eq(messages.id, eventContext.messageId)).get();
-    const existing = (current?.content as ContentPart[] | undefined) ?? [];
-    const next: ContentPart[] = [...existing, { type: 'text', text: event.text }];
-    db.update(messages).set({ content: next }).where(eq(messages.id, eventContext.messageId)).run();
-  }
-
-  if (event.type === 'execution.status' && event.status === 'blocked') {
-    db.update(executions)
-      .set({ status: 'blocked' })
-      .where(eq(executions.id, eventContext.executionId))
-      .run();
-  }
-
-  if (event.type === 'execution.error') {
-    // The adapter said the turn failed, and it said why. The turn's outcome is
-    // the adapter's outcome, so a refused or broken runtime is recorded as the
-    // failure it is rather than as a turn that quietly completed.
-    eventContext.onFailure(event.message);
-  }
-
-  if (event.type === 'execution.status' && event.status === 'failed') {
-    // The adapter ended the turn as failed without naming a reason of its own.
-    // The reason is still the adapter's to give, so it is asked for rather than
-    // invented here.
-    eventContext.onFailure('The agent reported that the turn failed.');
-  }
-
-  if (event.type === 'approval.requested') {
-    // A sensitive operation needs the owner's decision. The request is
-    // recorded and the execution is held until it is resolved.
-    raiseApproval(context, eventContext, {
-      approvalId: event.approvalId,
-      summary: event.summary,
-      details: event.details,
-    });
-
-    // The agent is waiting for the owner. The turn stops here.
-    return 'suspended';
-  }
-
-  events.publish(
-    {
-      type: 'execution.event',
-      conversationId: eventContext.conversationId,
-      executionId: eventContext.executionId,
-      event,
-    },
-    { workspaceId: eventContext.workspaceId, conversationId: eventContext.conversationId },
-  );
-
-  return 'handled';
-}
-
 interface FactoryPayload {
   taskId: string;
   executionId: string;
@@ -988,12 +786,6 @@ async function executeFactoryTask(
     ...(task.goalId ? { goalId: task.goalId } : {}),
   });
 
-  const now = new Date().toISOString();
-  db.update(executions)
-    .set({ status: 'running', startedAt: now })
-    .where(eq(executions.id, payload.executionId))
-    .run();
-
   const prompt = [
     `Task: ${task.title}`,
     task.description ? `\nDescription:\n${task.description}` : '',
@@ -1005,69 +797,51 @@ async function executeFactoryTask(
     .filter(Boolean)
     .join('\n');
 
+  // The owner resolves the connection and admits the turn against the
+  // capability set it runs against. A connection that is gone or switched off
+  // is refused here, on this path as on every other.
+  const opened = await openTurn(context, {
+    executionId: payload.executionId,
+    agentConnectionId: payload.agentConnectionId,
+    workspaceId: task.workspaceId,
+    taskId: task.id,
+  });
+
   let output = '';
   let failure: string | undefined;
-  /** Whether the task's turn reached the agent. */
-  let agentTurnRan = false;
-  /** The adapter this turn runs on, so the runtime is released with it. */
-  let adapter: AgentAdapter | null = null;
+  let unknown = false;
 
-  const controller = new AbortController();
-  const adapterConfig = await loadAdapterConfig(context, payload.agentConnectionId);
-  const connection = await loadAgentConnection(context, payload.agentConnectionId);
-  const timeoutSeconds = adapterTimeout(adapterConfig);
-  // The deadline is the earlier of the adapter's own timeout and the policy's
-  // duration limit: a policy may tighten the adapter's budget, and it may
-  // never widen it.
-  const deadlineSeconds = Math.min(timeoutSeconds, policy.maxDurationSeconds);
-  let timedOut = false;
-  const timeout = setTimeout(() => {
-    timedOut = true;
-    controller.abort();
-  }, deadlineSeconds * 1000);
-
-  try {
-    adapter = runtime.registry.create(adapterConfig, {
-      resolveSecret: runtime.resolveSecret,
-      logger: { info: () => undefined, warn: () => undefined, error: () => undefined },
+  if (opened.ok) {
+    const turn = await opened.owner.run({
+      policy,
+      // A task turn has nowhere to continue: the owner cannot decide for it,
+      // so an action that needs the owner's decision is refused rather than
+      // waited for.
+      approval: 'refuse',
+      buildTurn: ({ signal }) => ({
+        conversationId: '',
+        message: prompt,
+        context: '',
+        executionId: payload.executionId,
+        signal,
+      }),
+      onText: (text) => {
+        output += text;
+      },
+      unknownOutcome: {
+        action: 'task.outcome.unknown',
+        targetType: 'task',
+        targetId: task.id,
+        metadata: { executionId: payload.executionId },
+      },
     });
-
-    // The runtime this turn runs on is established here, on the instance that
-    // runs it. The task path shares the defect the chat path had.
-    await connectForTurn(adapter, connection);
-
-    // The turn is handed to the agent here. A turn that reaches the agent is
-    // a turn that cost what a turn costs, and a turn that never got this far
-    // cost nothing.
-    agentTurnRan = true;
-    for await (const event of adapter.send({
-      conversationId: '',
-      message: prompt,
-      context: '',
-      executionId: payload.executionId,
-      signal: controller.signal,
-    })) {
-      if (event.type === 'message.delta') output += event.text;
-      if (event.type === 'execution.error') failure = event.message;
-    }
-  } catch (error) {
-    failure = error instanceof Error ? error.message : String(error);
-  } finally {
-    clearTimeout(timeout);
-    await releaseTurn(adapter);
+    failure = turn.error;
+    unknown = turn.status === 'unknown';
+  } else {
+    failure = opened.reason;
   }
 
-  // The task's agent was already running, so a turn that ran out of time may
-  // have had its side effect. The task is unknown, not broken.
-  const outcome: TurnOutcome = timedOut
-    ? 'unknown'
-    : failure !== undefined
-      ? 'failed'
-      : 'completed';
-  const unknown = outcome === 'unknown';
-  const explanation = unknown
-    ? `The agent did not finish within ${deadlineSeconds}s. It was stopped, and it may already have had its side effect.`
-    : failure;
+  const explanation = failure;
 
   db.insert(evidence)
     .values({
@@ -1082,18 +856,6 @@ async function executeFactoryTask(
     })
     .run();
 
-  db.update(executions)
-    .set({
-      status: unknown ? 'unknown' : failure ? 'failed' : 'completed',
-      error: explanation ?? null,
-      finishedAt: new Date().toISOString(),
-      // What the turn cost: one unit for the agent turn the task ran, and
-      // nothing for a turn that never reached the agent.
-      spendUnits: agentTurnRan ? 1 : 0,
-    })
-    .where(eq(executions.id, payload.executionId))
-    .run();
-
   // The agent reporting completion is not acceptance. The task moves to
   // review, where a human decides whether the criteria are satisfied. A
   // task whose outcome is unknown is neither finished nor broken: the owner
@@ -1105,18 +867,6 @@ async function executeFactoryTask(
     })
     .where(eq(tasks.id, task.id))
     .run();
-
-  if (unknown) {
-    recordUnknownOutcome(runtime, {
-      workspaceId: task.workspaceId,
-      agentConnectionId: payload.agentConnectionId,
-      action: 'task.outcome.unknown',
-      targetType: 'task',
-      targetId: task.id,
-      reason: explanation ?? 'The outcome could not be confirmed.',
-      metadata: { executionId: payload.executionId, timeoutSeconds: deadlineSeconds },
-    });
-  }
 
   const updated = db.select().from(tasks).where(eq(tasks.id, task.id)).get();
   if (updated) {
@@ -1191,14 +941,6 @@ async function executeAutomation(
   let output: unknown = null;
   let failure: string | undefined;
   let timedOut = false;
-  let timeoutSeconds = 0;
-  /**
-   * The execution the run's agent turn runs on. An automation's run belongs to
-   * no conversation and to no task, so the worker creates the row itself.
-   */
-  let executionId: string | undefined;
-  /** Whether the run's turn reached the agent. */
-  let agentTurnRan = false;
 
   // An automation that was started by an event produces its own events at
   // the next depth, which is what bounds the chain.
@@ -1243,66 +985,52 @@ async function executeAutomation(
       // turn; an automation's run is the worker's own, so the worker creates
       // the row it writes the cost on. The row belongs to no conversation and
       // to no task, which is what an automation's turn is.
-      executionId = newId('exe');
-      const runExecutionId = executionId;
-      db.insert(executions)
-        .values({
-          id: runExecutionId,
-          workspaceId: automation.workspaceId,
-          conversationId: null,
-          taskId: null,
-          externalRef: null,
-          agentConnectionId: action.agentConnectionId,
-          executionOwner: 'personal-os',
-          status: 'running',
-          error: null,
-          spendUnits: 0,
-          startedAt,
-          finishedAt: null,
-          createdAt: startedAt,
-        })
-        .run();
+      const runExecutionId = newId('exe');
+      createTurnExecution(context, {
+        id: runExecutionId,
+        workspaceId: automation.workspaceId,
+        agentConnectionId: action.agentConnectionId,
+        createdAt: startedAt,
+      });
 
-      const adapter = runtime.registry.create(
-        await loadAdapterConfig(context, action.agentConnectionId),
-        {
-          resolveSecret: runtime.resolveSecret,
-          logger: { info: () => undefined, warn: () => undefined, error: () => undefined },
-        },
-      );
+      // The owner resolves the connection and admits the turn against the
+      // capability set it runs against. A connection that is gone or switched
+      // off is refused here, on this path as on every other.
+      const opened = await openTurn(context, {
+        executionId: runExecutionId,
+        agentConnectionId: action.agentConnectionId,
+        workspaceId: automation.workspaceId,
+      });
 
       let text = '';
-      const controller = new AbortController();
-      const automationConfig = await loadAdapterConfig(context, action.agentConnectionId);
-      // The deadline is the earlier of the adapter's own timeout and the
-      // policy's duration limit.
-      timeoutSeconds = Math.min(adapterTimeout(automationConfig), policy.maxDurationSeconds);
-      const timeout = setTimeout(() => {
-        timedOut = true;
-        controller.abort();
-      }, timeoutSeconds * 1000);
-      try {
-        // The automation path shares the defect the chat path had: the runtime
-        // this turn runs on is established here, on the instance that runs it.
-        await connectForTurn(adapter, await loadAgentConnection(context, action.agentConnectionId));
-
-        // The turn is handed to the agent here. A turn that reaches the agent
-        // is a turn that cost what a turn costs, and a turn that never got
-        // this far cost nothing.
-        agentTurnRan = true;
-        for await (const event of adapter.send({
-          conversationId: '',
-          message: renderPrompt(action.prompt ?? '', automation, payload.trigger),
-          context: `Automation: ${automation.title}`,
-          executionId: runExecutionId,
-          signal: controller.signal,
-        })) {
-          if (event.type === 'message.delta') text += event.text;
-          if (event.type === 'execution.error') failure = event.message;
-        }
-      } finally {
-        clearTimeout(timeout);
-        await releaseTurn(adapter);
+      if (opened.ok) {
+        const turn = await opened.owner.run({
+          policy,
+          // An automation's run has nowhere to continue: there is no turn to
+          // suspend and no session to continue in, so an action that needs the
+          // owner's decision is refused rather than waited for.
+          approval: 'refuse',
+          buildTurn: ({ signal }) => ({
+            conversationId: '',
+            message: renderPrompt(action.prompt ?? '', automation, payload.trigger),
+            context: `Automation: ${automation.title}`,
+            executionId: runExecutionId,
+            signal,
+          }),
+          onText: (chunk) => {
+            text += chunk;
+          },
+          unknownOutcome: {
+            action: 'automation.outcome.unknown',
+            targetType: 'automation',
+            targetId: automation.id,
+            metadata: { runId },
+          },
+        });
+        failure = turn.error;
+        timedOut = turn.status === 'unknown';
+      } else {
+        failure = opened.reason;
       }
       output = { text };
     } else if (action.type === 'resource.refresh') {
@@ -1357,15 +1085,8 @@ async function executeAutomation(
 
   // The automation's action had already started, so a run that ran out of
   // time may have had its side effect. The run is unknown, not failed.
-  const outcome: TurnOutcome = timedOut
-    ? 'unknown'
-    : failure !== undefined
-      ? 'failed'
-      : 'completed';
-  const unknown = outcome === 'unknown';
-  const explanation = unknown
-    ? `The action did not finish within ${timeoutSeconds}s. It was stopped, and it may already have had its side effect.`
-    : failure;
+  const unknown = timedOut;
+  const explanation = failure;
 
   finishAutomationRun(context, {
     automation,
@@ -1376,36 +1097,6 @@ async function executeAutomation(
     error: explanation ?? null,
     depth,
   });
-
-  if (executionId) {
-    // The run's execution ends with the run, and it carries what the turn
-    // cost: one unit for the agent turn the run made, and nothing for a run
-    // that never reached the agent.
-    db.update(executions)
-      .set({
-        status: unknown ? 'unknown' : failure ? 'failed' : 'completed',
-        error: explanation ?? null,
-        finishedAt: new Date().toISOString(),
-        spendUnits: agentTurnRan ? 1 : 0,
-      })
-      .where(eq(executions.id, executionId))
-      .run();
-  }
-
-  if (unknown) {
-    recordUnknownOutcome(runtime, {
-      workspaceId: automation.workspaceId,
-      agentConnectionId:
-        automation.action.type === 'agent.prompt'
-          ? (automation.action.agentConnectionId ?? automation.id)
-          : automation.id,
-      action: 'automation.outcome.unknown',
-      targetType: 'automation',
-      targetId: automation.id,
-      reason: explanation ?? 'The outcome could not be confirmed.',
-      metadata: { runId, timeoutSeconds },
-    });
-  }
 
   // The same judgement the run above recorded: a deadline that stopped an
   // action that had already started is an unknown outcome, and the worker
@@ -1535,78 +1226,15 @@ function finishAutomationRun(
 }
 
 /**
- * Record a turn that never started.
+ * Record a turn that never ran.
  *
  * This is used when the work cannot begin at all — the connection is gone,
  * it is switched off, or the task is no longer there. Nothing ran, so the
- * outcome is known: it failed.
+ * outcome is known: it failed. The execution row is the record of the run,
+ * and the owner writes its state.
  */
 function fail(context: ExecutorContext, executionId: string, message: string): ExecutionOutcome {
-  context.runtime.db
-    .update(executions)
-    .set({ status: 'failed', error: message, finishedAt: new Date().toISOString() })
-    .where(eq(executions.id, executionId))
-    .run();
-  return { status: 'failed', error: message };
-}
-
-/**
- * Raise an approval and hold the turn until the owner decides.
- *
- * The request is recorded in the approvals table, the execution is held, and
- * the turn stops. It is the same shape whether the agent asked for the
- * approval itself or the policy asked for it on the agent's behalf.
- */
-function raiseApproval(
-  context: ExecutorContext,
-  eventContext: EventContext,
-  input: { approvalId: string; summary: string; details?: unknown },
-): void {
-  const { db, events } = context.runtime;
-
-  const existing = db.select().from(approvals).where(eq(approvals.id, input.approvalId)).get();
-
-  if (!existing) {
-    db.insert(approvals)
-      .values({
-        id: input.approvalId,
-        workspaceId: eventContext.workspaceId,
-        executionId: eventContext.executionId,
-        conversationId: eventContext.conversationId,
-        taskId: null,
-        agentConnectionId: eventContext.agentConnectionId,
-        summary: input.summary,
-        details: (input.details ?? null) as never,
-        status: 'pending',
-        reason: null,
-        requestedBy: eventContext.agentConnectionId,
-        decidedBy: null,
-        createdAt: new Date().toISOString(),
-        decidedAt: null,
-      })
-      .run();
-  }
-
-  db.update(executions)
-    .set({ status: 'blocked' })
-    .where(eq(executions.id, eventContext.executionId))
-    .run();
-
-  events.publish(
-    {
-      type: 'execution.event',
-      conversationId: eventContext.conversationId,
-      executionId: eventContext.executionId,
-      event: {
-        type: 'approval.requested',
-        executionId: eventContext.executionId,
-        approvalId: input.approvalId,
-        summary: input.summary,
-        details: input.details,
-      },
-    },
-    { workspaceId: eventContext.workspaceId, conversationId: eventContext.conversationId },
-  );
+  return recordTurnFailure(context, { executionId, reason: message });
 }
 
 /**
@@ -1646,24 +1274,6 @@ function limitRefusal(
 }
 
 /**
- * The agent turns an execution has run.
- *
- * The unit is the one the chain already uses: one agent turn costs one spend
- * unit (`apps/server/src/modules/conversations/routing.ts`). A conversation
- * turn is one agent message, and the count is taken over the execution's own
- * messages rather than kept as a running total, so a turn that was suspended
- * on an approval and then continued is one turn and is written once.
- */
-function agentTurns(db: Database, executionId: string): number {
-  return db
-    .select({ origin: messages.origin })
-    .from(messages)
-    .where(eq(messages.executionId, executionId))
-    .all()
-    .filter((row) => row.origin?.kind === 'agent').length;
-}
-
-/**
  * The workspace's spend since the start of the UTC day.
  *
  * **A day is a UTC day.** The system stores ISO timestamps everywhere and has
@@ -1686,49 +1296,6 @@ function dailySpendUnits(db: Database, workspaceId: string, now: Date): number {
     .where(and(eq(executions.workspaceId, workspaceId), gte(executions.createdAt, dayStart)))
     .get();
   return Number(row?.total ?? 0);
-}
-
-/**
- * Why an action was refused, in words the owner can act on.
- */
-function actionRefusal(policy: EffectiveAutonomyPolicy, action: string): string {
-  const allowed = policy.allowedActions.join(', ');
-  return (
-    `The action "${action}" was refused: it is not one of the actions the autonomy policy allows. ` +
-    `Allowed actions: ${allowed}. That list comes from ` +
-    `${autonomyPolicyLevelPhrase(policy.sources.allowedActions)}.`
-  );
-}
-
-/**
- * Write a refusal to the audit trail.
- *
- * The owner has to be able to find these: a turn that a policy stopped did
- * not happen, and the trail is where the reason is kept.
- */
-function recordPolicyRefusal(
-  runtime: Runtime,
-  input: {
-    workspaceId: string;
-    agentConnectionId: string;
-    executionId: string;
-    reason: string;
-    action?: string;
-  },
-): void {
-  runtime.audit.record({
-    workspaceId: input.workspaceId,
-    actorType: 'agent',
-    actorId: input.agentConnectionId,
-    action: input.action === undefined ? 'policy.turn.refused' : 'policy.action.refused',
-    targetType: 'execution',
-    targetId: input.executionId,
-    result: 'failure',
-    metadata: {
-      reason: input.reason,
-      ...(input.action === undefined ? {} : { action: input.action }),
-    },
-  });
 }
 
 /**
@@ -1793,153 +1360,4 @@ async function runDataSourceRows(
   }
 
   throw new Error('Unsupported data source kind.');
-}
-
-/**
- * Load the adapter configuration for a connection. The configuration is
- * stored as an encrypted secret record; the worker reads it through the
- * shared secret store.
- */
-async function loadAdapterConfig(
-  context: ExecutorContext,
-  agentConnectionId: string,
-): Promise<AdapterConfig> {
-  const { db } = context.runtime;
-  const connection = db
-    .select()
-    .from(agentConnections)
-    .where(eq(agentConnections.id, agentConnectionId))
-    .get();
-  if (!connection) throw new Error('The agent connection no longer exists.');
-
-  const raw = await context.runtime.resolveSecret(connection.configRef);
-  if (!raw) throw new Error('The agent configuration could not be read.');
-  const stored = JSON.parse(raw) as { adapterType: string; config: Record<string, unknown> };
-  return parseAdapterConfig({ adapterType: stored.adapterType, ...stored.config } as AdapterConfig);
-}
-
-/**
- * The connection an adapter is handed when it is connected.
- *
- * The stored row carries the connection's identity and the reference to its
- * configuration; the adapter is given the connection itself, so that the
- * boundary stays the one the contract publishes.
- */
-function asAdapterConnection(row: typeof agentConnections.$inferSelect): AgentConnection {
-  return {
-    id: row.id,
-    name: row.name,
-    adapterType: row.adapterType as AgentConnection['adapterType'],
-    configRef: row.configRef,
-    enabled: row.enabled,
-    persona: row.persona ?? undefined,
-  };
-}
-
-/**
- * Load the connection an adapter is handed when it is connected.
- *
- * The row is read here rather than carried around, because the caller that
- * has a configuration does not necessarily have the connection that
- * configuration belongs to.
- */
-async function loadAgentConnection(
-  context: ExecutorContext,
-  agentConnectionId: string,
-): Promise<AgentConnection> {
-  const { db } = context.runtime;
-  const row = db
-    .select()
-    .from(agentConnections)
-    .where(eq(agentConnections.id, agentConnectionId))
-    .get();
-  if (!row) throw new Error('The agent connection no longer exists.');
-  return asAdapterConnection(row);
-}
-
-/**
- * Connect the instance that is about to run the turn.
- *
- * An adapter that holds a runtime needs that runtime established before the
- * turn runs on it, and a handshake that fails is a failure of the turn with a
- * message that says what to do. **The instance that runs the turn is the one
- * that is connected**: a capability probe on another instance says nothing
- * about this one.
- *
- * An adapter whose turn brings its own runtime is not connected here. The
- * protocol already sets its session up when it is asked for one, and
- * connecting it as well would start the agent twice for nothing.
- */
-async function connectForTurn(adapter: AgentAdapter, connection: AgentConnection): Promise<void> {
-  if (adapter.holdsRuntime === false) return;
-  await adapter.connect(connection);
-}
-
-/**
- * Release what the turn held.
- *
- * A turn that ends, fails or is abandoned must not leave a child process
- * behind, so the runtime is released however the turn ended.
- */
-async function releaseTurn(adapter: AgentAdapter | null): Promise<void> {
-  try {
-    await adapter?.close?.();
-  } catch {
-    // A runtime that cannot be released is not a second failure of the turn.
-    // The turn's own outcome is the one that is recorded.
-  }
-}
-
-/**
- * The deadline for one agent turn. It comes from the adapter's own
- * configuration so that the server and the adapter agree on it.
- */
-function adapterTimeout(config: AdapterConfig): number {
-  const value = (config as { timeoutSeconds?: number }).timeoutSeconds;
-  return typeof value === 'number' && value > 0 ? value : 600;
-}
-
-/**
- * Read the session an adapter is in, when it can restore one.
- *
- * The session is the execution's external reference: it is what a decision
- * needs in order to continue the turn instead of closing it. An adapter that
- * has no session to offer simply has none.
- */
-async function readExternalSessionId(
-  adapter: AgentAdapter,
-  executionId: string,
-): Promise<string | undefined> {
-  if (typeof adapter.getStatus !== 'function') return undefined;
-  try {
-    const status = await adapter.getStatus(executionId);
-    return status?.externalRef;
-  } catch {
-    return undefined;
-  }
-}
-
-/**
- * Read the external task identifier an adapter can provide. Only some
- * protocols have one; a missing identifier is not an error.
- */
-async function readExternalTaskId(
-  adapter: AgentAdapter,
-  agentConnectionId: string,
-): Promise<string | undefined> {
-  const extras = adapter as {
-    externalTaskId?: (connection: AgentConnection) => Promise<string | undefined>;
-  };
-  if (typeof extras.externalTaskId !== 'function') return undefined;
-  try {
-    return await extras.externalTaskId({
-      id: agentConnectionId,
-      name: agentConnectionId,
-      adapterType: adapter.type,
-      configRef: '',
-      enabled: true,
-    });
-  } catch {
-    return undefined;
-  }
 }

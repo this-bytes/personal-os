@@ -1,7 +1,6 @@
 import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
 import { parseBody, parseQuery, requireAuth } from './helpers.js';
-import { decideApproval } from '../modules/approvals/resume.js';
 
 const listQuerySchema = z.object({
   workspaceId: z.string(),
@@ -34,9 +33,12 @@ export function registerApprovalRoutes(app: FastifyInstance): void {
   // and a title, and this is what the buttons are about. Read-only, one
   // approval, and the same authentication as every other route — a session
   // cookie or the owner token, and never an agent token.
+  //
+  // It is the shared capability API that reads it, so the owner's read and the
+  // agent's `approval.evidence` are the same evidence.
   app.get('/api/approvals/:id/evidence', { preHandler: requireAuth }, async (request) => {
     const { id } = request.params as { id: string };
-    return app.services.approvals.evidence(id);
+    return app.services.capabilities.approvalEvidence(id);
   });
 
   app.post('/api/approvals/:id/decide', { preHandler: requireAuth }, async (request) => {
@@ -46,12 +48,12 @@ export function registerApprovalRoutes(app: FastifyInstance): void {
     // The decision has to change the outcome of the operation that asked for
     // it. An approval that changes nothing is not an approval. The decision
     // is recorded first, and only then is the turn continued or closed.
-    const decision = decideApproval({
-      db: app.services.runtime.db,
-      queue: app.services.queue,
-      audit: app.services.audit,
-      events: app.services.events,
-      approvals: app.services.approvals,
+    //
+    // It is the shared capability API that decides, so the owner's decision
+    // here and the agent's `approval.decide` are the same decision path: one
+    // place where the answer is recorded, the turn is continued and the trail
+    // is written.
+    const decision = app.services.capabilities.approvalDecide({
       approvalId: id,
       approved: body.approved,
       reason: body.reason,

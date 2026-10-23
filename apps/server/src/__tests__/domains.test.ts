@@ -14,6 +14,17 @@ import {
 } from '../domains.js';
 
 /**
+ * What a declared crossing may name as the work that owns it.
+ *
+ * The rule is that a crossing names the work that introduced it, so the debt
+ * is visible and has an owner. The work queue moved: a crossing from the
+ * `.factory` era names its `WI-nnn`, and a crossing from the spec queue names
+ * its spec. Both are accepted, because the rule is the ownership, not the
+ * spelling of the identifier.
+ */
+const WORK_ITEM = /^(WI-\d+|SPEC-[A-Z0-9-]+)$/;
+
+/**
  * The domain boundary, checked.
  *
  * A map that only exists in a document decays within a sprint, and this
@@ -208,7 +219,7 @@ describe('the domain map', () => {
       expect(tables).toContain(write.table);
       expect(tableDomains[write.table]).toBe(write.owner);
       expect(moduleDomains[write.module]).toBeDefined();
-      expect(write.workItem).toMatch(/^WI-\d+$/);
+      expect(write.workItem).toMatch(WORK_ITEM);
     }
   });
 
@@ -218,7 +229,7 @@ describe('the domain map', () => {
       expect(tables).toContain(read.table);
       expect(tableDomains[read.table]).toBe(read.owner);
       expect(moduleDomains[read.module]).toBeDefined();
-      expect(read.workItem).toMatch(/^WI-\d+$/);
+      expect(read.workItem).toMatch(WORK_ITEM);
     }
   });
 });

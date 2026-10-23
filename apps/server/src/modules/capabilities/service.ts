@@ -1,25 +1,34 @@
 import {
   type AgentConnectionDetail,
+  type Approval,
+  type ApprovalEvidence,
+  type ApprovalStatus,
   type Automation,
   type AutomationRun,
   type BotDispatchResult,
+  type ChatActivityReadModel,
   type ContentPart,
   type Conversation,
   type EffectiveAutonomyPolicy,
   type Evidence,
+  type ExecutionStatus,
   type FactoryTask,
   type Goal,
   type McpToolName,
   type Message,
   type Participant,
   type Resource,
+  type ResourceExecuteResponse,
+  type ResourcePublishResponse,
   type ResourceTemplate,
   type ResourceTemplateRef,
   type ResourceType,
+  type StopTurnResult,
   type Workspace,
 } from '@personal-os/contracts';
 import { errors } from '../../lib/errors.js';
 import type { Database } from '../../db/client.js';
+import type { Queue } from '../../queue/client.js';
 import type { Author } from '../../lib/author.js';
 import type { AuthenticatedUser } from '../auth/service.js';
 import type { ConversationsService, PostMessageResult } from '../conversations/service.js';
@@ -29,6 +38,15 @@ import type { FactoryService } from '../factory/service.js';
 import type { ResourceService } from '../resources/service.js';
 import type { AutomationsService } from '../automations/service.js';
 import type { ApprovalsService } from '../approvals/service.js';
+import { decideApproval, type ApprovalDecision } from '../approvals/resume.js';
+import type { AuditEntry, AuditService } from '../audit/service.js';
+import type { EventsService, StoredEvent } from '../events/service.js';
+import type {
+  ExecutionDetail,
+  ExecutionOutcome,
+  ExecutionResolution,
+  ExecutionsService,
+} from '../executions/service.js';
 import type { WorkspaceService } from '../workspaces/service.js';
 import { loadEffectiveAutonomyPolicy } from '../autonomy/service.js';
 
@@ -52,7 +70,13 @@ export interface Actor {
  * Each of them belongs to exactly one workspace, and that is the thing a
  * caller's scope is checked against.
  */
-export type ScopedObjectKind = 'conversation' | 'task' | 'resource' | 'automation';
+export type ScopedObjectKind =
+  | 'conversation'
+  | 'task'
+  | 'resource'
+  | 'automation'
+  | 'approval'
+  | 'execution';
 
 /**
  * The author an actor stands for.
@@ -166,6 +190,37 @@ export interface CapabilitiesService {
     id: string,
     patch: { expectedRevision: number; title?: string; data?: unknown },
   ): Resource;
+
+  /**
+   * The publish act: the thing that makes a resource live.
+   *
+   * A kind that has no publish act is refused with the reason the owner can
+   * read, exactly as the route refuses it, because the route and the tool are
+   * thin adapters over this one capability.
+   *
+   * `actorType` and `actorId` say who published, and the entry written to the
+   * trail names them. The authority behind an agent's publish is the owner's
+   * grant of this one verb.
+   */
+  resourcePublish(input: {
+    resourceId: string;
+    actorType: 'human' | 'agent';
+    actorId: string;
+  }): ResourcePublishResponse;
+
+  /**
+   * The run act: the thing that runs a resource now.
+   *
+   * A kind that has no run is refused with the reason the owner can read,
+   * exactly as the route refuses it. The answer says what happened — `queued`
+   * for a run the worker has not done yet, `succeeded` for one that did.
+   */
+  resourceExecute(input: {
+    resourceId: string;
+    actorType: 'human' | 'agent';
+    actorId: string;
+  }): Promise<ResourceExecuteResponse>;
+
   /** The templates published for one resource kind — or for every kind. */
   resourceTemplateList(type?: ResourceType): ResourceTemplate[];
   /** One template, by reference. The template names its own kind. */
@@ -190,6 +245,128 @@ export interface CapabilitiesService {
   automationInspect(id: string): { automation: Automation; runs: AutomationRun[] };
 
   goalList(workspaceId: string): Goal[];
+
+  /**
+   * The approval queue of a workspace, or one approval of it.
+   *
+   * The queue the owner reads is the same queue this reads: the list is the
+   * owner's waiting list, narrowed to a workspace. `approvalId` names one row
+   * of it, and a row that is not in the named workspace is not in that queue.
+   */
+  approvalList(input: {
+    workspaceId?: string;
+    status?: ApprovalStatus;
+    approvalId?: string;
+  }): Approval[];
+
+  /**
+   * The decision on an approval, and the turn it answers.
+   *
+   * This is the owner's own decision path, used as it is: the decision is
+   * recorded first, the turn is continued in the session it was in when it can
+   * be, and it is closed when it cannot. A turn that is closed is closed with
+   * the answer still on record, and the answer says so.
+   *
+   * `decidedBy` and `actorType` say who decided. The grant that stands behind
+   * an agent's decision is the owner's grant, and the record names the agent
+   * that made the call, so the trail says who acted.
+   */
+  approvalDecide(input: {
+    approvalId: string;
+    approved: boolean;
+    reason?: string;
+    /** Who decided. */
+    decidedBy: string;
+    actorType: 'human' | 'agent';
+  }): ApprovalDecision;
+
+  /**
+   * The evidence a decision is taken against.
+   *
+   * It is the owner's decision-support read: the calls the turn made, the
+   * things it produced and what it cost. A read, and nothing more — it decides
+   * nothing and changes nothing, so the route and the tool answer with the
+   * same evidence.
+   */
+  approvalEvidence(approvalId: string): ApprovalEvidence;
+
+  /**
+   * The turns of a workspace, newest first.
+   */
+  executionList(input: {
+    workspaceId: string;
+    status?: ExecutionStatus;
+    limit?: number;
+  }): ExecutionDetail[];
+
+  /**
+   * The turn with the activity behind it.
+   */
+  executionRead(executionId: string): ChatActivityReadModel;
+
+  /**
+   * Ask a turn to stop.
+   *
+   * The answer says what was actually done: `cancelled` when the turn had not
+   * started and will not run, `requested` when the runtime was asked and may
+   * still finish the turn, and `not_running` when there was nothing to stop.
+   * It never claims a turn stopped when only a request was made, and it never
+   * guesses at a turn whose outcome could not be confirmed.
+   */
+  executionStop(input: {
+    executionId: string;
+    note?: string;
+    actorType: 'human' | 'agent';
+    actorId: string;
+  }): StopTurnResult;
+
+  /**
+   * The conclusion about a turn whose outcome could not be confirmed.
+   *
+   * It is the owner's own answer to the question the worker could not answer:
+   * it did run, or it did not. The turn leaves the unknown state and the reply
+   * follows the conclusion.
+   *
+   * `actorType` and `actorId` say who reached the conclusion, and the entry
+   * written to the trail names them. The authority behind an agent's
+   * conclusion is the owner's grant of this one verb.
+   */
+  executionResolve(input: {
+    executionId: string;
+    outcome: ExecutionOutcome;
+    /** The words that go with the conclusion, when there are any. */
+    note?: string;
+    actorType: 'human' | 'agent';
+    actorId: string;
+  }): ExecutionResolution;
+
+  /**
+   * The acceptance decision on a task.
+   *
+   * An agent reporting completion is not acceptance: the acceptance is an
+   * explicit judgement, recorded against the task, and it is what closes it.
+   *
+   * `actorType` and `actorId` say who accepted, and the entry written to the
+   * trail names them. The authority behind an agent's acceptance is the
+   * owner's grant of this one verb.
+   */
+  taskAccept(input: {
+    taskId: string;
+    satisfied: boolean;
+    reason?: string;
+    actorType: 'human' | 'agent';
+    actorId: string;
+  }): FactoryTask;
+
+  /**
+   * The event log of a workspace.
+   */
+  eventList(input: { workspaceId: string; limit?: number }): StoredEvent[];
+
+  /**
+   * The audit trail of a workspace.
+   */
+  auditList(workspaceId: string, limit?: number): AuditEntry[];
 
   /**
    * The policy in force for a scope.
@@ -241,6 +418,10 @@ export interface CapabilitiesServiceOptions {
   resources: ResourceService;
   automations: AutomationsService;
   approvals: ApprovalsService;
+  executions: ExecutionsService;
+  audit: AuditService;
+  events: EventsService;
+  queue: Queue;
 }
 
 export function createCapabilitiesService(
@@ -256,6 +437,10 @@ export function createCapabilitiesService(
     resources,
     automations,
     approvals,
+    executions,
+    audit,
+    events,
+    queue,
   } = options;
 
   /**
@@ -270,6 +455,8 @@ export function createCapabilitiesService(
     task: (id) => factory.getTask(id).workspaceId,
     resource: (id) => resources.get(id).workspaceId,
     automation: (id) => automations.get(id).workspaceId,
+    approval: (id) => approvals.get(id).workspaceId,
+    execution: (id) => executions.get(id).workspaceId,
   };
 
   return {
@@ -378,6 +565,53 @@ export function createCapabilitiesService(
       return resources.update(id, patch);
     },
 
+    resourcePublish(input): ResourcePublishResponse {
+      // The refusal for a kind with no publish act is raised in the resources
+      // service, so the route and the tool refuse the same kinds with the same
+      // words.
+      const resource = resources.publish(input.resourceId);
+
+      // Publishing is one of the acts that spend the owner's authority, so the
+      // trail names who published: the owner on the route, the agent on the
+      // tool. The authority behind an agent's publish is the owner's grant of
+      // this one verb.
+      audit.record({
+        workspaceId: resource.workspaceId,
+        actorType: input.actorType,
+        actorId: input.actorId,
+        action: 'resource.published',
+        targetType: 'resource',
+        targetId: input.resourceId,
+        result: 'success',
+      });
+
+      return { outcome: 'published', resource };
+    },
+
+    async resourceExecute(input): Promise<ResourceExecuteResponse> {
+      // The workspace is read out of the resource's own row, so the entry lands
+      // in the workspace the resource lives in and not in one the caller named.
+      const current = resources.get(input.resourceId);
+
+      // The refusal for a kind with no run is raised in the resources service,
+      // so the route and the tool refuse the same kinds with the same words.
+      const result = await resources.execute(input.resourceId);
+
+      // Running a resource spends the owner's authority too, so the trail names
+      // who ran it, the same way the publish entry names who published.
+      audit.record({
+        workspaceId: current.workspaceId,
+        actorType: input.actorType,
+        actorId: input.actorId,
+        action: 'resource.executed',
+        targetType: 'resource',
+        targetId: input.resourceId,
+        result: 'success',
+      });
+
+      return { outcome: result.outcome, result: { output: result.output } };
+    },
+
     resourceTemplateList(type): ResourceTemplate[] {
       return resources.templateList(type);
     },
@@ -401,6 +635,75 @@ export function createCapabilitiesService(
 
     goalList(workspaceId): Goal[] {
       return factory.listGoals(workspaceId);
+    },
+
+    approvalList(input): Approval[] {
+      if (input.approvalId) {
+        const approval = approvals.get(input.approvalId);
+        // A row of another workspace is not in this queue.
+        if (input.workspaceId && approval.workspaceId !== input.workspaceId) return [];
+        return [approval];
+      }
+      if (!input.workspaceId) return [];
+      return approvals.list(input.workspaceId, input.status);
+    },
+
+    approvalDecide(input): ApprovalDecision {
+      return decideApproval({
+        db,
+        queue,
+        audit,
+        events,
+        approvals,
+        approvalId: input.approvalId,
+        approved: input.approved,
+        reason: input.reason ?? '',
+        decidedBy: input.decidedBy,
+        actorType: input.actorType,
+      });
+    },
+
+    approvalEvidence(approvalId): ApprovalEvidence {
+      return approvals.evidence(approvalId);
+    },
+
+    executionList(input): ExecutionDetail[] {
+      return executions.list(input);
+    },
+
+    executionRead(executionId): ChatActivityReadModel {
+      return executions.read(executionId);
+    },
+
+    executionStop(input): StopTurnResult {
+      return executions.stop(input);
+    },
+
+    executionResolve(input): ExecutionResolution {
+      return executions.resolve({
+        executionId: input.executionId,
+        outcome: input.outcome,
+        note: input.note,
+        actorType: input.actorType,
+        actorId: input.actorId,
+      });
+    },
+
+    taskAccept(input): FactoryTask {
+      return factory.acceptTask(input.taskId, {
+        satisfied: input.satisfied,
+        reason: input.reason ?? '',
+        acceptedBy: input.actorId,
+        actorType: input.actorType,
+      });
+    },
+
+    eventList(input): StoredEvent[] {
+      return events.recent(input.workspaceId, input.limit ?? 200);
+    },
+
+    auditList(workspaceId, limit): AuditEntry[] {
+      return audit.list(workspaceId, limit);
     },
 
     effectiveAutonomyPolicy(scope): EffectiveAutonomyPolicy {

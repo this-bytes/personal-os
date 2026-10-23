@@ -40,13 +40,17 @@
     "reset:owner-password": "tsx scripts/reset-owner-password.ts",
     "verify:bundle": "tsx scripts/verify-bundle-size.ts",
     "verify:contracts": "tsx scripts/verify-contract-status.ts",
+    "verify:mcp-parity": "tsx scripts/verify-mcp-parity.ts",
+    "verify:session-references": "tsx scripts/verify-session-references.ts",
+    "verify:restart-reconciliation": "tsx scripts/verify-restart-reconciliation.ts",
     "gates": "tsx scripts/verify-gates.ts",
     "verify:stack": "tsx scripts/verify-stack.ts",
     "work:item": "tsx scripts/work-item.ts",
     "db:migrate": "npm run db:migrate -w @personal-os/server",
     "db:generate": "npm run db:generate -w @personal-os/server",
     "format": "prettier --write \"**/*.{ts,tsx,js,json,md,css}\"",
-    "format:check": "prettier --check \"**/*.{ts,tsx,js,json,md,css}\""
+    "format:check": "prettier --check \"**/*.{ts,tsx,js,json,md,css}\"",
+    "verify:source": "node scripts/verify-source.mjs"
   },
   "devDependencies": {
     "@personal-os/agent-adapters": "0.1.0",

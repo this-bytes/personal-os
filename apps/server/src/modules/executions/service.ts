@@ -1,7 +1,21 @@
-import { eq } from 'drizzle-orm';
+import { and, desc, eq } from 'drizzle-orm';
+import type {
+  ActorType,
+  ChatActivityReadModel,
+  DelegatedTask,
+  ExecutionStatus,
+  RunControl,
+  StopTurnResult,
+} from '@personal-os/contracts';
 import type { Database } from '../../db/client.js';
 import { executions, messages } from '../../db/schema.js';
 import { errors } from '../../lib/errors.js';
+import type { AuditService } from '../audit/service.js';
+import type { BotsService } from '../conversations/bots.js';
+import type { EventsService } from '../events/service.js';
+import { publishTurnEnd } from '../events/turn-end.js';
+import type { Queue } from '../../queue/client.js';
+import * as activity from './activity.js';
 
 /**
  * The owner's conclusion about an execution whose outcome could not be
@@ -31,18 +45,60 @@ export interface ExecutionsService {
    */
   get(id: string): ExecutionDetail;
   /**
+   * The turns of a workspace, newest first.
+   *
+   * A listing is scoped to a workspace and never wider: the owner of a
+   * workspace sees its turns, and an agent sees the turns of the workspace it
+   * was granted and nothing else.
+   */
+  list(input: { workspaceId: string; status?: ExecutionStatus; limit?: number }): ExecutionDetail[];
+  /**
+   * The turn with the activity behind it.
+   *
+   * The trace the panel draws is derived from the event log, so it is still
+   * there when the owner comes back to the room. The delegation tree is part
+   * of the turn, not a second thing to look up under another name: a turn that
+   * delegated work carries that work, and a turn that was delegated work
+   * carries the turn that delegated it.
+   *
+   * The capability view and the committed revision are absent rather than
+   * empty; they are published, and they are not implemented yet.
+   */
+  read(id: string): ChatActivityReadModel;
+  /**
+   * Ask a turn to stop.
+   *
+   * A turn that had not started is cancelled, and the answer says so. A turn
+   * that is already running can only be asked: the worker holds the live
+   * session, and the API server never runs an agent, so there is no channel
+   * from here to a running turn. The answer never presents the request as a
+   * cancellation, and it never claims the turn stopped when only a request was
+   * made.
+   */
+  stop(input: {
+    executionId: string;
+    /** The caller's own words, when they have any. */
+    note?: string;
+    /** Who asked for the stop. */
+    actorType: ActorType;
+    actorId: string;
+  }): StopTurnResult;
+  /**
    * Record the owner's conclusion about an execution whose outcome could not
    * be confirmed.
    *
    * The execution takes the conclusion and its reply follows it. The audit
-   * entry is written by the route, where the owner's own action is, and it
-   * names the owner.
+   * entry is written here, where the action is, and it names who reached the
+   * conclusion.
    */
   resolve(input: {
     executionId: string;
     outcome: ExecutionOutcome;
     /** The owner's own words, when they have any. */
     note?: string;
+    /** Who reached the conclusion. */
+    actorType: ActorType;
+    actorId: string;
   }): ExecutionResolution;
 }
 
@@ -84,29 +140,177 @@ export function resolutionSentence(outcome: ExecutionOutcome): string {
  * else's: the product does not know whether the work happened, and it must not
  * run it again to find out.
  */
-export function createExecutionsService(options: { db: Database }): ExecutionsService {
-  const { db } = options;
+export function createExecutionsService(options: {
+  db: Database;
+  audit: AuditService;
+  bots: BotsService;
+  events: EventsService;
+  /**
+   * The queue, for the one thing this service needs from it: settling the
+   * job that was held while this turn's outcome was uncertain. The owner
+   * closing the turn settles the job too, so the queue's record does not go
+   * on saying that the outcome was never confirmed.
+   */
+  queue: Queue;
+}): ExecutionsService {
+  const { db, audit, bots, events, queue } = options;
+
+  const toDetail = (row: typeof executions.$inferSelect): ExecutionDetail => ({
+    id: row.id,
+    workspaceId: row.workspaceId,
+    conversationId: row.conversationId,
+    taskId: row.taskId,
+    agentConnectionId: row.agentConnectionId,
+    status: row.status,
+    error: row.error,
+    spendUnits: row.spendUnits,
+    startedAt: row.startedAt,
+    finishedAt: row.finishedAt,
+    createdAt: row.createdAt,
+  });
+
+  /**
+   * Whether the owner has already asked this turn to stop.
+   *
+   * The request is in the audit trail, so it survives a reload: a panel that
+   * forgot the request would offer the stop button again and say nothing about
+   * the one already made.
+   */
+  const stopWasRequested = (workspaceId: string | null, executionId: string): boolean => {
+    if (!workspaceId) return false;
+    return audit
+      .list(workspaceId, 200)
+      .some(
+        (entry) => entry.action === 'execution.stop.requested' && entry.targetId === executionId,
+      );
+  };
 
   const service: ExecutionsService = {
     get(id): ExecutionDetail {
       const row = db.select().from(executions).where(eq(executions.id, id)).get();
       if (!row) throw errors.notFound('Execution');
+      return toDetail(row);
+    },
+
+    list(input): ExecutionDetail[] {
+      const limit = input.limit ?? 50;
+      return db
+        .select()
+        .from(executions)
+        .where(
+          and(
+            eq(executions.workspaceId, input.workspaceId),
+            input.status ? eq(executions.status, input.status) : undefined,
+          ),
+        )
+        .orderBy(desc(executions.createdAt))
+        .limit(limit)
+        .all()
+        .map(toDetail);
+    },
+
+    read(id): ChatActivityReadModel {
+      const turn = activity.readTurnRow(db, id);
+      if (!turn) throw errors.notFound('Execution');
+
+      const activities = activity
+        .deriveActivities(activity.readTurnEvents(db, id))
+        .map((entry) => ({ ...entry, conversationId: turn.conversationId }));
+
+      const run = activity.runControlFor({
+        status: activity.turnStatusOf(turn.status),
+        stopRequested: stopWasRequested(turn.workspaceId, id),
+        // A turn can be steered when the capability set it was admitted with
+        // can take input while it runs. The set is pinned at admission, so a
+        // capability that changed after the turn started does not change the
+        // turn: it takes effect on the next one.
+        canSteer: activity.turnAcceptsSteering(db, turn),
+      });
+
+      const tree = bots.delegationTree(id);
+
       return {
-        id: row.id,
-        workspaceId: row.workspaceId,
-        conversationId: row.conversationId,
-        taskId: row.taskId,
-        agentConnectionId: row.agentConnectionId,
-        status: row.status,
-        error: row.error,
-        spendUnits: row.spendUnits,
-        startedAt: row.startedAt,
-        finishedAt: row.finishedAt,
-        createdAt: row.createdAt,
+        turn: {
+          id: turn.id,
+          conversationId: turn.conversationId,
+          agentConnectionId: turn.agentConnectionId,
+          status: activity.turnStatusOf(turn.status),
+          error: turn.error,
+          spendUnits: turn.spendUnits,
+          startedAt: turn.startedAt,
+          finishedAt: turn.finishedAt,
+          // What the turn was admitted with. Absent rather than empty: a turn
+          // recorded before the view existed has none, and an empty view would
+          // say the agent had no tools.
+          capabilityView: turn.capabilityView,
+          // The work this turn handed over, and the work that handed over to it.
+          delegatedTasks:
+            tree.parent || tree.children.length > 0
+              ? [tree.parent, ...tree.children].filter(
+                  (task): task is DelegatedTask => task !== undefined,
+                )
+              : null,
+          committedRevision: turn.committedRevision,
+          // The correlation id the turn carries, so a reader can follow one
+          // turn through the events it published.
+          correlationId: turn.correlationId,
+        },
+        activities,
+        run,
+        execution: service.get(id),
+        delegationTree: tree,
       };
     },
 
-    resolve({ executionId, outcome, note }): ExecutionResolution {
+    stop(input): StopTurnResult {
+      const { executionId } = input;
+      const now = new Date().toISOString();
+
+      const before = activity.readTurnRow(db, executionId);
+      if (!before) throw errors.notFound('Execution');
+
+      const result = activity.requestStop(db, executionId, now);
+
+      // A turn that had not started is cancelled, and that is the turn's
+      // ending: the one event that ends it is published here, so the log and
+      // the row agree. A turn that was only *asked* to stop has not ended, and
+      // the worker publishes the ending when the turn really stops.
+      if (result.outcome === 'cancelled') {
+        publishTurnEnd(events, before, 'cancelled');
+      }
+
+      // The request is written to the audit trail whether or not it could be
+      // carried out: an ask that was recorded and did not stop the turn is
+      // still something the caller did, and the trail should show it.
+      audit.record({
+        workspaceId: before.workspaceId,
+        actorType: input.actorType,
+        actorId: input.actorId,
+        action: 'execution.stop.requested',
+        targetType: 'execution',
+        targetId: executionId,
+        metadata: {
+          outcome: result.outcome,
+          ...(input.note?.trim() ? { note: input.note } : {}),
+        },
+      });
+
+      const after = activity.readTurnRow(db, executionId);
+      const run: RunControl = activity.runControlFor({
+        status: activity.turnStatusOf(after?.status ?? before.status),
+        stopRequested: result.outcome === 'requested',
+        canSteer: false,
+      });
+
+      return {
+        executionId,
+        outcome: result.outcome,
+        detail: result.detail,
+        run,
+      };
+    },
+
+    resolve({ executionId, outcome, note, actorType, actorId }): ExecutionResolution {
       const execution = db.select().from(executions).where(eq(executions.id, executionId)).get();
       if (!execution) {
         throw errors.notFound('Execution');
@@ -149,6 +353,37 @@ export function createExecutionsService(options: { db: Database }): ExecutionsSe
         .where(eq(messages.executionId, executionId))
         .run();
 
+      // Leaving the unknown state is the answer to the question the worker
+      // could not answer, so it is written to the audit trail, beside the task
+      // path's own answer. The entry names who reached the conclusion, because
+      // a conclusion is somebody's.
+      audit.record({
+        workspaceId: execution.workspaceId,
+        actorType,
+        actorId,
+        action: 'execution.outcome.resolved',
+        targetType: 'execution',
+        targetId: executionId,
+        result: 'success',
+        metadata: {
+          from: 'unknown',
+          to: outcome,
+          ...(reason ? { note: reason } : {}),
+        },
+      });
+
+      // The owner's conclusion is the turn's ending. The turn was in
+      // `unknown` — a question, not an ending — so the close publishes the one
+      // event that ends it, and the row and the log say the same thing.
+      publishTurnEnd(events, execution, outcome);
+
+      // The job that was held while this turn was uncertain is settled too.
+      // The owner's conclusion is the outcome, so the queue's record stops
+      // saying that the outcome was never confirmed.
+      queue.settleHeldJob(
+        executionId,
+        'The owner settled this turn, so the work it was waiting on is accounted for.',
+      );
       return {
         execution: {
           id: execution.id,

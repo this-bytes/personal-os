@@ -1,7 +1,7 @@
 import { Info, ShieldCheck } from 'lucide-react';
 import { Badge } from '@personal-os/ui';
 import type { AgentCapabilities, TurnCapabilityView } from '@personal-os/contracts';
-import type { AgentConnectionDetail } from '../../lib/types';
+import type { AgentConnectionDetail, SessionReference } from '../../lib/types';
 
 /**
  * What the turn was admitted with.
@@ -25,6 +25,14 @@ export interface TurnCapabilityPanelProps {
   agents: AgentConnectionDetail[];
   /** Whether a turn has been admitted at all. */
   hasTurn: boolean;
+  /**
+   * The runtime sessions the conversation holds.
+   *
+   * The panel says which session each agent is in and whether the next turn
+   * continues it. A runtime that keeps no session says so here, rather than
+   * the panel offering a continuity that does not exist.
+   */
+  sessionRefs?: SessionReference[];
 }
 
 /** How a capability is worded for a person rather than for a schema. */
@@ -43,15 +51,22 @@ export function TurnCapabilityPanel({
   view,
   agents,
   hasTurn,
+  sessionRefs = [],
 }: TurnCapabilityPanelProps): React.JSX.Element {
+  const nameFor = (agentConnectionId: string): string =>
+    agents.find((candidate) => candidate.id === agentConnectionId)?.name ?? agentConnectionId;
+
   // No turn and a turn with no view are different facts, and the panel says
   // which one it is looking at.
   if (!hasTurn) {
     return (
-      <p className="text-[11px] leading-snug text-slate-500">
-        No turn yet. The view appears when a turn is admitted, and says what the turn was admitted
-        with.
-      </p>
+      <div className="space-y-3">
+        <p className="text-[11px] leading-snug text-slate-500">
+          No turn yet. The view appears when a turn is admitted, and says what the turn was admitted
+          with.
+        </p>
+        <SessionSection sessionRefs={sessionRefs} nameFor={nameFor} />
+      </div>
     );
   }
 
@@ -59,10 +74,13 @@ export function TurnCapabilityPanel({
   // saying so is different from saying the agent could do nothing.
   if (!view) {
     return (
-      <p className="text-[11px] leading-snug text-slate-500">
-        This turn was admitted before Personal OS captured a capability view, so it has none. What
-        the agent may do now is not what it was admitted with.
-      </p>
+      <div className="space-y-3">
+        <p className="text-[11px] leading-snug text-slate-500">
+          This turn was admitted before Personal OS captured a capability view, so it has none. What
+          the agent may do now is not what it was admitted with.
+        </p>
+        <SessionSection sessionRefs={sessionRefs} nameFor={nameFor} />
+      </div>
     );
   }
 
@@ -120,6 +138,8 @@ export function TurnCapabilityPanel({
         )}
       </div>
 
+      <SessionSection sessionRefs={sessionRefs} nameFor={nameFor} />
+
       <div className="flex items-start gap-2 border-t border-slate-800 pt-2 text-[10px] leading-snug text-slate-500">
         <ShieldCheck className="mt-0.5 h-3 w-3 shrink-0" />
         <p>
@@ -136,6 +156,54 @@ export function TurnCapabilityPanel({
       </div>
 
       <Badge variant="outline">pinned at admission</Badge>
+    </div>
+  );
+}
+
+/**
+ * The runtime sessions the conversation holds.
+ *
+ * The panel says which session each agent is in, and whether the next turn
+ * continues it. A runtime that keeps no session is named as such, because a
+ * panel that offered a continuity that does not exist would be a control that
+ * silently does nothing.
+ */
+function SessionSection({
+  sessionRefs,
+  nameFor,
+}: {
+  sessionRefs: SessionReference[];
+  nameFor: (agentConnectionId: string) => string;
+}): React.JSX.Element {
+  return (
+    <div>
+      <p className="pos-field-label">Runtime session</p>
+      {sessionRefs.length === 0 ? (
+        <p className="mt-1 text-[11px] leading-snug text-slate-500">
+          No runtime session yet. A session appears once an agent has run in this conversation, and
+          a runtime that keeps none says so on the turn that ran.
+        </p>
+      ) : (
+        <dl className="mt-1 space-y-1">
+          {sessionRefs.map((reference) => (
+            <div key={reference.id} className="flex items-baseline justify-between gap-2">
+              <dt className="min-w-0 truncate text-[11px] text-slate-400">
+                {nameFor(reference.agentConnectionId)}
+              </dt>
+              <dd className="flex min-w-0 items-baseline gap-2">
+                <code className="truncate font-mono text-[10px] text-slate-300">
+                  {reference.sessionId}
+                </code>
+                <span className="shrink-0 text-[10px] text-slate-500">
+                  {reference.continuity === 'resumable'
+                    ? 'the next turn continues it'
+                    : 'no session to continue'}
+                </span>
+              </dd>
+            </div>
+          ))}
+        </dl>
+      )}
     </div>
   );
 }

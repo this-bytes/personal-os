@@ -184,6 +184,15 @@ export const executionStatusSchema = z.enum([
   'running',
   'blocked',
   'completed',
+  /**
+   * The turn's output is in canonical history, and the turn can be continued
+   * from it.
+   *
+   * `completed` means the adapter returned. `committed` means the output was
+   * written and acknowledged, which is a different fact: a turn that merely
+   * returned left nothing a later turn could continue from.
+   */
+  'committed',
   'failed',
   'cancelled',
   'unknown',
@@ -332,10 +341,37 @@ export interface AgentExecutionStatus {
 export interface AgentAdapterExtras {
   /** Restore a native external session, when the protocol supports it. */
   resumeSession?(connection: AgentConnection, externalSessionId: string): Promise<string>;
+  /**
+   * What became of a run, after the worker that was running it died.
+   *
+   * Optional, and absent means the runtime cannot be asked: the outcome is
+   * uncertain, and the owner resolves it. An adapter that can answer says
+   * what happened, and an adapter that cannot says `unknown` rather than
+   * guessing — a guess here would be a side effect the owner never agreed to.
+   */
+  reconcile?(
+    connection: AgentConnection,
+    request: { executionId: string; externalSessionId?: string },
+  ): Promise<AgentReconciliation>;
   /** Protocol-native capabilities beyond the common vocabulary. */
   nativeCapabilities?(connection: AgentConnection): Promise<Record<string, unknown>>;
   /** Stable external task identifier when work is delegated to an orchestrator. */
   externalTaskId?(connection: AgentConnection): Promise<string | undefined>;
+}
+
+/**
+ * What a runtime says about a run it was asked about.
+ *
+ * `unknown` is the answer of a runtime that cannot say, and it is an answer
+ * rather than a failure: the product reports the run as uncertain and the
+ * owner decides.
+ */
+export interface AgentReconciliation {
+  executionId: string;
+  /** What the runtime knows: `completed`, `failed`, or `unknown`. */
+  outcome: 'completed' | 'failed' | 'unknown';
+  /** The runtime's own words, when it has any. */
+  detail?: string;
 }
 
 /**

@@ -11,11 +11,9 @@
  * The data directory comes from the usual environment: PERSONAL_OS_DATA_DIR,
  * or the repository's ./data.
  *
- * Inside a container, use the server binary directly instead — it carries the
- * same mode and needs no TypeScript toolchain:
+ * For source hosting, point the command at the service’s persistent data:
  *
- *   docker compose -f deploy/compose.yaml exec server \
- *     node apps/server/dist/index.js --reset-password "<new password>"
+ *   PERSONAL_OS_DATA_DIR=/path/to/data npm run reset:owner-password -- "<new password>"
  */
 import { spawn } from 'node:child_process';
 import fs from 'node:fs';

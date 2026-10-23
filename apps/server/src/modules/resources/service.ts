@@ -2,11 +2,15 @@ import { and, desc, eq, sql } from 'drizzle-orm';
 import {
   automationActionSchema,
   automationTriggerSchema,
+  canExecuteResource,
+  canPublishResource,
   dashboardSpecSchema,
   dataSourceSpecSchema,
   documentSpecSchema,
   isTriggerableEventType,
   memorySpecSchema,
+  resourceOperationSupport,
+  resourceTypeNames,
   taskSpecSchema,
   triggerableEventTypes,
   RESOURCE_AUTHOR_SYSTEM,
@@ -22,7 +26,7 @@ import { z } from 'zod';
 import type { Database } from '../../db/client.js';
 import { automations, resources as resourcesTable } from '../../db/schema.js';
 import { authorOf, type Author } from '../../lib/author.js';
-import { errors } from '../../lib/errors.js';
+import { AppError, errors } from '../../lib/errors.js';
 import { assertSafeUrl, assertReadableQuery } from '../../lib/guards.js';
 import { AGENT_ID_FORM, newId } from '../../lib/ids.js';
 import type { EventsService } from '../events/service.js';
@@ -92,10 +96,22 @@ export interface ResourceService {
     template?: { id: string; version: number };
   }): Resource;
   update(id: string, patch: { expectedRevision: number; title?: string; data?: unknown }): Resource;
-  /** Mark a resource live. Dashboards become visible, automations become active. */
+  /**
+   * Mark a resource live. Dashboards become visible, automations become active.
+   *
+   * A kind with no publish act is refused with a reason the owner can read,
+   * rather than answered with the unchanged resource as if it had been live.
+   */
   publish(id: string): Resource;
-  /** Trigger the resource's own action once. */
-  execute(id: string): Promise<{ output: unknown }>;
+  /**
+   * Trigger the resource's own action once.
+   *
+   * The answer carries what happened: `queued` for a run that was accepted and
+   * has not finished, `succeeded` for one that ran and produced its output. A
+   * kind with no run is refused with a reason the owner can read, rather than
+   * answered with a null output as if it had run.
+   */
+  execute(id: string): Promise<{ outcome: 'queued' | 'succeeded'; output: unknown }>;
   /** Validate and describe the resource without changing it. */
   inspect(id: string): { resource: Resource; valid: boolean; issues: string[] };
   /**
@@ -580,6 +596,14 @@ export function createResourcesService(options: ResourcesServiceOptions): Resour
       const type = resolveType(id);
       const current = providerFor(type).get(id);
 
+      // The kind decides whether there is a publish act at all. A kind that has
+      // none is refused with a reason, because the alternative — answering with
+      // the unchanged resource — told the owner it had been published when
+      // nothing had happened to it.
+      if (!canPublishResource(type)) {
+        throw refuseOperation(type, 'publish');
+      }
+
       if (type === 'dashboard') {
         const data = dashboardSpecSchema.parse(current.data);
         return service.update(id, {
@@ -609,12 +633,19 @@ export function createResourcesService(options: ResourcesServiceOptions): Resour
         return updated;
       }
 
-      return current;
+      throw refuseOperation(type, 'publish');
     },
 
-    async execute(id): Promise<{ output: unknown }> {
+    async execute(id): Promise<{ outcome: 'queued' | 'succeeded'; output: unknown }> {
       const type = resolveType(id);
       const current = providerFor(type).get(id);
+
+      // The kind decides whether there is a run at all. A kind that has none is
+      // refused with a reason, because the alternative — answering with a null
+      // output — told the owner it had run when nothing had happened.
+      if (!canExecuteResource(type)) {
+        throw refuseOperation(type, 'execute');
+      }
 
       if (type === 'automation') {
         const automation = db.select().from(automations).where(eq(automations.id, id)).get();
@@ -624,12 +655,14 @@ export function createResourcesService(options: ResourcesServiceOptions): Resour
           type: 'automation.run',
           payload: { automationId: automation.id },
         });
-        return { output: { queued: true, automationId: automation.id } };
+        // The run is enqueued for the worker. It has not happened yet, and the
+        // answer says so.
+        return { outcome: 'queued', output: { queued: true, automationId: automation.id } };
       }
 
       if (type === 'data-source') {
         const spec = dataSourceSpecSchema.parse(current.data);
-        return { output: await runDataSource(db, spec, targetOptions) };
+        return { outcome: 'succeeded', output: await runDataSource(db, spec, targetOptions) };
       }
 
       if (type === 'dashboard') {
@@ -641,10 +674,10 @@ export function createResourcesService(options: ResourcesServiceOptions): Resour
           const sourceSpec = dataSourceSpecSchema.parse(source.data);
           results[widget.id] = await runDataSource(db, sourceSpec, targetOptions);
         }
-        return { output: results };
+        return { outcome: 'succeeded', output: results };
       }
 
-      return { output: null };
+      throw refuseOperation(type, 'execute');
     },
 
     inspect(id): { resource: Resource; valid: boolean; issues: string[] } {
@@ -732,17 +765,45 @@ export function createResourcesService(options: ResourcesServiceOptions): Resour
 /**
  * How a kind is named in a sentence.
  *
- * The contract names a kind by its published name, and a sentence needs the
- * word rather than the slug.
+ * The name is the contract's, and the contract names a kind by its published
+ * name: a sentence needs the word rather than the slug.
  */
-const kindNames: Record<ResourceType, string> = {
-  dashboard: 'dashboard',
-  document: 'document',
-  'data-source': 'data source',
-  automation: 'automation',
-  memory: 'memory',
-  task: 'task',
-};
+const kindNames = resourceTypeNames;
+
+/**
+ * The refusal a kind earns by having no such act.
+ *
+ * The message names the kind and the operation and lists the kinds that do
+ * have it, so the owner can act on the answer rather than guess at it. The
+ * details carry the same facts in a form a client can read without parsing
+ * the sentence.
+ */
+function refuseOperation(type: ResourceType, operation: 'publish' | 'execute'): AppError {
+  const supported = (Object.keys(resourceOperationSupport) as ResourceType[]).filter(
+    (kind) => resourceOperationSupport[kind][operation],
+  );
+  const verb = operation === 'publish' ? 'published' : 'executed';
+
+  return errors.badRequest(
+    `A ${kindNames[type]} cannot be ${verb}. ${listNames(
+      supported.map((kind) => kindNames[kind]),
+    )} can be.`,
+    { type, operation, supportedTypes: supported },
+  );
+}
+
+/**
+ * A list of names, the way a sentence writes one.
+ *
+ * "A dashboard", "A dashboard and an automation", "A dashboard, an automation
+ * and a data source".
+ */
+function listNames(names: string[]): string {
+  if (names.length === 0) return 'No kind';
+  if (names.length === 1) return names[0]!;
+  const sentence = `${names.slice(0, -1).join(', ')} and ${names[names.length - 1]!}`;
+  return sentence.charAt(0).toUpperCase() + sentence.slice(1);
+}
 
 /**
  * A dashboard's spec, made a draft.

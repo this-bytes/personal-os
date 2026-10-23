@@ -89,6 +89,15 @@ export const messageOriginSchema = z.object({
   kind: z.enum(['human', 'agent', 'system', 'automation']),
   actorId: idSchema,
   agentConnectionId: idSchema.optional(),
+  /**
+   * The runtime session the message came from.
+   *
+   * The transcript names the session: a reply that came out of session `7f3a`
+   * says so, so a reader can tell one session's answer from another's. Absent
+   * means the runtime keeps no session — nothing was claimed that does not
+   * exist.
+   */
+  sessionId: z.string().min(1).optional(),
   /** Chain depth: human=0, each delegated hop increments. */
   depth: z.number().int().min(0).default(0),
 });

@@ -474,7 +474,15 @@ class Projection {
   private onStatus(
     executionId: string,
     threadId: string,
-    status: 'queued' | 'running' | 'blocked' | 'completed' | 'failed' | 'cancelled' | 'unknown',
+    status:
+      | 'queued'
+      | 'running'
+      | 'blocked'
+      | 'completed'
+      | 'committed'
+      | 'failed'
+      | 'cancelled'
+      | 'unknown',
   ): void {
     if (status === 'queued' || status === 'running') {
       this.run(executionId, threadId);
@@ -487,7 +495,9 @@ class Projection {
     if (existing && !existing.open) return;
 
     const run = existing ?? this.run(executionId, threadId);
-    if (status === 'completed') {
+    if (status === 'completed' || status === 'committed') {
+      // A committed turn is a turn whose output is in canonical history. To a
+      // client that only knows whether the run finished, it finished.
       this.finish(run);
       return;
     }

@@ -210,6 +210,54 @@ export function interpolate(template: string, vars: Record<string, string>): str
   });
 }
 
+/**
+ * Replace `{{name}}` placeholders in a JSON document.
+ *
+ * The templates the adapters publish are JSON documents — a tool's arguments
+ * and an HTTP request's body — so a value that goes into one has to be
+ * escaped for it. A message with a newline in it is ordinary text, and
+ * substituting it raw makes the document invalid: the turn then fails on the
+ * way to the tool, with a complaint about the template rather than about the
+ * message.
+ *
+ * Whether a value is escaped depends on where it lands. Inside a JSON string
+ * literal the value is text, and it is escaped. Anywhere else it is part of
+ * the document's structure — a number, a boolean — and it is substituted as
+ * it is, because quoting it would change the document's shape.
+ */
+export function interpolateJson(template: string, vars: Record<string, string>): string {
+  const placeholder = /\{\{\s*([\w.-]+)\s*\}\}/g;
+  let out = '';
+  let inString = false;
+  let index = 0;
+
+  while (index < template.length) {
+    const char = template[index];
+
+    if (inString && char === '\\') {
+      // An escape belongs to the template, not to the value.
+      out += char + (template[index + 1] ?? '');
+      index += 2;
+      continue;
+    }
+
+    placeholder.lastIndex = index;
+    const match = placeholder.exec(template);
+    if (match && match.index === index) {
+      const value = vars[match[1]!];
+      out += value === undefined ? match[0] : inString ? escapeJson(value) : value;
+      index += match[0].length;
+      continue;
+    }
+
+    if (char === '"') inString = !inString;
+    out += char;
+    index += 1;
+  }
+
+  return out;
+}
+
 /** Escape a string for safe inclusion in a JSON document. */
 export function escapeJson(value: string): string {
   return JSON.stringify(value).slice(1, -1);

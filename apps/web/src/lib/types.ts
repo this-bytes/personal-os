@@ -19,6 +19,7 @@ import type {
   Message,
   Participant,
   Resource,
+  SessionReference,
   TaskDependency,
   WaitingItem,
   Workspace,
@@ -43,6 +44,13 @@ export interface ConversationDetail extends Conversation {
   maxDurationSeconds: number;
   maxSpendUnits: number;
   participants: Participant[];
+  /**
+   * The runtime sessions the conversation holds.
+   *
+   * One reference per agent in the room. The reference says which session the
+   * agent is in and whether the next turn may continue it.
+   */
+  sessionRefs: SessionReference[];
 }
 
 /**
@@ -176,6 +184,7 @@ export type {
   GoalView,
   Message,
   Resource,
+  SessionReference,
   TaskDependency,
   WaitingItem,
   Workspace,

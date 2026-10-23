@@ -90,6 +90,9 @@ export const moduleDomains: Record<string, DomainName> = {
  * `executions` is Work's table: a turn and a factory task's execution are the
  * same row, and the ledger is what owns it. The Interaction module that
  * resolves an unknown turn writes it — see `sharedTableWrites` below.
+ *
+ * `conversation_sessions` is Interaction's table: a session reference belongs
+ * to the conversation that holds it, and the room is what publishes it.
  */
 export const tableDomains: Record<string, DomainName> = {
   agent_connections: 'runtime',
@@ -101,6 +104,7 @@ export const tableDomains: Record<string, DomainName> = {
   blocked_capabilities: 'runtime',
   bots: 'interaction',
   conversations: 'interaction',
+  conversation_sessions: 'interaction',
   delegated_tasks: 'interaction',
   event_sequence: 'substrate',
   evidence: 'work',
@@ -185,6 +189,14 @@ export const sharedTableWrites: SharedTableWrite[] = [
       'A turn is stored as an execution row, so the owner closing an unknown turn writes the ledger\u2019s row.',
     workItem: 'WI-060',
   },
+  {
+    module: 'executions',
+    table: 'queue_jobs',
+    owner: 'runtime',
+    reason:
+      'The owner closing an uncertain turn settles the job that was held for it, so the queue stops saying the outcome was never confirmed.',
+    workItem: 'SPEC-R0-4',
+  },
 ];
 
 /**
@@ -213,7 +225,11 @@ export interface SharedTableRead {
   owner: DomainName;
   /** Why the read exists, in one sentence. */
   reason: string;
-  /** The work item that removes it. */
+  /**
+   * The work that owns the crossing: the `WI-nnn` of the `.factory` era, or
+   * the spec of the queue that replaced it. It names the owner, so the debt
+   * is visible and has something to point at.
+   */
   workItem: string;
 }
 
@@ -225,6 +241,14 @@ export const sharedTableReads: SharedTableRead[] = [
     reason:
       'The effective policy is composed from the conversation\u2019s own limits, so resolving it reads the turn\u2019s row.',
     workItem: 'WI-110',
+  },
+  {
+    module: 'conversations',
+    table: 'agent_connections',
+    owner: 'runtime',
+    reason:
+      'A session reference names the connection whose runtime holds the session, so the read model checks that the connection is still there before it publishes the reference.',
+    workItem: 'SPEC-R0-3',
   },
 ];
 

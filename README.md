@@ -85,10 +85,9 @@ PERSONAL_OS_PORT=4318 PERSONAL_OS_WEB_PORT=5174 npm run dev:stack
 
 This is the same code the deployment runs, started from the checkout rather than
 from an image: a change to it reaches the running instance as it is written.
-The Compose stack below is the deployment — it runs the compiled code, and
-replacing what a running deployment serves means building the images again.
+The source-hosted service below keeps the development instance running and follows main.
 When the point is to see the current code rather than the shipped artifact,
-run the source stack; see "Running the instance from source" below.
+run the source stack; see "Host from source during development" below.
 
 ### There are no default credentials
 
@@ -104,9 +103,8 @@ and tasks are not affected, and every open session is signed out:
 # On the host
 npx tsx scripts/reset-owner-password.ts "<new password>"
 
-# In a container
-docker compose -f deploy/compose.yaml exec server \
-  node apps/server/dist/index.js --reset-password "<new password>"
+# For the hosted instance, use its data directory
+PERSONAL_OS_DATA_DIR="$HOME/.local/share/personal-os/data" npm run reset:owner-password -- "<new password>"
 ```
 
 **The new password is visible to other users on the host while the command
@@ -125,7 +123,7 @@ password to your instance. Run it on a host whose other users are ones you
 trust.
 
 For headless access — an MCP client, a script — the instance also takes a static
-owner token. Set `PERSONAL_OS_OWNER_TOKEN` in `deploy/.env` and send it as a bearer
+owner token. Set `PERSONAL_OS_OWNER_TOKEN` in `~/.config/personal-os/stack.env` and send it as a bearer
 credential:
 
 ```bash
@@ -134,138 +132,49 @@ curl -H "Authorization: Bearer $PERSONAL_OS_OWNER_TOKEN" http://localhost:4317/m
 
 That token is the owner, so treat it like a password.
 
-### Docker Compose
+### Host from source during development
+
+Use a Linux filesystem checkout on `main` (including under WSL), with its own
+`node_modules`. Install Node from `.nvmrc`, then:
 
 ```bash
-cp deploy/.env.example deploy/.env    # then set PERSONAL_OS_SECRET_KEY
-docker compose -f deploy/compose.yaml up --build
+bash deploy/install-service.sh
 ```
 
-The stack serves the web client and the API on <http://localhost:4317>. The data
-directory (`./data`) holds the SQLite database, generated files and the secret key.
+The panel is on <http://localhost:5173>; Vite proxies `/api` and `/mcp` to the
+API on port 4317. The user service survives terminal closure and restarts after
+crashes. For startup without a login, enable user lingering once with
+`sudo loginctl enable-linger "$USER"`.
 
-`PERSONAL_OS_SECRET_KEY` is required: both the server and the worker read it, so
-they must always be given the same value. Generate one with
-`openssl rand -base64 32`.
+Configuration lives in `~/.config/personal-os/stack.env`. Data defaults to
+`~/.local/share/personal-os/data`, outside the checkout. Keep this directory and
+the encryption key together when backing up or moving an instance. An existing
+Docker volume must be backed up and copied explicitly; switching launchers does
+not migrate it. Never run two stacks against the same database during a move.
 
-Compose gives the worker fifteen minutes to finish its current turn during a
-graceful stop. A timeout or crash can still interrupt it; this grace period is not
-a guarantee against duplicate remote side effects. Per-runtime restart
-reconciliation and uncertain outcomes are part of the R0 acceptance checks.
-
-#### Running the stack from WSL
-
-The compose file works unchanged from a WSL distribution. The repository is
-reached through `/mnt/<drive>`, and Docker Desktop's engine does the rest.
+The update timer checks `origin/main` every 30 seconds. It refuses dirty or
+diverged checkouts, drains the stack before a fast-forward, then restarts it.
+Changed dependencies are installed before startup. A manual pull into `main`
+also triggers a full restart. Active worker turns get up to 30 minutes to drain;
+updates have a brief outage and do not promise uninterrupted remote executions.
 
 ```bash
-wsl -d Ubuntu
-cd /mnt/g/code/personal-os
-
-# The credential helper that Docker Desktop installs on Windows is not on the
-# Linux PATH, and BuildKit needs it to pull the pinned Dockerfile frontend.
-mkdir -p ~/.local/bin
-ln -sf "/mnt/c/Program Files/Docker/Docker/resources/bin/docker-credential-desktop.exe" \
-  ~/.local/bin/docker-credential-desktop
-
-docker compose -f deploy/compose.yaml up -d --build
-./scripts/verify-deployment.sh http://127.0.0.1:4317 "<owner email>" "<owner password>"
+bash deploy/update.sh                     # update now
+systemctl --user status personal-os-stack
+journalctl --user -u personal-os-stack -f
+systemctl --user disable --now personal-os-update.timer  # pause automatic pulls
+npm run verify:source                     # same disposable source-hosting test as CI
+npm run verify:stack -- http://127.0.0.1:5173 # writes test agent/conversation to your instance
 ```
 
-To replace a running stack with new code, build the images and bring the stack
-back up without `--build`. The build is the slow part, and the data volume is not
-recreated, so the owner account and everything in it survive the replacement:
+For foreground operation, use `bash deploy/source-stack.sh`. Ordinary source
+edits reload the affected process; dependency, migration, launcher and commit
+changes drain the entire stack. Foreground operation needs a manual restart
+after a full drain; the installed service handles it automatically.
 
-```bash
-docker compose -f deploy/compose.yaml build
-docker compose -f deploy/compose.yaml up -d
-```
-
-`scripts/verify-deployment.sh` checks a running deployment end to end: the client
-is served, the API answers, an agent is registered, the worker answers a message,
-the audit trail records the work, and MCP exposes its tools.
-
-It never creates the owner account. On an instance that has not been set up yet it
-says so and stops, so that running it cannot consume the first-run slot and hide
-the setup screen from the person using it.
-
-The SQLite database lives in a Docker volume on the engine's own filesystem, not
-on a network share, which is what SQLite's locking requires.
-
-### Running the instance from source
-
-The Compose stack runs the compiled code, and bringing new code to a running
-deployment means building the images again. To serve the current code
-instead — a change reaching the running instance as it is written, with no
-image and no build — run the source stack:
-
-```bash
-npm run dev:stack
-```
-
-That is the same three processes the deployment runs, started from the
-checkout. The client is on <http://localhost:5173> and the API on
-<http://localhost:4317>.
-
-`deploy/source-stack.sh` starts the same stack with the parts a long-lived
-instance needs done for it: the secret key and the data directory from
-`deploy/.env`, so the instance opens the same database and decrypts the
-configuration the deployment encrypted; and the stack bound to every
-interface, so the host can reach it.
-
-```bash
-bash deploy/source-stack.sh
-```
-
-#### Reaching it from another machine
-
-The client and the API listen on every interface inside the distribution, so
-anything that can reach the host can reach them — if the host lets it in.
-
-On Linux that is a firewall rule, and it needs an elevated shell:
-
-```bash
-sudo ufw allow 5173/tcp
-sudo ufw allow 4317/tcp
-```
-
-On WSL it is worth being precise, because the two layers answer differently.
-Windows forwards a listener in the distribution to the host's **loopback**
-address, and not to the host's address on the network. The host's firewall
-then refuses traffic that did not originate on the host. So the port has to
-be opened on the host itself, and there are two ways to do that:
-
-- **Publish the port with Docker Desktop.** The publish writes the firewall
-  rule with it, so no elevated shell is needed. The published container
-  forwards to a jump port inside the distribution, because a container cannot
-  target a port the host already publishes to it, and because the container
-  reaches the host through its loopback — the jump port is never exposed to
-  the network.
-- **Forward the port with `netsh interface portproxy`.** This is the
-  documented Windows way to forward a port into WSL. It needs an elevated
-  shell, which a remote owner of the machine does not have.
-
-`deploy/source-stack.sh --publish` takes the first route:
-
-```bash
-bash deploy/source-stack.sh --publish
-```
-
-It publishes the client on 5173 and the instance on 4317. Both addresses
-serve the panel and proxy the API under them, so the instance answers on the
-port the deployment used as well as on the client's own.
-
-The source-stack launcher refuses Windows-mounted checkouts under WSL to keep
-runtime data on a filesystem with suitable SQLite locking. Native dependencies
-must match the Node platform that runs them. Use a separate Linux installation
-and checkout in the distribution:
-
-```bash
-git clone /mnt/g/code/personal-os ~/code/personal-os
-cd ~/code/personal-os
-npm ci
-bash deploy/source-stack.sh --publish
-```
+The listener binds to `0.0.0.0` by default. LAN access needs the host firewall
+and, on WSL, Windows networking configured to reach port 5173. Application
+startup does not create containers or change firewall rules.
 
 ## Connecting an agent
 
@@ -317,7 +226,8 @@ personal-os/
 │   ├── feature-guide.md  # How to implement a complete slice
 │   └── decisions/        # Architecture decision records
 ├── deploy/
-│   ├── compose.yaml
+│   ├── install-service.sh
+│   ├── update.sh
 │   └── source-stack.sh
 ├── .factory/             # Current work item and compact contract-status evidence
 ├── PRODUCT.md            # What this is and what it is not

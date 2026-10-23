@@ -208,14 +208,14 @@ describe('the code, as the section describes it', () => {
         what: 'the route helper writes success',
       },
       {
-        file: 'apps/worker/src/executor.ts',
-        at: [118, 118],
+        file: 'apps/worker/src/execution-owner.ts',
+        at: [742, 742],
         pattern: /result:\s*'unknown'/,
         what: 'the worker writes unknown',
       },
       {
         file: 'apps/server/src/modules/conversations/dispatch.ts',
-        at: [260, 260],
+        at: [315, 315],
         pattern: /result:\s*'unknown'/,
         what: 'the dispatch writes unknown',
       },
@@ -227,13 +227,13 @@ describe('the code, as the section describes it', () => {
       },
       {
         file: 'apps/server/src/app.ts',
-        at: [215, 215],
+        at: [219, 219],
         pattern: /setErrorHandler/,
         what: 'the error handler that writes nothing',
       },
       {
         file: 'apps/server/src/modules/resources/service.ts',
-        at: [619, 624],
+        at: [653, 653],
         pattern: /queue\.enqueue\(/,
         what: 'the enqueue of an automation run',
       },
