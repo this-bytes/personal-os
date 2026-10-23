@@ -313,6 +313,7 @@ agents without changes to conversation storage or the factory task model.
 | `model` | Direct model sessions without a full external agent harness.             |
 | `mcp`   | Agents that are an MCP server.                                           |
 | `echo`  | Built-in deterministic agent, for local use and tests.                   |
+| `codex` | OpenAI Codex, which reports its work as an event stream.                 |
 
 ACP provides a session-oriented interface and capability negotiation. A2A supports
 task-oriented communication between independent agents, including discovery,
@@ -320,6 +321,40 @@ artifacts and task states.
 
 The standards are implemented using maintained protocol SDKs where possible, not
 rewritten from scratch.
+
+### The Codex adapter
+
+**Codex is not a command-line agent that prints text.** `codex exec --json` writes
+a JSONL event stream: a thread starts, a turn starts, items complete — a message,
+a command it ran, a file it changed — and the turn reports how it ended. The `cli`
+adapter reads standard output as text, so it would put JSON in the room. Codex
+therefore has its own adapter, and the mapping lives in
+`packages/agent-adapters/src/codex.ts`.
+
+**The adapter says what the runtime said, and nothing more.** A command the
+runtime ran becomes a `tool.started` / `tool.completed` pair with the same tool
+name, so the trace shows one tool that ran rather than two unrelated rows. The
+turn's own report is believed: `turn.completed` completes the message and the
+execution, `turn.failed` fails it. An item the product has no word for — a plan,
+a reasoning note, a token count — produces no event, because an adapter emits
+only events it can genuinely observe.
+
+**A turn that ends without a report is not a success.** If the runtime finishes
+without saying how the turn ended, the execution is `unknown` — the status the
+product already uses for "we started this and we cannot say how it ended".
+
+**The credential stays in Codex.** Codex signs in with its own account and keeps
+that sign-in in its own home directory. The supervised process inherits the
+owner's home directory and nothing else, and the configuration carries no
+secret: there is no credential field for this adapter type.
+
+**Migration.** The adapter type enum grows by one member and nothing is
+reclassified. A client that switches exhaustively on the adapter type must now
+render `codex`; a connection that is not a Codex agent is unaffected. The
+adapter configuration for this type carries `command`, `args`, `cwd`, `env`,
+`sandbox`, `skipGitRepoCheck`, `ephemeral`, `model` and `timeoutSeconds`, and
+every one of them but `command` has a default. A connection recorded before
+this change keeps the adapter type it had.
 
 ### The MCP adapter
 

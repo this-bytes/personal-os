@@ -55,13 +55,21 @@ describe('the preset picker', () => {
     chooseType('cli');
 
     expect(
-      within(templateOptions()).getByRole('option', { name: 'Codex (command line)' }),
-    ).toBeInTheDocument();
-    expect(
       within(templateOptions()).getByRole('option', { name: 'Pi (command line subprocess)' }),
     ).toBeInTheDocument();
     expect(
       within(templateOptions()).queryByRole('option', { name: 'Built-in echo (local test)' }),
+    ).toBeNull();
+
+    // Codex has its own adapter type, because it reports its work as an
+    // event stream rather than as text on standard output.
+    chooseType('codex');
+
+    expect(
+      within(templateOptions()).getByRole('option', { name: 'Codex (command line)' }),
+    ).toBeInTheDocument();
+    expect(
+      within(templateOptions()).queryByRole('option', { name: 'Pi (command line subprocess)' }),
     ).toBeNull();
   });
 
@@ -80,18 +88,21 @@ describe('the preset picker', () => {
   it('fills a runtime template with the command line it starts from', () => {
     renderForm();
 
-    chooseType('cli');
+    chooseType('codex');
     chooseTemplate('codex-cli');
 
     expect(screen.getByLabelText('Command')).toHaveValue('codex');
-    expect(screen.getByLabelText('Arguments')).toHaveValue('exec');
+    // The adapter builds the `exec` subcommand and the event flags itself,
+    // so the template carries none of them.
+    expect(screen.getByLabelText('Arguments')).toHaveValue('');
+    expect(screen.getByLabelText('Sandbox')).toHaveValue('read-only');
     expect(screen.getByLabelText('Role')).toHaveValue('Codex lead');
   });
 
   it('leaves every field editable after the template is applied', () => {
     renderForm();
 
-    chooseType('cli');
+    chooseType('codex');
     chooseTemplate('codex-cli');
 
     fireEvent.change(screen.getByLabelText('Command'), { target: { value: '/opt/codex' } });
@@ -117,8 +128,10 @@ describe('the preset picker', () => {
   it('says that a template nobody has run is not demonstrated', () => {
     renderForm();
 
-    chooseType('cli');
-    chooseTemplate('codex-cli');
+    // Codex has been demonstrated; OpenCode has not, and the panel says so
+    // where the owner reads it.
+    chooseType('acp');
+    chooseTemplate('opencode-acp');
 
     const badge = screen.getByText('not demonstrated');
     expect(badge).toBeInTheDocument();
@@ -130,11 +143,14 @@ describe('the preset picker', () => {
   it('names what the owner still has to supply', () => {
     renderForm();
 
-    chooseType('cli');
+    chooseType('codex');
     chooseTemplate('codex-cli');
 
     expect(screen.getByText('What you still have to supply')).toBeInTheDocument();
     expect(screen.getByText(/An installed `codex` binary on PATH\./)).toBeInTheDocument();
+    // The credential stays in Codex, and the panel says so rather than
+    // asking the owner for a secret the runtime already holds.
+    expect(screen.getByText(/run `codex login` there/)).toBeInTheDocument();
   });
 
   it('sends the template with the connection', () => {

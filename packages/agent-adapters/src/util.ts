@@ -1,6 +1,102 @@
 /** Small shared helpers used by the built-in adapters. */
 
-import type { ChildProcess } from 'node:child_process';
+import type {
+  ChildProcess,
+  ChildProcessWithoutNullStreams,
+  SpawnOptions,
+} from 'node:child_process';
+import { spawn } from 'node:child_process';
+import { constants } from 'node:fs';
+import { access } from 'node:fs/promises';
+import path from 'node:path';
+
+/**
+ * Start a command in a way that works on every platform.
+ *
+ * **On Windows an npm-installed CLI is a `.cmd` shim**, and a child process
+ * may not start one on its own: the command interpreter is what runs it. So
+ * a shim is started through `ComSpec`, with the arguments quoted, so that a
+ * path with a space in it stays one argument and the prompt still arrives on
+ * standard input.
+ *
+ * A `%` inside an argument is still read as a variable reference by the
+ * interpreter. The arguments here are the owner's own configuration, and the
+ * owner's message travels on standard input rather than on the command line.
+ */
+export function spawnExecutable(
+  executable: string,
+  args: string[],
+  options: { cwd?: string; env?: NodeJS.ProcessEnv },
+): ChildProcessWithoutNullStreams {
+  const base = {
+    cwd: options.cwd ?? process.cwd(),
+    env: options.env,
+    stdio: ['pipe', 'pipe', 'pipe'] as SpawnOptions['stdio'],
+    shell: false,
+    windowsHide: true,
+  };
+
+  const isShim = process.platform === 'win32' && /\.(cmd|bat)$/i.test(executable);
+  if (!isShim) {
+    return spawn(executable, args, base) as ChildProcessWithoutNullStreams;
+  }
+
+  const comspec = process.env['ComSpec'] ?? 'cmd.exe';
+  const line = [executable, ...args].map(quoteForCmd).join(' ');
+  // The arguments are passed verbatim: the interpreter is the one that parses
+  // this line, and a second round of quoting would only split an argument
+  // that was meant to stay whole.
+  return spawn(comspec, ['/d', '/s', '/c', `"${line}"`], {
+    ...base,
+    windowsVerbatimArguments: true,
+  }) as ChildProcessWithoutNullStreams;
+}
+
+/** Quote one argument for the Windows command interpreter. */
+function quoteForCmd(argument: string): string {
+  if (argument.length === 0) return '""';
+  if (!/[\s"]/.test(argument)) return argument;
+  const escaped = argument.replace(/(\\*)"/g, '$1$1\\"').replace(/(\\*)$/, '$1$1');
+  return `"${escaped}"`;
+}
+
+/**
+ * Locate an executable on PATH without spawning it.
+ *
+ * Windows resolves a command through PATHEXT, so `codex` is `codex.cmd` there
+ * and `codex.ps1` beside it. The lookup never runs the command: an adapter
+ * that is asked whether it can connect should not start a process to find out.
+ */
+export async function resolveExecutable(command: string): Promise<string | null> {
+  const hasSeparator = command.includes('/') || command.includes('\\');
+  if (hasSeparator) {
+    try {
+      await access(command, constants.X_OK);
+      return command;
+    } catch {
+      return null;
+    }
+  }
+
+  const pathValue = process.env['PATH'] ?? '';
+  const extensions =
+    process.platform === 'win32'
+      ? (process.env['PATHEXT'] ?? '.EXE;.CMD;.BAT;.COM').split(';').filter(Boolean)
+      : [''];
+
+  for (const dir of pathValue.split(path.delimiter).filter(Boolean)) {
+    for (const extension of extensions) {
+      const candidate = path.join(dir, command + extension);
+      try {
+        await access(candidate, constants.X_OK);
+        return candidate;
+      } catch {
+        // keep looking
+      }
+    }
+  }
+  return null;
+}
 
 /**
  * Stop a child process and wait until it is really gone.

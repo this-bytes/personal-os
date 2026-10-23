@@ -241,6 +241,15 @@ const CAPABILITIES = {
     // A tool call is atomic: it cannot be streamed, cancelled or steered.
     acceptsSteering: false,
   },
+  codex: {
+    chat: true,
+    streaming: true,
+    persistentSessions: false,
+    backgroundTasks: false,
+    cancel: true,
+    approvals: false,
+    artifacts: false,
+  },
 } as const;
 
 /**
@@ -486,19 +495,23 @@ const RAW_PRESETS = [
    * -------------------------------------------------------------------- */
   {
     id: 'codex-cli',
-    adapterType: 'cli',
+    adapterType: 'codex',
     runtime: 'Codex',
     name: 'Codex (command line)',
     description:
-      'OpenAI Codex as a local command line agent. We believe `codex exec` reads the prompt on ' +
-      'standard input; check the installed version’s own help before trusting that. Codex also has ' +
-      'a native App Server and ACP surfaces — this template is the command line route. This ' +
-      'integration has not been demonstrated in this repository.',
+      'OpenAI Codex as a local command line agent. Codex reports its work as a JSONL event stream — ' +
+      'a message, a command it ran, a file it changed — and the panel reads that stream, so the ' +
+      'commands Codex ran appear in the trace beside its answer. The credential stays in Codex: it ' +
+      'signs in with its own account, and nothing is stored here. Codex also has a native App ' +
+      'Server and ACP surfaces — this template is the command line route. This integration has ' +
+      'been demonstrated in this repository.',
     config: {
-      adapterType: 'cli',
+      adapterType: 'codex',
       command: 'codex',
-      args: ['exec'],
-      promptMode: 'stdin',
+      args: [],
+      sandbox: 'read-only',
+      skipGitRepoCheck: true,
+      ephemeral: true,
       timeoutSeconds: 900,
     },
     persona: {
@@ -509,13 +522,22 @@ const RAW_PRESETS = [
         'done. If the command line does not do what this template says it does, say so plainly ' +
         'instead of working around it.',
     },
-    capabilities: CAPABILITIES.cli,
+    capabilities: CAPABILITIES.codex,
     requires: [
       'An installed `codex` binary on PATH.',
-      'A Codex account signed in on this machine, or its own credential in the environment.',
+      'A Codex account signed in on that machine — run `codex login` there. The panel never holds the credential.',
       'The project directory Codex should work in.',
     ],
-    verified: false,
+    verified: true,
+    evidence: {
+      runtime: 'OpenAI Codex CLI',
+      version: '0.163.0',
+      demonstratedOn: '2026-10-23',
+      observed:
+        'Codex answered a turn through this repository’s adapter: a thread and a turn started, the ' +
+        'agent message and the command it ran came back as events, and the turn reported itself ' +
+        'completed.',
+    },
   },
   {
     id: 'opencode-acp',

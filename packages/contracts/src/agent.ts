@@ -7,7 +7,16 @@ import type { AdapterConfig } from './adapter-config.js';
  * Adapter categories. A new agent type must be addable without changing
  * conversation storage or the factory task model.
  */
-export const adapterTypeSchema = z.enum(['cli', 'acp', 'a2a', 'http', 'model', 'echo', 'mcp']);
+export const adapterTypeSchema = z.enum([
+  'cli',
+  'acp',
+  'a2a',
+  'http',
+  'model',
+  'echo',
+  'mcp',
+  'codex',
+]);
 export type AdapterType = z.infer<typeof adapterTypeSchema>;
 
 export const adapterTypeLabels: Record<AdapterType, string> = {
@@ -18,6 +27,7 @@ export const adapterTypeLabels: Record<AdapterType, string> = {
   model: 'Model API (no harness)',
   echo: 'Built-in echo (local test)',
   mcp: 'MCP server',
+  codex: 'Codex CLI agent',
 };
 
 /**
