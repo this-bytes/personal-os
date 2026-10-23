@@ -1,6 +1,6 @@
 {
   "contract": "CONTRACTS.md",
-  "about": "The coverage table the MCP parity gate checks. Every owner-facing route in the contract's HTTP surface is listed here once, and every entry says which of three things it is. `paired`: a registered MCP tool performs the same operation on the same objects, and names it. `listed`: the route is not agent-operable yet, and says why it is not and which spec will pair it — a listed route is the visible backlog, not a silent gap. `exempt`: the route is not an owner capability an agent should have, and says why; ADR 0013 allows an exemption for an auth flow or a pure-UI read and for nothing else. A route that is not in this table fails the gate, so a new human-only route cannot be added to the contract without being answered for here.",
+  "about": "The coverage table the MCP parity gate checks. Every owner-facing route in the contract's HTTP surface is listed here once, and every entry says which of three things it is. `paired`: a registered MCP tool performs the same operation on the same objects, and names it. `listed`: the route is not agent-operable yet, and says why it is not and which spec will pair it — a listed route is the visible backlog, not a silent gap. `exempt`: the route is not an owner capability an agent should have, and says why; ADR 0013 allows an exemption for an auth flow, a pure-UI read, or the owner's own authority over what an agent may do, and for nothing else. A route that is not in this table fails the gate, so a new human-only route cannot be added to the contract without being answered for here.",
   "routes": [
     {
       "route": "ANY /mcp",
@@ -32,9 +32,8 @@
     },
     {
       "route": "GET /api/agents/:id/tokens",
-      "kind": "listed",
-      "reason": "The MCP tokens of a connection. Minting and revoking a token is the owner's own authority over who may call as that connection.",
-      "spec": "SPEC-S2+"
+      "kind": "exempt",
+      "reason": "The MCP tokens of a connection. Minting and revoking a token is the owner's own authority over who may call as that connection."
     },
     {
       "route": "GET /api/approvals",
@@ -185,9 +184,8 @@
     },
     {
       "route": "GET /api/secrets",
-      "kind": "listed",
-      "reason": "The secret configurations' metadata. A secret's value never leaves the owner's hands, and the list that names them is the owner's.",
-      "spec": "SPEC-S2+"
+      "kind": "exempt",
+      "reason": "The secret configurations' metadata. A secret's value never leaves the owner's hands, and the list that names them is the owner's."
     },
     {
       "route": "GET /api/tasks",
@@ -225,9 +223,8 @@
     },
     {
       "route": "GET /api/agui/events",
-      "kind": "listed",
-      "reason": "The same event log in the AG-UI envelope. The MCP surface reads the records themselves.",
-      "spec": "SPEC-S2+"
+      "kind": "exempt",
+      "reason": "The same event log in the AG-UI envelope. The MCP surface reads the records themselves."
     },
     {
       "route": "PATCH /api/agents/:id",
@@ -277,9 +274,8 @@
     },
     {
       "route": "POST /api/agents/:id/grants",
-      "kind": "listed",
-      "reason": "Widening a tool grant. The grant is the owner's authority over what an agent may do, and widening it stays the owner's act.",
-      "spec": "SPEC-S2+"
+      "kind": "exempt",
+      "reason": "Widening a tool grant. The grant is the owner's authority over what an agent may do, and widening it stays the owner's act."
     },
     {
       "route": "POST /api/agents/:id/probe",
@@ -289,9 +285,8 @@
     },
     {
       "route": "POST /api/agents/:id/tokens",
-      "kind": "listed",
-      "reason": "Issuing an MCP token for a connection.",
-      "spec": "SPEC-S2+"
+      "kind": "exempt",
+      "reason": "Issuing an MCP token for a connection. Credential issuance is the owner's act."
     },
     {
       "route": "POST /api/agui/runs/:runId/resume",
@@ -394,20 +389,19 @@
     {
       "route": "POST /api/resources/:id/execute",
       "kind": "listed",
-      "reason": "Running a resource now.",
+      "reason": "Running a resource now. The route runs what the kind can run and refuses the kinds that have no run; the agent path is SPEC-S2's question.",
       "spec": "SPEC-S2+"
     },
     {
       "route": "POST /api/resources/:id/publish",
       "kind": "listed",
-      "reason": "Publishing makes a resource visible to everyone; it is the owner's own act.",
+      "reason": "Publishing makes a resource visible to everyone; it is the owner's own act. The route publishes the kinds that have a publish act and refuses the rest; the agent path is SPEC-S2's question.",
       "spec": "SPEC-S2+"
     },
     {
       "route": "POST /api/resources/upload",
-      "kind": "listed",
-      "reason": "Storing a file's bytes from the owner's own machine.",
-      "spec": "SPEC-S2+"
+      "kind": "exempt",
+      "reason": "Storing a file's bytes from the owner's own machine. There is no agent-side equivalent to a file picker."
     },
     {
       "route": "POST /api/tasks",
@@ -440,9 +434,8 @@
     },
     {
       "route": "DELETE /api/agents/:id/tokens/:tokenId",
-      "kind": "listed",
-      "reason": "Revoking an MCP token.",
-      "spec": "SPEC-S2+"
+      "kind": "exempt",
+      "reason": "Revoking an MCP token. Credential revocation is the owner's act."
     },
     {
       "route": "DELETE /api/automations/:id",
