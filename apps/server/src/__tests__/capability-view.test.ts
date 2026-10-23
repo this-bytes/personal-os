@@ -1,12 +1,10 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import fs from 'node:fs';
-import os from 'node:os';
-import path from 'node:path';
 import { eq } from 'drizzle-orm';
 import type { FastifyInstance } from 'fastify';
 import { buildApp } from '../app.js';
 import { loadConfig } from '../config.js';
 import { agentConnections, executions } from '../db/schema.js';
+import { createTestDataDir } from './helpers.js';
 
 /**
  * The capability view: what a turn was admitted with.
@@ -22,7 +20,7 @@ let workspaceId = '';
 let agentId = '';
 
 beforeAll(async () => {
-  const dataDir = fs.mkdtempSync(path.join(os.tmpdir(), 'pos-capability-view-'));
+  const dataDir = createTestDataDir('pos-capability-view-');
   const config = loadConfig({
     ...process.env,
     PERSONAL_OS_DATA_DIR: dataDir,

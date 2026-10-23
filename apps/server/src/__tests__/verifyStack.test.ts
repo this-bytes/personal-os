@@ -24,7 +24,6 @@
 import { spawn, type ChildProcess } from 'node:child_process';
 import fs from 'node:fs';
 import http from 'node:http';
-import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
@@ -35,6 +34,7 @@ import {
   makeRemoveDir,
   runCleanup,
 } from './support/cleanup.js';
+import { createTestDataDir } from './helpers.js';
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..', '..', '..');
 const scriptPath = path.join(repoRoot, 'scripts', 'verify-stack.ts');
@@ -127,7 +127,7 @@ async function stop(child: ChildProcess): Promise<void> {
 
 /** A deployment of its own, so that each one in this file starts empty. */
 function freshDataDir(prefix: string): string {
-  const dir = fs.mkdtempSync(path.join(os.tmpdir(), prefix));
+  const dir = createTestDataDir(prefix);
   dataDirs.push(dir);
   return dir;
 }
