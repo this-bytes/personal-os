@@ -1,7 +1,8 @@
-import { and, asc, desc, eq, lte, sql } from 'drizzle-orm';
+import { and, asc, desc, eq, lte, sql, type SQL } from 'drizzle-orm';
 import type { Database } from '../db/client.js';
 import { automationRuns, executions, queueJobs, tasks } from '../db/schema.js';
 import { newId } from '../lib/ids.js';
+import { decideStaleJob, type StaleJobDecision, type StaleJobItem } from './reconciliation.js';
 
 export type JobType = 'chat.turn' | 'factory.execute' | 'automation.run' | 'resource.refresh';
 
@@ -131,22 +132,46 @@ export class Queue {
       .run();
   }
 
-  complete(jobId: string): void {
-    this.db
+  /**
+   * Finish a job.
+   *
+   * The write is fenced on the lease: a worker whose lease moved on cannot
+   * write, because the job it was working on belongs to somebody else now. It
+   * says so by returning false, and the caller treats that as "the job is not
+   * mine to finish".
+   */
+  complete(jobId: string, workerId: string): boolean {
+    const result = this.db
       .update(queueJobs)
-      .set({ status: 'done', lockedAt: null, lockedBy: null, updatedAt: new Date().toISOString() })
-      .where(eq(queueJobs.id, jobId))
+      .set({
+        status: 'done',
+        lockedAt: null,
+        lockedBy: null,
+        updatedAt: new Date().toISOString(),
+      })
+      .where(
+        and(
+          eq(queueJobs.id, jobId),
+          eq(queueJobs.status, 'running'),
+          eq(queueJobs.lockedBy, workerId),
+        ),
+      )
       .run();
+    return result.changes > 0;
   }
 
-  /** Mark a job failed; retry it while attempts remain. */
-  fail(jobId: string, error: string, retryInMs = 5_000): void {
+  /**
+   * Mark a job failed; retry it while attempts remain.
+   *
+   * Fenced on the lease, like every other write to a running job.
+   */
+  fail(jobId: string, workerId: string, error: string, retryInMs = 5_000): boolean {
     const now = new Date().toISOString();
     const job = this.db.select().from(queueJobs).where(eq(queueJobs.id, jobId)).get();
-    if (!job) return;
+    if (!job) return false;
 
     if (job.attempts < job.maxAttempts) {
-      this.db
+      const result = this.db
         .update(queueJobs)
         .set({
           status: 'queued',
@@ -156,12 +181,18 @@ export class Queue {
           runAt: new Date(Date.now() + retryInMs).toISOString(),
           updatedAt: now,
         })
-        .where(eq(queueJobs.id, jobId))
+        .where(
+          and(
+            eq(queueJobs.id, jobId),
+            eq(queueJobs.status, 'running'),
+            eq(queueJobs.lockedBy, workerId),
+          ),
+        )
         .run();
-      return;
+      return result.changes > 0;
     }
 
-    this.db
+    const result = this.db
       .update(queueJobs)
       .set({
         status: 'failed',
@@ -170,8 +201,15 @@ export class Queue {
         lockedBy: null,
         updatedAt: now,
       })
-      .where(eq(queueJobs.id, jobId))
+      .where(
+        and(
+          eq(queueJobs.id, jobId),
+          eq(queueJobs.status, 'running'),
+          eq(queueJobs.lockedBy, workerId),
+        ),
+      )
       .run();
+    return result.changes > 0;
   }
 
   /**
@@ -181,9 +219,11 @@ export class Queue {
    * work may already have had its side effect, so running it again is the one
    * thing that must not happen on its own. The owner decides what happens
    * next.
+   *
+   * Fenced on the lease, like every other write to a running job.
    */
-  hold(jobId: string, error: string): void {
-    this.db
+  hold(jobId: string, workerId: string, error: string): boolean {
+    const result = this.db
       .update(queueJobs)
       .set({
         status: 'unknown',
@@ -192,66 +232,47 @@ export class Queue {
         lockedBy: null,
         updatedAt: new Date().toISOString(),
       })
-      .where(eq(queueJobs.id, jobId))
+      .where(
+        and(
+          eq(queueJobs.id, jobId),
+          eq(queueJobs.status, 'running'),
+          eq(queueJobs.lockedBy, workerId),
+        ),
+      )
       .run();
+    return result.changes > 0;
   }
 
   /**
-   * Release jobs whose worker died, so another worker can pick them up.
+   * The jobs whose worker died.
    *
-   * A job whose work is already recorded as `unknown` is not released. The
-   * work may already have had its side effect, and running it again is the
-   * one thing that must not happen on its own. Such a job is held instead,
-   * and the owner decides what happens next.
+   * A job is stale when it is still marked running and its lease has not been
+   * refreshed for longer than the window. That is the whole of what a lease
+   * says: the worker that held it is not answering.
    */
-  reapStaleJobs(olderThanMs = 120_000): number {
+  staleRunningJobs(olderThanMs = 120_000): QueueJob[] {
     const cutoff = new Date(Date.now() - olderThanMs).toISOString();
-    const stale = this.db
+    return this.db
       .select()
       .from(queueJobs)
       .where(and(eq(queueJobs.status, 'running'), lte(queueJobs.lockedAt, cutoff)))
-      .all();
-
-    let handled = 0;
-    for (const job of stale) {
-      if (this.itemIsUnknown(job)) {
-        this.hold(
-          job.id,
-          'The outcome of this job could not be confirmed, so it was not run again.',
-        );
-        handled += 1;
-        continue;
-      }
-
-      this.db
-        .update(queueJobs)
-        .set({
-          status: 'queued',
-          lockedAt: null,
-          lockedBy: null,
-          lastError: 'Worker lease expired; job was requeued.',
-          updatedAt: new Date().toISOString(),
-        })
-        .where(eq(queueJobs.id, job.id))
-        .run();
-      handled += 1;
-    }
-    return handled;
+      .all() as QueueJob[];
   }
 
   /**
-   * Has the work this job was doing already been recorded as unknown?
+   * What the product knows about the item a job was working on.
    *
-   * The worker holds a job after the executor has returned, so a worker that
-   * dies in between leaves the job running with the item already unknown.
-   * The item is the record of what happened, and it is what the contract
-   * says must not be run again.
+   * This is the fact the stale-job rule turns on: whether the work had
+   * started at all. A job whose item never started is safe to run again, and
+   * one whose item started may already have had its side effect.
    */
-  private itemIsUnknown(job: { payload: unknown; lockedAt: string | null }): boolean {
+  itemStateFor(job: QueueJob): StaleJobItem {
     const payload = job.payload as {
       executionId?: string;
       taskId?: string;
       automationId?: string;
+      /** The id of the run an automation job is going to make. */
+      runId?: string;
     };
 
     if (payload.executionId) {
@@ -260,27 +281,166 @@ export class Queue {
         .from(executions)
         .where(eq(executions.id, payload.executionId))
         .get();
-      if (execution?.status === 'unknown') return true;
+      if (!execution) return { kind: 'none' };
+      return executionItemState(execution.status, execution.startedAt);
     }
 
     if (payload.taskId) {
       const task = this.db.select().from(tasks).where(eq(tasks.id, payload.taskId)).get();
-      if (task?.status === 'unknown') return true;
+      if (!task) return { kind: 'none' };
+      if (task.status === 'unknown') return { kind: 'unknown' };
+      if (task.status === 'done' || task.status === 'cancelled') return { kind: 'settled' };
+      if (task.status !== 'open') return { kind: 'started' };
+
+      // A task stays open for the whole of its agent turn, so the task's own
+      // status cannot say whether the work had started. The execution can: it
+      // is written before the adapter runs, and it is what says the turn began.
+      // A task may have more than one execution row, so the newest one is the
+      // turn the job is about.
+      const execution = this.db
+        .select()
+        .from(executions)
+        .where(eq(executions.taskId, payload.taskId))
+        .orderBy(desc(executions.createdAt))
+        .get();
+      if (!execution) return { kind: 'not-started' };
+      return executionItemState(execution.status, execution.startedAt);
     }
 
     if (payload.automationId) {
-      // An automation run has no id in the job, so the run that belongs to
-      // this job is the one that started after the job was claimed.
+      // The job carries the id of the run it is going to make, so the run is
+      // found rather than guessed at. A run is written when it starts, so a
+      // run that is missing never began; a run that is `running` began and
+      // nothing recorded how it ended; a run that finished is finished.
+      if (!payload.runId) return { kind: 'none' };
       const run = this.db
         .select()
         .from(automationRuns)
-        .where(eq(automationRuns.automationId, payload.automationId))
-        .all()
-        .find((row) => row.status === 'unknown' && row.startedAt >= (job.lockedAt ?? ''));
-      if (run) return true;
+        .where(eq(automationRuns.id, payload.runId))
+        .get();
+      if (!run) return { kind: 'not-started' };
+      if (run.status === 'unknown') return { kind: 'unknown' };
+      if (run.status === 'running') return { kind: 'started' };
+      return { kind: 'settled' };
     }
 
-    return false;
+    return { kind: 'none' };
+  }
+
+  /**
+   * Apply the stale-job rule to one job and carry the decision out.
+   *
+   * The decision is the rule's, in `reconciliation.ts`. This is the part that
+   * touches the row, and every write it makes is conditional on the job still
+   * being the one we looked at: the job cannot be running and requeued at the
+   * same time, because the second write only lands while the first has not.
+   */
+  applyStaleDecision(job: QueueJob, decision: StaleJobDecision): boolean {
+    const now = new Date().toISOString();
+    const guard = and(
+      eq(queueJobs.id, job.id),
+      eq(queueJobs.status, 'running'),
+      eq(queueJobs.lockedBy, job.lockedBy ?? ''),
+    );
+
+    if (decision.kind === 'requeue') {
+      const result = this.db
+        .update(queueJobs)
+        .set({
+          status: 'queued',
+          lockedAt: null,
+          lockedBy: null,
+          lastError: decision.reason,
+          updatedAt: now,
+        })
+        .where(guard)
+        .run();
+      return result.changes > 0;
+    }
+
+    if (decision.kind === 'complete') {
+      const result = this.db
+        .update(queueJobs)
+        .set({
+          status: 'done',
+          lockedAt: null,
+          lockedBy: null,
+          lastError: decision.reason,
+          updatedAt: now,
+        })
+        .where(guard)
+        .run();
+      return result.changes > 0;
+    }
+
+    const result = this.db
+      .update(queueJobs)
+      .set({
+        status: 'unknown',
+        lockedAt: null,
+        lockedBy: null,
+        lastError: decision.reason,
+        updatedAt: now,
+      })
+      .where(guard)
+      .run();
+    return result.changes > 0;
+  }
+
+  /**
+   * Settle a job that was held for an outcome the owner has now settled.
+   *
+   * The job was held because its outcome could not be confirmed. The owner has
+   * confirmed it, so the job is finished: it is not failed, because nothing
+   * failed, and it is not run again, because the work is accounted for.
+   */
+  settleHeldJob(executionId: string, reason: string): boolean {
+    return this.settleHeld(
+      sql`json_extract(${queueJobs.payload}, '$.executionId') = ${executionId}`,
+      reason,
+    );
+  }
+
+  /**
+   * Settle a job that was held for an outcome the owner has now settled.
+   *
+   * An automation's run has no execution, so the job carries the run's id
+   * instead. The job is held on the same terms: the owner's conclusion is the
+   * outcome, so the queue's record stops saying the outcome was never
+   * confirmed.
+   */
+  settleHeldRun(runId: string, reason: string): boolean {
+    return this.settleHeld(sql`json_extract(${queueJobs.payload}, '$.runId') = ${runId}`, reason);
+  }
+
+  /** The shared body of settling a held job. */
+  private settleHeld(matches: SQL, reason: string): boolean {
+    const now = new Date().toISOString();
+    const held = this.db
+      .select()
+      .from(queueJobs)
+      .where(and(eq(queueJobs.status, 'unknown'), matches))
+      .all();
+    let settled = 0;
+    for (const job of held) {
+      const result = this.db
+        .update(queueJobs)
+        .set({ status: 'done', lastError: reason, updatedAt: now })
+        .where(and(eq(queueJobs.id, job.id), eq(queueJobs.status, 'unknown')))
+        .run();
+      settled += result.changes;
+    }
+    return settled > 0;
+  }
+
+  /**
+   * The decision the stale-job rule makes about a job.
+   *
+   * Exposed so that the caller can ask about a job without carrying the rule
+   * itself, and so that the rule is applied in one place.
+   */
+  decideFor(job: QueueJob): StaleJobDecision {
+    return decideStaleJob(this.itemStateFor(job));
   }
 
   /** Cancel queued jobs for a conversation, used when a chat is paused. */
@@ -297,4 +457,22 @@ export class Queue {
       .run();
     return result.changes;
   }
+}
+
+/**
+ * What an execution's status says about whether the work had started.
+ *
+ * `startedAt` is the record that the run began, and the status is the record
+ * of where it got to. A run that was admitted and never began is safe to run
+ * again; a run that began and never said how it ended may already have had
+ * its side effect.
+ */
+function executionItemState(status: string, startedAt: string | null): StaleJobItem {
+  if (status === 'unknown') return { kind: 'unknown' };
+  if (status === 'completed' || status === 'committed' || status === 'failed') {
+    return { kind: 'settled' };
+  }
+  if (status === 'cancelled') return { kind: 'settled' };
+  if (startedAt === null && status === 'queued') return { kind: 'not-started' };
+  return { kind: 'started' };
 }

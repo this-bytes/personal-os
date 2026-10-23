@@ -2,6 +2,7 @@ import { loadConfig } from '@personal-os/server/runtime';
 import { createRuntime } from '@personal-os/server/runtime';
 import { EventWatcher } from './event-watcher.js';
 import { executeJob, type ExecutionOutcome } from './executor.js';
+import { reconcileStaleJobs } from './reconcile.js';
 import { Scheduler } from './scheduler.js';
 
 /**
@@ -33,6 +34,16 @@ async function main(): Promise<void> {
 
   process.stdout.write(`[${new Date().toISOString()}] Personal OS worker started (${workerId})\n`);
 
+  // The jobs that were running when the previous worker died are settled
+  // before this one takes any new work. A job that had already run may not be
+  // run again, and the only way to know is to settle it before it is claimed.
+  const reconciled = await reconcileStaleJobs(runtime);
+  if (reconciled > 0) {
+    process.stdout.write(
+      `[${new Date().toISOString()}] Reconciled ${reconciled} job(s) left behind by a worker that died\n`,
+    );
+  }
+
   const shutdown = (signal: string): void => {
     process.stdout.write(
       `[${new Date().toISOString()}] Worker received ${signal}, finishing current job\n`,
@@ -46,7 +57,7 @@ async function main(): Promise<void> {
   while (running) {
     try {
       if (Date.now() - lastReap > REAP_INTERVAL_MS) {
-        runtime.queue.reapStaleJobs();
+        await reconcileStaleJobs(runtime);
         lastReap = Date.now();
       }
 
@@ -75,18 +86,22 @@ async function main(): Promise<void> {
         outcome.status === 'committed' ||
         outcome.status === 'cancelled'
       ) {
-        runtime.queue.complete(job.id);
+        runtime.queue.complete(job.id, workerId);
       } else if (outcome.status === 'unknown') {
         // The work started and we cannot confirm how it ended. It is not
         // retried: running it again could repeat a side effect that already
         // happened. The owner decides what happens next.
-        runtime.queue.hold(job.id, outcome.error ?? 'The outcome could not be confirmed.');
+        runtime.queue.hold(
+          job.id,
+          workerId,
+          outcome.error ?? 'The outcome could not be confirmed.',
+        );
       } else if (outcome.status === 'blocked') {
         // The turn is suspended, waiting for the owner. It continues in a new
         // turn when the decision arrives; it is not retried.
-        runtime.queue.complete(job.id);
+        runtime.queue.complete(job.id, workerId);
       } else {
-        runtime.queue.fail(job.id, outcome.error ?? 'The job failed.');
+        runtime.queue.fail(job.id, workerId, outcome.error ?? 'The job failed.');
       }
     } catch (error) {
       process.stderr.write(

@@ -18,6 +18,18 @@ const updateSchema = z.object({
   action: automationActionSchema.optional(),
 });
 
+/**
+ * The owner's own conclusion about a run whose outcome could not be confirmed.
+ *
+ * `completed` says the work happened; `failed` says it did not, or that it
+ * failed. Either way the run is over and the job that was held for it is
+ * settled.
+ */
+const resolveRunSchema = z.object({
+  outcome: z.enum(['completed', 'failed']),
+  note: z.string().max(2_000).optional(),
+});
+
 export function registerAutomationRoutes(app: FastifyInstance): void {
   app.get('/api/automations', { preHandler: requireAuth }, async (request) => {
     const { workspaceId } = parseQuery(listQuerySchema, request.query);
@@ -91,4 +103,30 @@ export function registerAutomationRoutes(app: FastifyInstance): void {
     });
     return reply.send({ ok: true });
   });
+
+  // The owner's own conclusion about a run whose outcome could not be
+  // confirmed. An automation's run has no conversation and no execution, so
+  // this is the only way the owner closes the question about it.
+  app.post(
+    '/api/automations/:id/runs/:runId/resolve',
+    { preHandler: requireAuth },
+    async (request) => {
+      const { id, runId } = request.params as { id: string; runId: string };
+      const body = parseBody(resolveRunSchema, request.body);
+
+      // It is the shared capability API that closes the run, so the owner's
+      // conclusion here and the agent's `automation.run.resolve` are the same
+      // path: one place where the run leaves the unknown state, the job that
+      // was held for it is settled, and the trail is written.
+      const run = app.services.capabilities.automationRunResolve({
+        runId,
+        automationId: id,
+        outcome: body.outcome,
+        note: body.note,
+        actorType: request.actorType ?? 'human',
+        actorId: request.user?.id ?? 'owner',
+      });
+      return { run };
+    },
+  );
 }

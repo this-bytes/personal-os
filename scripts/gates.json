@@ -71,6 +71,12 @@
       "command": "npx",
       "args": ["tsx", "scripts/verify-session-references.ts"],
       "about": "every published session reference resolves, every committed revision is one the product wrote, and every turn ends once"
+    },
+    {
+      "name": "restart-reconciliation",
+      "command": "npx",
+      "args": ["tsx", "scripts/verify-restart-reconciliation.ts"],
+      "about": "work that had already started is not run again, an uncertain outcome is visible and the owner can settle it, and a run whose runtime survived is reconnected"
     }
   ]
 }

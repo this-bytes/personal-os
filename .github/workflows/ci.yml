@@ -11,6 +11,23 @@ on:
     # second round of waiting.
     branches: ['**']
   pull_request:
+  # The heavy lane is one button away.
+  #
+  # This workflow runs in two lanes. The **fast lane** runs on every push and
+  # on every pull request, and it is the lane a branch has to be green in to
+  # be merged. The **heavy lane** runs the whole proof — the test suite, the
+  # compiled build, the browser tests and the gates that drive the built
+  # product — and it runs when somebody asks for it, by hand.
+  #
+  # The reason for the split is that the heavy lane was costing more time
+  # than the work it was judging. A full suite, a web build, a Playwright
+  # download and two gates that each rebuild four packages take longer than
+  # the slice that changed, so every change waited for a proof that was much
+  # bigger than the change. The fast lane keeps the cheap checks — the
+  # typecheck, the formatting, the published contract, the pointers and the
+  # agent surface — running on every branch, and the heavy lane is there for
+  # the work that needs it and for the release.
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -21,10 +38,10 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  build:
-    name: Build and test
+  verify:
+    name: Typecheck and format
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 15
 
     steps:
       - uses: actions/checkout@v4
@@ -41,34 +58,208 @@ jobs:
           node-version-file: .nvmrc
           cache: npm
 
+      # The install must not audit. `npm ci` audits by default, so without the
+      # flag the job pays for the registry round-trip twice: once inside the
+      # install, at npm's own default level, and once in the audit job
+      # below, at the level that job names.
       - name: Install dependencies
-        run: npm ci
+        run: npm ci --no-audit --no-fund
 
+      # The manifests and the lockfile have to agree, and the installed tree
+      # has to be the one the lockfile describes. It costs a second and it
+      # catches a class of defect that is invisible until an install fails.
       - name: Validate workspace dependencies
         run: npm run verify:dependencies
 
-      # The typecheck and the tests come before the build, deliberately.
+      # The typecheck is the check that earns its place here. It builds the
+      # packages it reads the types of, so it works on a checkout where
+      # nothing has been built, and it is the check that catches a change
+      # that does not compile — which is the mistake that is cheap to make
+      # and expensive to find later.
       #
-      # Both build the packages they need first, so they work on a checkout
-      # where nothing has been built. That is the state a contributor is in
-      # when they clone the repository and run the documented command, and it
-      # is the state the gates broke in once already: the packages resolved
-      # through their own dist/, and a fresh clone could not typecheck at all.
-      #
-      # With the build first, CI would never notice that breaking again — the
-      # dist/ directories would already be there and the gates would pass
-      # without the thing that makes them pass ever being tested.
+      # The typecheck comes before the build, deliberately: with the build
+      # first, CI would never notice that the packages resolved through their
+      # own dist/ and a fresh clone could not typecheck at all.
       - name: Typecheck
         run: npm run typecheck
+
+      - name: Formatting
+        run: npm run format:check
+
+  audit:
+    name: Dependency audit
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      # The install must not audit. `npm ci` audits by default, so without this
+      # flag the job pays for the registry round-trip twice: once inside the
+      # install, at npm's own default level, and once in the step below, at
+      # the level this job names. The step below is the audit this job is
+      # named for.
+      #
+      # The install skips the scripts, because the audit reads the tree and
+      # the registry, and neither needs a native module.
+      - name: Install dependencies
+        run: npm ci --ignore-scripts --no-audit --no-fund
+
+      # A release that introduces a known vulnerability should not be able to
+      # reach main quietly.
+      - name: Audit
+        run: npm audit --audit-level=high
+
+  contracts:
+    name: The published contract matches the tree
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # The gate reads the code at the commit a claim names, so it needs
+          # the history. A shallow checkout holds one commit, and the gate
+          # would skip the commits it could not see.
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      # The gate is a TypeScript script, so it needs a runner. The one in the
+      # lockfile is the one it should get: an unpinned `npx` download would
+      # make a gate depend on the registry at the moment it runs, and fail for
+      # the wrong reason.
+      #
+      # The install skips the scripts, because the gate does not load a native
+      # module: it reads the tree and the contract, and it does not drive the
+      # product.
+      - name: Install dependencies
+        run: npm ci --ignore-scripts --no-audit --no-fund
+
+      # A published contract that says the code does not implement something
+      # the code has implemented is an invitation to build it a second time.
+      # The gate reads the contract's implementation-status notes and checks
+      # each one it has a claim for against the tree.
+      - name: The published claims match the tree
+        run: npm run verify:contracts
+
+  contract-pointers:
+    name: "The contract's pointers point at code"
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci --ignore-scripts --no-audit --no-fund
+
+      # The contract cites the code by line number, and a citation goes stale
+      # every time a nearby line changes. Three items have been spent
+      # correcting those citations by hand, which makes it a class of defect
+      # rather than three coincidences. The gate reads the contract and checks
+      # every citation against the tree: the file is there, the line is in
+      # range, and the line holds code.
+      - name: "The contract's pointers point at code"
+        run: npx tsx scripts/verify-contract-pointers.ts
+
+  mcp-parity:
+    name: The agent surface matches the owner's
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci --ignore-scripts --no-audit --no-fund
+
+      # Every owner-facing route the published contract names is either
+      # matched by a registered MCP tool or named on the list with a written
+      # reason. A new human-only route that nobody paired fails the gate, so
+      # the gap between what the owner can do and what an agent can do cannot
+      # grow quietly.
+      #
+      # **The gate runs in this pipeline on purpose.** A gate that only runs on
+      # the machine that wrote it is not a gate, it is a habit — and this one
+      # was written into the registry without the workflow that would have run
+      # it, so it would have passed on nobody's machine.
+      - name: The agent surface matches the owner's
+        run: npm run verify:mcp-parity
+
+  workflow-lint:
+    name: Lint the workflows
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - uses: actions/checkout@v4
+
+      # A workflow that does not parse, or that hands an action an input it
+      # does not accept, fails only once somebody pushes — and the CodeQL
+      # workflow failed exactly that way until this check existed.
+      #
+      # The version is pinned rather than tracking `latest`, so the lint
+      # cannot change under you and the image can be trusted by digest.
+      - name: Check the workflow definitions
+        uses: docker://rhysd/actionlint:1.7.12
+        with:
+          args: -color
+
+  # ---------------------------------------------------------------------
+  # The heavy lane.
+  #
+  # These jobs run when the workflow is dispatched by hand, and not on every
+  # push. They are the whole proof, and they are slow: the test suite, the
+  # compiled build, the browser download and the browser tests, and two gates
+  # that each rebuild the packages they drive.
+  #
+  # A branch does not wait for them to be merged, and the work that needs
+  # them runs them before it lands.
+  # ---------------------------------------------------------------------
+
+  build-and-test:
+    name: Build and test
+    if: github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
 
       - name: Unit and integration tests
         run: npm run test
 
       - name: Build
         run: npm run build
-
-      - name: Formatting
-        run: npm run format:check
 
       - name: End-to-end smoke test
         run: npx tsx scripts/smoke.ts
@@ -105,132 +296,9 @@ jobs:
       - name: End-to-end browser tests
         run: npm run test:e2e
 
-  audit:
-    name: Dependency audit
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
-
-    steps:
-      - uses: actions/checkout@v4
-
-      - uses: actions/setup-node@v4
-        with:
-          node-version-file: .nvmrc
-          cache: npm
-
-      # The install must not audit. `npm ci` audits by default, so without this
-      # flag the job pays for the registry round-trip twice: once inside the
-      # install, at npm's own default level, and once in the step below, at the
-      # level this job names. The step below is the audit this job is named for.
-      #
-      # The three jobs that do the same install inside the same budget all carry
-      # these two flags. This job was the only one that did not, and it is the
-      # one whose job GitHub reported as `cancelled` when it ran out of its ten
-      # minutes — which is how a timeout is reported.
-      - name: Install dependencies
-        run: npm ci --ignore-scripts --no-audit --no-fund
-
-      # A release that introduces a known vulnerability should not be able to
-      # reach main quietly.
-      - name: Audit
-        run: npm audit --audit-level=high
-
-  contracts:
-    name: The published contract matches the tree
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
-
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          # The gate reads the code at the commit a claim names, so it needs
-          # the history. A shallow checkout holds one commit, and the gate
-          # would skip the commits it could not see.
-          fetch-depth: 0
-
-      - uses: actions/setup-node@v4
-        with:
-          node-version-file: .nvmrc
-          cache: npm
-
-      # The gate is a TypeScript script, so it needs a runner. The one in the
-      # lockfile is the one it should get: an unpinned `npx` download would make
-      # a gate depend on the registry at the moment it runs, and fail for the
-      # wrong reason.
-      - name: Install dependencies
-        run: npm ci --ignore-scripts --no-audit --no-fund
-
-      # A published contract that says the code does not implement something
-      # the code has implemented is an invitation to build it a second time.
-      # The gate reads the contract's implementation-status notes and checks
-      # each one it has a claim for against the tree.
-      - name: The published claims match the tree
-        run: npm run verify:contracts
-
-  contract-pointers:
-    name: "The contract's pointers point at code"
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
-
-    steps:
-      - uses: actions/checkout@v4
-
-      - uses: actions/setup-node@v4
-        with:
-          node-version-file: .nvmrc
-          cache: npm
-
-      # The gate is a TypeScript script, so it needs a runner. The one in the
-      # lockfile is the one it should get: an unpinned `npx` download would make
-      # a gate depend on the registry at the moment it runs, and fail for the
-      # wrong reason.
-      - name: Install dependencies
-        run: npm ci --ignore-scripts --no-audit --no-fund
-
-      # The contract cites the code by line number, and a citation goes stale
-      # every time a nearby line changes. Three items have been spent
-      # correcting those citations by hand, which makes it a class of defect
-      # rather than three coincidences. The gate reads the contract and checks
-      # every citation against the tree: the file is there, the line is in
-      # range, and the line holds code.
-      - name: "The contract's pointers point at code"
-        run: npx tsx scripts/verify-contract-pointers.ts
-
-  mcp-parity:
-    name: The agent surface matches the owner's
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
-
-    steps:
-      - uses: actions/checkout@v4
-
-      - uses: actions/setup-node@v4
-        with:
-          node-version-file: .nvmrc
-          cache: npm
-
-      # The gate is a TypeScript script, so it needs a runner. The one in the
-      # lockfile is the one it should get: an unpinned `npx` download would make
-      # a gate depend on the registry at the moment it runs, and fail for the
-      # wrong reason.
-      - name: Install dependencies
-        run: npm ci --ignore-scripts --no-audit --no-fund
-
-      # Every owner-facing route the published contract names is either matched
-      # by a registered MCP tool or named on the list with a written reason. A
-      # new human-only route that nobody paired fails the gate, so the gap
-      # between what the owner can do and what an agent can do cannot grow
-      # quietly.
-      #
-      # **The gate runs in this pipeline on purpose.** A gate that only runs on
-      # the machine that wrote it is not a gate, it is a habit — and this one
-      # was written into the registry without the workflow that would have run
-      # it, so it would have passed on nobody's machine.
-      - name: The agent surface matches the owner's
-        run: npm run verify:mcp-parity
-
   session-references:
     name: The session references resolve
+    if: github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     timeout-minutes: 10
 
@@ -242,10 +310,6 @@ jobs:
           node-version-file: .nvmrc
           cache: npm
 
-      # The gate is a TypeScript script, so it needs a runner. The one in the
-      # lockfile is the one it should get: an unpinned `npx` download would make
-      # a gate depend on the registry at the moment it runs, and fail for the
-      # wrong reason.
       - name: Install dependencies
         run: npm ci --ignore-scripts --no-audit --no-fund
 
@@ -265,8 +329,41 @@ jobs:
       - name: The session references resolve
         run: npx tsx scripts/verify-session-references.ts
 
+  restart-reconciliation:
+    name: The worker that dies is reconciled
+    if: github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci --ignore-scripts --no-audit --no-fund
+
+      # The gate drives the worker's own reconciliation, so the packages it
+      # calls have to be built first.
+      - name: Build the packages the gate drives
+        run: npm run build:deps && npm run build -w @personal-os/worker
+
+      # The gate checks that work which had already started is not run again,
+      # that the uncertain outcome is visible and the owner can settle it, and
+      # that a run whose runtime survived is reconnected rather than started
+      # again. A product that replayed the work fails it.
+      #
+      # **The gate runs in this pipeline on purpose.** A gate that only runs on
+      # the machine that wrote it is not a gate, it is a habit.
+      - name: The worker that dies is reconciled
+        run: npx tsx scripts/verify-restart-reconciliation.ts
+
   source-stack:
     name: Source hosting and restart
+    if: github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
@@ -277,22 +374,3 @@ jobs:
           cache: npm
       # The verifier installs its own disposable source checkout.
       - run: npm run verify:source
-
-  workflow-lint:
-    name: Lint the workflows
-    runs-on: ubuntu-latest
-    timeout-minutes: 5
-
-    steps:
-      - uses: actions/checkout@v4
-
-      # A workflow that does not parse, or that hands an action an input it
-      # does not accept, fails only once somebody pushes — and the CodeQL
-      # workflow failed exactly that way until this check existed.
-      #
-      # The version is pinned rather than tracking `latest`, so the lint
-      # cannot change under you and the image can be trusted by digest.
-      - name: Check the workflow definitions
-        uses: docker://rhysd/actionlint:1.7.12
-        with:
-          args: -color

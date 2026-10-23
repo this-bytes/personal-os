@@ -202,7 +202,7 @@ describe('an outcome that could not be confirmed', () => {
 
     // The turn started and its outcome could not be confirmed. The job is
     // held, not requeued.
-    queue.hold(job.id, 'The outcome could not be confirmed.');
+    queue.hold(job.id, 'worker_1', 'The outcome could not be confirmed.');
 
     const after = queue.claimNext('worker_1');
     expect(after).toBeNull();
@@ -226,6 +226,63 @@ describe('an outcome that could not be confirmed', () => {
     expect(resolved).toBeDefined();
     expect(resolved?.action).toBe('task.outcome.resolved');
     expect(resolved?.result).toBe('success');
+  });
+
+  it('settles the turn and the job that were held for it', async () => {
+    const id = await createTask('Settle me and my turn', 'unknown');
+    const now = new Date().toISOString();
+
+    // A task's turn is the same row as a turn: the ledger holds it, and the
+    // task carries it. The worker could not confirm how it ended, so both the
+    // turn and the job that was waiting on it are held.
+    app.services.runtime.db
+      .insert(executions)
+      .values({
+        id: 'exe_task_held',
+        workspaceId,
+        conversationId: null,
+        taskId: id,
+        externalRef: null,
+        agentConnectionId: 'agt_1',
+        executionOwner: 'personal-os',
+        status: 'unknown',
+        error: 'The outcome could not be confirmed.',
+        spendUnits: 0,
+        startedAt: now,
+        finishedAt: null,
+        createdAt: now,
+      })
+      .run();
+
+    const queue = app.services.queue;
+    const job = queue.enqueue({
+      workspaceId,
+      type: 'factory.execute',
+      payload: { taskId: id, executionId: 'exe_task_held', agentConnectionId: 'agt_1' },
+    });
+    // The job is held, not requeued: the work may already have happened.
+    let claimed = queue.claimNext('worker_1');
+    while (claimed && claimed.id !== job.id) {
+      claimed = queue.claimNext('worker_1');
+    }
+    expect(claimed?.id).toBe(job.id);
+    queue.hold(job.id, 'worker_1', 'The outcome could not be confirmed.');
+    expect(jobStatus(job.id)).toBe('unknown');
+
+    const accepted = await app.inject({
+      method: 'POST',
+      url: `/api/tasks/${id}/accept`,
+      headers: { cookie: sessionCookie },
+      payload: { satisfied: true, reason: 'It did run.' },
+    });
+    expect(accepted.statusCode).toBe(200);
+
+    // The owner's conclusion is the outcome. The turn is closed with it, and
+    // the job that was held for the turn is settled with it, so neither the
+    // run nor the queue's record goes on saying that the outcome was never
+    // confirmed.
+    expect(executionStatus('exe_task_held')).toBe('completed');
+    expect(jobStatus(job.id)).toBe('done');
   });
 
   it('records a rejected approval as cancelled, because the work was stopped', async () => {

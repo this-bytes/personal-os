@@ -75,13 +75,22 @@ harness tool use and deliverables require the demonstrations in
 
 ## The gates
 
-Every pull request must pass these. They are the same gates CI runs and the
-same ones the bots are held to.
+**The proof scales with the change.** A narrow change — one package, no
+contract, no shared module — is proved by the typecheck and that package's own
+tests. The whole suite is for a wide change: a contract, a shared module, the
+schema, or more than one package.
+
+Every pull request must pass the typecheck and the formatting, and the gates
+below on top of them when the change reaches that far. The typecheck, the
+formatting, the published contract, the contract's pointers and the agent
+surface are the ones CI runs on every push; the rest are the ones CI runs when
+it is dispatched by hand, and the ones you run locally.
 
 ```bash
 npm run typecheck             # strict TypeScript, every workspace
-npm run test                  # unit and integration tests
 npm run format:check          # prettier
+npm test -w @personal-os/<pkg>  # one package's tests
+npm run test                  # every workspace's tests — a wide change
 npm run build                 # every workspace builds
 npx tsx scripts/smoke.ts      # end-to-end, against a throwaway database
 npm run test:e2e              # browser tests
@@ -93,6 +102,10 @@ The last four are conditional: run the smoke test if you touched the server
 or the worker, the browser tests and the bundle budget if you touched the web
 client, and the build check if you changed how the compiled output is
 produced.
+
+`npm run gates` runs every gate in the order CI runs them and stops at the
+first failure, and it is the one command to reach for when the change is wide
+enough to want all of them.
 
 The first two build the three workspaces they depend on — `contracts`,
 `agent-adapters` and `server` — so they work on a fresh checkout without a

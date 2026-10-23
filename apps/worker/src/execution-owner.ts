@@ -368,7 +368,7 @@ async function runTurn(
     // started, and the record of the run has to say that — a row still
     // saying `running` is a run that looks like it is going when it finished
     // a second ago.
-    const adapterConfig = await loadAdapterConfig(context, opened.agentConnectionId);
+    const adapterConfig = await loadAdapterConfig(context.runtime, opened.agentConnectionId);
     timeoutSeconds = adapterTimeout(adapterConfig);
     // The deadline for this turn. The adapter's own timeout and the policy's
     // duration limit are both deadlines, and the earlier one is the one that
@@ -501,7 +501,7 @@ async function runTurn(
   // The one event that ends the turn. Every reader — the panel, the MCP tools,
   // the audit trail — reads the turn's end from here, so it is published once
   // and it names the state the turn is in.
-  publishTerminalEvent(context, {
+  publishTerminalEvent(context.runtime, {
     workspaceId: opened.workspaceId,
     conversationId: opened.conversationId,
     executionId: opened.executionId,
@@ -539,8 +539,19 @@ async function runTurn(
  * other end of a turn has exactly one, and it is published here — after the
  * terminal state was written, so the event and the row say the same thing.
  */
-function publishTerminalEvent(
-  context: ExecutorContext,
+/**
+ * Publish the event that ends a turn.
+ *
+ * A turn that is suspended is not ended, so it has no terminal event. Every
+ * other end of a turn has exactly one, and it is published here — after the
+ * terminal state was written, so the event and the row say the same thing.
+ *
+ * Exported because the reconciliation publishes it too: a worker that comes
+ * back and finds that a run finished publishes the same one event, for the
+ * same run.
+ */
+export function publishTerminalEvent(
+  runtime: Runtime,
   input: {
     workspaceId: string;
     conversationId?: string;
@@ -550,7 +561,7 @@ function publishTerminalEvent(
 ): void {
   if (!isTerminalTurnStatus(input.status)) return;
 
-  context.runtime.events.publish(
+  runtime.events.publish(
     {
       type: 'execution.event',
       conversationId: input.conversationId,
@@ -1045,12 +1056,16 @@ function raiseApproval(
  * Load the adapter configuration for a connection. The configuration is
  * stored as an encrypted secret record; the worker reads it through the
  * shared secret store.
+ *
+ * Exported because the reconciliation needs it too: a worker that restarts
+ * asks the runtime about a run it started, and the runtime is reached through
+ * the same configuration the turn would have run on.
  */
-async function loadAdapterConfig(
-  context: ExecutorContext,
+export async function loadAdapterConfig(
+  runtime: Runtime,
   agentConnectionId: string,
 ): Promise<AdapterConfig> {
-  const { db } = context.runtime;
+  const { db } = runtime;
   const connection = db
     .select()
     .from(agentConnections)
@@ -1058,7 +1073,7 @@ async function loadAdapterConfig(
     .get();
   if (!connection) throw new Error('The agent connection no longer exists.');
 
-  const raw = await context.runtime.resolveSecret(connection.configRef);
+  const raw = await runtime.resolveSecret(connection.configRef);
   if (!raw) throw new Error('The agent configuration could not be read.');
   const stored = JSON.parse(raw) as { adapterType: string; config: Record<string, unknown> };
   return parseAdapterConfig({ adapterType: stored.adapterType, ...stored.config } as AdapterConfig);

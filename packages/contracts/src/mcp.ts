@@ -51,6 +51,15 @@ export const mcpToolNames = [
   'resource.template.get',
   'automation.create',
   'automation.inspect',
+  /**
+   * The owner's own conclusion about an automation's run whose outcome could
+   * not be confirmed.
+   *
+   * It is not in the default grant set, for the same reason
+   * `execution.resolve` is not: a connection that may close a question the
+   * worker could not answer is a connection the owner has said may close one.
+   */
+  'automation.run.resolve',
   'autonomy.read',
   /**
    * The approval queue, and the decision on it.

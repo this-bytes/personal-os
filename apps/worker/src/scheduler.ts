@@ -1,6 +1,6 @@
 import { and, eq, lte } from 'drizzle-orm';
 import { automations } from '@personal-os/server/db';
-import { computeNextRun } from '@personal-os/server/runtime';
+import { computeNextRun, newId } from '@personal-os/server/runtime';
 import type { Runtime } from '@personal-os/server/runtime';
 
 /**
@@ -56,7 +56,11 @@ export class Scheduler {
       queue.enqueue({
         workspaceId: automation.workspaceId,
         type: 'automation.run',
-        payload: { automationId: automation.id },
+        // The run's id is minted here, before the job is queued, so the job
+        // carries the identity of the run it is going to make. Without it the
+        // product could only guess which run belonged to the job, and a guess
+        // is how a run that had started gets run a second time.
+        payload: { automationId: automation.id, runId: newId('run') },
       });
     }
 

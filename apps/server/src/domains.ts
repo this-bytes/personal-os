@@ -189,6 +189,22 @@ export const sharedTableWrites: SharedTableWrite[] = [
       'A turn is stored as an execution row, so the owner closing an unknown turn writes the ledger\u2019s row.',
     workItem: 'WI-060',
   },
+  {
+    module: 'executions',
+    table: 'queue_jobs',
+    owner: 'runtime',
+    reason:
+      'The owner closing an uncertain turn settles the job that was held for it, so the queue stops saying the outcome was never confirmed.',
+    workItem: 'SPEC-R0-4',
+  },
+  {
+    module: 'automations',
+    table: 'queue_jobs',
+    owner: 'runtime',
+    reason:
+      'The owner closing an uncertain automation run settles the job that was held for it, so the queue stops saying the outcome was never confirmed.',
+    workItem: 'SPEC-R0-4',
+  },
 ];
 
 /**

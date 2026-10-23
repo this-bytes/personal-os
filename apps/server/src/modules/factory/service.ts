@@ -1,6 +1,7 @@
 import { and, desc, eq } from 'drizzle-orm';
 import {
   type Evidence,
+  type ExecutionStatus,
   type FactoryTask,
   type Goal,
   type GoalRollup,
@@ -16,6 +17,7 @@ import { authorOf, type Author } from '../../lib/author.js';
 import { errors } from '../../lib/errors.js';
 import { newId } from '../../lib/ids.js';
 import type { EventsService } from '../events/service.js';
+import { publishTurnEnd } from '../events/turn-end.js';
 import type { AuditService } from '../audit/service.js';
 import { pinCapabilityView } from '../capabilities/capability-view.js';
 import type { Queue } from '../../queue/client.js';
@@ -570,6 +572,38 @@ export function createFactoryService(options: FactoryServiceOptions): FactorySer
           result: 'success',
           metadata: { from: 'unknown', to: status },
         });
+
+        // The turn that could not be confirmed is closed with the acceptance,
+        // and the job that was held for it is settled with it. The owner's
+        // conclusion is the outcome, so neither the run nor the queue's record
+        // goes on saying that the outcome was never confirmed.
+        //
+        // The acceptance is the owner's judgement on the work, and the turn
+        // ends the way that judgement says it ended: a task the owner accepted
+        // was done, and a task the owner rejected was not.
+        const uncertain = db
+          .select()
+          .from(executions)
+          .where(and(eq(executions.taskId, taskId), eq(executions.status, 'unknown')))
+          .all();
+        for (const execution of uncertain) {
+          const outcome: ExecutionStatus = input.satisfied ? 'completed' : 'failed';
+          db.update(executions)
+            .set({
+              status: outcome,
+              // The error column carries a reason only where there is one. A
+              // turn the owner accepted has none.
+              error: outcome === 'failed' ? input.reason?.trim() || null : null,
+              finishedAt: now,
+            })
+            .where(eq(executions.id, execution.id))
+            .run();
+          publishTurnEnd(events, execution, outcome);
+          queue.settleHeldJob(
+            execution.id,
+            'The owner settled this task, so the work it was waiting on is accounted for.',
+          );
+        }
       }
 
       // The acceptance itself is the owner's judgement on the work, and the

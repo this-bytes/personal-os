@@ -29,6 +29,8 @@ export interface Runtime {
 
 export { Queue } from './queue/client.js';
 export type { QueueJob, JobType, EnqueueOptions } from './queue/client.js';
+export { decideStaleJob } from './queue/reconciliation.js';
+export type { StaleJobDecision, StaleJobItem } from './queue/reconciliation.js';
 export { EventsService } from './modules/events/service.js';
 export { createAuditService } from './modules/audit/service.js';
 export type { AuditService, AuditEntry } from './modules/audit/service.js';
@@ -45,6 +47,7 @@ export type { SessionReferenceInput } from './modules/conversations/session-refs
 export { computeHistoryRevision } from './modules/conversations/history-revision.js';
 export type { HistoryMessage } from './modules/conversations/history-revision.js';
 export { createConversationsService } from './modules/conversations/service.js';
+export { createExecutionsService } from './modules/executions/service.js';
 export {
   createBotsService,
   authorityExcess,

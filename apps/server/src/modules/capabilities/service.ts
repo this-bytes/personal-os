@@ -75,6 +75,7 @@ export type ScopedObjectKind =
   | 'task'
   | 'resource'
   | 'automation'
+  | 'automationRun'
   | 'approval'
   | 'execution';
 
@@ -341,6 +342,26 @@ export interface CapabilitiesService {
   }): ExecutionResolution;
 
   /**
+   * The owner's own conclusion about an automation's run whose outcome could
+   * not be confirmed.
+   *
+   * It is the same act as closing an unknown turn, on a run that has no
+   * conversation and no execution of its own: the run leaves the unknown
+   * state, the job that was held for it is settled, and the trail says who
+   * reached the conclusion.
+   */
+  automationRunResolve(input: {
+    runId: string;
+    /** The automation the run belongs to, when the caller knows it. */
+    automationId?: string;
+    outcome: 'completed' | 'failed';
+    /** The words that go with the conclusion, when there are any. */
+    note?: string;
+    actorType: 'human' | 'agent';
+    actorId: string;
+  }): AutomationRun;
+
+  /**
    * The acceptance decision on a task.
    *
    * An agent reporting completion is not acceptance: the acceptance is an
@@ -455,6 +476,7 @@ export function createCapabilitiesService(
     task: (id) => factory.getTask(id).workspaceId,
     resource: (id) => resources.get(id).workspaceId,
     automation: (id) => automations.get(id).workspaceId,
+    automationRun: (id) => automations.runWorkspace(id),
     approval: (id) => approvals.get(id).workspaceId,
     execution: (id) => executions.get(id).workspaceId,
   };
@@ -682,6 +704,17 @@ export function createCapabilitiesService(
     executionResolve(input): ExecutionResolution {
       return executions.resolve({
         executionId: input.executionId,
+        outcome: input.outcome,
+        note: input.note,
+        actorType: input.actorType,
+        actorId: input.actorId,
+      });
+    },
+
+    automationRunResolve(input): AutomationRun {
+      return automations.resolveRun({
+        runId: input.runId,
+        ...(input.automationId !== undefined ? { automationId: input.automationId } : {}),
         outcome: input.outcome,
         note: input.note,
         actorType: input.actorType,

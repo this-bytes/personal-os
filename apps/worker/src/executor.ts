@@ -23,7 +23,6 @@ import { listAgentMemories } from '@personal-os/server/runtime';
 import {
   agentConnections,
   automations,
-  automationRuns,
   conversations,
   evidence,
   executions,
@@ -33,6 +32,7 @@ import {
   tasks,
   type Database,
 } from '@personal-os/server/db';
+import { finishAutomationRun, startAutomationRun } from './automation-run.js';
 import {
   assertReadableQuery,
   assertSafeUrl,
@@ -906,6 +906,15 @@ async function executeFactoryTask(
 
 interface AutomationPayload {
   automationId: string;
+  /**
+   * The id of the run this job is going to make.
+   *
+   * The scheduler mints it when the job is queued, so the job carries the
+   * identity of its run and the product can tell afterwards whether that run
+   * had started. A job without one is a job the product knows nothing about,
+   * and knowing nothing is a reason to hold, not to run again.
+   */
+  runId?: string;
   /** Present when the automation was started by an event trigger. */
   trigger?: {
     kind: 'event';
@@ -937,10 +946,23 @@ async function executeAutomation(
   const policy = loadEffectiveAutonomyPolicy(db, { workspaceId: automation.workspaceId });
 
   const startedAt = new Date().toISOString();
-  const runId = newId('run');
+  // The run's id comes from the job when it has one, because the job is what
+  // the queue will be asked about if this worker dies. A run that started and
+  // then lost its worker has to be findable afterwards, and a row that is only
+  // written when the run ends cannot be found.
+  const runId = payload.runId ?? newId('run');
   let output: unknown = null;
   let failure: string | undefined;
   let timedOut = false;
+
+  // The run is recorded as running before it does anything. This is the
+  // product's knowledge that the work started, and it is what stops a run
+  // whose worker died from being run a second time.
+  startAutomationRun(context.runtime, {
+    automationId: automation.id,
+    runId,
+    startedAt,
+  });
 
   // An automation that was started by an event produces its own events at
   // the next depth, which is what bounds the chain.
@@ -962,7 +984,7 @@ async function executeAutomation(
       reason: refusal,
       action: automationAction,
     });
-    finishAutomationRun(context, {
+    finishAutomationRun(context.runtime, {
       automation,
       runId,
       startedAt,
@@ -1088,7 +1110,7 @@ async function executeAutomation(
   const unknown = timedOut;
   const explanation = failure;
 
-  finishAutomationRun(context, {
+  finishAutomationRun(context.runtime, {
     automation,
     runId,
     startedAt,
@@ -1168,61 +1190,6 @@ function automationRefusal(
     );
   }
   return undefined;
-}
-
-/**
- * Record the run of an automation and announce it.
- *
- * A run the policy refused is recorded the same way as any other run: the
- * owner sees that it happened and why it ended.
- */
-function finishAutomationRun(
-  context: ExecutorContext,
-  input: {
-    automation: { id: string; workspaceId: string };
-    runId: string;
-    startedAt: string;
-    status: 'completed' | 'failed' | 'unknown';
-    output: unknown;
-    error: string | null;
-    depth: number;
-  },
-): void {
-  const { db, events } = context.runtime;
-  const finishedAt = new Date().toISOString();
-
-  db.insert(automationRuns)
-    .values({
-      id: input.runId,
-      automationId: input.automation.id,
-      status: input.status,
-      startedAt: input.startedAt,
-      finishedAt,
-      output: input.output as never,
-      error: input.error,
-    })
-    .run();
-
-  db.update(automations)
-    .set({ lastRunAt: input.startedAt, updatedAt: finishedAt })
-    .where(eq(automations.id, input.automation.id))
-    .run();
-
-  events.publish(
-    {
-      type: 'automation.run',
-      run: {
-        id: input.runId,
-        automationId: input.automation.id,
-        status: input.status,
-        startedAt: input.startedAt,
-        finishedAt,
-        output: input.output ?? null,
-        error: input.error,
-      },
-    },
-    { workspaceId: input.automation.workspaceId, depth: input.depth },
-  );
 }
 
 /**

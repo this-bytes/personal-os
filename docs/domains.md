@@ -14,8 +14,10 @@ The capability API composes authorized entry points without becoming a catch-all
 business-logic layer.
 
 Current declared debts include resource/task ledger access, execution outcome
-writes, autonomy-policy reads and the session reference's read of the
-connections it names. Their exact declarations live in domains.ts.
+writes, the owner settling the queue job that was held for an uncertain turn or
+for an uncertain automation run, autonomy-policy reads and the session
+reference's read of the connections it names. Their exact declarations live in
+domains.ts.
 Review them against current source when the relevant slice is selected. Historical
 work-item identifiers name evidence, not the active priority order.
 
