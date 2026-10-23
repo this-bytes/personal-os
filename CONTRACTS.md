@@ -1035,9 +1035,9 @@ the template to start from, and its `type` must equal the `type` the call asks f
 `spec` with those values merged into it. **A call that carries both is no longer
 refused — it is answered**, and the values the call did not name are the template's.
 A template whose spec the owning provider refuses is `validation_failed`
-(`apps/server/src/modules/resources/service.ts:673-678`), and a template of another
+(`apps/server/src/modules/resources/service.ts:674-679`), and a template of another
 kind is refused the same way
-(`apps/server/src/modules/resources/service.ts:687-691`); an unknown template id is
+(`apps/server/src/modules/resources/service.ts:688-692`); an unknown template id is
 `not_found`. Those codes are already published in
 [Error envelope](#error-envelope); this entry adds none. The tool's visibility
 follows the same grant rule as every other tool on that surface, published in
@@ -1108,7 +1108,7 @@ at `apps/server/src/modules/resources/templates.ts:21`:
 
 Each is published at version 1, each carries a guide, and every one is checked
 against the provider that owns its kind when the service is built
-(`apps/server/src/modules/resources/service.ts:486-488`), so a template that drifted
+(`apps/server/src/modules/resources/service.ts:487-489`), so a template that drifted
 is caught at the door rather than by an agent that reached for it.
 
 **A client may now call `resource.template.list` and `resource.template.get`, and may
@@ -1140,7 +1140,7 @@ publishing or enabling it is a separate, deliberate act.
   that arrived whole (`apps/server/src/modules/resources/templates.ts:534`). The
   automation's provider writes `enabled: false` on create
   (`apps/server/src/modules/resources/service.ts:276`); the dashboard's writes
-  `published: false` (`apps/server/src/modules/resources/service.ts:756`, reached
+  `published: false` (`apps/server/src/modules/resources/service.ts:757`, reached
   from the provider's create at `apps/server/src/modules/resources/service.ts:342`).
 - **Creation is the only place the rule bites.** An update that names `published: true` or
   `enabled: true` still makes a resource live, because an update is a deliberate act on a
@@ -1149,7 +1149,7 @@ publishing or enabling it is a separate, deliberate act.
   `enabled` that spec names (`apps/server/src/modules/resources/service.ts:310`) just as
   the dashboard's writes the `published` it names.
 - **Each kind has its own act.** `POST /api/resources/:id/publish` publishes a dashboard
-  and enables an automation (`apps/server/src/modules/resources/service.ts:578`), and the
+  and enables an automation (`apps/server/src/modules/resources/service.ts:579`), and the
   automation also has `POST /api/automations/:id/enable` and
   `POST /api/automations/:id/disable` (`apps/server/src/api/automations.ts:61`,
   `apps/server/src/api/automations.ts:72`).
@@ -1698,8 +1698,8 @@ result: 'queued' | 'succeeded' | 'failed' | 'unknown';
 
 **`queued` means the action was accepted and has not finished.** `POST
 /api/resources/:id/execute` records `queued` for an automation run it enqueues
-(`apps/server/src/modules/resources/service.ts:621`), and answers `queued: true`
-(`apps/server/src/modules/resources/service.ts:626`): the route accepted the request
+(`apps/server/src/modules/resources/service.ts:622`), and answers `queued: true`
+(`apps/server/src/modules/resources/service.ts:627`): the route accepted the request
 and the run has not happened. The same route runs a data source and a dashboard there
 and then, so **the vocabulary is per action, not per route** — one route can record
 `queued` for one kind and `succeeded` for another. **`succeeded` means the outcome was

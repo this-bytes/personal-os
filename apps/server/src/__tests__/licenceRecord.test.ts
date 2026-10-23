@@ -52,7 +52,7 @@ const COUNTS = {
  * The count is asserted by the test, so a check that quietly stops running
  * fails the suite instead of passing it.
  */
-export const CHECK_COUNT = 21;
+export const CHECK_COUNT = 23;
 
 /** Where an entry's licence was read from. */
 interface Source {
@@ -66,6 +66,7 @@ interface Source {
 interface Entry {
   lockPath?: string;
   name?: string;
+  version?: string;
   spdxId?: string | null;
   source?: Source | null;
   readOn?: string;
@@ -282,9 +283,10 @@ export function checkRecord(
   );
 
   // And the record against the lockfile it says it covers.
-  let lockPackages: Record<string, unknown> = {};
+  type LockPackage = { version?: string; license?: string; link?: boolean; resolved?: string };
+  let lockPackages: Record<string, LockPackage> = {};
   try {
-    const lock = JSON.parse(lockfileText) as { packages?: Record<string, unknown> };
+    const lock = JSON.parse(lockfileText) as { packages?: Record<string, LockPackage> };
     lockPackages = lock.packages ?? {};
   } catch {
     check('package-lock.json parses', false, 'package-lock.json is not JSON');
@@ -311,6 +313,22 @@ export function checkRecord(
     'the record covers exactly the installed packages of the lockfile',
     recordPaths.size === COUNTS.lockfileInstalled && missing.length === 0 && extra.length === 0,
     `${missing.length} of the lockfile's packages are missing from the record and ${extra.length} are in the record but not the lockfile`,
+  );
+
+  const lockedEntry = (entry: Entry): LockPackage | undefined => {
+    const locked = lockPackages[entry.lockPath ?? ''];
+    return locked?.link ? lockPackages[locked.resolved ?? ''] : locked;
+  };
+  check(
+    'recorded package versions match the lockfile',
+    entries.every((entry) => !!entry.version && entry.version === lockedEntry(entry)?.version),
+    'licence evidence must be reviewed when a package version changes, even at the same path',
+  );
+  // Compare whole expressions, never reinterpret AND/OR/WITH as a flat list.
+  check(
+    'recorded third-party licence declarations match the lockfile',
+    thirdParty.every((entry) => !!entry.spdxId && entry.spdxId === lockedEntry(entry)?.license),
+    'a lockfile licence declaration changed without updated evidence',
   );
 
   return result();
@@ -351,6 +369,35 @@ afterAll(() => {
 });
 
 describe('the licence record', () => {
+  it.each(['licence-file', 'package-json-licence-field', 'published-licence-identifier'])(
+    'rejects a same-path version change for %s evidence',
+    (kind) => {
+      const source = files();
+      const record = JSON.parse(source.record) as LicenceRecord;
+      const entry = record.packages!.find((candidate) => candidate.source?.kind === kind)!;
+      entry.version = '999.0.0';
+      expect(
+        checkRecord(JSON.stringify(record), source.product, source.lockfile).findings,
+      ).toContainEqual(
+        expect.objectContaining({ id: 'recorded package versions match the lockfile' }),
+      );
+    },
+  );
+
+  it('rejects changed licence expressions without flattening their meaning', () => {
+    const source = files();
+    const record = JSON.parse(source.record) as LicenceRecord;
+    const entry = record.packages!.find((candidate) => candidate.source !== null)!;
+    entry.spdxId = `${entry.spdxId} OR AGPL-3.0-only`;
+    expect(
+      checkRecord(JSON.stringify(record), source.product, source.lockfile).findings,
+    ).toContainEqual(
+      expect.objectContaining({
+        id: 'recorded third-party licence declarations match the lockfile',
+      }),
+    );
+  });
+
   it('holds the four sentences WI-106 turned true', () => {
     const source = files();
     const result = checkRecord(source.record, source.product, source.lockfile);

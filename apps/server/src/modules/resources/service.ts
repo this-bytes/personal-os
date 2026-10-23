@@ -454,17 +454,18 @@ export function createResourcesService(options: ResourcesServiceOptions): Resour
   const automationResourceProvider = automationProvider();
   const taskResourceProvider = taskProvider();
 
-  const providers = new Map<ResourceType, ResourceProvider<unknown>>([
-    ['dashboard', dashboardResourceProvider as ResourceProvider<unknown>],
-    ['document', documentProvider as ResourceProvider<unknown>],
-    ['data-source', dataSourceProvider as ResourceProvider<unknown>],
-    ['memory', memoryResourceProvider as ResourceProvider<unknown>],
-    ['automation', automationResourceProvider as ResourceProvider<unknown>],
-    ['task', taskResourceProvider as ResourceProvider<unknown>],
-  ]);
+  // A new published kind must have an implementation before it can compile.
+  const providers: Record<ResourceType, ResourceProvider<unknown>> = {
+    dashboard: dashboardResourceProvider as ResourceProvider<unknown>,
+    document: documentProvider as ResourceProvider<unknown>,
+    'data-source': dataSourceProvider as ResourceProvider<unknown>,
+    memory: memoryResourceProvider as ResourceProvider<unknown>,
+    automation: automationResourceProvider as ResourceProvider<unknown>,
+    task: taskResourceProvider as ResourceProvider<unknown>,
+  };
 
   const providerFor = (type: ResourceType): ResourceProvider<unknown> => {
-    const provider = providers.get(type);
+    const provider = Object.hasOwn(providers, type) ? providers[type] : undefined;
     if (!provider) throw errors.badRequest(`Unsupported resource type "${type}".`);
     return provider;
   };

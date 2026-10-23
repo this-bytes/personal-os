@@ -5,7 +5,8 @@ import type {
   AdapterType,
   AgentAdapter,
 } from '@personal-os/contracts';
-import type { AdapterFactory, ConfigOf } from './types.js';
+import { adapterTypeSchema } from '@personal-os/contracts';
+import type { AdapterFactories, AdapterFactory, ConfigOf } from './types.js';
 
 /**
  * The adapter registry is the only place that knows which adapter types
@@ -17,6 +18,14 @@ import type { AdapterFactory, ConfigOf } from './types.js';
  */
 export class AdapterRegistry implements AdapterProvider {
   private readonly factories = new Map<AdapterType, AdapterFactory>();
+
+  constructor(factories?: AdapterFactories) {
+    if (factories) {
+      for (const type of adapterTypeSchema.options) {
+        this.factories.set(type, factories[type] as AdapterFactory);
+      }
+    }
+  }
 
   register<T extends AdapterType>(
     type: T,

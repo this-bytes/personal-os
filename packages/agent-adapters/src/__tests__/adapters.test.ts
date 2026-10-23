@@ -3,7 +3,7 @@ import { createDefaultRegistry } from '../index.js';
 import { asText, chunkText, getByPath, interpolate, parseSseData, readSseEvents } from '../util.js';
 import { EchoAdapter } from '../echo.js';
 import { createCliAdapter } from '../cli.js';
-import { parseAdapterConfig } from '@personal-os/contracts';
+import { adapterTypeSchema, parseAdapterConfig } from '@personal-os/contracts';
 
 const ctx = {
   resolveSecret: async () => undefined,
@@ -13,7 +13,7 @@ const ctx = {
 describe('adapter registry', () => {
   it('knows every built-in adapter type', () => {
     const registry = createDefaultRegistry();
-    expect(registry.list().sort()).toEqual(['a2a', 'acp', 'cli', 'echo', 'http', 'mcp', 'model']);
+    expect(registry.list().sort()).toEqual([...adapterTypeSchema.options].sort());
   });
 
   it('refuses to create an adapter it does not know', () => {

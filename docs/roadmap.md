@@ -259,6 +259,17 @@ Inspect updated main and existing branches before assigning them.
   fencing and an atomic domain/job transition; retain remote reconciliation where
   supported. Acceptance: kill a worker after a fixture records a side effect,
   restart it, and prove no duplicate effect and a visible owner-resolvable outcome.
+- **Execution boundary: recover worker-owned connection probes from WI-077.**
+  `wi/077-agent-adapter-domain` at `404c9df` contains useful unmerged work, not a
+  duplicate: current `agents.probe()` still constructs/connects adapters in the
+  API process. Port its queue-based probe behavior without replacing newer
+  capability revisions, lifecycle cleanup, grants or execution code. Atomically
+  enqueue and record the probe; make the asynchronous API/client contract explicit.
+  Acceptance: the API starts no runtime; the worker publishes success/failure and
+  timeout, closes its adapter on every path, and preserves capability revisions
+  when the reported set is unchanged. Existing worker tests are recovery inputs,
+  not proof that the old branch is compatible with today's tree. Its branch and
+  recovery bundle preserve the source; the obsolete physical worktree is retired.
 - **R0/R3: make Bot dispatch retry-safe.** `bot.dispatch` currently accepts no
   request ID. Add an actor-scoped idempotency key and atomic creation of the
   delegation, task, execution and queue job through existing services. Acceptance:

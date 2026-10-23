@@ -67,6 +67,15 @@ fetching; keep unmerged references. Windows and WSL must not prune each other's
 unavailable worktree paths. Native `git worktree lock` protects an intentionally
 retained tree; do not bulk-rewrite registrations while either platform is active.
 
+Shared npm junctions are a deletion hazard, not just a build hazard. Windows Git
+can traverse a workspace junction into another checkout while removing a tree.
+The helper scans links (including ignored dependencies and nested `.git` entries)
+and refuses external targets or a linked worktree root. Do not bypass that refusal
+with native recursive removal. Preserve local data, detach the shared install
+without following its links, then inspect again. If native removal reports an
+error, recheck both registration and disk state: it can unregister a tree while
+leaving files behind. Never compensate with a recursive force deletion.
+
 Agree file ownership for concurrent changes. Ownership belongs to the current
 slice, not permanently to a bot persona. One implementer owns the production code,
 tests, migrations and documentation needed to deliver that slice. Use an

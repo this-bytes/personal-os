@@ -325,6 +325,26 @@ function readState(itemFile: string): string {
   return match?.[1] ?? 'unknown';
 }
 
+/** Windows Git can traverse npm workspace junctions during recursive removal.
+ * A shared install may point into another checkout; never let removal reach it.
+ * Inspect links without descending through them, including ignored install roots.
+ */
+function rejectExternalLinks(directory: string, boundary: string): void {
+  const entry = fs.lstatSync(directory);
+  if (entry.isSymbolicLink()) {
+    const target = fs.realpathSync(directory);
+    const relative = path.relative(boundary, target);
+    if (relative === '..' || relative.startsWith(`..${path.sep}`) || path.isAbsolute(relative)) {
+      fail(`Preserve ${directory}: a symbolic link/junction reaches outside this worktree.`);
+    }
+    return;
+  }
+  if (!entry.isDirectory()) return;
+  for (const name of fs.readdirSync(directory)) {
+    rejectExternalLinks(path.join(directory, name), boundary);
+  }
+}
+
 function cmdRemove(args: string[]): void {
   if (args.includes('--force')) fail('Force removal is not supported. Preserve unmerged work.');
   const [id] = args.filter((arg) => !arg.startsWith('--'));
@@ -404,6 +424,10 @@ function cmdRemove(args: string[]): void {
       ),
   );
   if (valuable.length) fail(`Preserve ignored files before cleanup:\n${valuable.join('\n')}`);
+
+  if (fs.lstatSync(worktree.path).isSymbolicLink())
+    fail(`Preserve ${worktree.path}: the worktree root is a symbolic link/junction.`);
+  rejectExternalLinks(worktree.path, fs.realpathSync(worktree.path));
 
   run('git', ['worktree', 'remove', worktree.path]);
 

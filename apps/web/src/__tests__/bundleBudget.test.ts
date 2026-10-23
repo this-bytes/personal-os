@@ -26,6 +26,12 @@ const scriptPath = path.join(repoRoot, 'scripts', 'verify-bundle-size.ts');
  */
 const tsxCli = path.join(repoRoot, 'node_modules', 'tsx', 'dist', 'cli.mjs');
 
+// Recovered from WI-092: process startup on busy mounted checkouts can exceed
+// Vitest's five-second default. Bound the child itself as synchronous work
+// cannot be interrupted by Vitest's timer.
+const CHILD_TIMEOUT_MS = 30_000;
+const CASE_TIMEOUT_MS = 60_000;
+
 const fixtures: string[] = [];
 
 afterEach(() => {
@@ -96,8 +102,9 @@ function fixture(): Fixture {
       const result = spawnSync(
         process.execPath,
         [tsxCli, scriptPath, '--assets', assetsDir, '--config', path.join(root, 'vite.config.ts')],
-        { encoding: 'utf8' },
+        { encoding: 'utf8', timeout: CHILD_TIMEOUT_MS, killSignal: 'SIGKILL' },
       );
+      if (result.error) throw result.error;
       return {
         status: result.status,
         stdout: result.stdout ?? '',
@@ -107,7 +114,7 @@ function fixture(): Fixture {
   };
 }
 
-describe('the bundle budget gate', () => {
+describe('the bundle budget gate', { timeout: CASE_TIMEOUT_MS }, () => {
   it('passes a bundle that is within the budget', () => {
     const build = fixture();
     build.chunk('index-abcdefgh.js', 150_000);

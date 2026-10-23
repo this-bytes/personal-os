@@ -7,6 +7,7 @@ import { createEchoAdapter } from './echo.js';
 import { createHttpAdapter } from './http.js';
 import { createMcpAdapter } from './mcp.js';
 import { createModelAdapter } from './model.js';
+import type { AdapterFactories } from './types.js';
 
 export * from './types.js';
 export * from './registry.js';
@@ -26,14 +27,16 @@ export { ModelAdapter, createModelAdapter } from './model.js';
  * added here; no other module needs to change.
  */
 export function createDefaultRegistry(): AdapterRegistry {
-  return new AdapterRegistry()
-    .register('echo', createEchoAdapter)
-    .register('cli', createCliAdapter)
-    .register('acp', createAcpAdapter)
-    .register('a2a', createA2aAdapter)
-    .register('http', createHttpAdapter)
-    .register('model', createModelAdapter)
-    .register('mcp', createMcpAdapter);
+  const factories: AdapterFactories = {
+    echo: createEchoAdapter,
+    cli: createCliAdapter,
+    acp: createAcpAdapter,
+    a2a: createA2aAdapter,
+    http: createHttpAdapter,
+    model: createModelAdapter,
+    mcp: createMcpAdapter,
+  };
+  return new AdapterRegistry(factories);
 }
 
 export type { AdapterConfig, AdapterProvider };

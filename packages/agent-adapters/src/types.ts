@@ -15,6 +15,11 @@ export type { AdapterContext, AdapterLogger } from '@personal-os/contracts';
 
 export type AdapterFactory = (config: AdapterConfig, ctx: AdapterContext) => AgentAdapter;
 
+/** Built-in coverage is exhaustive; each factory keeps its narrowed config. */
+export type AdapterFactories = {
+  [T in AdapterType]: (config: ConfigOf<T>, ctx: AdapterContext) => AgentAdapter;
+};
+
 /** Adapter-specific configuration narrowed by discriminator. */
 export type ConfigOf<T extends AdapterConfig['adapterType']> = Extract<
   AdapterConfig,

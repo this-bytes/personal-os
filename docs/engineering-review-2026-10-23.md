@@ -188,3 +188,62 @@ unused Radix primitives in UI. They remain installed: source-only absence does n
 prove config/export consumers have no need for them. Remove them in a separate
 dependency slice after consumer/build checks, rather than combining speculative
 pruning with recovery.
+
+## Continued recovery: disposition and cleanup
+
+The initial preservation pass was not completion of stranded-work recovery.
+The subsequent pass fetched current main, inspected every registered checkout,
+reviewed unique historical changes and performed actual cleanup. Detailed targets,
+results and preserved local data are in the sibling recovery directory's
+`resolution-inventory.json`, `cleanup-results.json`,
+`historical-tree-retirement.json` and merged-ref cleanup manifests.
+
+- Removed 93 remote topic branches whose exact tips were reachable from published
+  main, through the normal pre-push safety hook. Removed 63 merged local branches.
+  No unmerged remote topic was deleted or relabelled as merged.
+- Retired historical physical worktrees, preserving their unmerged branches and
+  ignored keys/databases. The remaining registered trees are the primary checkout
+  and the current WI-146/WI-155 review/integration ownership boundary. MiniMax still
+  reports running, queued and waiting work there; a clean status is not release.
+- Aborted WI-136's obsolete intake merge only after preserving its original index,
+  patches and merge metadata. The useful implementation is recovered separately.
+- WI-146's staged review file in `146-probe-newtip` was byte-identical to published
+  main; its original staged snapshot remains in the recovery archive. The lead's
+  untracked test was an explicitly unlanded scratch measurement with a hard-coded
+  output path. It was archived, not added to the suite as a second copy.
+- Fast-forwarded the primary checkout to the foundation fixes, preserving its
+  modified claim table, untracked citation measurement and junction. A clean
+  `npm ci`, dependency validation and full build passed in that checkout.
+
+Historical alternatives were adjudicated, not blindly merged:
+
+| Work                                                                               | Disposition                                                                                                                                                                                                  |
+| ---------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| WI-071 accent, WI-086 evidence, WI-097 templates, WI-132 fixtures, WI-144 Bot Mode | Already integrated under different commits; retain newer implementation/migrations. Independent review confirmed the principal files/tests.                                                                  |
+| WI-046 rehearsal, WI-042/044/062/077-author/103/106 records                        | Historical integration or documentation alternatives; preserve in refs/bundle, do not restore retired narratives or stale citations.                                                                         |
+| WI-072 queue index, WI-088 ledger move, WI-116/117/119 reservations and census     | Obsolete process alternatives, rejected by the current Git/MiniMax workflow; archive rather than reintroduce a scheduler or duplicate backlog.                                                               |
+| WI-092 bundle-test reliability                                                     | Recovered with an actual child-process deadline, preserving all nine assertions. A Vitest timeout alone cannot interrupt synchronous child execution.                                                        |
+| WI-038 licence drift                                                               | Adapted into the existing licence-record checks: same-path version and whole licence-expression changes now fail, with adversarial cases for all evidence categories. No handwritten SPDX interpreter added. |
+| WI-136 implementation coverage                                                     | Recovered exhaustive built-in adapter factories and resource providers, preserving file uploads and the extensible registry API.                                                                             |
+| WI-077 worker-owned probes                                                         | Genuinely missing and not safely cherry-pickable; retained source and a concrete compatible-port item in the roadmap.                                                                                        |
+
+### Cleanup incident and repair
+
+Native Windows Git removal traversed shared npm workspace junctions and deleted
+358 tracked files in the primary checkout. Cleanup was stopped; only newly deleted
+tracked paths were restored from their original index. Every remaining registered
+checkout was scanned for tracked deletions; only the primary needed restoration.
+The primary's original three local changes remained intact, its tracked deletion
+count returned to zero, and its clean dependency install and full build passed.
+This establishes tracked-source repair, not a blanket claim that every ignored
+file ever present was backed up. The root data directory remains; user deployment
+containers/volumes were not removed. Generated dependencies/build output were
+recreated. Keys/data found in retired trees were archived before removal.
+
+The helper now refuses external links/junctions (including nested `.git` links)
+and linked worktree roots before native removal. Regression fixtures prove that
+the target outside the worktree survives. Subsequent manual retirement moved
+generated install directories outside Git's removal traversal first. Windows
+native deletion also left some unregistered remnants; those were moved into the
+recovery directory rather than recursively force-deleted. Recovery manifests
+record this explicitly. Do not delete that archive assuming it is all on main.

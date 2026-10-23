@@ -108,7 +108,7 @@
         {
           "kind": "present-pattern",
           "path": "packages/agent-adapters/src/index.ts",
-          "value": "\\.register\\('mcp', createMcpAdapter\\)"
+          "value": "(?:\\.register\\('mcp', createMcpAdapter\\)|mcp: createMcpAdapter)"
         },
         {
           "kind": "present-pattern",

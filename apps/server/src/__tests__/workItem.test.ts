@@ -131,4 +131,35 @@ describe('work-item lifecycle preserves work', { timeout: 30_000 }, () => {
     expect(fs.existsSync(f.target)).toBe(false);
     expect(f.git('branch', '--list', 'wi/901-test')).toBe('');
   });
+
+  it('refuses a junction used as the worktree root', () => {
+    const f = fixture();
+    f.create();
+    const actual = path.join(f.directory, 'actual');
+    fs.renameSync(f.target, actual);
+    fs.symlinkSync(actual, f.target, 'junction');
+    const result = f.run(['remove', 'WI-901']);
+    expect(result.status).not.toBe(0);
+    expect(result.stderr).toContain('worktree root is a symbolic link/junction');
+    expect(fs.existsSync(path.join(actual, '.git'))).toBe(true);
+  });
+
+  it.each(['@personal-os/contracts', 'some-package/.git'])(
+    'refuses external junctions at node_modules/%s before native Git can traverse them',
+    (relative) => {
+      const f = fixture();
+      f.create();
+      const outside = path.join(f.directory, 'other-checkout');
+      fs.mkdirSync(outside);
+      fs.writeFileSync(path.join(outside, 'valuable.txt'), 'keep');
+      const link = path.join(f.target, 'node_modules', relative);
+      fs.mkdirSync(path.dirname(link), { recursive: true });
+      fs.symlinkSync(outside, link, 'junction');
+      const result = f.run(['remove', 'WI-901']);
+      expect(result.status).not.toBe(0);
+      expect(result.stderr).toContain('outside this worktree');
+      expect(fs.readFileSync(path.join(outside, 'valuable.txt'), 'utf8')).toBe('keep');
+      expect(fs.existsSync(path.join(f.target, '.git'))).toBe(true);
+    },
+  );
 });
