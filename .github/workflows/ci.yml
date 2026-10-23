@@ -81,7 +81,25 @@ jobs:
       - name: The client bundle stays within its budget
         run: npx tsx scripts/verify-bundle-size.ts
 
+      # The browser download is the slowest step in this job and the one that
+      # has cost a run the most. A download that stalled once held the job
+      # until its thirty-minute timeout and took the whole run with it: the
+      # run was cancelled rather than failed, so the branch was blocked until
+      # somebody re-ran it by hand.
+      #
+      # The browser is a fixed artifact of the Playwright version, so it is
+      # cached rather than fetched on every run. The key carries the manifest
+      # that pins that version, so a Playwright that moves gets a new cache and
+      # a browser that does not move is downloaded once. The step keeps its
+      # own short budget, so a download that stalls cannot spend the whole
+      # job's thirty minutes: it fails the step instead of the run.
+      - uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: ${{ runner.os }}-playwright-${{ hashFiles('apps/web/package.json') }}
+
       - name: Install the browser for the end-to-end tests
+        timeout-minutes: 10
         run: npx playwright install --with-deps chromium
 
       - name: End-to-end browser tests
