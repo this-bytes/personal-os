@@ -94,7 +94,8 @@ new kind cannot be added without answering the question.
 ## Evidence
 
 Delivered on `feature/resource-publish-execute` at `53aa703`, based on
-`origin/main` at `8f384b2`, with `origin/main` at `968359a` merged in.
+`origin/main` at `8f384b2`, with `origin/main` merged in at `968359a` and
+`63e8b4a`.
 
 **The answers, per kind.** The spec allows three, and the slice picks one per
 kind per operation.
