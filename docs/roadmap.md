@@ -62,8 +62,15 @@ adapter and not a runtime. **The Hermes ACP surface has now answered the
 handshake and completed a turn**: the installed Hermes 0.21.0 answered
 `initialize` with `loadSession: true`, and a turn came back with the runtime's
 own answer, both through the product's own adapter. The `hermes-acp` template
-therefore carries the evidence its `verified: true` rests on. The other four
-approved runtimes are still candidates — they are not installed here.
+therefore carries the evidence its `verified: true` rests on. **Two more of the
+approved runtimes are installed here** — measured on this machine, not assumed:
+`codex --version` reports `codex-cli 0.163.0` and `opencode --version`
+reports `1.19.4`, with Hermes at
+`C:\Users\Aaron\AppData\Local\hermes\bin\hermes.exe`. Pi and OpenClaw are not
+installed. An installed runtime is not yet a demonstrated one — the R1
+demonstrations in [SPEC-R1-1](spec/r1-1-codex-demonstration.md) and
+[SPEC-R1-2](spec/r1-2-opencode-demonstration.md) are what turn these three
+installs into evidence.
 
 **R2 has one demonstrated runtime and four templates.** The presets are starting
 points for the five named runtimes. **One runtime has been demonstrated in this
