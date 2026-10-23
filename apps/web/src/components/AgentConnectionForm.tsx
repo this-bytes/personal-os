@@ -90,6 +90,10 @@ export interface FormState {
   mcpArgumentTemplate: string;
   mcpAllowedTools: string;
   mcpProtocolVersion: string;
+  codexSandbox: 'read-only' | 'workspace-write' | 'danger-full-access';
+  codexModel: string;
+  codexEphemeral: boolean;
+  codexSkipGitRepoCheck: boolean;
 }
 
 const EMPTY: FormState = {
@@ -132,6 +136,10 @@ const EMPTY: FormState = {
   mcpArgumentTemplate: '{"message":"{{message}}"}',
   mcpAllowedTools: '',
   mcpProtocolVersion: '2025-06-18',
+  codexSandbox: 'read-only',
+  codexModel: '',
+  codexEphemeral: true,
+  codexSkipGitRepoCheck: true,
 };
 
 /** One entry per line. */
@@ -238,6 +246,18 @@ export function buildAdapterConfig(type: AdapterType, form: FormState): Record<s
         argumentTemplate: form.mcpArgumentTemplate.trim() || '{"message":"{{message}}"}',
         allowedTools: parseLines(form.mcpAllowedTools),
         timeoutSeconds: toNumber(form.timeoutSeconds, 600),
+      };
+    case 'codex':
+      return {
+        command: form.command.trim(),
+        args: parseLines(form.args),
+        ...(form.cwd.trim() ? { cwd: form.cwd.trim() } : {}),
+        env: parseKeyValues(form.env),
+        sandbox: form.codexSandbox,
+        skipGitRepoCheck: form.codexSkipGitRepoCheck,
+        ephemeral: form.codexEphemeral,
+        ...(form.codexModel.trim() ? { model: form.codexModel.trim() } : {}),
+        timeoutSeconds: toNumber(form.timeoutSeconds, 900),
       };
     case 'echo':
     default:
@@ -352,6 +372,21 @@ export function formValuesFromPreset(preset: AdapterPreset): Partial<FormState> 
         mcpAllowedTools: list('allowedTools').join('\n'),
         timeoutSeconds: String(count('timeoutSeconds', 600)),
       };
+    case 'codex': {
+      const sandbox = text('sandbox', 'read-only');
+      return {
+        command: text('command'),
+        args: list('args').join('\n'),
+        cwd: text('cwd'),
+        env: keyValues('env').join('\n'),
+        codexSandbox:
+          sandbox === 'workspace-write' || sandbox === 'danger-full-access' ? sandbox : 'read-only',
+        codexModel: text('model'),
+        codexEphemeral: config['ephemeral'] !== false,
+        codexSkipGitRepoCheck: config['skipGitRepoCheck'] !== false,
+        timeoutSeconds: String(count('timeoutSeconds', 900)),
+      };
+    }
     case 'echo':
     default:
       return {
@@ -486,7 +521,11 @@ export function AgentConnectionForm({
 
     let config: Record<string, unknown> | null = null;
     if (!isEdit || replaceConfig) {
-      if (form.adapterType === 'cli' || form.adapterType === 'acp') {
+      if (
+        form.adapterType === 'cli' ||
+        form.adapterType === 'acp' ||
+        form.adapterType === 'codex'
+      ) {
         if (!form.command.trim()) {
           setLocalError('A command is required for this adapter.');
           return;
@@ -839,6 +878,126 @@ export function AgentConnectionForm({
                     </div>
                   ) : null}
                 </>
+              ) : null}
+
+              {form.adapterType === 'codex' ? (
+                <div className="space-y-4">
+                  <div className="grid gap-4 sm:grid-cols-2">
+                    <Field label="Command" htmlFor="codex-command">
+                      <Input
+                        id="codex-command"
+                        value={form.command}
+                        onChange={(event) => set('command', event.target.value)}
+                        placeholder="codex"
+                      />
+                    </Field>
+                    <Field label="Arguments" htmlFor="codex-args" hint="One argument per line.">
+                      <Input
+                        id="codex-args"
+                        value={form.args}
+                        onChange={(event) => set('args', event.target.value)}
+                        placeholder="(none)"
+                      />
+                    </Field>
+                  </div>
+                  <div className="grid gap-4 sm:grid-cols-2">
+                    <Field
+                      label="Working directory"
+                      htmlFor="codex-cwd"
+                      hint="Where Codex works. Empty means the server's own directory."
+                    >
+                      <Input
+                        id="codex-cwd"
+                        value={form.cwd}
+                        onChange={(event) => set('cwd', event.target.value)}
+                        placeholder="(optional)"
+                      />
+                    </Field>
+                    <Field
+                      label="Sandbox"
+                      htmlFor="codex-sandbox"
+                      hint="What Codex is allowed to do to your files."
+                    >
+                      <Select
+                        id="codex-sandbox"
+                        value={form.codexSandbox}
+                        onChange={(event) =>
+                          set('codexSandbox', event.target.value as FormState['codexSandbox'])
+                        }
+                      >
+                        <option value="read-only">read-only — cannot change files</option>
+                        <option value="workspace-write">workspace-write — may change files</option>
+                        <option value="danger-full-access">danger-full-access — no boundary</option>
+                      </Select>
+                    </Field>
+                  </div>
+                  <div className="grid gap-4 sm:grid-cols-2">
+                    <Field
+                      label="Model"
+                      htmlFor="codex-model"
+                      hint="Empty means Codex's own choice."
+                    >
+                      <Input
+                        id="codex-model"
+                        value={form.codexModel}
+                        onChange={(event) => set('codexModel', event.target.value)}
+                        placeholder="(optional)"
+                      />
+                    </Field>
+                    <Field label="Timeout (seconds)" htmlFor="codex-timeout">
+                      <Input
+                        id="codex-timeout"
+                        type="number"
+                        min={1}
+                        value={form.timeoutSeconds}
+                        onChange={(event) => set('timeoutSeconds', event.target.value)}
+                      />
+                    </Field>
+                  </div>
+                  <Field
+                    label="Environment"
+                    htmlFor="codex-env"
+                    hint="KEY=VALUE, one per line. Codex signs in with its own account, so no credential belongs here."
+                  >
+                    <Textarea
+                      id="codex-env"
+                      className="min-h-[60px] font-mono text-xs"
+                      value={form.env}
+                      onChange={(event) => set('env', event.target.value)}
+                    />
+                  </Field>
+                  <div className="grid gap-4 sm:grid-cols-2">
+                    <label className="flex items-start gap-2 text-xs text-slate-300">
+                      <input
+                        type="checkbox"
+                        className="mt-0.5 accent-indigo-500"
+                        checked={form.codexEphemeral}
+                        onChange={(event) => set('codexEphemeral', event.target.checked)}
+                      />
+                      <span>
+                        Keep no session on disk
+                        <span className="mt-0.5 block text-[11px] text-slate-500">
+                          A kept session lets Codex carry on where it left off. Turned on, the
+                          session is thrown away when the turn ends.
+                        </span>
+                      </span>
+                    </label>
+                    <label className="flex items-start gap-2 text-xs text-slate-300">
+                      <input
+                        type="checkbox"
+                        className="mt-0.5 accent-indigo-500"
+                        checked={form.codexSkipGitRepoCheck}
+                        onChange={(event) => set('codexSkipGitRepoCheck', event.target.checked)}
+                      />
+                      <span>
+                        Run outside a git repository
+                        <span className="mt-0.5 block text-[11px] text-slate-500">
+                          Codex refuses to work outside a repository unless it is told it may.
+                        </span>
+                      </span>
+                    </label>
+                  </div>
+                </div>
               ) : null}
 
               {form.adapterType === 'mcp' ? (

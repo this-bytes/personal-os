@@ -149,6 +149,39 @@ export const mcpAdapterConfigSchema = z.object({
 });
 export type McpAdapterConfig = z.infer<typeof mcpAdapterConfigSchema>;
 
+/**
+ * OpenAI Codex, as a local command line agent.
+ *
+ * Codex speaks its own JSONL event stream on standard output, so it has its
+ * own adapter rather than the generic CLI one: that adapter reads standard
+ * output as text, and Codex writes JSON there.
+ *
+ * **The credential stays in Codex.** Codex signs in with its own account and
+ * keeps that sign-in in its own home directory, so this configuration carries
+ * no secret and no reference to one. The supervised process inherits the
+ * owner's home directory and nothing else.
+ */
+export const codexAdapterConfigSchema = z.object({
+  /** The Codex executable. */
+  command: z.string().min(1).default('codex'),
+  /** Extra arguments, placed before the `exec` subcommand. */
+  args: z.array(z.string()).default([]),
+  /** The directory Codex works in. */
+  cwd: z.string().optional(),
+  /** Additional environment variables for the supervised process. */
+  env: z.record(z.string()).default({}),
+  /** The sandbox Codex runs its own commands under. */
+  sandbox: z.enum(['read-only', 'workspace-write', 'danger-full-access']).default('read-only'),
+  /** Whether Codex may run outside a git repository. */
+  skipGitRepoCheck: z.boolean().default(true),
+  /** Whether Codex keeps its session on disk after the turn. */
+  ephemeral: z.boolean().default(true),
+  /** The model to ask for. */
+  model: z.string().optional(),
+  timeoutSeconds: z.number().int().min(1).max(86_400).default(900),
+});
+export type CodexAdapterConfig = z.infer<typeof codexAdapterConfigSchema>;
+
 export const adapterConfigSchema = z.discriminatedUnion('adapterType', [
   cliAdapterConfigSchema.extend({ adapterType: z.literal('cli') }),
   acpAdapterConfigSchema.extend({ adapterType: z.literal('acp') }),
@@ -157,6 +190,7 @@ export const adapterConfigSchema = z.discriminatedUnion('adapterType', [
   modelAdapterConfigSchema.extend({ adapterType: z.literal('model') }),
   echoAdapterConfigSchema.extend({ adapterType: z.literal('echo') }),
   mcpAdapterConfigSchema.extend({ adapterType: z.literal('mcp') }),
+  codexAdapterConfigSchema.extend({ adapterType: z.literal('codex') }),
 ]);
 export type AdapterConfig = z.infer<typeof adapterConfigSchema>;
 
