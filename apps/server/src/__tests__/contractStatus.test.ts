@@ -33,10 +33,11 @@ interface Run {
   stderr: string;
 }
 
-function runGate(args: string[]): Promise<Run> {
+function runGate(args: string[], env: NodeJS.ProcessEnv = {}): Promise<Run> {
   return new Promise((resolve, reject) => {
     const child = spawn(process.execPath, [tsxCli, scriptPath, ...args], {
       cwd: repoRoot,
+      env: { ...process.env, ...env },
       stdio: ['ignore', 'pipe', 'pipe'],
     });
 
@@ -998,5 +999,38 @@ describe('the tree as it stands', () => {
 
     expect(result.status).toBe(2);
     expect(result.stdout).toContain('could not run');
+  }, 60_000);
+});
+
+describe('what the gate costs', () => {
+  // A note that names a commit is checked against that commit's tree, and the
+  // tree used to be read a file at a time: one process per file. A process on
+  // a loaded machine is not cheap — a bare git call took 121 ms on the machine
+  // that measured it — and the gate spent most of its budget in them. It read
+  // 403 processes for the 170 files its claims look at, and the test that holds
+  // it to its budget went red on a loaded machine.
+  //
+  // The count is read out of git's own trace rather than measured in time, so
+  // it says how many processes the gate spends and not how fast the machine
+  // was. A git that does not write the trace leaves the count unreadable, and
+  // the gate is then held to what it does say.
+  it('reads a tree at a commit without a process per file', async () => {
+    const trace = path.join(scratch('contract-status-cost-'), 'git-trace.json');
+    const result = await runGate([], { GIT_TRACE2_EVENT: trace });
+
+    expect(result.status).toBe(0);
+    expect(result.stdout).toContain('Every claim in the table matches the tree.');
+
+    if (!fs.existsSync(trace)) return;
+    const processes = fs
+      .readFileSync(trace, 'utf8')
+      .split('\n')
+      .filter((line) => line.includes('"event":"start"')).length;
+    if (processes === 0) return;
+
+    // The tree is now read in one listing per commit and one batch of blobs
+    // per claim: 71 processes where there were 403, and fewer than the number
+    // of files the claims look at.
+    expect(processes).toBeLessThan(120);
   }, 60_000);
 });

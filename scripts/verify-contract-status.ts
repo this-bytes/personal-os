@@ -465,8 +465,80 @@ function readTree(root: string, relative: string): { files: { path: string; text
   return { files };
 }
 
+/** One file in a tree: where it is, and what the tree points at. */
+interface TreeEntry {
+  /** The path the tree holds the file under. */
+  path: string;
+  /** The hash of the object the tree points at. */
+  sha: string;
+  /** What that object is: a blob, or a commit for a submodule. */
+  type: string;
+}
+
+/** The listing git prints for a tree: mode, type, hash, then the path. */
+function parseListing(raw: Buffer): Map<string, TreeEntry> {
+  const entries = new Map<string, TreeEntry>();
+  for (const record of raw.toString('utf8').split('\0')) {
+    if (record.length === 0) continue;
+    const tab = record.indexOf('\t');
+    if (tab < 0) continue;
+    const meta = record.slice(0, tab).split(' ');
+    const type = meta[1];
+    const sha = meta[2];
+    if (!type || !sha) continue;
+    const filePath = record.slice(tab + 1);
+    entries.set(filePath, { path: filePath, sha, type });
+  }
+  return entries;
+}
+
 /**
- * Every file under a path, read at a commit rather than at the working tree.
+ * The text of a set of blobs, read in one process.
+ *
+ * `git cat-file --batch` answers with a header — the hash, the kind and the
+ * size — and then the bytes of the object. The size is what makes it readable
+ * without guessing where one object ends and the next begins.
+ */
+function readBlobs(root: string, shas: string[]): Map<string, string> {
+  const texts = new Map<string, string>();
+  if (shas.length === 0) return texts;
+
+  let raw: Buffer;
+  try {
+    raw = execFileSync('git', ['cat-file', '--batch'], {
+      cwd: root,
+      input: `${shas.join('\n')}\n`,
+      encoding: null,
+      maxBuffer: 256 * 1024 * 1024,
+      stdio: ['pipe', 'pipe', 'pipe'],
+    });
+  } catch {
+    // A repository that cannot be read holds no files, as far as a note is
+    // concerned.
+    return texts;
+  }
+
+  let offset = 0;
+  while (offset < raw.length) {
+    const newline = raw.indexOf(0x0a, offset);
+    if (newline < 0) break;
+    const header = raw.toString('utf8', offset, newline);
+    offset = newline + 1;
+    const parts = header.split(' ');
+    const sha = parts[0];
+    const size = Number(parts[2]);
+    // A header without a size is git saying it has no such object.
+    if (!sha || !Number.isFinite(size)) continue;
+    const content = raw.subarray(offset, offset + size);
+    offset += size;
+    if (raw[offset] === 0x0a) offset += 1;
+    texts.set(sha, content.toString('utf8'));
+  }
+  return texts;
+}
+
+/**
+ * The tree at a commit, and the text of the files in it.
  *
  * A note that says "the code implements it — as of `<commit>`" is a claim about
  * that commit, not about whatever the branch tip happens to hold now. The tree
@@ -475,40 +547,150 @@ function readTree(root: string, relative: string): { files: { path: string; text
  *
  * The commit is read out of the repository rather than checked out: nothing is
  * written, and the working tree is never disturbed.
+ *
+ * How it is read is the part that used to cost. A file at a time means a
+ * process per file, and a process on a loaded machine is not cheap: the gate
+ * spent most of a sixty-second budget in process spawns, and one claim named a
+ * commit whose tree held a hundred and twenty files. One listing per commit
+ * and one batch of blobs per claim read the same bytes for a fraction of the
+ * processes, and read them in the same order.
  */
-function readTreeAtCommit(
-  root: string,
-  commit: string,
-  relative: string,
-): { files: { path: string; text: string }[] } {
-  const git = (args: string[]): string =>
-    execFileSync('git', args, {
-      cwd: root,
-      encoding: 'utf8',
-      maxBuffer: 64 * 1024 * 1024,
-      stdio: ['ignore', 'pipe', 'pipe'],
-    });
+class CommitTree {
+  /** Every file at a commit, listed once. */
+  private readonly listings = new Map<string, Map<string, TreeEntry> | null>();
+  /** The listing for a path git would read as a pattern rather than a path. */
+  private readonly patterns = new Map<string, TreeEntry[]>();
+  /** The text of every blob read so far, by its hash. */
+  private readonly blobs = new Map<string, string>();
 
-  let names: string[];
-  try {
-    names = git(['ls-tree', '-r', '--name-only', commit, '--', relative])
-      .split('\n')
-      .map((line) => line.trim())
-      .filter((line) => line.length > 0);
-  } catch {
-    return { files: [] };
+  constructor(private readonly root: string) {}
+
+  /**
+   * Read the blobs a claim's assertions will look at.
+   *
+   * The claim is the unit: its assertions are checked against one commit, and
+   * one batch of blobs serves all of them.
+   */
+  prepare(commit: string, paths: string[]): void {
+    const listing = this.listing(commit);
+    if (!listing) return;
+    const wanted: string[] = [];
+    for (const relative of paths) {
+      for (const entry of this.entriesUnder(commit, relative)) {
+        if (entry.type !== 'blob') continue;
+        if (this.blobs.has(entry.sha)) continue;
+        wanted.push(entry.sha);
+      }
+    }
+    this.load(wanted);
   }
 
-  const files: { path: string; text: string }[] = [];
-  for (const name of names) {
-    try {
-      files.push({ path: name, text: git(['show', `${commit}:${name}`]) });
-    } catch {
+  /** Every file under a path at a commit, with the text it holds there. */
+  filesAt(commit: string, relative: string): { path: string; text: string }[] {
+    const entries = this.entriesUnder(commit, relative);
+    this.load(
+      entries
+        .filter((entry) => entry.type === 'blob' && !this.blobs.has(entry.sha))
+        .map((entry) => entry.sha),
+    );
+
+    const files: { path: string; text: string }[] = [];
+    for (const entry of entries) {
+      const text = this.textOf(entry);
       // A file that cannot be read at that commit is not there, as far as the
       // note is concerned.
+      if (text === null) continue;
+      files.push({ path: entry.path, text });
     }
+    return files;
   }
-  return { files };
+
+  /** The text a file holds at a commit. */
+  private textOf(entry: TreeEntry): string | null {
+    if (entry.type === 'blob') return this.blobs.get(entry.sha) ?? null;
+    // A submodule is not a file: git shows the commit it points at.
+    if (entry.type === 'commit') return `Subproject commit ${entry.sha}\n`;
+    return null;
+  }
+
+  /** Read a set of blobs, and keep what they hold. */
+  private load(shas: string[]): void {
+    if (shas.length === 0) return;
+    for (const [sha, text] of readBlobs(this.root, shas)) this.blobs.set(sha, text);
+  }
+
+  /** Every file at a commit, listed once. */
+  private listing(commit: string): Map<string, TreeEntry> | null {
+    const cached = this.listings.get(commit);
+    if (cached !== undefined) return cached;
+
+    let listing: Map<string, TreeEntry> | null = null;
+    try {
+      listing = parseListing(
+        execFileSync('git', ['ls-tree', '-r', '-z', commit], {
+          cwd: this.root,
+          encoding: null,
+          maxBuffer: 64 * 1024 * 1024,
+          stdio: ['ignore', 'pipe', 'pipe'],
+        }),
+      );
+    } catch {
+      // A commit that cannot be read holds no files.
+      listing = null;
+    }
+    this.listings.set(commit, listing);
+    return listing;
+  }
+
+  /** The files under a path at a commit, in the order the tree holds them. */
+  private entriesUnder(commit: string, relative: string): TreeEntry[] {
+    // git refuses an empty pathspec, and a path it reads as a pattern is
+    // matched by git rather than by hand.
+    if (relative.length === 0) return [];
+    if (isPattern(relative)) return this.entriesMatching(commit, relative);
+
+    const listing = this.listing(commit);
+    if (!listing) return [];
+    const prefix = relative.replace(/\/+$/, '');
+    const entries: TreeEntry[] = [];
+    for (const entry of listing.values()) {
+      if (entry.path === prefix || entry.path.startsWith(`${prefix}/`)) entries.push(entry);
+    }
+    return entries;
+  }
+
+  /** The files under a path git itself matches, for a path git reads as a pattern. */
+  private entriesMatching(commit: string, relative: string): TreeEntry[] {
+    const key = `${commit} ${relative}`;
+    const cached = this.patterns.get(key);
+    if (cached) return cached;
+
+    let entries: TreeEntry[] = [];
+    try {
+      const raw = execFileSync('git', ['ls-tree', '-r', '-z', commit, '--', relative], {
+        cwd: this.root,
+        encoding: null,
+        maxBuffer: 64 * 1024 * 1024,
+        stdio: ['ignore', 'pipe', 'pipe'],
+      });
+      entries = [...parseListing(raw).values()];
+    } catch {
+      // A path that cannot be matched holds no files.
+      entries = [];
+    }
+    this.patterns.set(key, entries);
+    return entries;
+  }
+}
+
+/**
+ * Whether a path is one git reads as a pattern rather than as a path.
+ *
+ * A path with a wildcard in it is matched by git, not by string equality, so
+ * it has to be handed to git to be matched at all.
+ */
+function isPattern(relative: string): boolean {
+  return relative.startsWith(':') || /[*?[\]]/.test(relative);
 }
 
 /**
@@ -523,16 +705,78 @@ function namedCommit(text: string): string | null {
   return match?.[1] ?? null;
 }
 
-/** Whether the checkout holds the commit at all. */
-function commitIsKnown(root: string, commit: string): boolean {
-  try {
-    execFileSync('git', ['rev-parse', '--verify', '--quiet', `${commit}^{commit}`], {
-      cwd: root,
-      stdio: 'ignore',
-    });
-    return true;
-  } catch {
-    return false;
+/**
+ * The commits a note names, and whether this repository holds them.
+ *
+ * A note that names a commit is a claim about that commit: the commit has to
+ * be in this checkout's history, or the note points at code nobody can read.
+ *
+ * The history is read once, rather than a process per commit: a gate that
+ * names a dozen commits should not spend a dozen processes deciding whether
+ * the commits are in the tree.
+ */
+class CommitIndex {
+  /** The full hash each named commit stands for, or null when it is unknown. */
+  private readonly resolved = new Map<string, string | null>();
+  /** Every commit this tree's history holds. */
+  private ancestors: Set<string> | null = null;
+
+  constructor(private readonly root: string) {}
+
+  /** Whether the checkout holds the commit at all. */
+  isKnown(commit: string): boolean {
+    return this.resolve(commit) !== null;
+  }
+
+  /** Whether a commit is in the tree's history. */
+  isInTree(commit: string): boolean {
+    const sha = this.resolve(commit);
+    if (sha === null) return false;
+    if (this.ancestors === null) this.ancestors = this.ancestry();
+    return this.ancestors.has(sha);
+  }
+
+  /** The full hash a name stands for, or null when it stands for nothing. */
+  private resolve(commit: string): string | null {
+    const cached = this.resolved.get(commit);
+    if (cached !== undefined) return cached;
+
+    let sha: string | null = null;
+    try {
+      const answer = execFileSync(
+        'git',
+        ['rev-parse', '--verify', '--quiet', `${commit}^{commit}`],
+        {
+          cwd: this.root,
+          encoding: 'utf8',
+          stdio: ['ignore', 'pipe', 'pipe'],
+        },
+      ).trim();
+      sha = answer.length > 0 ? answer : null;
+    } catch {
+      sha = null;
+    }
+    this.resolved.set(commit, sha);
+    return sha;
+  }
+
+  /** Every commit reachable from HEAD. */
+  private ancestry(): Set<string> {
+    const commits = new Set<string>();
+    try {
+      const listed = execFileSync('git', ['rev-list', 'HEAD'], {
+        cwd: this.root,
+        encoding: 'utf8',
+        maxBuffer: 64 * 1024 * 1024,
+        stdio: ['ignore', 'pipe', 'pipe'],
+      });
+      for (const line of listed.split('\n')) {
+        if (line.length > 0) commits.add(line);
+      }
+    } catch {
+      // A tree with no commits holds no ancestors.
+    }
+    return commits;
   }
 }
 
@@ -553,19 +797,6 @@ function repositoryIsShallow(root: string): boolean {
     return answer.trim() === 'true';
   } catch {
     return true;
-  }
-}
-
-/** Whether a commit is in the tree's history. */
-function commitIsInTheTree(root: string, commit: string): boolean {
-  try {
-    execFileSync('git', ['merge-base', '--is-ancestor', commit, 'HEAD'], {
-      cwd: root,
-      stdio: 'ignore',
-    });
-    return true;
-  } catch {
-    return false;
   }
 }
 
@@ -682,6 +913,9 @@ function checkTheTree(options: GateOptions): GateResult {
   const paragraphs = readParagraphs(lines);
 
   const read: TreeReader = (relative) => readTree(root, relative);
+  /** The commits a note names, and the trees they hold. */
+  const commits = new CommitIndex(root);
+  const trees = new CommitTree(root);
 
   const failures: Failure[] = [];
   const checked: CheckedClaim[] = [];
@@ -812,7 +1046,7 @@ function checkTheTree(options: GateOptions): GateResult {
     // carry what the note says it carries.
     const commit = namedCommit(paragraph?.text ?? '');
     if (commit) {
-      if (!commitIsKnown(root, commit)) {
+      if (!commits.isKnown(commit)) {
         // A checkout that cannot see the commit cannot say whether the note is
         // true there. A shallow checkout is that case, and it is a fact about
         // the checkout rather than about the note.
@@ -828,7 +1062,7 @@ function checkTheTree(options: GateOptions): GateResult {
           continue;
         }
         skippedCommits.add(commit);
-      } else if (!commitIsInTheTree(root, commit)) {
+      } else if (!commits.isInTree(commit)) {
         failures.push({
           id: entry.id,
           line: hit.line,
@@ -839,7 +1073,13 @@ function checkTheTree(options: GateOptions): GateResult {
         });
         continue;
       } else {
-        const readAtCommit: TreeReader = (relative) => readTreeAtCommit(root, commit, relative);
+        // The claim's assertions are checked against one commit, so the blobs
+        // they will look at are read in one batch.
+        trees.prepare(
+          commit,
+          entry.expect.map((assertion) => assertion.path),
+        );
+        const readAtCommit: TreeReader = (relative) => ({ files: trees.filesAt(commit, relative) });
         const brokenAtCommit = entry.expect
           .map((assertion) => ({ assertion, outcome: checkAssertion(readAtCommit, assertion) }))
           .filter((result) => !result.outcome.holds);
