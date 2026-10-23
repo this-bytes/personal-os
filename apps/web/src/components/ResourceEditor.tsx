@@ -14,12 +14,60 @@ import {
   Select,
   Textarea,
 } from '@personal-os/ui';
-import type { Resource, ResourceType } from '@personal-os/contracts';
+import {
+  canExecuteResource,
+  canPublishResource,
+  resourceTypeNames,
+  type Resource,
+  type ResourceType,
+} from '@personal-os/contracts';
 import { api, ApiError, errorMessage } from '../lib/api';
 import type { ResourceInspection } from '../lib/types';
 import { Field } from './Field';
 
 const CREATABLE_TYPES: ResourceType[] = ['dashboard', 'document', 'data-source', 'memory'];
+
+/** What an operation on a resource reported, in the words the owner reads. */
+interface OperationOutcome {
+  /** The word the owner reads first. */
+  readonly headline: string;
+  /** The sentence that says what happened. */
+  readonly detail: string;
+  /** The label above the output, when the operation produced one. */
+  readonly outputLabel?: string;
+}
+
+/**
+ * What a kind of resource cannot do, in the words the contract uses.
+ *
+ * The panel offers only the actions that can succeed. It says which ones are
+ * missing rather than leaving a gap the owner has to guess at, because a
+ * button that is not there and a button that always fails are different
+ * mistakes.
+ */
+function unsupportedNote(type: ResourceType): string | null {
+  const publish = canPublishResource(type);
+  const execute = canExecuteResource(type);
+  if (publish && execute) return null;
+  const name = resourceTypeNames[type];
+  if (!publish && !execute) return `A ${name} cannot be published or executed.`;
+  return publish ? `A ${name} cannot be executed.` : `A ${name} cannot be published.`;
+}
+
+/**
+ * The sentence the panel shows when the server refused an operation.
+ *
+ * A refusal is an answer: the server was asked and said no, and said why. It
+ * is shown as an answer. A failure that is not an answer — the network is
+ * down, the server faulted — is shown as a failure instead, because calling it
+ * a refusal would be the same kind of lie this panel is being fixed for.
+ */
+function refusalMessage(cause: unknown): string {
+  if (cause instanceof ApiError && cause.status >= 400 && cause.status < 500) {
+    return `The server refused: ${cause.message}`;
+  }
+  return errorMessage(cause);
+}
 
 interface ResourceEditorProps {
   open: boolean;
@@ -70,6 +118,7 @@ export function ResourceEditor({
   const [conflict, setConflict] = useState<string | null>(null);
   const [inspection, setInspection] = useState<ResourceInspection | null>(null);
   const [executionOutput, setExecutionOutput] = useState<unknown>(null);
+  const [outcome, setOutcome] = useState<OperationOutcome | null>(null);
 
   useEffect(() => {
     if (!open) return;
@@ -77,6 +126,7 @@ export function ResourceEditor({
     setConflict(null);
     setInspection(null);
     setExecutionOutput(null);
+    setOutcome(null);
     if (resource) {
       setType(resource.type);
       setTitle(resource.title);
@@ -132,24 +182,74 @@ export function ResourceEditor({
     },
   });
 
+  /**
+   * Publish the resource.
+   *
+   * The panel believes the server: it renders the outcome the response
+   * claimed, and a refusal — which the server answers with an error, not a
+   * 200 — is shown as a refusal rather than swallowed into a success.
+   */
   const publish = useMutation({
     mutationFn: async (current: Resource) =>
-      api.post<{ resource: Resource }>(`/resources/${current.id}/publish`),
-    onSuccess: async () => {
+      api.post<{ outcome: 'published'; resource: Resource }>(`/resources/${current.id}/publish`),
+    onSuccess: async (answer, current) => {
+      if (answer.outcome !== 'published') {
+        setOutcome(null);
+        setError('The server did not publish this resource.');
+        return;
+      }
       setError(null);
+      setOutcome({
+        headline: 'Published.',
+        detail: `The ${resourceTypeNames[current.type]} is live.`,
+      });
       await onChanged();
     },
-    onError: (cause) => setError(errorMessage(cause)),
+    onError: (cause) => {
+      setOutcome(null);
+      setError(refusalMessage(cause));
+    },
   });
 
+  /**
+   * Execute the resource.
+   *
+   * A run that was accepted but has not finished is reported as queued, not as
+   * a run that happened. The panel does not say it ran unless the server said
+   * it ran.
+   */
   const execute = useMutation({
     mutationFn: async (current: Resource) =>
-      api.post<{ result: { output: unknown } }>(`/resources/${current.id}/execute`),
-    onSuccess: (result) => {
+      api.post<{ outcome: 'queued' | 'succeeded'; result: { output: unknown } }>(
+        `/resources/${current.id}/execute`,
+      ),
+    onSuccess: (answer, current) => {
       setError(null);
-      setExecutionOutput(result.result.output);
+      setExecutionOutput(answer.result.output);
+      if (answer.outcome === 'queued') {
+        setOutcome({
+          headline: 'Queued.',
+          detail: 'The run was accepted and has not finished. It has not run yet.',
+          outputLabel: 'Queued run',
+        });
+        return;
+      }
+      if (answer.outcome === 'succeeded') {
+        setOutcome({
+          headline: 'It ran.',
+          detail: `The ${resourceTypeNames[current.type]} ran and produced the output below.`,
+          outputLabel: 'Execution output',
+        });
+        return;
+      }
+      setOutcome(null);
+      setError('The server did not run this resource.');
     },
-    onError: (cause) => setError(errorMessage(cause)),
+    onError: (cause) => {
+      setOutcome(null);
+      setExecutionOutput(null);
+      setError(refusalMessage(cause));
+    },
   });
 
   const inspect = useMutation({
@@ -194,6 +294,16 @@ export function ResourceEditor({
   };
 
   const busy = create.isPending || update.isPending;
+
+  /**
+   * The kind being edited.
+   *
+   * The actions are offered for the kind on screen, and the contract says
+   * which kinds have them, so the panel never offers a button that can only
+   * be refused.
+   */
+  const editedType = resource?.type ?? type;
+  const unsupported = unsupportedNote(editedType);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -297,11 +407,24 @@ export function ResourceEditor({
             </div>
           ) : null}
 
+          {outcome ? (
+            <div className="rounded-md border border-slate-700 bg-slate-950 px-3 py-2">
+              <p className="text-[11px] font-medium text-slate-200">{outcome.headline}</p>
+              <p className="mt-0.5 text-[11px] text-slate-400">{outcome.detail}</p>
+            </div>
+          ) : null}
+
           {executionOutput !== null ? (
             <div className="rounded-md border border-slate-700 bg-slate-950 px-3 py-2">
-              <p className="mb-1 text-[11px] font-medium text-slate-400">Execution output</p>
+              <p className="mb-1 text-[11px] font-medium text-slate-400">
+                {outcome?.outputLabel ?? 'Execution output'}
+              </p>
               <pre className="pos-json max-h-40">{JSON.stringify(executionOutput, null, 2)}</pre>
             </div>
+          ) : null}
+
+          {isEdit && unsupported ? (
+            <p className="text-[11px] text-slate-500">{unsupported}</p>
           ) : null}
         </div>
 
@@ -316,24 +439,28 @@ export function ResourceEditor({
               >
                 Inspect
               </Button>
-              <Button
-                variant="ghost"
-                size="sm"
-                disabled={execute.isPending}
-                onClick={() => resource && execute.mutate(resource)}
-              >
-                <Play className="h-3.5 w-3.5" />
-                Execute
-              </Button>
-              <Button
-                variant="ghost"
-                size="sm"
-                disabled={publish.isPending}
-                onClick={() => resource && publish.mutate(resource)}
-              >
-                <Send className="h-3.5 w-3.5" />
-                Publish
-              </Button>
+              {canExecuteResource(editedType) ? (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  disabled={execute.isPending}
+                  onClick={() => resource && execute.mutate(resource)}
+                >
+                  <Play className="h-3.5 w-3.5" />
+                  Execute
+                </Button>
+              ) : null}
+              {canPublishResource(editedType) ? (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  disabled={publish.isPending}
+                  onClick={() => resource && publish.mutate(resource)}
+                >
+                  <Send className="h-3.5 w-3.5" />
+                  Publish
+                </Button>
+              ) : null}
             </>
           ) : null}
 
