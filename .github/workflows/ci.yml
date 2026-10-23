@@ -247,6 +247,41 @@ jobs:
       - name: The session references resolve
         run: npx tsx scripts/verify-session-references.ts
 
+  restart-reconciliation:
+    name: The worker that dies is reconciled
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      # The gate is a TypeScript script, so it needs a runner. The one in the
+      # lockfile is the one it should get: an unpinned `npx` download would make
+      # a gate depend on the registry at the moment it runs, and fail for the
+      # wrong reason.
+      - name: Install dependencies
+        run: npm ci --ignore-scripts --no-audit --no-fund
+
+      # The gate drives the worker's own reconciliation, so the packages it
+      # calls have to be built first.
+      - name: Build the packages the gate drives
+        run: npm run build:deps && npm run build -w @personal-os/worker
+
+      # The gate checks that work which had already started is not run again,
+      # that the uncertain outcome is visible and the owner can settle it, and
+      # that a run whose runtime survived is reconnected rather than started
+      # again. A product that replayed the work fails it.
+      #
+      # **The gate runs in this pipeline on purpose.** A gate that only runs on
+      # the machine that wrote it is not a gate, it is a habit.
+      - name: The worker that dies is reconciled
+        run: npx tsx scripts/verify-restart-reconciliation.ts
+
   source-stack:
     name: Source hosting and restart
     runs-on: ubuntu-latest

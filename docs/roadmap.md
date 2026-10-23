@@ -154,7 +154,8 @@ Acceptance:
    sufficient for the first real integrations. Document native capability limits.
 4. Test restart/reconciliation and unknown outcomes with side effects. Keep the
    current no-blind-replay guard; do not wait for a lease to expire and assume the
-   previous executor stopped.
+   previous executor stopped. **Delivered by
+   [SPEC-R0-4](spec/r0-4-restart-reconciliation.md).**
 
 Completion evidence: a worker-level regression, duplicate-submission and restart
 cases, observed status transitions and applicable gates. Full factory autonomy,
@@ -260,12 +261,13 @@ These are bounded implementation slices found during the repository review at
 Inspect updated main and existing branches before assigning them.
 
 - **R0: hold an expired worker lease as uncertain before replaying side effects.**
-  `Queue.reapStaleJobs` currently requeues a stale running job unless the executor
-  already recorded an unknown outcome. A process killed before that write can
-  replay an external side effect. Add worker-loss integration coverage, lease
-  fencing and an atomic domain/job transition; retain remote reconciliation where
-  supported. Acceptance: kill a worker after a fixture records a side effect,
-  restart it, and prove no duplicate effect and a visible owner-resolvable outcome.
+  **Delivered by [SPEC-R0-4](spec/r0-4-restart-reconciliation.md).** The old
+  `Queue.reapStaleJobs` requeued a stale running job unless the executor already
+  recorded an unknown outcome, so a process killed before that write could replay
+  an external side effect. A stale job is now settled by what the product knows:
+  a run that had not started may be run again, a run that had started is never
+  replayed, and the uncertain one is published as uncertain and waits for the
+  owner. Lease fencing, an atomic transition and a shipped gate came with it.
 - **Execution boundary: recover worker-owned connection probes from WI-077.**
   `wi/077-agent-adapter-domain` at `404c9df` contains useful unmerged work, not a
   duplicate: current `agents.probe()` still constructs/connects adapters in the

@@ -14,6 +14,7 @@ import type { AuditService } from '../audit/service.js';
 import type { BotsService } from '../conversations/bots.js';
 import type { EventsService } from '../events/service.js';
 import { publishTurnEnd } from '../events/turn-end.js';
+import type { Queue } from '../../queue/client.js';
 import * as activity from './activity.js';
 
 /**
@@ -144,8 +145,15 @@ export function createExecutionsService(options: {
   audit: AuditService;
   bots: BotsService;
   events: EventsService;
+  /**
+   * The queue, for the one thing this service needs from it: settling the
+   * job that was held while this turn's outcome was uncertain. The owner
+   * closing the turn settles the job too, so the queue's record does not go
+   * on saying that the outcome was never confirmed.
+   */
+  queue: Queue;
 }): ExecutionsService {
-  const { db, audit, bots, events } = options;
+  const { db, audit, bots, events, queue } = options;
 
   const toDetail = (row: typeof executions.$inferSelect): ExecutionDetail => ({
     id: row.id,
@@ -368,6 +376,14 @@ export function createExecutionsService(options: {
       // `unknown` — a question, not an ending — so the close publishes the one
       // event that ends it, and the row and the log say the same thing.
       publishTurnEnd(events, execution, outcome);
+
+      // The job that was held while this turn was uncertain is settled too.
+      // The owner's conclusion is the outcome, so the queue's record stops
+      // saying that the outcome was never confirmed.
+      queue.settleHeldJob(
+        executionId,
+        'The owner settled this turn, so the work it was waiting on is accounted for.',
+      );
       return {
         execution: {
           id: execution.id,

@@ -45,6 +45,7 @@ export type { SessionReferenceInput } from './modules/conversations/session-refs
 export { computeHistoryRevision } from './modules/conversations/history-revision.js';
 export type { HistoryMessage } from './modules/conversations/history-revision.js';
 export { createConversationsService } from './modules/conversations/service.js';
+export { createExecutionsService } from './modules/executions/service.js';
 export {
   createBotsService,
   authorityExcess,

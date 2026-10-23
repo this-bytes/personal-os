@@ -115,7 +115,7 @@ export async function buildApp(options: BuildAppOptions = {}): Promise<FastifyIn
     },
     agentDisplayName: (connectionId) => agents.get(connectionId).name,
   });
-  const executions = createExecutionsService({ db: runtime.db, audit, bots, events });
+  const executions = createExecutionsService({ db: runtime.db, audit, bots, events, queue });
   const capabilities = createCapabilitiesService({
     db: runtime.db,
     workspaces,

@@ -200,7 +200,7 @@ expects the execution's word on the reply's word will be wrong.
 **The reply carries the server's own sentence.** `detail` is the account the server
 produced of how the turn ended, and it travels on the reply: the messages of that
 execution carry it when the execution is settled
-(`apps/server/src/modules/executions/service.ts:343-346`, and
+(`apps/server/src/modules/executions/service.ts:351-354`, and
 `apps/server/src/modules/approvals/resume.ts:197-201` for the turn that is closed
 rather than continued). **A client shows it as it is given**
 (`apps/web/src/components/ChatMessageList.tsx:136`): the account of what happened
@@ -247,8 +247,8 @@ The route is `POST /api/executions/:id/resolve`, at
 authentication as every other owner-facing route
 (`apps/server/src/api/helpers.ts:14-16`). **The route's own writer is the
 executions service**, which writes the execution's status
-(`apps/server/src/modules/executions/service.ts:328-338`) and the reply's status
-(`apps/server/src/modules/executions/service.ts:343-346`) together; the
+(`apps/server/src/modules/executions/service.ts:336-346`) and the reply's status
+(`apps/server/src/modules/executions/service.ts:351-354`) together; the
 route calls it through the shared capability API at
 `apps/server/src/api/executions.ts:27`, which the agent's `execution.resolve`
 calls too. **There are two
@@ -1914,7 +1914,7 @@ one spend unit — the measure the product already has
 (`apps/server/src/modules/conversations/routing.ts:332`). **The cost is recorded
 against the execution when the turn ends**: the worker writes one unit for an
 agent turn and none for a turn that never reached the agent
-(`apps/worker/src/execution-owner.ts:703`).
+(`apps/worker/src/execution-owner.ts:714`).
 **The row is created with no spend units**, because the cost is not known until
 the turn has run (`apps/server/src/modules/conversations/dispatch.ts:216`,
 `apps/server/src/modules/factory/service.ts:482`), and the column defaults to zero
@@ -2037,7 +2037,7 @@ not.**
 failure. It is the same word the unknown outcome uses
 ([The unknown outcome](#the-unknown-outcome)), and it is in this vocabulary because
 the product produces it: the worker writes it when a turn's outcome cannot be
-confirmed (`apps/worker/src/execution-owner.ts:731`), and the conversation dispatch writes it
+confirmed (`apps/worker/src/execution-owner.ts:742`), and the conversation dispatch writes it
 when a turn stops for the same reason
 (`apps/server/src/modules/conversations/dispatch.ts:315`). **A vocabulary without
 `unknown` would leave the unknown outcome unrepresentable in the trail**, and the
@@ -2834,6 +2834,55 @@ revision, and both are null, which is what the shape publishes as absent. The
 idempotency key is derived from the dispatch and stored on the execution row, so
 a dispatch repeated after this change finds the run it started last time, and a
 dispatch repeated before it started a second run, which is not reconciled.
+
+### The worker that dies
+
+A worker holds a job while it works on it, and a worker can die while it holds
+one. What happens to that job is decided by what the product knows, not by how
+long the lease has been idle.
+
+**No blind replay.** A job is run again only when the product knows the
+previous executor did not run it: the work had not started
+(`apps/server/src/queue/reconciliation.ts`). A job whose work had started is
+never run again on its own, because the side effect may already have happened
+and running the work again would repeat it.
+
+**The rule is one rule, and it is stated in terms of what is known.** The item a
+job was working on is in one of four states, and each has one answer: it never
+started, so the job may run again; it started and nothing recorded how it
+ended, so the runtime is asked; its outcome was already recorded as unknown, so
+the owner decides; or it finished, so the job is finished. The rule lives in
+one place (`apps/server/src/queue/reconciliation.ts`), and the queue applies it
+(`apps/server/src/queue/client.ts`).
+
+**The lease is the fence.** A worker writes to a job it holds; a worker whose
+lease moved on does not. Finishing, failing and holding a job are all
+conditional on the lease, and a write that does not land says so
+(`apps/server/src/queue/client.ts`). A worker that was overtaken cannot settle
+a job that is not its own.
+
+**The transition is atomic.** A job is never running and requeued at the same
+time: the write that moves it is conditional on the job still being the one
+that was looked at (`apps/server/src/queue/client.ts`). Two workers looking at
+the same dead job settle it once.
+
+**Uncertainty is a state the owner can act on.** A run whose outcome could not
+be confirmed is published as uncertain, it is on the owner's waiting list
+(`apps/server/src/api/waiting.ts`), and the owner's own conclusion settles it —
+and settles the job that was held for it with it
+(`apps/server/src/modules/executions/service.ts`). An uncertain run is not a
+failure and not a success: it is a question, and the question is closed by the
+owner.
+
+**A run whose runtime survived is reconnected, not started again.** The
+runtime may be asked what became of a run
+(`packages/contracts/src/agent.ts`); a runtime that cannot be asked does not
+implement the question, and the answer is that the outcome is uncertain. A
+runtime that answers says what happened, and the product records it on the
+same run: the same execution, the same correlation id and the same session
+reference (`apps/worker/src/reconcile.ts`). **No runtime the product ships today
+can be asked**, so every uncertain run is held for the owner, and the adapter
+matrix records that limit.
 
 ### Steer and queue
 
@@ -3716,10 +3765,10 @@ write one from the service layer — `POST /api/approvals/:id/decide` and `POST
 `apps/server/src/modules/approvals/resume.ts:55`, `PATCH /api/tasks/:id` at
 `apps/server/src/modules/factory/service.ts:424`, and that one only when the task
 leaves `unknown`, and `POST /api/executions/:id/stop` at
-`apps/server/src/modules/executions/service.ts:277` — which is where the agent's
+`apps/server/src/modules/executions/service.ts:285` — which is where the agent's
 own stop request is written too, so the request is in the trail whoever made it.
 `POST /api/executions/:id/resolve` writes at
-`apps/server/src/modules/executions/service.ts:352` and `POST /api/tasks/:id/accept`
+`apps/server/src/modules/executions/service.ts:360` and `POST /api/tasks/:id/accept`
 at `apps/server/src/modules/factory/service.ts:577`; both are written by the
 service layer so that the agent's `execution.resolve` and `task.accept` land in
 the same trail as the owner's own calls. `POST /api/resources/:id/publish` and
@@ -3778,8 +3827,8 @@ connection that was granted one of them leaves `execution.outcome.resolved`,
 `task.accepted`, `resource.published` or `resource.executed` behind with
 `actorType: 'agent'`. The other writer of the trail
 that is not an owner HTTP route is
-the worker — its `unknown` record (`apps/worker/src/execution-owner.ts:724-733`) and the
-policy refusals it writes (`apps/worker/src/execution-owner.ts:754-772`). So every audited
+the worker — its `unknown` record (`apps/worker/src/execution-owner.ts:735-744`) and the
+policy refusals it writes (`apps/worker/src/execution-owner.ts:765-782`). So every audited
 operation is an owner operation, except the worker's own entries, which carry
 `actorType: 'agent'`. **The second measure does not count the work an agent does
 through MCP**: an agent can create and update resources all day and the
@@ -3794,9 +3843,9 @@ but the route helper hardcodes `success`
 (`apps/server/src/modules/audit/service.ts:79`). The two values a writer does
 produce come from the worker: the `unknown` of
 [The unknown outcome](#the-unknown-outcome)
-(`apps/worker/src/execution-owner.ts:731`), and the `failure` it writes when the
+(`apps/worker/src/execution-owner.ts:742`), and the `failure` it writes when the
 autonomy policy refuses a turn or an action
-(`apps/worker/src/execution-owner.ts:771`). **An operation that failed at the route is
+(`apps/worker/src/execution-owner.ts:782`). **An operation that failed at the route is
 counted here as an operation that completed.**
 
 **The route exists.** It answers with the shape above, member for member: the
