@@ -1,7 +1,7 @@
 import { and, eq, gt, sql } from 'drizzle-orm';
 import { automations, executionEvents, type Database } from '@personal-os/server/db';
 import { isTriggerableEventType } from '@personal-os/contracts';
-import type { Queue } from '@personal-os/server/runtime';
+import { newId, type Queue } from '@personal-os/server/runtime';
 
 /**
  * Event-triggered automations.
@@ -130,6 +130,9 @@ export class EventWatcher {
           type: 'automation.run',
           payload: {
             automationId: automation.id,
+            // The run's id is on the job, so the product can find the run
+            // afterwards and say whether it had started.
+            runId: newId('run'),
             trigger: {
               kind: 'event',
               seq: event.seq,

@@ -1209,6 +1209,55 @@ export async function createMcpServer(options: McpServerOptions): Promise<McpSer
   }
 
   /**
+   * The owner's own conclusion about an automation's run whose outcome could
+   * not be confirmed.
+   *
+   * The worker stopped and could not say how the run ended, so the run is a
+   * question. The conclusion is somebody's — it did run, or it did not — and
+   * the job that was held for it is settled with it. The tool does the same
+   * thing the route does, on the same run, and writes the same trail.
+   *
+   * The tool is not in the default grant set, for the same reason
+   * `execution.resolve` is not: a connection that may close a question the
+   * worker could not answer is a connection the owner has said may close one.
+   */
+  if (granted.has('automation.run.resolve')) {
+    server.registerTool(
+      'automation.run.resolve',
+      {
+        description:
+          "Close an automation's run whose outcome could not be confirmed: completed if it did run, " +
+          'failed if it did not. The run leaves the unknown state and the job that was held for it is settled.',
+        inputSchema: {
+          runId: z.string(),
+          outcome: z.enum(['completed', 'failed']),
+          note: z.string().max(2_000).optional(),
+        },
+      },
+      async ({ runId, outcome, note }) => {
+        try {
+          await guard('automation.run.resolve');
+          // The tool names a run, and a run belongs to a workspace, so the
+          // run's workspace is checked against the caller's scope before
+          // anything of it is read. An agent granted this tool in one
+          // workspace cannot close a question in another.
+          await assertObjectScope('automationRun', runId);
+          const run = options.capabilities.automationRunResolve({
+            runId,
+            outcome,
+            note,
+            actorType: actor.kind === 'agent' ? 'agent' : 'human',
+            actorId: actor.kind === 'agent' ? (actor.agentConnectionId as string) : decidedBy(),
+          });
+          return jsonResult({ run });
+        } catch (error) {
+          return errorResult(error);
+        }
+      },
+    );
+  }
+
+  /**
    * The event log of a workspace.
    *
    * The same log the server-to-client stream is built from, read as a list.

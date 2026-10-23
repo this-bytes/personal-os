@@ -1,6 +1,13 @@
 import { and, eq, notInArray } from 'drizzle-orm';
 import type { AgentAdapter, AgentAdapterExtras, AgentReconciliation } from '@personal-os/contracts';
-import { agentConnections, executions, messages } from '@personal-os/server/db';
+import {
+  agentConnections,
+  automations,
+  automationRuns,
+  executions,
+  messages,
+  tasks,
+} from '@personal-os/server/db';
 import type { QueueJob, Runtime } from '@personal-os/server/runtime';
 import { loadAdapterConfig, publishTerminalEvent } from './execution-owner.js';
 
@@ -18,6 +25,14 @@ const ENDED_EXECUTION_STATUSES = [
   'cancelled',
   'unknown',
 ] as const;
+
+/**
+ * The statuses that mean a task is over.
+ *
+ * A task that is over is not made uncertain afterwards: the owner has already
+ * decided about it.
+ */
+const ENDED_TASK_STATUSES = ['done', 'cancelled'] as const;
 
 /**
  * What a worker does with the jobs whose worker died.
@@ -226,9 +241,26 @@ function recordWitnessedOutcome(
  * An uncertain run is not a failure and not a success: it is a question the
  * owner closes. The execution carries the question, the reply says so, and the
  * owner's own conclusion is what settles it.
+ *
+ * There are three kinds of run, and each is published where the owner looks
+ * for it. A chat turn is published on the execution and on its reply. A task's
+ * turn is published on the execution, on its reply **and on the task** — a
+ * task that stays `open` is a task the owner never hears about, because the
+ * waiting list only shows a task that has reached `review`, `blocked` or
+ * `unknown`. An automation's run has no execution and no reply: it is
+ * published on the run itself, where the owner sees the automation's other
+ * runs.
  */
 function markUncertain(runtime: Runtime, job: QueueJob, reason: string): void {
-  const payload = job.payload as { executionId?: string };
+  const payload = job.payload as { executionId?: string; runId?: string };
+
+  // An automation's run. It carries no execution, so the run is the only
+  // record of it, and the run is what the owner reads.
+  if (payload.runId) {
+    markTheAutomationRunUncertain(runtime, payload.runId, reason);
+    return;
+  }
+
   if (!payload.executionId) return;
 
   const execution = runtime.db
@@ -255,4 +287,93 @@ function markUncertain(runtime: Runtime, job: QueueJob, reason: string): void {
     .set({ status: 'unknown', detail: reason })
     .where(eq(messages.executionId, payload.executionId))
     .run();
+
+  // A task's turn. The task is the thing the owner works with, so the
+  // uncertainty has to reach the task as well as the run.
+  if (execution.taskId) {
+    markTheTaskUncertain(runtime, execution.taskId, reason);
+  }
+}
+
+/**
+ * Mark a task uncertain, and say so.
+ *
+ * The task moves to `unknown`, which is the status the waiting list shows,
+ * and the owner decides what happens next.
+ */
+function markTheTaskUncertain(runtime: Runtime, taskId: string, reason: string): void {
+  const now = new Date().toISOString();
+  const written = runtime.db
+    .update(tasks)
+    .set({ status: 'unknown', updatedAt: now })
+    .where(and(eq(tasks.id, taskId), notInArray(tasks.status, [...ENDED_TASK_STATUSES])))
+    .run();
+  if (written.changes === 0) return;
+
+  const task = runtime.db.select().from(tasks).where(eq(tasks.id, taskId)).get();
+  if (!task) return;
+
+  runtime.events.publish(
+    {
+      type: 'task.updated',
+      task: {
+        id: task.id,
+        workspaceId: task.workspaceId,
+        goalId: task.goalId ?? undefined,
+        title: task.title,
+        description: task.description,
+        assigneeId: task.assigneeId ?? undefined,
+        executionOwner: task.executionOwner as never,
+        status: task.status as never,
+        acceptanceCriteria: task.acceptanceCriteria,
+        evidenceResourceIds: task.evidenceResourceIds,
+        revision: task.revision,
+        externalRef: task.externalRef ?? undefined,
+      },
+    },
+    { workspaceId: task.workspaceId },
+  );
+  void reason;
+}
+
+/**
+ * Mark an automation's run uncertain, and say so.
+ *
+ * The run row is the only record of an automation's run, so an uncertain run
+ * that is not marked is an automation that says `running` for ever.
+ */
+function markTheAutomationRunUncertain(runtime: Runtime, runId: string, reason: string): void {
+  const now = new Date().toISOString();
+  const written = runtime.db
+    .update(automationRuns)
+    .set({ status: 'unknown', error: reason, finishedAt: now })
+    .where(and(eq(automationRuns.id, runId), eq(automationRuns.status, 'running')))
+    .run();
+  if (written.changes === 0) return;
+
+  const run = runtime.db.select().from(automationRuns).where(eq(automationRuns.id, runId)).get();
+  if (!run) return;
+
+  const automation = runtime.db
+    .select()
+    .from(automations)
+    .where(eq(automations.id, run.automationId))
+    .get();
+  if (!automation) return;
+
+  runtime.events.publish(
+    {
+      type: 'automation.run',
+      run: {
+        id: run.id,
+        automationId: run.automationId,
+        status: 'unknown',
+        startedAt: run.startedAt,
+        finishedAt: now,
+        output: null,
+        error: reason,
+      },
+    },
+    { workspaceId: automation.workspaceId },
+  );
 }

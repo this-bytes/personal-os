@@ -369,6 +369,11 @@
       "tool": "execution.resolve"
     },
     {
+      "route": "POST /api/automations/:id/runs/:runId/resolve",
+      "kind": "paired",
+      "tool": "automation.run.resolve"
+    },
+    {
       "route": "POST /api/executions/:id/stop",
       "kind": "paired",
       "tool": "execution.stop"

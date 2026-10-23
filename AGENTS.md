@@ -103,14 +103,23 @@ npm ci                      # install the committed lockfile (npm workspaces)
 npm run verify:dependencies # validate manifests, lockfile and installed tree
 npm run build               # build every workspace, in dependency order
 npm run typecheck           # typecheck every workspace
-npm run test                # unit and integration tests
+npm test -w @personal-os/<pkg> # one workspace's tests
+npm run test                # every workspace's tests
 npm run format:check        # prettier — run `npm run format` to fix
+npm run gates               # every gate, in the order CI runs them
 npx tsx scripts/smoke.ts    # end-to-end check against a throwaway database
 npm run test:e2e            # browser tests against the built client
 ```
 
 Order matters when building: `contracts` → `agent-adapters` → `server` → `worker` →
 `web`. The root `build` script already does this.
+
+**A brief you give another agent names the proof the slice needs.** The agent
+that receives it will run what the brief asks for, so a brief that says "run the
+tests" gets the whole suite, and the whole suite is minutes spent on every
+branch in this repository at once. For a narrow slice, the brief asks for
+`npm run typecheck` and the one package's tests; for a wide one, it asks for
+`npm run gates` and says why.
 
 Dependencies belong to the workspace that imports them. Use
 `npm install <package> -w <owning-workspace>` and commit that manifest together
@@ -204,7 +213,10 @@ repository. Write your work there — not in the main checkout, not on `main`.
 git push -u origin HEAD
 ```
 
-CI runs on every branch push, so a pushed branch is a gated branch.
+CI's fast lane runs on every branch push, so a pushed branch is a gated branch.
+The heavy lane is dispatched by hand, so the work that needs it runs the gates
+it does not cover locally, on the tree it is pushing, and says so in the pull
+request.
 
 **Landing on `main` is authorized when it is green.** Pushing your own branch
 needs no approval. Since 2026-10-21 18:07 `main` does not either: the owner
@@ -268,6 +280,21 @@ git config core.hooksPath .githooks
 
 ## Before you say you are done
 
+**The proof scales with the change.** A narrow change is proved by the
+typecheck and the tests of the package it touches. The whole suite is for a
+wide change — a contract, a shared module, the schema, or more than one
+package. Running the whole suite on a small change spends minutes proving code
+nobody touched, and it spends them on every branch in this repository at once.
+
+**CI runs in two lanes.** The _fast lane_ — the typecheck, the formatting, the
+published contract, the contract's pointers, the agent surface and the audit —
+runs on every push and on every pull request, and it is what a branch has to be
+green in to be merged. The _heavy lane_ — the test suite, the compiled build,
+the browser tests, the smoke test, and the two gates that drive the built
+product — is dispatched by hand from the Actions tab. **What CI does not run,
+you run.** The local runner for the whole proof is `npm run gates`: it runs
+every gate in the order CI runs them and stops at the first failure.
+
 Most of the gates below work on their own, on a fresh checkout. `npm run
 typecheck` and `npm run test` build the workspaces they need on the way, and
 `npm run test:e2e` builds the client before it drives it. Two of them read the
@@ -276,22 +303,45 @@ verify:bundle` fails with "The client has not been built" and `npx tsx
 scripts/verify-build.ts` fails with "Cannot find module …/apps/server/dist/index.js"
 on a checkout that has never been built.
 
-- `npm run typecheck` passes.
-- `npm run test` passes.
+**Every change:**
+
+- `npm run typecheck` passes. This is the check that earns its place on every
+  change: it builds the packages it reads the types of, and it catches the
+  mistake that is cheap to make and expensive to find later.
 - `npm run format:check` passes.
-- `npm run build` passes if you touched the web client, the server or the
-  worker.
-- `npx tsx scripts/smoke.ts` passes if you touched the server or the worker.
-- `npm run test:e2e` passes if you touched the web client.
-- `npm run verify:bundle` passes if you touched the web client or the build.
-- `npx tsx scripts/verify-build.ts` passes if you changed how the compiled
-  output is produced.
-- `npm run verify:stack` passes if you touched how a deployment runs, or the
-  worker. It proves a running instance executes an agent, which a health
-  check cannot. It needs a deployment that is already running, and it takes
-  the base URL as an argument: `npm run verify:stack -- http://127.0.0.1:4317`.
-  It writes to that deployment — it creates the owner if there is none, and it
-  always adds an agent and a conversation. Against a deployment that is not
-  yours, pass `--allow-remote`.
 - The documentation matches the code. If you changed a contract, `CONTRACTS.md`
   changed with it.
+
+**A change inside one package:**
+
+- `npm test -w @personal-os/<package>` passes. Run that one package, not the
+  workspace set: the root `npm run test` runs every workspace's suite, and on
+  a narrow change that is most of the time spent proving somebody else's code.
+- `npm run build -w @personal-os/<package>` passes, for a package that ships
+  compiled output.
+
+**A change that reaches across packages** — a contract, a shared module, the
+schema, the worker's or the server's public surface — adds:
+
+- `npm run test` passes.
+- `npm run build` passes.
+- `npx tsx scripts/smoke.ts` passes.
+- Every gate the slice's own spec names, run on the tree you are pushing.
+
+**A change to the web client** adds:
+
+- `npm run test:e2e` passes.
+- `npm run verify:bundle` passes.
+
+**A change to how the compiled output is produced** adds:
+
+- `npx tsx scripts/verify-build.ts` passes.
+
+**A change to how a deployment runs, or to the worker**, adds:
+
+- `npm run verify:stack` passes. It proves a running instance executes an
+  agent, which a health check cannot. It needs a deployment that is already
+  running, and it takes the base URL as an argument: `npm run verify:stack --
+http://127.0.0.1:4317`. It writes to that deployment — it creates the owner
+  if there is none, and it always adds an agent and a conversation. Against a
+  deployment that is not yours, pass `--allow-remote`.

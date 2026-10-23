@@ -141,14 +141,15 @@ starts. This `unknown` is about an outcome that cannot be confirmed; that one
 is about a state that was never looked at. They are different things that
 happen to share a word, and the field they appear on says which is which.
 
-**An `unknown` item is never retried automatically.** There is no reaper, no
-redispatch and no reconciliation pass. An unknown outcome is a question for the
-owner, and only the owner can close it. Every transition into and out of
-`unknown` is written to the audit trail.
+**An `unknown` item is never retried automatically.** There is no reaper and no
+redispatch: a job whose worker died is reconciled by the worker, and a job
+whose outcome is already unknown is held rather than run again. An unknown
+outcome is a question for the owner, and only the owner can close it. Every
+transition into and out of `unknown` is written to the audit trail.
 
 This entry is the contract for **WI-008**, and the code implements it — as of
 `9ad4f98`. `messageStatusSchema` carries `'unknown'` at
-`packages/contracts/src/conversation.ts:62`, `executionStatusSchema` at
+`packages/contracts/src/conversation.ts:106`, `executionStatusSchema` at
 `packages/contracts/src/agent.ts:182`, and `taskStatusSchema` at
 `packages/contracts/src/factory.ts:25`.
 
@@ -243,7 +244,7 @@ This entry is the contract for **WI-031**, and the code implements it — as of
 (`363428e`), and `3dd490b` brought the route to the published shape after it.
 The route is `POST /api/executions/:id/resolve`, at
 `apps/server/src/api/executions.ts:19`, and it is registered at
-`apps/server/src/app.ts:252`. **Only the owner may call the route**, under the same
+`apps/server/src/app.ts:258`. **Only the owner may call the route**, under the same
 authentication as every other owner-facing route
 (`apps/server/src/api/helpers.ts:14-16`). **The route's own writer is the
 executions service**, which writes the execution's status
@@ -718,8 +719,8 @@ system, and it never replaces or duplicates the external runtime's own harness o
 instruction file.
 
 This entry is the contract for **WI-006**, and the code implements it — as of
-`70d042c`. `personaSchema` is at `packages/contracts/src/agent.ts:30`,
-`resolvePersona` at `:80`, the connection's base persona at `:103`, and the
+`70d042c`. `personaSchema` is at `packages/contracts/src/agent.ts:40`,
+`resolvePersona` at `:91`, the connection's base persona at `:113-114`, and the
 participant's override at `packages/contracts/src/conversation.ts:38`.
 
 **Migration.** Nothing is reclassified and nothing is rewritten. Both fields are
@@ -1091,9 +1092,9 @@ the template to start from, and its `type` must equal the `type` the call asks f
 `spec` with those values merged into it. **A call that carries both is no longer
 refused — it is answered**, and the values the call did not name are the template's.
 A template whose spec the owning provider refuses is `validation_failed`
-(`apps/server/src/modules/resources/service.ts:707-713`), and a template of another
+(`apps/server/src/modules/resources/service.ts:709-715`), and a template of another
 kind is refused the same way
-(`apps/server/src/modules/resources/service.ts:721-725`); an unknown template id is
+(`apps/server/src/modules/resources/service.ts:723-727`); an unknown template id is
 `not_found`. Those codes are already published in
 [Error envelope](#error-envelope); this entry adds none. The tool's visibility
 follows the same grant rule as every other tool on that surface, published in
@@ -1136,8 +1137,8 @@ resource came from; the tree carries all of it. `resourceTemplateGuideSchema` is
 `packages/contracts/src/resource.ts:256`. `resource.template.list` and
 `resource.template.get` are both published tool names — they are in `mcpToolNames`
 at `packages/contracts/src/mcp.ts:50-51`, inside the range
-`packages/contracts/src/mcp.ts:10-95`, and in the
-default agent grant list at `packages/contracts/src/mcp.ts:121-122`. The server
+`packages/contracts/src/mcp.ts:10-104`, and in the
+default agent grant list at `packages/contracts/src/mcp.ts:130-131`. The server
 registers both tools only where
 the connection is granted them, the way every other tool on that surface is
 (`apps/server/src/modules/mcp/server.ts:759-813`). `resource.create` takes the
@@ -1196,7 +1197,7 @@ publishing or enabling it is a separate, deliberate act.
   that arrived whole (`apps/server/src/modules/resources/templates.ts:534`). The
   automation's provider writes `enabled: false` on create
   (`apps/server/src/modules/resources/service.ts:292`); the dashboard's writes
-  `published: false` (`apps/server/src/modules/resources/service.ts:818`, reached
+  `published: false` (`apps/server/src/modules/resources/service.ts:820`, reached
   from the provider's create at `apps/server/src/modules/resources/service.ts:358`).
 - **Creation is the only place the rule bites.** An update that names `published: true` or
   `enabled: true` still makes a resource live, because an update is a deliberate act on a
@@ -1207,8 +1208,8 @@ publishing or enabling it is a separate, deliberate act.
 - **Each kind has its own act.** `POST /api/resources/:id/publish` publishes a dashboard
   and enables an automation (`apps/server/src/modules/resources/service.ts:595`), and the
   automation also has `POST /api/automations/:id/enable` and
-  `POST /api/automations/:id/disable` (`apps/server/src/api/automations.ts:61`,
-  `apps/server/src/api/automations.ts:72`).
+  `POST /api/automations/:id/disable` (`apps/server/src/api/automations.ts:73`,
+  `apps/server/src/api/automations.ts:84`).
 
 **Forcing the flag does not make a broken spec acceptable.** A spec that is not an object
 is passed on untouched, so the schema refuses it exactly as it always did.
@@ -1248,7 +1249,7 @@ question cannot be skipped by adding a kind.
 /api/resources/:id/execute` refuse a kind that does not support the operation with
 `400 bad_request` and a message the owner can read — the kind, the operation, and the
 kinds that do have it. The refusal is raised in the service
-(`apps/server/src/modules/resources/service.ts:781`) and answered with the shared
+(`apps/server/src/modules/resources/service.ts:783`) and answered with the shared
 [error envelope](#error-envelope), so a refusal is never the same 200 as a success
 that did not happen.
 
@@ -1292,8 +1293,8 @@ same two operations.
 | `resource.publish` | `POST /api/resources/:id/publish` | `{ resourceId }` | `{ outcome: 'published', resource }` |
 | `resource.execute` | `POST /api/resources/:id/execute` | `{ resourceId }` | `{ outcome, result: { output } }`    |
 
-The shared capability is `apps/server/src/modules/capabilities/service.ts:568` for the
-publish and `apps/server/src/modules/capabilities/service.ts:591` for the run. The
+The shared capability is `apps/server/src/modules/capabilities/service.ts:590` for the
+publish and `apps/server/src/modules/capabilities/service.ts:613` for the run. The
 routes call it at `apps/server/src/api/resources.ts:208` and
 `apps/server/src/api/resources.ts:228`, the tools are registered at
 `apps/server/src/modules/mcp/server.ts:709` and
@@ -1416,36 +1417,37 @@ refusal; a client that reads its own memory, or a shared one, is unaffected.
 Personal OS exposes these capabilities through an MCP server at `/mcp`, so compatible
 external agents can discover and operate them.
 
-| Tool                     | Purpose                                                 |
-| ------------------------ | ------------------------------------------------------- |
-| `workspace.list`         | List the workspaces available to the caller.            |
-| `conversation.read`      | Read a conversation with its participants and messages. |
-| `conversation.post`      | Post a message to a conversation.                       |
-| `bot.dispatch`           | Hand work to another agent, and take its answer back.   |
-| `agent.list`             | List the agent connections in a workspace.              |
-| `task.create`            | Create a factory task.                                  |
-| `task.update`            | Update a factory task.                                  |
-| `task.get`               | Read a task with its evidence.                          |
-| `task.accept`            | Record an acceptance decision on a task.                |
-| `resource.create`        | Create a resource, optionally from a template.          |
-| `resource.get`           | Read a resource. Not another agent's own memory.        |
-| `resource.update`        | Update a resource with optimistic concurrency.          |
-| `resource.publish`       | Publish a resource — make it live.                      |
-| `resource.execute`       | Run a resource now.                                     |
-| `resource.template.list` | List the templates published for one resource kind.     |
-| `resource.template.get`  | Read one template in full — its spec and its guide.     |
-| `automation.create`      | Create an automation.                                   |
-| `automation.inspect`     | Inspect an automation and its runs.                     |
-| `autonomy.read`          | Read the autonomy policy in force for a scope.          |
-| `approval.list`          | List the approvals in a workspace, or read one of them. |
-| `approval.decide`        | Decide an approval, with a reason.                      |
-| `approval.evidence`      | Read the evidence a decision is taken against.          |
-| `execution.list`         | List the turns of a workspace, newest first.            |
-| `execution.get`          | Read a turn: its status, its activity, its run control. |
-| `execution.stop`         | Ask a turn to stop, and answer with what was done.      |
-| `execution.resolve`      | Close a turn whose outcome could not be confirmed.      |
-| `event.list`             | List the events of a workspace.                         |
-| `audit.list`             | List the audit entries of a workspace.                  |
+| Tool                     | Purpose                                                         |
+| ------------------------ | --------------------------------------------------------------- |
+| `workspace.list`         | List the workspaces available to the caller.                    |
+| `conversation.read`      | Read a conversation with its participants and messages.         |
+| `conversation.post`      | Post a message to a conversation.                               |
+| `bot.dispatch`           | Hand work to another agent, and take its answer back.           |
+| `agent.list`             | List the agent connections in a workspace.                      |
+| `task.create`            | Create a factory task.                                          |
+| `task.update`            | Update a factory task.                                          |
+| `task.get`               | Read a task with its evidence.                                  |
+| `task.accept`            | Record an acceptance decision on a task.                        |
+| `resource.create`        | Create a resource, optionally from a template.                  |
+| `resource.get`           | Read a resource. Not another agent's own memory.                |
+| `resource.update`        | Update a resource with optimistic concurrency.                  |
+| `resource.publish`       | Publish a resource — make it live.                              |
+| `resource.execute`       | Run a resource now.                                             |
+| `resource.template.list` | List the templates published for one resource kind.             |
+| `resource.template.get`  | Read one template in full — its spec and its guide.             |
+| `automation.create`      | Create an automation.                                           |
+| `automation.inspect`     | Inspect an automation and its runs.                             |
+| `automation.run.resolve` | Close an automation's run whose outcome could not be confirmed. |
+| `autonomy.read`          | Read the autonomy policy in force for a scope.                  |
+| `approval.list`          | List the approvals in a workspace, or read one of them.         |
+| `approval.decide`        | Decide an approval, with a reason.                              |
+| `approval.evidence`      | Read the evidence a decision is taken against.                  |
+| `execution.list`         | List the turns of a workspace, newest first.                    |
+| `execution.get`          | Read a turn: its status, its activity, its run control.         |
+| `execution.stop`         | Ask a turn to stop, and answer with what was done.              |
+| `execution.resolve`      | Close a turn whose outcome could not be confirmed.              |
+| `event.list`             | List the events of a workspace.                                 |
+| `audit.list`             | List the audit entries of a workspace.                          |
 
 These are Personal OS tool names, not predefined MCP methods. Agents discover each
 tool's input and output schema through MCP.
@@ -1457,7 +1459,7 @@ granted. **An ungranted tool is not registered at all**, so it does not appear i
 
 **`autonomy.read` is in the default grant list, so every agent connection gets it.**
 A connection with no explicit grants runs on the default set
-(`packages/contracts/src/mcp.ts:111-132`), and that set carries `autonomy.read`: an
+(`packages/contracts/src/mcp.ts:120-141`), and that set carries `autonomy.read`: an
 agent can read the policy that governs it without the owner granting anything else.
 A connection whose grants were narrowed explicitly keeps the list it was given — the
 tool is not added to a stored list. The owner has it too, because the owner's grant
@@ -1479,7 +1481,7 @@ that cannot see why it was refused cannot do anything sensible about it
 
 **`resource.template.get` is in the default grant list, so every agent connection
 gets it.** The same default set carries it beside `resource.template.list`
-(`packages/contracts/src/mcp.ts:121-122`): an agent can read a template's guide — what
+(`packages/contracts/src/mcp.ts:130-131`): an agent can read a template's guide — what
 a good one of that kind is, which fields it must set, and what a reader would get
 wrong — without the owner granting anything else. A connection whose grants were
 narrowed explicitly keeps the list it was given, and the owner has it too, because
@@ -1605,10 +1607,11 @@ title, not its body, not its count.
 `approval.evidence`, `execution.list`, `execution.get`, `event.list` and
 `audit.list` — are in the
 default grant set
-(`packages/contracts/src/mcp.ts:111-132`): an agent whose turn is blocked on the
+(`packages/contracts/src/mcp.ts:120-141`): an agent whose turn is blocked on the
 owner has to be able to see what it is blocked on, and an agent that has just
 acted has to be able to read what it did. **The destructive verbs are not.**
-`approval.decide`, `execution.stop`, `execution.resolve`, `task.accept`,
+`approval.decide`, `execution.stop`, `execution.resolve`,
+`automation.run.resolve`, `task.accept`,
 `resource.publish` and `resource.execute` are
 the owner's to grant, one by one,
 exactly as `bot.dispatch` is, because each of them spends an authority the owner
@@ -1640,35 +1643,42 @@ does the same operation, on the same object, as the route it pairs with, and
 reads the same data — the route and the tool are thin adapters over one shared
 capability, so an agent and a person operate through the same code path.
 
-| Tool                | Route                              | Input                             | Output                                        |
-| ------------------- | ---------------------------------- | --------------------------------- | --------------------------------------------- |
-| `approval.evidence` | `GET /api/approvals/:id/evidence`  | `{ approvalId }`                  | the `ApprovalEvidence` the route answers with |
-| `execution.resolve` | `POST /api/executions/:id/resolve` | `{ executionId, outcome, note? }` | `{ execution, outcome, detail }`              |
-| `task.accept`       | `POST /api/tasks/:id/accept`       | `{ taskId, satisfied, reason? }`  | `{ task }`                                    |
+| Tool                     | Route                                           | Input                             | Output                                        |
+| ------------------------ | ----------------------------------------------- | --------------------------------- | --------------------------------------------- |
+| `approval.evidence`      | `GET /api/approvals/:id/evidence`               | `{ approvalId }`                  | the `ApprovalEvidence` the route answers with |
+| `execution.resolve`      | `POST /api/executions/:id/resolve`              | `{ executionId, outcome, note? }` | `{ execution, outcome, detail }`              |
+| `automation.run.resolve` | `POST /api/automations/:id/runs/:runId/resolve` | `{ runId, outcome, note? }`       | `{ run }`                                     |
+| `task.accept`            | `POST /api/tasks/:id/accept`                    | `{ taskId, satisfied, reason? }`  | `{ task }`                                    |
 
 **The grant rule is the rule the round trips above already keep.** A **read**
 verb joins the default grant set; a verb that **spends the owner's authority**
 does not, and the owner grants it by name. `approval.evidence` is a read — it
 decides nothing and changes nothing — so it is in the default grant set
-(`packages/contracts/src/mcp.ts:111-132`): an agent whose turn is blocked on a
+(`packages/contracts/src/mcp.ts:120-141`): an agent whose turn is blocked on a
 decision has to be able to see what it is blocked on, the same ground
-`approval.list` is held to. `execution.resolve` and `task.accept` spend the
-owner's authority — one closes a turn whose outcome is unknown, the other
-accepts a task — so **neither is in the default grant set**, and a connection
+`approval.list` is held to. `execution.resolve`, `automation.run.resolve` and
+`task.accept` spend the
+owner's authority — one closes a turn whose outcome is unknown, one closes an
+automation's run whose outcome is unknown, the other
+accepts a task — so **none of them is in the default grant set**, and a connection
 that was not granted one does not have it registered at all. A call for one is
 refused and the refusal is recorded the way every other ungranted call is
 recorded.
 
 **The scoping rule is the rule the other id-addressed tools already keep.** Each
-of these three names an id, so each names an _object_ and not a workspace: the
+of these names an id, so each names an _object_ and not a workspace: the
 object is looked up in its own row and its workspace is checked against the
 caller's scope before anything of it is read. **An agent is bounded to the
 workspace it was granted, never to the whole tenant**, and a refusal carries
-nothing of the object back.
+nothing of the object back. An automation's run is bounded the same way: the
+run belongs to an automation, and the automation belongs to a workspace, so the
+run's workspace is the one that is checked.
 
 **The record names who acted, and the authority behind it is the owner's
 grant.** `approval.evidence` decides nothing and writes nothing.
-`execution.resolve` writes `execution.outcome.resolved` and `task.accept`
+`execution.resolve` writes `execution.outcome.resolved`,
+`automation.run.resolve` writes `automation.run.outcome.resolved` and
+`task.accept`
 writes `task.accepted` or `task.rejected`, and each entry carries the
 `actorType` of the caller — `human` for the owner's own call, `agent` for an
 agent's — and the caller's id. The owner is not an actor kind of their own: an
@@ -2043,7 +2053,7 @@ result: 'queued' | 'succeeded' | 'failed' | 'unknown';
 **`queued` means the action was accepted and has not finished.** `POST
 /api/resources/:id/execute` records `queued` for an automation run it enqueues
 (`apps/server/src/modules/resources/service.ts:653`), and answers `queued: true`
-(`apps/server/src/modules/resources/service.ts:660`): the route accepted the request
+(`apps/server/src/modules/resources/service.ts:662`): the route accepted the request
 and the run has not happened. The same route runs a data source and a dashboard there
 and then, so **the vocabulary is per action, not per route** — one route can record
 `queued` for one kind and `succeeded` for another. **`succeeded` means the outcome was
@@ -2071,7 +2081,7 @@ route writes an entry, and it lists those twelve, one row each, with the action 
 one records. **A route whose action fails writes an
 entry that says `failed`**: today it writes none, because every route-level entry is
 written after the work and a handler that throws never reaches it, and the error
-handler writes nothing (`apps/server/src/app.ts:219`).
+handler writes nothing (`apps/server/src/app.ts:225`).
 
 **The code does not implement this yet.** The vocabulary is published ahead of its
 implementation, because the contract leads and the code follows: the implementation
@@ -2385,7 +2395,7 @@ a client that reads the fields it knows keeps working; a client that switches
 exhaustively on the item's fields has one more field to read.
 
 The blocked capability is the contract for **WI-121**, and the code implements it —
-as of `d229b53`: the refusal is recorded at `apps/server/src/modules/mcp/server.ts:1319`, the list
+as of `d229b53`: the refusal is recorded at `apps/server/src/modules/mcp/server.ts:1368`, the list
 draws it as its own kind at `apps/server/src/api/waiting.ts:159`, and the owner's
 action is `POST /api/agents/:id/grants`.
 
@@ -2507,7 +2517,7 @@ detail](#the-authority-loops-own-detail).
 
 This entry is the contract for **WI-039**, and the code implements it — the route
 is `GET /api/approvals/:id/evidence`, at `apps/server/src/api/approvals.ts:39`,
-and it is registered at `apps/server/src/app.ts:251`. The shape it answers is the
+and it is registered at `apps/server/src/app.ts:257`. The shape it answers is the
 one published above, and it lives at `packages/contracts/src/approvals.ts:91`. The
 drawer that reads it is WI-040's, and it waits for this route.
 
@@ -2872,12 +2882,13 @@ behaviour the queue has always had; the rule above governs the jobs whose
 worker died, and it does not govern this one.
 
 **The rule is one rule, and it is stated in terms of what is known.** The item a
-job was working on is in one of four states, and each has one answer: it never
+job was working on is in one of five states, and each has one answer: it never
 started, so the job may run again; it started and nothing recorded how it
 ended, so the runtime is asked; its outcome was already recorded as unknown, so
-the owner decides; or it finished, so the job is finished. The rule lives in
-one place (`apps/server/src/queue/reconciliation.ts`), and the queue applies it
-(`apps/server/src/queue/client.ts`).
+the owner decides; it finished, so the job is finished; or the product cannot
+tell what it was working on at all, so the job is held rather than run again.
+The rule lives in one place (`apps/server/src/queue/reconciliation.ts`), and the
+queue applies it (`apps/server/src/queue/client.ts`).
 
 **The lease is the fence.** A worker writes to a job it holds; a worker whose
 lease moved on does not. Finishing, failing and holding a job are all
@@ -2888,17 +2899,36 @@ a job that is not its own.
 **The transition is atomic.** A job is never running and requeued at the same
 time: the write that moves it is conditional on the job still being the one
 that was looked at (`apps/server/src/queue/client.ts`). Two workers looking at
-the same dead job settle it once, and they end its turn once: the turn is ended
-only by the worker whose write to the job landed
-(`apps/worker/src/reconcile.ts`).
+the same dead job settle it once, and they end its turn at most once: the turn
+is ended only by the worker whose write to the job landed
+(`apps/worker/src/reconcile.ts`). A turn that was already ended is not ended
+again, so a worker that dies between settling the job and writing the turn's
+outcome leaves a turn that is never ended at all, rather than one that is
+ended twice.
 
 **Uncertainty is a state the owner can act on.** A run whose outcome could not
-be confirmed is published as uncertain, it is on the owner's waiting list
-(`apps/server/src/api/waiting.ts`), and the owner's own conclusion settles it —
-and settles the job that was held for it with it
-(`apps/server/src/modules/executions/service.ts`). An uncertain run is not a
-failure and not a success: it is a question, and the question is closed by the
-owner.
+be confirmed is published as uncertain, and the owner's own conclusion settles
+it — and settles the job that was held for it with it.
+
+- **A chat turn** is on the owner's waiting list (`apps/server/src/api/waiting.ts`)
+  and is closed by `POST /api/executions/:id/resolve`
+  (`apps/server/src/modules/executions/service.ts`).
+- **A task's turn** is published on the task as well as on the turn, so the
+  task reaches `unknown` and the waiting list shows it
+  (`apps/worker/src/reconcile.ts`, `apps/server/src/api/waiting.ts`). The
+  owner's conclusion on the task closes it.
+- **An automation's run** has no conversation and no execution of its own, so it
+  is published on the run (`apps/worker/src/reconcile.ts`), where the owner
+  reads it with the automation's other runs, and it is closed by
+  `POST /api/automations/:id/runs/:runId/resolve`
+  (`apps/server/src/modules/automations/service.ts`). That route settles the
+  job that was held for it too.
+
+An uncertain run is not a failure and not a success: it is a question, and the
+question is closed by the owner. An agent closes it through the same shared
+capability API the owner's route uses — `execution.resolve` and
+`automation.run.resolve` — so there is one path out of the unknown state and
+one trail.
 
 **A run whose runtime survived is reconnected, not started again.** The
 runtime may be asked what became of a run
@@ -2911,7 +2941,7 @@ asked**, so every uncertain run is held for the owner, and the adapter matrix
 records that limit.
 
 **Implementation status.** SPEC-R0-4, and the code implements it — as of
-`4f0715d`: a job whose worker died is not run again when its work had started, an
+`3226502`: a job whose worker died is not run again when its work had started, an
 uncertain outcome is visible and the owner can settle it, and a run whose
 runtime survived is reconnected rather than started again.
 
@@ -3447,7 +3477,7 @@ else registers under it.
 feature is given the app and the services, so it registers its own routes
 (`apps/server/src/features/registry.ts:48`), and the runtime installs every
 registered feature when it builds the app
-(`apps/server/src/app.ts:263`). Adding a server feature is one line in
+(`apps/server/src/app.ts:269`). Adding a server feature is one line in
 `apps/server/src/features/index.ts:12`; the runtime's own files are not
 touched.
 
@@ -3490,7 +3520,7 @@ second.
 This entry is the contract for **WI-139**, and the code implements it — as of
 `f2d9195`. The shape is `packages/contracts/src/feature.ts`, the server's
 registry is `apps/server/src/features/registry.ts`, the runtime installs what
-is in it at `apps/server/src/app.ts:263`, and the client finds its features by
+is in it at `apps/server/src/app.ts:269`, and the client finds its features by
 a glob at `apps/web/src/features/registry.ts:57`. The slice's own record is
 `.factory/work/WI-139.md`.
 
@@ -3569,6 +3599,7 @@ is not left deleting the database.
 | `GET/POST`         | `/api/automations`                                   | List and create automations.                                                                                                                                |
 | `GET/PATCH/DELETE` | `/api/automations/:id`                               | Read, update and remove an automation.                                                                                                                      |
 | `POST`             | `/api/automations/:id/enable` · `/disable`           | Toggle scheduling.                                                                                                                                          |
+| `POST`             | `/api/automations/:id/runs/:runId/resolve`           | The owner's own conclusion about a run whose outcome could not be confirmed.                                                                                |
 | `GET`              | `/api/approvals`                                     | List approval requests.                                                                                                                                     |
 | `GET`              | `/api/approvals/:id`                                 | Read an approval request.                                                                                                                                   |
 | `GET`              | `/api/approvals/:id/evidence`                        | The evidence a decision is taken against. See [the entry](#the-approval-evidence).                                                                          |
@@ -3789,8 +3820,8 @@ projections read it
 `apps/server/src/modules/resources/service.ts:381`). An agent-created
 automation or task is recorded as authored by the agent that made it.
 
-**Every mutating route writes an audit entry.** Of the 41 mutating routes in
-`apps/server/src/api/`, 33 write an audit entry at the route level, and eight more
+**Every mutating route writes an audit entry.** Of the 42 mutating routes in
+`apps/server/src/api/`, 33 write an audit entry at the route level, and nine more
 write one from the service layer — `POST /api/approvals/:id/decide` and `POST
 /api/agui/runs/:runId/resume`, both at
 `apps/server/src/modules/approvals/resume.ts:55`, `PATCH /api/tasks/:id` at
@@ -3802,10 +3833,12 @@ own stop request is written too, so the request is in the trail whoever made it.
 `apps/server/src/modules/executions/service.ts:360` and `POST /api/tasks/:id/accept`
 at `apps/server/src/modules/factory/service.ts:577`; both are written by the
 service layer so that the agent's `execution.resolve` and `task.accept` land in
-the same trail as the owner's own calls. `POST /api/resources/:id/publish` and
+the same trail as the owner's own calls. `POST /api/automations/:id/runs/:runId/resolve`
+writes at `apps/server/src/modules/automations/service.ts:301`, by the same
+rule, so the agent's `automation.run.resolve` lands in the same trail too. `POST /api/resources/:id/publish` and
 `POST /api/resources/:id/execute` write from the shared capability for the same
-reason, at `apps/server/src/modules/capabilities/service.ts:578` and
-`apps/server/src/modules/capabilities/service.ts:602`, so that the agent's
+reason, at `apps/server/src/modules/capabilities/service.ts:600` and
+`apps/server/src/modules/capabilities/service.ts:624`, so that the agent's
 `resource.publish` and `resource.execute` land in the
 same trail as the owner's own calls.
 **No mutating route writes none.**
