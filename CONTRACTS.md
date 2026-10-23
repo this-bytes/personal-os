@@ -228,7 +228,7 @@ execution's outcome could not be confirmed, so an execution that is no longer
 
 **The transition is written to the audit trail** as `execution.outcome.resolved`,
 beside the task path's `task.outcome.resolved`
-(`apps/server/src/modules/factory/service.ts:449-458`). It names who reached the
+(`apps/server/src/modules/factory/service.ts:451-460`). It names who reached the
 conclusion the way the task path's does — `actorType: 'human'` and the owner's
 id for the owner's own call, `actorType: 'agent'` and the connection's id for
 the agent's `execution.resolve` — and its metadata carries the transition,
@@ -2633,7 +2633,7 @@ the capability API, which is the one module that reads across every domain
 (`apps/server/src/modules/capabilities/capability-view.ts:29`). A conversation
 turn and a factory turn are pinned the same way
 (`apps/server/src/modules/conversations/dispatch.ts:208`,
-`apps/server/src/modules/factory/service.ts:479`).
+`apps/server/src/modules/factory/service.ts:481`).
 
 **The turn's own view answers what the turn may do.** Whether a turn can be
 steered is asked of the view the turn was admitted with, and not of the
@@ -2899,7 +2899,9 @@ it — and settles the job that was held for it with it.
 - **A task's turn** is published on the task as well as on the turn, so the
   task reaches `unknown` and the waiting list shows it
   (`apps/worker/src/reconcile.ts`, `apps/server/src/api/waiting.ts`). The
-  owner's conclusion on the task closes it.
+  owner's conclusion on the task closes it: the acceptance settles the task's
+  uncertain turn and the job that was held for it
+  (`apps/server/src/modules/factory/service.ts`).
 - **An automation's run** has no conversation and no execution of its own, so it
   is published on the run (`apps/worker/src/reconcile.ts`), where the owner
   reads it with the automation's other runs, and it is closed by
@@ -2924,7 +2926,7 @@ asked**, so every uncertain run is held for the owner, and the adapter matrix
 records that limit.
 
 **Implementation status.** SPEC-R0-4, and the code implements it — as of
-`3226502`: a job whose worker died is not run again when its work had started, an
+`de98212`: a job whose worker died is not run again when its work had started, an
 uncertain outcome is visible and the owner can settle it, and a run whose
 runtime survived is reconnected rather than started again.
 
@@ -3808,13 +3810,13 @@ automation or task is recorded as authored by the agent that made it.
 write one from the service layer — `POST /api/approvals/:id/decide` and `POST
 /api/agui/runs/:runId/resume`, both at
 `apps/server/src/modules/approvals/resume.ts:55`, `PATCH /api/tasks/:id` at
-`apps/server/src/modules/factory/service.ts:424`, and that one only when the task
+`apps/server/src/modules/factory/service.ts:426`, and that one only when the task
 leaves `unknown`, and `POST /api/executions/:id/stop` at
 `apps/server/src/modules/executions/service.ts:285` — which is where the agent's
 own stop request is written too, so the request is in the trail whoever made it.
 `POST /api/executions/:id/resolve` writes at
 `apps/server/src/modules/executions/service.ts:360` and `POST /api/tasks/:id/accept`
-at `apps/server/src/modules/factory/service.ts:577`; both are written by the
+at `apps/server/src/modules/factory/service.ts:611`; both are written by the
 service layer so that the agent's `execution.resolve` and `task.accept` land in
 the same trail as the owner's own calls. `POST /api/automations/:id/runs/:runId/resolve`
 writes at `apps/server/src/modules/automations/service.ts:301`, by the same

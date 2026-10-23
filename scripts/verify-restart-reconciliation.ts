@@ -1276,6 +1276,14 @@ async function checkTheRecords(): Promise<void> {
         `The owner's conclusion did not settle the job that was held for the task: the job is "${settledHeldJob?.status}", and it still says the outcome was never confirmed.`,
       );
     }
+
+    // The turn ended once, and the ending is on the one event log.
+    const endings = terminalEndings(db, 'exe_task');
+    if (endings.length !== 1 || endings[0] !== 'completed') {
+      fail(
+        `The owner's conclusion ended the task's turn ${endings.length} times (${endings.join(', ') || 'never'}), and a turn ends once.`,
+      );
+    }
     const after = await ownerWaiting(fixture);
     if (after.some((entry) => entry.id === 'task:tsk_gate')) {
       fail("The task is still on the owner's waiting list after the owner settled it.");

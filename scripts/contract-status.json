@@ -871,7 +871,7 @@
     {
       "id": "the-worker-that-dies",
       "section": "The worker that dies",
-      "note": "SPEC-R0-4, and the code implements it — as of `3226502`",
+      "note": "SPEC-R0-4, and the code implements it — as of `de98212`",
       "claim": "implemented",
       "why": "SPEC-R0-4's restart reconciliation: a job whose worker died is not run again when its work had started, an uncertain outcome is visible and the owner can settle it, and a run whose runtime survived is reconnected.",
       "expect": [

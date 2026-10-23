@@ -88,24 +88,24 @@ Both cases fail if a stale lease is treated as permission to run again.
 ## Evidence
 
 **Revision.** Delivered on `feature/r0-4-restart-reconciliation`. The code is
-in `3226502`, and the commit after it carries the contract's claim for it.
-`origin/main` at `ad75915` is merged in.
+in `de98212`, and the commit after it carries the contract's claim for it.
+`origin/main` at `9067642` is merged in.
 
 ### What landed
 
-| The promise                         | Where it is kept                                                                                                                                                                                                                                                                                                                                |
-| ----------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| No blind replay                     | the stale-job rule (`apps/server/src/queue/reconciliation.ts`), applied by the queue (`apps/server/src/queue/client.ts`)                                                                                                                                                                                                                        |
-| The lease is the fence              | `complete`, `fail` and `hold` are conditional on the lease (`apps/server/src/queue/client.ts`)                                                                                                                                                                                                                                                  |
-| The transition is atomic            | every stale-job write is conditional on the job still being the one that was looked at (`apps/server/src/queue/client.ts`)                                                                                                                                                                                                                      |
-| A turn ends once                    | the terminal write follows the fenced job write (`apps/worker/src/reconcile.ts`)                                                                                                                                                                                                                                                                |
-| Every kind of job is probed         | a chat turn by its execution, a task turn by its execution, an automation's run by the run's own id (`apps/server/src/queue/client.ts`)                                                                                                                                                                                                         |
-| A run is recorded as it starts      | the automation's run row is written when the run starts, and the scheduler mints the run's id (`apps/worker/src/executor.ts`, `apps/worker/src/scheduler.ts`)                                                                                                                                                                                   |
-| The owner can see the uncertain run | a chat turn and a task's turn are published as uncertain and the waiting list carries them, with the reason; an automation's run has no conversation and no turn of its own, so it is published on the run itself, where the owner reads it with the automation's other runs (`apps/server/src/api/waiting.ts`, `apps/worker/src/reconcile.ts`) |
-| The owner can settle it             | the owner's conclusion settles the run and the held job — a chat turn by `POST /api/executions/:id/resolve`, a task's turn by the task's own acceptance, an automation's run by `POST /api/automations/:id/runs/:runId/resolve` (`apps/server/src/modules/executions/service.ts`, `apps/server/src/modules/automations/service.ts`)             |
-| The runtime may be asked            | `reconcile` on the adapter's extras (`packages/contracts/src/agent.ts`), asked by the worker (`apps/worker/src/reconcile.ts`)                                                                                                                                                                                                                   |
-| A reconnected run is the same run   | the same execution, correlation id and session reference (`apps/worker/src/reconcile.ts`)                                                                                                                                                                                                                                                       |
-| The matrix records the limit        | `docs/adapters.md`, one row per adapter type, with the column "After a restart"                                                                                                                                                                                                                                                                 |
+| The promise                         | Where it is kept                                                                                                                                                                                                                                                                                                                                                                  |
+| ----------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| No blind replay                     | the stale-job rule (`apps/server/src/queue/reconciliation.ts`), applied by the queue (`apps/server/src/queue/client.ts`)                                                                                                                                                                                                                                                          |
+| The lease is the fence              | `complete`, `fail` and `hold` are conditional on the lease (`apps/server/src/queue/client.ts`)                                                                                                                                                                                                                                                                                    |
+| The transition is atomic            | every stale-job write is conditional on the job still being the one that was looked at (`apps/server/src/queue/client.ts`)                                                                                                                                                                                                                                                        |
+| A turn ends once                    | the terminal write follows the fenced job write (`apps/worker/src/reconcile.ts`)                                                                                                                                                                                                                                                                                                  |
+| Every kind of job is probed         | a chat turn by its execution, a task turn by its execution, an automation's run by the run's own id (`apps/server/src/queue/client.ts`)                                                                                                                                                                                                                                           |
+| A run is recorded as it starts      | the automation's run row is written when the run starts (`apps/worker/src/automation-run.ts`), and the run's id is minted by the scheduler, by the event watcher and by a resource refresh (`apps/worker/src/scheduler.ts`, `apps/worker/src/event-watcher.ts`, `apps/server/src/modules/resources/service.ts`)                                                                   |
+| The owner can see the uncertain run | a chat turn and a task's turn are published as uncertain and the waiting list carries them, with the reason; an automation's run has no conversation and no turn of its own, so it is published on the run itself, where the owner reads it with the automation's other runs (`apps/server/src/api/waiting.ts`, `apps/worker/src/reconcile.ts`)                                   |
+| The owner can settle it             | the owner's conclusion settles the run and the held job — a chat turn by `POST /api/executions/:id/resolve`, a task's turn by the task's own acceptance, an automation's run by `POST /api/automations/:id/runs/:runId/resolve` (`apps/server/src/modules/executions/service.ts`, `apps/server/src/modules/factory/service.ts`, `apps/server/src/modules/automations/service.ts`) |
+| The runtime may be asked            | `reconcile` on the adapter's extras (`packages/contracts/src/agent.ts`), asked by the worker (`apps/worker/src/reconcile.ts`)                                                                                                                                                                                                                                                     |
+| A reconnected run is the same run   | the same execution, correlation id and session reference (`apps/worker/src/reconcile.ts`)                                                                                                                                                                                                                                                                                         |
+| The matrix records the limit        | `docs/adapters.md`, one row per adapter type, with the column "After a restart"                                                                                                                                                                                                                                                                                                   |
 
 ### The commands that were run, and what they said
 
@@ -162,18 +162,21 @@ after each one. Both packages were rebuilt from the restored sources before
 each mutation, so no mutation was measured against a build left over from the
 one before it.
 
-| The mutation                                        | What the gate said                                                                                                                                                                                                  |
-| --------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| the rule replays work that had started              | `The stale-job rule answered "requeue" for a run that is "started", and it should answer "reconcile".` and `The job of a run that had started was offered to another worker.`                                       |
-| two workers can end the same turn twice             | `Two workers looking at the same dead job ended its turn 2 times (completed, completed), and a turn ends once.`                                                                                                     |
-| the automation's run is not recorded as started     | `The automation's run was not recorded as started before it did anything: while the run was in flight the product said "nothing".`                                                                                  |
-| a write is not fenced on the lease                  | `A stale executor finished a job whose lease had moved on.`                                                                                                                                                         |
-| the build is not the build of this tree             | `server's built queue\client.js is not what this tree builds, so the gate would be exercising a different product than the tree. Run "npm run build".`                                                              |
-| the tree's uncertainty does not reach the task      | `The task whose turn could not be confirmed is "active", and it should be published as uncertain.` and `The task whose turn could not be confirmed is not on the owner's waiting list, so the owner cannot see it.` |
-| a task's turn is never published as uncertain       | `A task's turn whose outcome could not be confirmed is published as "running", and it should be published as uncertain.`                                                                                            |
-| an automation's run is not published as uncertain   | `An automation's run whose outcome could not be confirmed is "running", and it should be published as uncertain.`                                                                                                   |
-| the owner's conclusion does not settle the run      | `The owner's conclusion did not settle the automation's run: the run is "unknown", and it still says its outcome could not be confirmed.`                                                                           |
-| the owner's conclusion does not settle the held job | `The owner's conclusion did not settle the job that was held for the run: the job is "unknown", and it still says the outcome was never confirmed.`                                                                 |
+| The mutation                                         | What the gate said                                                                                                                                                                                                                                                                                                                                          |
+| ---------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| the rule replays work that had started               | `The stale-job rule answered "requeue" for a run that is "started", and it should answer "reconcile".` and `The job of a run that had started was offered to another worker.`                                                                                                                                                                               |
+| two workers can end the same turn twice              | `Two workers looking at the same dead job ended its turn 2 times (completed, completed), and a turn ends once.`                                                                                                                                                                                                                                             |
+| the automation's run is not recorded as started      | `The automation's run was not recorded as started before it did anything: while the run was in flight the product said "nothing".`                                                                                                                                                                                                                          |
+| a write is not fenced on the lease                   | `A stale executor finished a job whose lease had moved on.`                                                                                                                                                                                                                                                                                                 |
+| the build is not the build of this tree              | `server's built queue\client.js is not what this tree builds, so the gate would be exercising a different product than the tree. Run "npm run build".`                                                                                                                                                                                                      |
+| the tree's uncertainty does not reach the task       | `The task whose turn could not be confirmed is "active", and it should be published as uncertain.` and `The task whose turn could not be confirmed is not on the owner's waiting list, so the owner cannot see it.`                                                                                                                                         |
+| a task's turn is never published as uncertain        | `A task's turn whose outcome could not be confirmed is published as "running", and it should be published as uncertain.`                                                                                                                                                                                                                                    |
+| an automation's run is not published as uncertain    | `An automation's run whose outcome could not be confirmed is "running", and it should be published as uncertain.`                                                                                                                                                                                                                                           |
+| the owner's conclusion does not settle the run       | `The owner's conclusion did not settle the automation's run: the run is "unknown", and it still says its outcome could not be confirmed.`                                                                                                                                                                                                                   |
+| the owner's conclusion does not settle the held job  | `The owner's conclusion did not settle the job that was held for the run: the job is "unknown", and it still says the outcome was never confirmed.`                                                                                                                                                                                                         |
+| the owner's conclusion does not settle a task's turn | `The owner's conclusion did not settle the uncertain turn of the task: the turn is "unknown".` and `The owner's conclusion did not settle the job that was held for the task: the job is "unknown", and it still says the outcome was never confirmed.`                                                                                                     |
+| the queue cannot tell what a job was working on      | `The queue says it is working on "not-started" for a job whose turn it cannot find, and it should say it cannot tell.` and `A job whose item the product cannot identify was answered "requeue", and it should be held rather than run again.` and `A job whose item the product cannot identify is "queued", and it should be held rather than run again.` |
+| the agent's tool is not bounded by the workspace     | `An agent granted the tool in one workspace closed a run in another workspace: the tool answered without refusing.` and `An agent granted the tool in one workspace closed a run in another workspace: the run is "completed".`                                                                                                                             |
 
 The first mutation is the one that mattered: a rule that replayed work which
 had already started broke every promise the slice makes, and the gate said so
@@ -198,7 +201,10 @@ them "because the gate passes".
 The unit tests beside the gate are `apps/server/src/__tests__/queue.test.ts`
 (the rule on its own, the lease fence on each write, the item-state probe for a
 chat turn, a task turn and an automation's run, the atomic transition, and the
-held job settled by the owner) and
+held job settled by the owner — for a chat turn and for a task's turn, with the
+payload the product enqueues) and
+`apps/server/src/__tests__/unknown-outcome.test.ts` (the owner's acceptance
+closes a task's uncertain turn and settles the job that was held for it) and
 `apps/worker/src/__tests__/unknown-outcome.test.ts` (a job whose outcome was
 unknown is held and never offered again; an automation's run is recorded as
 started before it does anything; two workers looking at the same dead job end
@@ -290,6 +296,41 @@ was supposed to be the evidence for it.
   ended. The contract says a turn ends _at most_ once, and why.
 - **Four more citations were wrong**, two of them on `main` already, and the
   Evidence counts were understated. They are repaired and corrected.
+
+### What the third independent review found, and what changed
+
+A third reviewer read the slice against the tree, ran it, and wrote its own
+reproduction. Its verdict was a failure again — one Major, two Minors and two
+Nits — and the Major was the one that mattered: the contract promises that the
+owner's conclusion settles the run **and the job that was held for it**, and for
+a task's turn it settled neither the job nor the run.
+
+- **A task's acceptance did not settle the job that was held for it.** The chat
+  turn's job is settled at `apps/server/src/modules/executions/service.ts` and
+  the automation's run's job at `apps/server/src/modules/automations/service.ts`;
+  the task's had no equivalent, so the queue row stayed `unknown` with its
+  `lastError` still saying that the outcome was never confirmed. The owner's
+  goal was met and the queue's record contradicted it, for ever. The owner's
+  acceptance now closes the task's uncertain turn and settles the job that was
+  held for it, through the same queue call the other two kinds use. The gate
+  asserts both, and the unit test beside it says so in a sentence.
+- **The gate never drove the agent's tool.** The gate called the owner's route,
+  so a regression in the tool's workspace scoping passed the gate and was caught
+  only by a unit test. The gate now calls the tool the way an agent calls it —
+  an agent granted `automation.run.resolve` in one workspace, pointed at a run in
+  another — and asserts that the tool refuses and that the run is untouched.
+- **The gate's last source-text check was a substring test.** It read
+  `apps/server/src/queue/client.ts` as text and looked for `decideStaleJob`, so
+  a comment naming the rule would have satisfied it. The check is gone: the gate
+  asks the queue what it knows about a job and what it answers, and holds the
+  answer against the shared rule.
+- **A citation named the caller, not the module that writes the row.** The
+  Evidence named `apps/worker/src/executor.ts` for the run row that
+  `apps/worker/src/automation-run.ts` writes, and it named one of the three
+  paths that mint a run's id. It names the writer and all three now.
+- **The probe's task fallback read the task's execution without an ordering.**
+  A task with two execution rows would have had an arbitrary one picked. The
+  newest one is the turn the job is about, so the probe asks for it.
 
 ### What is not covered
 
