@@ -45,6 +45,7 @@ const CAPABILITY_LABELS: Array<{ key: keyof AgentCapabilities; label: string }> 
   { key: 'approvals', label: 'asks for approvals' },
   { key: 'artifacts', label: 'produces artifacts' },
   { key: 'acceptsAttachments', label: 'takes attachments' },
+  { key: 'acceptsImages', label: 'takes pictures' },
   { key: 'acceptsSteering', label: 'takes input mid-turn' },
 ];
 

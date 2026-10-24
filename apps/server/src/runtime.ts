@@ -64,6 +64,7 @@ export { createFactoryService } from './modules/factory/service.js';
 export {
   pinCapabilityView,
   turnAcceptsAttachments,
+  turnAcceptsImages,
   turnAcceptsSteering,
 } from './modules/capabilities/capability-view.js';
 export { loadEffectiveAutonomyPolicy } from './modules/autonomy/service.js';

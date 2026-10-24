@@ -79,6 +79,7 @@ let runtime: Runtime;
 let context: ExecutorContext;
 let adapter: RecordingAdapter;
 let filePath = '';
+let imagePath = '';
 let dataDir = '';
 
 const NOW = '2026-01-01T00:00:00.000Z';
@@ -159,6 +160,34 @@ function seed(capabilities: AgentCapabilities): void {
     })
     .run();
 
+  db.insert(resources)
+    .values({
+      id: 'res_2',
+      workspaceId: 'wsp_1',
+      type: 'document',
+      schemaVersion: 1,
+      revision: 1,
+      title: 'marker.png',
+      data: { kind: 'file', filename: 'marker.png', mimeType: 'image/png', size: 9 },
+      createdBy: 'usr_1',
+      templateId: null,
+      templateVersion: null,
+      createdAt: NOW,
+      updatedAt: NOW,
+    })
+    .run();
+
+  db.insert(resourceFiles)
+    .values({
+      id: 'rfile_2',
+      resourceId: 'res_2',
+      path: imagePath,
+      mimeType: 'image/png',
+      size: 9,
+      createdAt: NOW,
+    })
+    .run();
+
   db.insert(messages)
     .values({
       id: 'msg_parent',
@@ -231,6 +260,8 @@ beforeEach(() => {
   dataDir = fs.mkdtempSync(path.join(os.tmpdir(), 'pos-parts-'));
   filePath = path.join(dataDir, 'notes.txt');
   fs.writeFileSync(filePath, 'the file says hello');
+  imagePath = path.join(dataDir, 'marker.png');
+  fs.writeFileSync(imagePath, 'PNG-BYTES');
 
   const config = loadConfig({
     ...process.env,
@@ -347,5 +378,107 @@ describe("a message's parts", () => {
     expect(turn?.context).toContain('notes.txt');
     expect(turn?.context).toContain('its bytes are not text');
     expect(turn?.context).not.toContain('This route cannot carry attachments');
+  });
+});
+
+describe('a picture the owner attached', () => {
+  /** The owner attaches the picture, and nothing else. */
+  function attachThePicture(): void {
+    handle.db
+      .update(messages)
+      .set({
+        content: [
+          { type: 'text', text: 'What does the attached picture say?' },
+          {
+            type: 'image',
+            resourceId: 'res_2',
+            displayName: 'marker.png',
+            mimeType: 'image/png',
+          },
+        ],
+      })
+      .run();
+  }
+
+  it('reaches a turn whose connection can carry pictures', async () => {
+    seed({ ...CAPABILITIES, acceptsAttachments: true, acceptsImages: true });
+    attachThePicture();
+
+    await executeJob(context, job());
+
+    const turn = adapter.turns[0];
+    expect(turn?.parts).toEqual([
+      {
+        type: 'image',
+        resourceId: 'res_2',
+        filename: 'marker.png',
+        mimeType: 'image/png',
+        // The bytes, base64. A picture is not text, and a turn that carried
+        // its text would carry a picture the runtime cannot see.
+        data: Buffer.from('PNG-BYTES').toString('base64'),
+      },
+    ]);
+  });
+
+  it('does not reach a turn whose connection cannot carry pictures', async () => {
+    seed({ ...CAPABILITIES, acceptsAttachments: true });
+    attachThePicture();
+
+    await executeJob(context, job());
+
+    const turn = adapter.turns[0];
+    expect(turn?.parts).toBeUndefined();
+    // The turn says why, and the reason is the true one: the route can take
+    // a file's words and cannot take a picture's bytes.
+    expect(turn?.context).toContain('marker.png');
+    expect(turn?.context).toContain('cannot carry pictures');
+    expect(turn?.context).not.toContain('This route cannot carry attachments');
+  });
+
+  it('does not reach a turn whose connection cannot carry attachments at all', async () => {
+    seed(CAPABILITIES);
+    attachThePicture();
+
+    await executeJob(context, job());
+
+    const turn = adapter.turns[0];
+    expect(turn?.parts).toBeUndefined();
+    expect(turn?.context).toContain('cannot carry attachments');
+  });
+
+  it('is a picture even when the owner attached it as a file', async () => {
+    seed({ ...CAPABILITIES, acceptsAttachments: true, acceptsImages: true });
+    // The part says "file", the resource says "image/png". The resource's own
+    // claim about its bytes is the one that counts: a file the owner picked
+    // from the workspace is the same picture.
+    handle.db
+      .update(messages)
+      .set({
+        content: [
+          { type: 'text', text: 'What does the attached picture say?' },
+          { type: 'file', resourceId: 'res_2' },
+        ],
+      })
+      .run();
+
+    await executeJob(context, job());
+
+    const turn = adapter.turns[0];
+    expect(turn?.parts).toHaveLength(1);
+    expect(turn?.parts?.[0]?.type).toBe('image');
+  });
+
+  it('is carried as bytes and not as text', async () => {
+    seed({ ...CAPABILITIES, acceptsAttachments: true, acceptsImages: true });
+    attachThePicture();
+
+    await executeJob(context, job());
+
+    const part = adapter.turns[0]?.parts?.[0];
+    expect(part?.type).toBe('image');
+    expect(part && 'text' in part).toBe(false);
+    expect(part && 'data' in part ? part.data : null).toBe(
+      Buffer.from('PNG-BYTES').toString('base64'),
+    );
   });
 });

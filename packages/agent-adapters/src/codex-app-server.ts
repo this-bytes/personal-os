@@ -459,6 +459,9 @@ export class CodexAppServerAdapter implements AgentAdapter {
       // A file the owner attached is carried as text, because the protocol
       // has no item for a file with its content.
       acceptsAttachments: true,
+      // A picture has an item of its own, and the route carries the bytes in
+      // it.
+      acceptsImages: true,
     };
   }
 
@@ -838,6 +841,12 @@ function buildPrompt(input: AgentTurnInput): string {
  * names the file. That is the honest mapping: the route says it carries the
  * content, and the content is what the runtime receives.
  *
+ * A picture has an item of its own, so it is carried as one: an image by url,
+ * with the bytes as a data url. **Not a local image by path** — a path is a
+ * path on the runtime's machine, and the rule is that the content travels.
+ * Both shapes were measured against the installed runtime, and both were
+ * taken; the path was not, for that reason.
+ *
  * The owner's words are in the first item, with the room's context. They are
  * not carried twice: the turn's message is the words, and the parts are what
  * the words do not carry.
@@ -846,6 +855,13 @@ export function buildTurnInput(input: AgentTurnInput): Array<Record<string, unkn
   const items: Array<Record<string, unknown>> = [{ type: 'text', text: buildPrompt(input) }];
 
   for (const part of input.parts ?? []) {
+    if (part.type === 'image') {
+      items.push({
+        type: 'image',
+        url: `data:${part.mimeType};base64,${part.data}`,
+      });
+      continue;
+    }
     items.push({
       type: 'text',
       text: `The owner attached "${part.filename}":\n\n${part.text}`,

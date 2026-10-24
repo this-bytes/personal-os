@@ -150,7 +150,7 @@ transition into and out of `unknown` is written to the audit trail.
 This entry is the contract for **WI-008**, and the code implements it — as of
 `9ad4f98`. `messageStatusSchema` carries `'unknown'` at
 `packages/contracts/src/conversation.ts:106`, `executionStatusSchema` at
-`packages/contracts/src/agent.ts:193`, and `taskStatusSchema` at
+`packages/contracts/src/agent.ts:206`, and `taskStatusSchema` at
 `packages/contracts/src/factory.ts:25`.
 
 **Migration.** Nothing is reclassified. Rows recorded as `failed` before this
@@ -610,6 +610,12 @@ interface AgentCapabilities {
    * [Contract 7](#contract-7--the-interaction-model).
    */
   acceptsAttachments?: boolean;
+  /**
+   * Whether the agent takes a picture, and not only its text. A connection
+   * that does not report it cannot be sent a picture; see
+   * [Contract 7](#contract-7--the-interaction-model).
+   */
+  acceptsImages?: boolean;
 }
 
 interface AgentAdapter {
@@ -1987,8 +1993,8 @@ truncated.
 
 **A daily cap is a cap on the workspace.** The workspace's spend for the day is the
 sum of the spend units on the executions of that workspace since 00:00 UTC
-(`apps/worker/src/executor.ts:1298-1308`,
-`apps/worker/src/executor.ts:1302-1307`), and it is the same day for every workspace —
+(`apps/worker/src/executor.ts:1301-1311`,
+`apps/worker/src/executor.ts:1305-1310`), and it is the same day for every workspace —
 the system stores ISO timestamps everywhere and has no per-workspace timezone. A daily
 cap of zero is no cap, as it is for the chain's spend limit. The cap applies across
 the workspace's conversations and goals, and not per chain, which is the whole
@@ -2158,7 +2164,7 @@ not.**
 failure. It is the same word the unknown outcome uses
 ([The unknown outcome](#the-unknown-outcome)), and it is in this vocabulary because
 the product produces it: the worker writes it when a turn's outcome cannot be
-confirmed (`apps/worker/src/execution-owner.ts:749`), and the conversation dispatch writes it
+confirmed (`apps/worker/src/execution-owner.ts:756`), and the conversation dispatch writes it
 when a turn stops for the same reason
 (`apps/server/src/modules/conversations/dispatch.ts:315`). **A vocabulary without
 `unknown` would leave the unknown outcome unrepresentable in the trail**, and the
@@ -2555,7 +2561,7 @@ interface ArtifactEvidence {
 **What the agent did** is `toolCalls`: the tool calls of that execution and how
 each ended. The calls are the execution's `tool.started` events and the
 `tool.completed` events that answer them
-(`packages/contracts/src/agent.ts:228-233`, `:234-239`). A call that answered has
+(`packages/contracts/src/agent.ts:241-246`, `:247-252`). A call that answered has
 `outcome: 'completed'` and a `completedAt`; a call that did not has
 `outcome: 'unfinished'` and a `completedAt` of `null`. The events name the tool
 and not the call, so a call is answered by the next completion for that tool.
@@ -3125,6 +3131,61 @@ the protocol's `resource` block, and the Codex App Server route — whose pinned
 protocol has no item for a file with its content — sends the content as a text
 item that names the file.
 
+**A picture is a part of its own, and it travels as bytes.** A file's content is
+text and a picture's content is not, so the two travel on two capabilities and in
+two kinds of part:
+
+```ts
+interface AgentCapabilities {
+  // ...
+  acceptsSteering?: boolean;
+  acceptsAttachments?: boolean;
+  acceptsImages?: boolean;
+}
+
+interface AgentTurnInput {
+  // ...
+  parts?: AgentTurnPart[];
+}
+```
+
+```ts
+export const agentTurnPartSchema = z.discriminatedUnion('type', [
+  z.object({
+    type: z.literal('file'),
+    resourceId: z.string(),
+    filename: z.string(),
+    mimeType: z.string(),
+    text: z.string(),
+  }),
+  z.object({
+    type: z.literal('image'),
+    resourceId: z.string(),
+    filename: z.string(),
+    mimeType: z.string(),
+    data: z.string(),
+  }),
+]);
+```
+
+The bytes are in the part, for the same reason the text was: an adapter is given
+a resource id it cannot follow, and a path it cannot open. Each adapter maps the
+picture into its own protocol's shape: the ACP route sends the protocol's `image`
+block, and the Codex App Server route sends the bytes as an image by url — a data
+url, and not a local image by path, because a path is a path on the runtime's
+machine and this picture is not on it.
+
+**Absent means absent, for pictures as for files.** A connection that does not
+report `acceptsImages` is an agent that takes text and no pictures. The composer
+refuses the picture in a room where no agent can take it, and names the agents
+that cannot; a turn that could not carry a picture says so in its context, with
+the true reason — that the route cannot carry pictures, not that the bytes are
+not text.
+
+**The union grows additively.** A turn that carries no picture is unchanged, and
+a part written before this existed still parses. Nothing was reinterpreted and
+nothing was migrated.
+
 **A steer targets one agent.** A message with `delivery: 'steer'` is delivered
 to the running turn's agent alone. It does not wake other participants, and it
 does not count as a new turn for the duplicate check. This extends
@@ -3209,15 +3270,27 @@ file the owner attaches is uploaded, and the message carries a reference to the
 resource the upload created; the composer also offers the resources that
 already exist, and a message may carry both. The file reaches the agent only
 on a route that reports `acceptsAttachments`, and the composer refuses it in a
-room where no agent can take it. The trace shows the events the log
-holds; it is not a complete account of what an adapter did inside its own
-runtime.
+room where no agent can take it. **A picture the owner attaches travels the
+same way and on its own capability:** the message carries a reference to the
+resource, the room shows the picture, the picture reaches the agent only on a
+route that reports `acceptsImages`, and the composer refuses it in a room where
+no agent can take it. The trace shows the events the log holds; it is not a
+complete account of what an adapter did inside its own runtime.
 
 This entry is the contract for **WI-141**, and the code implements it — as of
 `dad1801` — the shapes are in `packages/contracts/src/chat.ts`, the activity
 read model is `apps/server/src/modules/executions/activity.ts`, and the surface
 is `apps/web/src/components/chat/`. The slice's own record is
 [docs/contract-chat-rich-client.md](docs/contract-chat-rich-client.md).
+
+**The picture that the owner attaches** is a part of the same contract. This
+entry is the contract for **WI-167**, and the code implements it — the part is
+`packages/contracts/src/agent.ts`, the resolver is
+`apps/worker/src/content-parts.ts`, the ACP route's block is
+`packages/agent-adapters/src/acp.ts`, the App Server route's item is
+`packages/agent-adapters/src/codex-app-server.ts`, and the surface is
+`apps/web/src/components/Composer.tsx`. The slice's own record is
+[docs/spec/r1-5-content-images.md](docs/spec/r1-5-content-images.md).
 
 **A prompt the owner presses is a message.** An empty room offers a row of
 prompts, and pressing one sends that prompt as the message it is: through the
@@ -4024,8 +4097,8 @@ connection that was granted one of them leaves `execution.outcome.resolved`,
 `task.accepted`, `resource.published` or `resource.executed` behind with
 `actorType: 'agent'`. The other writer of the trail
 that is not an owner HTTP route is
-the worker — its `unknown` record (`apps/worker/src/execution-owner.ts:742-751`) and the
-policy refusals it writes (`apps/worker/src/execution-owner.ts:772-789`). So every audited
+the worker — its `unknown` record (`apps/worker/src/execution-owner.ts:749-758`) and the
+policy refusals it writes (`apps/worker/src/execution-owner.ts:779-796`). So every audited
 operation is an owner operation, except the worker's own entries, which carry
 `actorType: 'agent'`. **The second measure does not count the work an agent does
 through MCP**: an agent can create and update resources all day and the
@@ -4040,9 +4113,9 @@ but the route helper hardcodes `success`
 (`apps/server/src/modules/audit/service.ts:79`). The two values a writer does
 produce come from the worker: the `unknown` of
 [The unknown outcome](#the-unknown-outcome)
-(`apps/worker/src/execution-owner.ts:749`), and the `failure` it writes when the
+(`apps/worker/src/execution-owner.ts:756`), and the `failure` it writes when the
 autonomy policy refuses a turn or an action
-(`apps/worker/src/execution-owner.ts:789`). **An operation that failed at the route is
+(`apps/worker/src/execution-owner.ts:796`). **An operation that failed at the route is
 counted here as an operation that completed.**
 
 **The route exists.** It answers with the shape above, member for member: the

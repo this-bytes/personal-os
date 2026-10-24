@@ -143,6 +143,19 @@ export const agentCapabilitiesSchema = z.object({
    * connection written before this existed is an agent that takes text.
    */
   acceptsAttachments: z.boolean().optional(),
+  /**
+   * Whether the agent takes a picture, and not only its text.
+   *
+   * A connection that does not report it cannot be sent a picture: the owner's
+   * image stays in the room and the panel says the route cannot carry it.
+   * Absent means absent, on the same terms as `acceptsAttachments` — a
+   * connection written before this existed is an agent that takes text.
+   *
+   * It is a capability of its own because a picture is bytes and a file's
+   * content is text: a route that can take a file's words is not thereby a
+   * route that can take a picture.
+   */
+  acceptsImages: z.boolean().optional(),
 });
 export type AgentCapabilities = z.infer<typeof agentCapabilitiesSchema>;
 
@@ -288,6 +301,23 @@ export const agentTurnPartSchema = z.discriminatedUnion('type', [
     /** The file's content, as text. */
     text: z.string(),
   }),
+  z.object({
+    type: z.literal('image'),
+    /** The resource the picture is, in the product's own name for it. */
+    resourceId: z.string(),
+    /** The name the owner gave it. */
+    filename: z.string(),
+    /** What kind of picture it is. */
+    mimeType: z.string(),
+    /**
+     * The picture's bytes, as base64.
+     *
+     * The bytes are in the part for the same reason the text was: an adapter is
+     * given a resource id it cannot follow, and a path it cannot open. A
+     * protocol that takes bytes inline takes them this way.
+     */
+    data: z.string(),
+  }),
 ]);
 export type AgentTurnPart = z.infer<typeof agentTurnPartSchema>;
 
@@ -306,6 +336,10 @@ export interface AgentTurnInput {
    * and what is left is what the turn carries. The parts are present only on a
    * turn whose connection reports `acceptsAttachments`; a connection that does
    * not report it is sent the text and nothing else.
+   *
+   * A picture is a part of its own, and it is present only on a turn whose
+   * connection reports `acceptsImages`. A file's content is text and a
+   * picture's content is bytes, so the two travel on two capabilities.
    */
   parts?: AgentTurnPart[];
   executionId: string;

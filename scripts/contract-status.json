@@ -950,6 +950,46 @@
           "value": "\\(messages\\.data \\?\\? \\[\\]\\)\\.length === 0"
         }
       ]
+    },
+    {
+      "id": "the-picture-the-owner-attaches-wi-167",
+      "section": "The chat surface",
+      "note": "This entry is the contract for WI-167, and the code implements it",
+      "claim": "implemented",
+      "item": "WI-167",
+      "why": "WI-167's picture: the part that carries the bytes, the capability that says the route can take them, the resolver that decides what a picture is, and each route's own shape for one.",
+      "expect": [
+        {
+          "kind": "present-pattern",
+          "path": "packages/contracts/src/agent.ts",
+          "value": "type: z\\.literal\\('image'\\)"
+        },
+        {
+          "kind": "present-pattern",
+          "path": "packages/contracts/src/agent.ts",
+          "value": "acceptsImages: z\\.boolean\\(\\)\\.optional\\(\\)"
+        },
+        {
+          "kind": "present-pattern",
+          "path": "apps/worker/src/content-parts.ts",
+          "value": "carryImages: boolean"
+        },
+        {
+          "kind": "present-pattern",
+          "path": "packages/agent-adapters/src/acp.ts",
+          "value": "type: 'image'"
+        },
+        {
+          "kind": "present-pattern",
+          "path": "packages/agent-adapters/src/codex-app-server.ts",
+          "value": "data:\\$\\{part\\.mimeType\\};base64,\\$\\{part\\.data\\}"
+        },
+        {
+          "kind": "present-text",
+          "path": "apps/web/src/lib/chat.ts",
+          "value": "type: 'image'"
+        }
+      ]
     }
   ]
 }

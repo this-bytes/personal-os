@@ -202,11 +202,15 @@ export function ConversationDetail(): React.JSX.Element {
   }, [agents.data]);
 
   /**
-   * Whether the room's agents can carry an attachment.
+   * Whether the room's agents can carry what the owner attaches.
    *
    * A room where no agent can take one refuses the file, and names the agents
    * that cannot: a file the owner attaches and the runtime never sees is a
    * file the owner believes was read.
+   *
+   * A picture is a separate verdict. A route that takes a file's words is not
+   * thereby a route that takes a picture's bytes, and the panel says which
+   * agent cannot take the picture.
    */
   const attachmentState = useMemo(() => {
     const inRoom = (conversation.data?.participants ?? [])
@@ -221,16 +225,24 @@ export function ConversationDetail(): React.JSX.Element {
       return {
         available: false,
         reason: 'There is no agent in this room to carry an attachment.',
+        pictures: false,
+        pictureReason: 'There is no agent in this room to carry a picture.',
       };
     }
     const cannot = inRoom.filter((agent) => agent.capabilities?.acceptsAttachments !== true);
-    if (cannot.length === inRoom.length) {
-      return {
-        available: false,
-        reason: `${cannot.map((agent) => agent.name).join(', ')} cannot take an attachment on this route.`,
-      };
-    }
-    return { available: true, reason: null };
+    const cannotPictures = inRoom.filter((agent) => agent.capabilities?.acceptsImages !== true);
+    return {
+      available: cannot.length !== inRoom.length,
+      reason:
+        cannot.length === inRoom.length
+          ? `${cannot.map((agent) => agent.name).join(', ')} cannot take an attachment on this route.`
+          : null,
+      pictures: cannotPictures.length !== inRoom.length,
+      pictureReason:
+        cannotPictures.length === inRoom.length
+          ? `${cannotPictures.map((agent) => agent.name).join(', ')} cannot take a picture on this route.`
+          : null,
+    };
   }, [conversation.data?.participants, agentById]);
 
   // The prompts an empty room offers. They are the room's own — one of them

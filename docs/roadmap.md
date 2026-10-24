@@ -117,6 +117,21 @@ free allowance was spent before the second turn could be asked.
 points for the five named runtimes. Pi and OpenClaw are not installed here, and
 an installed runtime is not yet a demonstrated one.
 
+**The fifth slice closed the one item the rich-chat checklist still had open.**
+The checklist names _files/images_, and the file half was delivered with the
+third slice; the picture half was not, and the adapters' matrix said so in its
+own words: the part carried the file's content as text, so a file whose bytes
+were not text could not be carried, and _the protocol has an `image` block that
+takes bytes, and that mapping is its own work_. The fix was in the shared
+boundary and in each route's own shape: a picture is a part of its own, it
+travels as bytes, and the ACP route sends the protocol's `image` block while
+the Codex App Server route sends the bytes as an image by url — a data url, and
+not a local image by path, because a path is a path on the runtime's machine.
+The runtime's half was measured first: the installed Codex read a picture sent
+either way. **The picture now reaches the runtime** —
+[the demonstration](demonstration-content-images-2026-10-25.md),
+[SPEC-R1-5](spec/r1-5-content-images.md) — and the room shows the picture.
+
 **R3 has a team room.** A coordinator dispatches to a worker, the worker runs, the
 result returns, and the handoff is visible. See
 [ADR 0011](decisions/0011-feature-slots.md) and the slice's own record for what

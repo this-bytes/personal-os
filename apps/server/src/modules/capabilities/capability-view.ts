@@ -63,17 +63,7 @@ export function turnAcceptsSteering(
   db: Database,
   turn: { agentConnectionId: string | null; capabilityView: TurnCapabilityView | null },
 ): boolean {
-  const pinned = turn.capabilityView?.capabilities;
-  if (pinned) return pinned.acceptsSteering === true;
-  if (turn.capabilityView) return false;
-  if (!turn.agentConnectionId) return false;
-
-  const row = db
-    .select({ capabilities: agentConnections.capabilities })
-    .from(agentConnections)
-    .where(eq(agentConnections.id, turn.agentConnectionId))
-    .get();
-  return (row?.capabilities as AgentCapabilities | null | undefined)?.acceptsSteering === true;
+  return turnReports(db, turn, 'acceptsSteering');
 }
 
 /**
@@ -91,8 +81,40 @@ export function turnAcceptsAttachments(
   db: Database,
   turn: { agentConnectionId: string | null; capabilityView: TurnCapabilityView | null },
 ): boolean {
+  return turnReports(db, turn, 'acceptsAttachments');
+}
+
+/**
+ * Whether a turn can carry a picture.
+ *
+ * The same rule again, for the same reason, about the capability that says the
+ * runtime takes bytes and not only text.
+ */
+export function turnAcceptsImages(
+  db: Database,
+  turn: { agentConnectionId: string | null; capabilityView: TurnCapabilityView | null },
+): boolean {
+  return turnReports(db, turn, 'acceptsImages');
+}
+
+/**
+ * Whether the turn's connection reports a capability.
+ *
+ * One rule, three capabilities: a turn runs against the capability set it was
+ * admitted with, so the turn's own view is the answer when it has one. A turn
+ * whose view says the capabilities were never observed reports nothing, and a
+ * turn recorded before the view existed is answered for by the connection.
+ *
+ * **Absent means absent** for all three: a capability that is not reported is
+ * a capability the agent does not have.
+ */
+function turnReports(
+  db: Database,
+  turn: { agentConnectionId: string | null; capabilityView: TurnCapabilityView | null },
+  capability: 'acceptsSteering' | 'acceptsAttachments' | 'acceptsImages',
+): boolean {
   const pinned = turn.capabilityView?.capabilities;
-  if (pinned) return pinned.acceptsAttachments === true;
+  if (pinned) return pinned[capability] === true;
   if (turn.capabilityView) return false;
   if (!turn.agentConnectionId) return false;
 
@@ -101,5 +123,5 @@ export function turnAcceptsAttachments(
     .from(agentConnections)
     .where(eq(agentConnections.id, turn.agentConnectionId))
     .get();
-  return (row?.capabilities as AgentCapabilities | null | undefined)?.acceptsAttachments === true;
+  return (row?.capabilities as AgentCapabilities | null | undefined)?.[capability] === true;
 }
