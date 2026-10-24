@@ -222,6 +222,41 @@
 }
 
 /*
+ * The fade a scrolling column wears at the edge that has more to show.
+ *
+ * The vertical counterpart of `scroll-fade-x`, and the same rule in the other
+ * axis: the edge that softens is the edge with something behind it — the top
+ * when there is more above, the bottom when there is more below, and neither
+ * when the column has reached its end.
+ *
+ * It comes from shadcn/ui's `scroll-fade`, which is MIT licensed.
+ */
+@utility scroll-fade-b {
+  @supports (animation-timeline: scroll()) {
+    animation-name: pos-fade-block;
+    animation-duration: auto;
+    animation-timing-function: linear;
+    animation-fill-mode: both;
+    animation-timeline: scroll(self block);
+  }
+}
+
+@keyframes pos-fade-block {
+  0% {
+    mask-image: linear-gradient(to bottom, transparent 0, black 1.5rem);
+  }
+  15% {
+    mask-image: linear-gradient(to bottom, black 0, black 100%);
+  }
+  85% {
+    mask-image: linear-gradient(to bottom, black 0, black 100%);
+  }
+  100% {
+    mask-image: linear-gradient(to bottom, black calc(100% - 1.5rem), transparent 100%);
+  }
+}
+
+/*
  * The scrollbar a row hides.
  *
  * A row of prompts is a strip, not a document, and a scrollbar under it says

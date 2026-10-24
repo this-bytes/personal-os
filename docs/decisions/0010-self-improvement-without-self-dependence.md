@@ -20,3 +20,5 @@ claim that boot-time migration approval or every rollback scenario is implemente
 Product-side coordination follows R3/R4 in [the roadmap](../roadmap.md).
 Development follows [FACTORY.md](../../FACTORY.md). The prior unphased runbook and
 role-host plan remain available in Git at 507708b, not as executable instructions.
+The owner's recovery decisions are recorded in
+[ADR 0018](0018-the-chat-first-recovery-decisions.md).

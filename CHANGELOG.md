@@ -132,5 +132,13 @@ verify:stack` signs in, registers an agent, posts a message to it and waits
   the schemas still use zod's v3 API through the `zod/v3` subpath, so the
   published contract is unchanged. The reasoning is in
   [ADR 0014](docs/decisions/0014-the-contract-schemas-stay-on-zods-v3-api.md).
+- The `body-parser` compressed-body advisory (GHSA-27r3-jxmh-p828) is out of
+  the tree. npm named it on 2026-10-24: body-parser 2.0.0 - 2.3.0 is vulnerable
+  to a denial of service through trailing bytes after a compressed request
+  body, and the pinned 2.3.0 failed the audit on every branch, `main` included.
+  The tree now holds 2.4.0, which carries upstream's fix. It arrives through
+  express 5.3.0, whose range is `^2.3.0`, so no manifest changes and the
+  lockfile gains no package. The licence is unchanged: 2.4.0 ships the same
+  licence file as 2.3.0.
 
 [Unreleased]: https://github.com/this-bytes/personal-os/compare/main...HEAD

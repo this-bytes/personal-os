@@ -2,11 +2,18 @@ import { expect, test } from '@playwright/test';
 import { firstWorkspaceId, signIn } from './support/owner';
 
 /**
- * The chat surface, in a real browser.
+ * The conversation surface, in a real browser.
  *
- * The three things this covers are the three things the owner could not do
- * before: read an agent's words as Markdown, see what the turn is doing in
- * the trace, and stop a turn with an honest answer about what the stop did.
+ * These tests cover a transcript a reader can actually use: the owner's own
+ * words sit in a bubble on their side, an agent's reply is prose on the page,
+ * the reply carries its actions, and the column that holds the conversation is
+ * the one that scrolls.
+ *
+ * The shape of the transcript is only half of it. A conversation is also read
+ * for what happened: the words as Markdown, what the turn is doing in the
+ * trace, the turn's capabilities, who is in the room, and the prompts an
+ * empty room offers. Those are the panels around the transcript, and a
+ * transcript that is only a transcript is not a room.
  */
 
 /**
@@ -24,19 +31,15 @@ test.afterEach(async ({ page }) => {
   }
 });
 
-async function createAgent(
+/** Register an echo agent that answers with the given text. */
+async function registerEchoAgent(
   page: import('@playwright/test').Page,
-  name: string,
-  config: Record<string, unknown> = { reply: 'hi' },
+  workspaceId: string,
+  reply: string,
+  config: Record<string, unknown> = {},
 ): Promise<string> {
-  const workspaceId = await firstWorkspaceId(page);
   const createdAgent = await page.request.post('/api/agents', {
-    data: {
-      workspaceId,
-      name,
-      adapterType: 'echo',
-      config,
-    },
+    data: { workspaceId, name: 'Echo', adapterType: 'echo', config: { reply, ...config } },
   });
   expect(createdAgent.ok()).toBe(true);
   const agentId = (await createdAgent.json()).agent.id as string;
@@ -44,7 +47,81 @@ async function createAgent(
   return agentId;
 }
 
-test.describe('the chat surface', () => {
+/** Open a conversation with the given agent in it. */
+async function openConversation(
+  page: import('@playwright/test').Page,
+  workspaceId: string,
+  agentId: string,
+  title = 'Chat surface',
+): Promise<string> {
+  const createdConversation = await page.request.post('/api/conversations', {
+    data: {
+      workspaceId,
+      title,
+      routingMode: 'mentions',
+      participantAgentConnectionIds: [agentId],
+    },
+  });
+  expect(createdConversation.ok()).toBe(true);
+  return (await createdConversation.json()).conversation.id as string;
+}
+
+/** The composer, by the placeholder it carries. */
+function composer(page: import('@playwright/test').Page) {
+  return page.getByPlaceholder(/Write a message/);
+}
+
+test.describe('the conversation surface', () => {
+  test("the owner's words are a bubble and an agent's reply is prose", async ({ page }) => {
+    await signIn(page);
+    const workspaceId = await firstWorkspaceId(page);
+    const agentId = await registerEchoAgent(
+      page,
+      workspaceId,
+      'Here is a **markdown** reply, with a list:\n\n- one\n- two',
+    );
+    const conversationId = await openConversation(page, workspaceId, agentId);
+
+    await page.goto(`/conversations/${conversationId}`);
+
+    await expect(composer(page)).toBeVisible();
+    await composer(page).fill('@Echo show me a reply');
+    await page.getByRole('button', { name: 'Send message' }).click();
+
+    // The owner's turn is on their side and is a bubble.
+    const ownerTurn = page.locator('[data-slot="message"][data-align="end"]');
+    await expect(ownerTurn).toBeVisible();
+    await expect(ownerTurn.locator('[data-slot="bubble"]')).toBeVisible();
+
+    // The agent's turn is on the other side, and its reply is prose rather
+    // than a panel: the markdown is drawn as text.
+    const agentTurn = page.locator('[data-slot="message"][data-align="start"]').last();
+    await expect(agentTurn).toContainText('markdown', { timeout: 20_000 });
+    await expect(agentTurn.getByRole('button', { name: 'Copy this turn' })).toBeVisible();
+
+    // The transcript is the thing that scrolls, not the page around it.
+    await expect(page.locator('[data-slot="message-scroller-viewport"]')).toBeVisible();
+  });
+
+  test('the copy action puts the words of the turn on the clipboard', async ({ page, context }) => {
+    await signIn(page);
+    const workspaceId = await firstWorkspaceId(page);
+    const agentId = await registerEchoAgent(page, workspaceId, 'A reply worth copying.');
+    const conversationId = await openConversation(page, workspaceId, agentId);
+
+    await context.grantPermissions(['clipboard-read', 'clipboard-write']);
+    await page.goto(`/conversations/${conversationId}`);
+
+    await composer(page).fill('@Echo hello');
+    await page.getByRole('button', { name: 'Send message' }).click();
+
+    const agentTurn = page.locator('[data-slot="message"][data-align="start"]').last();
+    await expect(agentTurn).toContainText('A reply worth copying.', { timeout: 20_000 });
+
+    await agentTurn.getByRole('button', { name: 'Copy this turn' }).click();
+    await expect(agentTurn.getByRole('button', { name: 'Copied to the clipboard' })).toBeVisible();
+  });
+
   test('the owner reads Markdown, sees the trace, and stops a running turn', async ({ page }) => {
     // The case waits for a turn that is deliberately held, so it is given
     // room of its own.
@@ -79,18 +156,9 @@ test.describe('the chat surface', () => {
     // The cost is the worker: it runs one turn at a time, so the worker is
     // busy until the hold runs out. The case waits for the turn to be over
     // before it ends, so the worker is free for the test that follows.
-    const agentId = await createAgent(page, 'Echo', { reply: 'hi', delayMs: 15_000 });
+    const agentId = await registerEchoAgent(page, workspaceId, 'hi', { delayMs: 15_000 });
 
-    const createdConversation = await page.request.post('/api/conversations', {
-      data: {
-        workspaceId,
-        title: 'The trace',
-        routingMode: 'mentions',
-        participantAgentConnectionIds: [agentId],
-      },
-    });
-    expect(createdConversation.ok()).toBe(true);
-    const conversationId = (await createdConversation.json()).conversation.id as string;
+    const conversationId = await openConversation(page, workspaceId, agentId, 'The trace');
 
     await page.goto(`/conversations/${conversationId}`);
 
@@ -99,7 +167,7 @@ test.describe('the chat surface', () => {
     await expect(page.getByText('No events yet.')).toBeVisible();
 
     // The owner writes Markdown.
-    await page.getByPlaceholder(/Write a message/).fill('@Echo look at **this**');
+    await composer(page).fill('@Echo look at **this**');
     await page.getByRole('button', { name: 'Send message' }).click();
 
     // It is drawn as Markdown: the emphasis is emphasis, not asterisks.
@@ -133,18 +201,14 @@ test.describe('the chat surface', () => {
   test('the panel says what the turn was admitted with', async ({ page }) => {
     await signIn(page);
     const workspaceId = await firstWorkspaceId(page);
-    const agentId = await createAgent(page, 'Wren');
+    const agentId = await registerEchoAgent(page, workspaceId, 'hi');
 
-    const createdConversation = await page.request.post('/api/conversations', {
-      data: {
-        workspaceId,
-        title: 'What it was admitted with',
-        routingMode: 'mentions',
-        participantAgentConnectionIds: [agentId],
-      },
-    });
-    expect(createdConversation.ok()).toBe(true);
-    const conversationId = (await createdConversation.json()).conversation.id as string;
+    const conversationId = await openConversation(
+      page,
+      workspaceId,
+      agentId,
+      'What it was admitted with',
+    );
 
     await page.goto(`/conversations/${conversationId}`);
 
@@ -152,7 +216,7 @@ test.describe('the chat surface', () => {
     // rather than that the agent could do nothing.
     await expect(page.getByText(/No turn yet/)).toBeVisible();
 
-    await page.getByPlaceholder(/Write a message/).fill('@Wren hello');
+    await composer(page).fill('@Echo hello');
     await page.getByRole('button', { name: 'Send message' }).click();
 
     // The turn was admitted, so the view is pinned, and the panel shows it.
@@ -168,23 +232,15 @@ test.describe('the chat surface', () => {
   test('the presence list says who is in the room', async ({ page }) => {
     await signIn(page);
     const workspaceId = await firstWorkspaceId(page);
-    const agentId = await createAgent(page, 'Wren');
+    const agentId = await registerEchoAgent(page, workspaceId, 'hi');
 
-    const createdConversation = await page.request.post('/api/conversations', {
-      data: {
-        workspaceId,
-        title: 'Who is here',
-        routingMode: 'mentions',
-        participantAgentConnectionIds: [agentId],
-      },
-    });
-    const conversationId = (await createdConversation.json()).conversation.id as string;
+    const conversationId = await openConversation(page, workspaceId, agentId, 'Who is here');
 
     await page.goto(`/conversations/${conversationId}`);
 
     const presence = page.getByRole('list', { name: 'Participants in the room' });
     await expect(presence).toBeVisible();
-    await expect(presence.getByText('Wren')).toBeVisible();
+    await expect(presence.getByText('Echo', { exact: true })).toBeVisible();
     // The adapter and the state of the connection are beside the name.
     await expect(presence.getByText(/echo · /)).toBeVisible();
   });
@@ -194,18 +250,9 @@ test.describe('the chat surface', () => {
   }) => {
     await signIn(page);
     const workspaceId = await firstWorkspaceId(page);
-    const agentId = await createAgent(page, 'Echo', { reply: 'I can answer questions.' });
+    const agentId = await registerEchoAgent(page, workspaceId, 'I can answer questions.');
 
-    const createdConversation = await page.request.post('/api/conversations', {
-      data: {
-        workspaceId,
-        title: 'The prompts',
-        routingMode: 'mentions',
-        participantAgentConnectionIds: [agentId],
-      },
-    });
-    expect(createdConversation.ok()).toBe(true);
-    const conversationId = (await createdConversation.json()).conversation.id as string;
+    const conversationId = await openConversation(page, workspaceId, agentId, 'The prompts');
 
     await page.goto(`/conversations/${conversationId}`);
 

@@ -1,5 +1,5 @@
-import { spawn, type ChildProcessWithoutNullStreams } from 'node:child_process';
-import { terminateChild } from './util.js';
+import type { ChildProcessWithoutNullStreams } from 'node:child_process';
+import { spawnExecutable, terminateChild } from './util.js';
 
 interface JsonRpcMessage {
   jsonrpc?: string;
@@ -48,7 +48,7 @@ export class JsonRpcStdioClient {
     args: string[],
     options: { cwd?: string; env?: NodeJS.ProcessEnv; spawn?: SpawnProcess },
   ) {
-    const start: SpawnProcess = options.spawn ?? defaultSpawn;
+    const start: SpawnProcess = options.spawn ?? spawnExecutable;
     this.child = start(command, args, {
       cwd: options.cwd ?? process.cwd(),
       env: options.env,
@@ -207,25 +207,6 @@ export class JsonRpcStdioClient {
       `Method "${message.method}" is not supported by this Personal OS adapter.`,
     );
   }
-}
-
-/**
- * The default way to start a supervised process.
- *
- * A plain spawn, with the pipes the transport needs and nothing else.
- */
-function defaultSpawn(
-  command: string,
-  args: string[],
-  options: { cwd?: string; env?: NodeJS.ProcessEnv },
-): ChildProcessWithoutNullStreams {
-  return spawn(command, args, {
-    cwd: options.cwd ?? process.cwd(),
-    env: options.env,
-    stdio: ['pipe', 'pipe', 'pipe'],
-    shell: false,
-    windowsHide: true,
-  }) as ChildProcessWithoutNullStreams;
 }
 
 /**

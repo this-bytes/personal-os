@@ -41,6 +41,7 @@
     "verify:bundle": "tsx scripts/verify-bundle-size.ts",
     "verify:contracts": "tsx scripts/verify-contract-status.ts",
     "verify:mcp-parity": "tsx scripts/verify-mcp-parity.ts",
+    "verify:standards": "tsx scripts/verify-standards.ts",
     "verify:session-references": "tsx scripts/verify-session-references.ts",
     "verify:restart-reconciliation": "tsx scripts/verify-restart-reconciliation.ts",
     "verify:codex-app-server": "tsx scripts/verify-codex-app-server.ts",

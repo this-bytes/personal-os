@@ -30,7 +30,8 @@ spec starts when it is.
 
 ## The shape today
 
-`docs/recovery.md` records the gap in the repository's own words:
+[ADR 0018](../decisions/0018-the-chat-first-recovery-decisions.md) records the gap
+in the repository's own words:
 
 > MCP task.create can store assigneeId without enqueueing execution; the tool
 > list has no task.assign. Preserve create semantics; add an explicit

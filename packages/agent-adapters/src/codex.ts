@@ -217,7 +217,7 @@ export class CodexAdapter implements AgentAdapter {
   }
 
   async connect(_connection: AgentConnection): Promise<AgentCapabilities> {
-    const resolved = await resolveExecutable(this.config.command);
+    const resolved = resolveExecutable(this.config.command);
     if (!resolved) {
       const reason = `The command "${this.config.command}" was not found.`;
       this.ctx.logger.warn('Codex executable not found', { command: this.config.command });

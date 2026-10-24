@@ -163,16 +163,29 @@ describe('the preset picker', () => {
   it('says that a template nobody has run is not demonstrated', () => {
     renderForm();
 
-    // Codex has been demonstrated; OpenCode has not, and the panel says so
-    // where the owner reads it.
-    chooseType('acp');
-    chooseTemplate('opencode-acp');
+    // Codex and OpenCode have been demonstrated; Pi has not, and the panel
+    // says so where the owner reads it.
+    chooseType('cli');
+    chooseTemplate('pi-cli');
 
     const badge = screen.getByText('not demonstrated');
     expect(badge).toBeInTheDocument();
     // A notice that is not a failure carries an icon beside it.
     expect(badge.querySelector('svg')).not.toBeNull();
     expect(screen.getByText(/has not been demonstrated in this repository/)).toBeInTheDocument();
+  });
+
+  it('shows what the OpenCode template rests on', () => {
+    renderForm();
+
+    chooseType('acp');
+    chooseTemplate('opencode-acp');
+
+    // The template was run against a real OpenCode, and the panel says which
+    // one, which version and when.
+    expect(screen.getByText('demonstrated here')).toBeInTheDocument();
+    expect(screen.getByText(/OpenCode 1\.19\.4/)).toBeInTheDocument();
+    expect(screen.getByText(/2026-10-23/)).toBeInTheDocument();
   });
 
   it('names what the owner still has to supply', () => {

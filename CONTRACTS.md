@@ -95,7 +95,7 @@ server's own sentence about how the message ended** — a message that did not f
 says why, in the server's words
 (`packages/contracts/src/conversation.ts:151`), and the client shows it as it is
 given rather than rewording it
-(`apps/web/src/components/ChatMessageList.tsx:136`). **`delivery` says how the
+(`apps/web/src/components/chat/MessageDetail.tsx:22`). **`delivery` says how the
 message was sent** — a steer went into the turn that was running, and a queue
 message waits for the next one. Absent means `queue`: a message written before
 this existed is a queued message, exactly as it was.
@@ -204,7 +204,7 @@ execution carry it when the execution is settled
 (`apps/server/src/modules/executions/service.ts:351-354`, and
 `apps/server/src/modules/approvals/resume.ts:197-201` for the turn that is closed
 rather than continued). **A client shows it as it is given**
-(`apps/web/src/components/ChatMessageList.tsx:136`): the account of what happened
+(`apps/web/src/components/chat/MessageDetail.tsx:22`): the account of what happened
 is the server's, and rewording it in the client would be the client telling the
 owner something the server knows better. **A client written before this route existed
 reads a reply that carries no `detail`, and that is not an error** — the sentence is
@@ -361,6 +361,27 @@ adapter configuration for this type carries `command`, `args`, `cwd`, `env`,
 `sandbox`, `skipGitRepoCheck`, `ephemeral`, `model` and `timeoutSeconds`, and
 every one of them but `command` has a default. A connection recorded before
 this change keeps the adapter type it had.
+
+### Starting a runtime the owner names
+
+**The owner names a command, and the product finds it.** An adapter's `command`
+is the name the owner typed, and it is resolved against `PATH` when the runtime
+is started. The resolution happens in the worker, and it never runs the
+command to find out what it is: an adapter that is asked whether it can
+connect should not start a process to answer. A command that is not there is
+reported, not waited on.
+
+**On Windows an npm-installed CLI is a `.cmd` shim**, and a child process may
+not start one on its own — the command interpreter is what runs it. So a
+resolved shim is started through `ComSpec`, with its arguments quoted, and an
+argument that contains a space stays one argument. This is why `codex`,
+`opencode` and the other presets work on a machine where they were installed
+by `npm install -g`.
+
+**The rule is the same for every adapter.** The CLI adapter, the Codex adapter,
+the App Server adapter, the ACP adapter and the MCP adapter's stdio transport
+all start their process through one helper, so a runtime that starts one way
+starts the same way for all of them, and a fix to one is a fix to all of them.
 
 ### The Codex App Server adapter
 
@@ -792,16 +813,12 @@ runtime: the server tests drive it, and the browser suite runs the whole chain
 — server, queue, worker, adapter, event log, stream — against it. **The Hermes
 ACP template has been run against the installed Hermes 0.21.0**: the handshake
 answered, and a turn completed with the runtime's own answer, both through
-this product's adapter. The other four approved runtimes — Codex, OpenCode, Pi
-and OpenClaw — are still candidates: they are not installed here, and their
-presets carry `verified: false`.
-
-**A handshake is worth something, and it is not a turn.** The handshake asks
-whether a runtime is there; the turn asks whether it works. A runtime that
-answers the handshake and then refuses the turn has demonstrated the first and
-not the second. **A preset that names one of the five runtimes carries
-`verified: false` until this repository has run that exact template against
-that runtime and completed a turn with it.**
+this product's adapter. **The Codex template has been run against Codex CLI
+0.163.0, and the OpenCode template against OpenCode 1.19.4**, each through
+this product's own adapter and each completing a turn with the runtime's own
+answer. The two remaining approved runtimes — Pi and OpenClaw — are still
+candidates: they are not installed here, and their presets carry
+`verified: false`.
 
 **A handshake is worth something, and it is not a turn.** The handshake asks
 whether a runtime is there; the turn asks whether it works. A runtime that
@@ -3131,7 +3148,7 @@ empty, and it is gone once the transcript is not.
 This entry is the contract for the prompts an empty room offers, and the code
 implements it — as of `0f53acb`. The row is `packages/ui/src/suggestion.tsx:47`,
 the prompts are `apps/web/src/lib/suggestions.ts:22`, and the surface that
-shows them is `apps/web/src/pages/ConversationDetail.tsx:540`.
+shows them is `apps/web/src/pages/ConversationDetail.tsx:539`.
 
 ### The attachment upload
 

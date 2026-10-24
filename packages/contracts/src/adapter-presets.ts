@@ -505,9 +505,9 @@ const RAW_PRESETS = [
   /* -------------------------------------------------------------------- *
    * The five approved target runtimes.
    *
-   * Each one is a starting template. None of them has been demonstrated in
-   * this repository, so each one says so in the copy the owner reads, and
-   * each one names the surface it uses and the alternative that exists.
+   * Each one is a starting template. One that has not been demonstrated in
+   * this repository says so in the copy the owner reads, and each one names
+   * the surface it uses and the alternative that exists.
    * -------------------------------------------------------------------- */
   {
     id: 'codex-cli',
@@ -546,7 +546,7 @@ const RAW_PRESETS = [
     ],
     verified: true,
     evidence: {
-      runtime: 'OpenAI Codex CLI',
+      runtime: 'Codex',
       version: '0.163.0',
       demonstratedOn: '2026-10-23',
       observed:
@@ -611,11 +611,11 @@ const RAW_PRESETS = [
     description:
       'OpenCode over an ACP-compatible session. OpenCode also publishes a native HTTP server with ' +
       'an SSE event stream for remotely hosted sessions — this template is the ACP route. This ' +
-      'integration has not been demonstrated in this repository.',
+      'integration has been demonstrated in this repository.',
     config: {
       adapterType: 'acp',
       command: 'opencode',
-      args: [],
+      args: ['acp'],
       timeoutSeconds: 900,
     },
     persona: {
@@ -628,9 +628,18 @@ const RAW_PRESETS = [
     capabilities: CAPABILITIES.acp,
     requires: [
       'An installed `opencode` binary on PATH that can be started in ACP mode.',
+      'A provider OpenCode can reach — run `opencode auth login` there. The panel never holds the credential.',
       'The project directory OpenCode should work in.',
     ],
-    verified: false,
+    verified: true,
+    evidence: {
+      runtime: 'OpenCode',
+      version: '1.19.4',
+      demonstratedOn: '2026-10-23',
+      observed:
+        'OpenCode answered a turn through this repository’s ACP adapter: the session was opened, ' +
+        'the agent’s own message came back over the protocol, and the turn completed.',
+    },
   },
   {
     id: 'pi-cli',

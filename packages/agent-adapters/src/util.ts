@@ -6,8 +6,7 @@ import type {
   SpawnOptions,
 } from 'node:child_process';
 import { spawn } from 'node:child_process';
-import { constants } from 'node:fs';
-import { access } from 'node:fs/promises';
+import { existsSync } from 'node:fs';
 import path from 'node:path';
 
 /**
@@ -19,12 +18,15 @@ import path from 'node:path';
  * path with a space in it stays one argument and the prompt still arrives on
  * standard input.
  *
+ * The command is resolved first, because whether it is a shim is a property of
+ * the file and not of the name the owner typed.
+ *
  * A `%` inside an argument is still read as a variable reference by the
  * interpreter. The arguments here are the owner's own configuration, and the
  * owner's message travels on standard input rather than on the command line.
  */
 export function spawnExecutable(
-  executable: string,
+  command: string,
   args: string[],
   options: { cwd?: string; env?: NodeJS.ProcessEnv },
 ): ChildProcessWithoutNullStreams {
@@ -36,6 +38,7 @@ export function spawnExecutable(
     windowsHide: true,
   };
 
+  const executable = resolveExecutable(command) ?? command;
   const isShim = process.platform === 'win32' && /\.(cmd|bat)$/i.test(executable);
   if (!isShim) {
     return spawn(executable, args, base) as ChildProcessWithoutNullStreams;
@@ -67,15 +70,10 @@ function quoteForCmd(argument: string): string {
  * and `codex.ps1` beside it. The lookup never runs the command: an adapter
  * that is asked whether it can connect should not start a process to find out.
  */
-export async function resolveExecutable(command: string): Promise<string | null> {
+export function resolveExecutable(command: string): string | null {
   const hasSeparator = command.includes('/') || command.includes('\\');
   if (hasSeparator) {
-    try {
-      await access(command, constants.X_OK);
-      return command;
-    } catch {
-      return null;
-    }
+    return existsSync(command) ? command : null;
   }
 
   const pathValue = process.env['PATH'] ?? '';
@@ -87,12 +85,7 @@ export async function resolveExecutable(command: string): Promise<string | null>
   for (const dir of pathValue.split(path.delimiter).filter(Boolean)) {
     for (const extension of extensions) {
       const candidate = path.join(dir, command + extension);
-      try {
-        await access(candidate, constants.X_OK);
-        return candidate;
-      } catch {
-        // keep looking
-      }
+      if (existsSync(candidate)) return candidate;
     }
   }
   return null;
