@@ -14,11 +14,29 @@
  * way the runtime asks when it wants to run something.
  * FAKE_APP_SERVER_TURN_DELAY_MS holds the turn open, so a test can steer it
  * while it is in flight.
+ * FAKE_APP_SERVER_REPLAY says when the fixture hands the thread's earlier work
+ * back. `resume` replays it while the thread is being opened, before the
+ * resume is answered and without naming the turn the work belonged to — the
+ * shape a runtime that replays a session's history takes, the way the ACP
+ * route's runtime replays it. `turn` hydrates the thread's history with the
+ * turn that follows, naming the turn each item belonged to — the shape the
+ * App Server's own notifications take. `both` does both.
+ *
+ * The installed App Server 0.163.0 replays nothing — the resume sends nothing,
+ * and the second turn's answer is its own. A runtime that does replay is the
+ * case the route has to hold against, so the fixture can play it.
  */
 import { createInterface } from 'node:readline';
 import { readFileSync, writeFileSync } from 'node:fs';
 
 const storePath = process.env.FAKE_APP_SERVER_STORE ?? '';
+const replayModes = new Set(
+  (process.env.FAKE_APP_SERVER_REPLAY ?? '')
+    .split(',')
+    .map((mode) => mode.trim())
+    .filter((mode) => mode.length > 0)
+    .flatMap((mode) => (mode === 'both' ? ['resume', 'turn'] : [mode])),
+);
 
 function readStore() {
   try {
@@ -56,8 +74,6 @@ const input = createInterface({ input: process.stdin });
 /** The requests the fixture sent to the client, and the answers it got. */
 const pendingClientRequests = new Map();
 
-let nextThread = 0;
-let nextTurn = 0;
 let nextRequestId = 9000;
 
 function send(message) {
@@ -91,23 +107,32 @@ function askTheClient(method, params) {
 }
 
 async function runTurn(requestId, threadId, params) {
-  nextTurn += 1;
-  const turnId = `turn_${nextTurn}`;
   const store = readStore();
-  store.turns.push({ turnId, threadId, input: params?.input ?? null });
-  writeStore(store);
-
-  reply(requestId, { turn: { id: turnId, status: 'inProgress' } });
-  notify('turn/started', { threadId, turn: { id: turnId, status: 'inProgress' } });
-
+  // The store is the fixture's own record, so the turn is numbered from it
+  // rather than from a counter in this process: the worker runs each turn on a
+  // fresh adapter, and the second process's turn is the second turn.
+  const turnNumber = store.turns.length + 1;
+  const turnId = `turn_${turnNumber}`;
+  const answer = `APP-SERVER-OK turn ${turnNumber}`;
+  const itemId = `msg_${turnNumber}`;
   const item = {
-    id: `item_${nextTurn}`,
+    id: `item_${turnNumber}`,
     type: 'commandExecution',
     command: 'npm test',
     aggregatedOutput: 'ok',
     exitCode: 0,
     status: 'completed',
   };
+  store.turns.push({ turnId, threadId, input: params?.input ?? null, answer, item, itemId });
+  writeStore(store);
+
+  reply(requestId, { turn: { id: turnId, status: 'inProgress' } });
+  notify('turn/started', { threadId, turn: { id: turnId, status: 'inProgress' } });
+
+  // A runtime that hydrates the thread's own history with the new turn. The
+  // history names the turn each item belonged to.
+  if (replayModes.has('turn')) replayThread(threadId, turnId, true);
+
   notify('item/started', { threadId, turnId, item, startedAtMs: 0 });
 
   if (process.env.FAKE_APP_SERVER_APPROVAL === '1') {
@@ -131,8 +156,38 @@ async function runTurn(requestId, threadId, params) {
     await new Promise((resolve) => setTimeout(resolve, delayMs));
   }
 
-  notify('item/agentMessage/delta', { threadId, turnId, itemId: `msg_${nextTurn}`, delta: 'APP-SERVER-OK' });
+  notify('item/agentMessage/delta', { threadId, turnId, itemId, delta: answer });
   notify('turn/completed', { threadId, turn: { id: turnId, status: 'completed', items: [] } });
+}
+
+/**
+ * Hand the thread's earlier work back, the way a runtime that hydrates a
+ * thread does.
+ *
+ * The work carries the turn it belonged to when the runtime says so, and it
+ * does not when the runtime replays a session's history instead. The turn that
+ * is running now is never replayed: the history is what came before it.
+ */
+function replayThread(threadId, exceptTurnId, nameTheTurn) {
+  const store = readStore();
+  for (const turn of store.turns) {
+    if (turn.threadId !== threadId) continue;
+    if (turn.turnId === exceptTurnId) continue;
+    const turnFields = nameTheTurn ? { turnId: turn.turnId } : {};
+    notify('item/started', { threadId, ...turnFields, item: turn.item, startedAtMs: 0 });
+    notify('item/completed', {
+      threadId,
+      ...turnFields,
+      item: turn.item,
+      completedAtMs: 1,
+    });
+    notify('item/agentMessage/delta', {
+      threadId,
+      ...turnFields,
+      itemId: turn.itemId,
+      delta: turn.answer,
+    });
+  }
 }
 
 input.on('line', (line) => {
@@ -172,9 +227,8 @@ input.on('line', (line) => {
       });
       return;
     case 'thread/start': {
-      nextThread += 1;
-      const threadId = `thread_${nextThread}`;
       const store = readStore();
+      const threadId = `thread_${store.threads.length + 1}`;
       store.threads.push(threadId);
       store.started.push({ threadId, params: message.params ?? null });
       writeStore(store);
@@ -190,6 +244,11 @@ input.on('line', (line) => {
         fail(message.id, -32001, `Unknown thread "${threadId}".`);
         return;
       }
+      // A runtime that replays a session's history while the session is being
+      // loaded: the history comes first, and the resume is answered after it.
+      // The replayed work does not name a turn — a session's history is not
+      // one turn's work.
+      if (replayModes.has('resume')) replayThread(threadId, undefined, false);
       reply(message.id, { thread: { id: threadId, cwd: process.cwd(), threadSource: 'fake' } });
       return;
     }

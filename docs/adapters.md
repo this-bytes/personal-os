@@ -124,9 +124,11 @@ block, whose `uri` names the file and whose text is the file's content. The
 runtime turns that into a part the model reads — `[<uri>] | <text>` — which is
 what "the agent sees the file" means on this route.
 
-**Images are not carried yet.** The part carries the file's content as text, so
-a file whose bytes are not text cannot be carried on this route. The protocol
-has an `image` block that takes bytes, and the mapping for it is its own work.
+**Images are carried now.** The part carries a picture's bytes as an image block,
+with the bytes in it, and the route says so in its capability row: a route that
+takes a file's words is not thereby a route that takes a picture's bytes, and
+`acceptsImages` is absent when a route cannot. See
+`docs/demonstration-content-images-2026-10-25.md`.
 
 **What is proved where.** The permission path is proved twice: by
 `scripts/verify-acp-permissions.ts`, which drives the built adapter against an
@@ -165,6 +167,26 @@ The route carries a steer — the runtime's own `turn/steer`, addressed to the
 turn that is running — and it asks the owner for permission, which the adapter
 surfaces as the product's approval. `scripts/verify-codex-app-server.ts` proves
 that against the repository's own App Server double.
+
+**A turn’s work is what arrives after the prompt.** The App Server’s session is
+a thread, and a thread that is resumed is the runtime’s own history. The
+installed App Server 0.163.0 replays nothing when a thread is resumed: the
+resume sends nothing, the second turn’s answer is its own, and the runtime kept
+its own memory of the first turn. The App Server deprecated full-history
+hydration for paginated threads, so a runtime that hydrates a long thread may
+hand that history back, and a promise that holds only on the version that
+happens to keep it is not a promise. The route reads the runtime’s
+notifications only once the turn’s prompt has been sent, and only those that
+name the turn it started, so the thread’s history stays out of the turn that
+resumed it: the room’s answer is the answer to what was just asked, and the
+timeline is a record of this turn. `scripts/verify-two-turns.ts` proves it
+against the repository’s own App Server double, in both shapes a replay takes.
+
+**What is proved where.** The route is proved by
+`scripts/verify-codex-app-server.ts` — the thread, the turn, the steer, the
+approval, and the session continuing in the same thread — and by
+`scripts/verify-two-turns.ts` for the turn’s own work, against a runtime that
+hands the thread’s history back.
 
 ## Common capability record
 

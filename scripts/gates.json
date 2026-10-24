@@ -113,6 +113,12 @@
       "command": "npx",
       "args": ["tsx", "scripts/verify-acp-tool-activity.ts"],
       "about": "a runtime's tool calls reach the room as the product's tool events, a call is one row, and the matrix agrees with the code"
+    },
+    {
+      "name": "two-turns",
+      "command": "npx",
+      "args": ["tsx", "scripts/verify-two-turns.ts"],
+      "about": "a turn's work is the work of the turn it started: the second turn answers with its own words, shows only its own calls, and continues the same thread"
     }
   ]
 }
