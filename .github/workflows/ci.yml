@@ -205,6 +205,38 @@ jobs:
       - name: The agent surface matches the owner's
         run: npm run verify:mcp-parity
 
+  standards:
+    name: The constitution is honoured
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      # The install skips the scripts, because the gate loads no native module:
+      # it reads the constitution, the roadmap and the glossary, and it imports
+      # two source modules rather than their build output.
+      - name: Install dependencies
+        run: npm ci --ignore-scripts --no-audit --no-fund
+
+      # Every non-negotiable in the constitution names the check that proves it.
+      # The gate reads ARCHITECTURE.md and fails when a rule names a check that
+      # does not exist, when an enforced rule's check is not reachable from CI,
+      # when a rule marked prose only names a check anyway, when a pillar is
+      # missing from the roadmap, when the pillar map names a domain the domain
+      # map does not publish, or when one of the promoted invariants is broken.
+      #
+      # **The gate runs in this pipeline on purpose.** A gate that only runs on
+      # the machine that wrote it is not a gate, it is a habit — the same
+      # lesson the parity gate above already paid for.
+      - name: The constitution is honoured
+        run: npm run verify:standards
+
   workflow-lint:
     name: Lint the workflows
     runs-on: ubuntu-latest
