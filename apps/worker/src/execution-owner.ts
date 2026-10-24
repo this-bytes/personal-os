@@ -399,7 +399,7 @@ async function runTurn(
     const turn = await request.buildTurn({ adapter, signal: controller.signal });
 
     for await (const event of adapter.send(turn)) {
-      const handled = await handleAgentEvent(context, event, {
+      const handled = await handleAgentEvent(context, adapter, event, {
         workspaceId: opened.workspaceId,
         conversationId: opened.conversationId,
         taskId: opened.taskId,
@@ -855,6 +855,7 @@ interface OwnerEventContext {
  */
 async function handleAgentEvent(
   context: ExecutorContext,
+  adapter: AgentAdapter,
   event: AgentEvent,
   eventContext: OwnerEventContext,
 ): Promise<'handled' | 'suspended' | 'refused'> {
@@ -905,6 +906,7 @@ async function handleAgentEvent(
           allowedActions: eventContext.policy.allowedActions,
           approvalRequired: eventContext.policy.approvalRequired,
         },
+        sessionId: await readExternalSessionId(adapter, eventContext.executionId),
       });
       return 'suspended';
     }
@@ -974,6 +976,7 @@ async function handleAgentEvent(
       approvalId: event.approvalId,
       summary: event.summary,
       details: event.details,
+      sessionId: await readExternalSessionId(adapter, eventContext.executionId),
     });
 
     // The agent is waiting for the owner. The turn stops here.
@@ -1003,7 +1006,7 @@ async function handleAgentEvent(
 function raiseApproval(
   context: ExecutorContext,
   eventContext: OwnerEventContext,
-  input: { approvalId: string; summary: string; details?: unknown },
+  input: { approvalId: string; summary: string; details?: unknown; sessionId?: string },
 ): void {
   const { db, events } = context.runtime;
 
@@ -1034,6 +1037,18 @@ function raiseApproval(
     .set({ status: 'blocked' })
     .where(eq(executions.id, eventContext.executionId))
     .run();
+
+  // The execution names the session the decision continues in, before the
+  // request is published. The decision reads the session from this row, and a
+  // request the owner can answer is a request they can answer immediately: if
+  // the row does not name the session yet, the decision finds nothing to
+  // continue and closes the turn instead.
+  if (input.sessionId) {
+    db.update(executions)
+      .set({ externalRef: input.sessionId })
+      .where(eq(executions.id, eventContext.executionId))
+      .run();
+  }
 
   events.publish(
     {
