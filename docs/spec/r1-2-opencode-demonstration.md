@@ -1,6 +1,6 @@
 # SPEC-R1-2 — The owner completes real work against a real, installed OpenCode runtime
 
-**State:** open · **Owner:** implementing agent, with the owner driving the demonstration · **Verifier:** independent reviewer against this spec and the roadmap's release criteria
+**State:** delivered on 2026-10-24, at `ba35992` — the transcript is `docs/demonstration-opencode-2026-10-24.md` · **Owner:** implementing agent, with the owner driving the demonstration · **Verifier:** independent reviewer against this spec and the roadmap's release criteria
 **Depends on:** SPEC-R0-1, SPEC-R0-3, SPEC-R0-4, and the ACP surface landing · **Adapter:** the ACP surface carried by `wi/160-opencode-acp`
 
 ## Outcome
@@ -419,11 +419,14 @@ And, for the product as a whole:
   task-provider logic. That is the acceptance the roadmap states for R2, and
   it is asserted by the diff, not by intent.
 
-Item 4 is **not** reachable on the ACP route as it stands: the adapter
-declines every peer request, so the runtime's question never reaches the
-owner. The acceptance is met when the request crosses, or when the
-transcript demonstrates the limitation and the alternative and says plainly
-that it did.
+Item 4 was **not** reachable on the ACP route as the spec was written: the
+adapter declined every peer request, so the runtime's question never reached the
+owner. The ACP permission slice (PR #24) crossed it, and the demonstration
+resolved a real permission request in the conversation: the runtime's own edit
+request reached the waiting list in the runtime's own words, the owner
+approved it, and the operation happened. The transcript also records the two
+defects that stood between the slice and that outcome, both of which are fixed
+and landed.
 
 ## Evidence
 
@@ -431,7 +434,7 @@ A demonstration transcript, committed with the slice, that names the runtime
 and its version (`1.19.4`), the commands that were run, the output that was
 produced, and the limits that remained.
 
-It is committed at **`docs/demonstration-opencode-2026-10-23.md`** — a dated
+It is committed at **`docs/demonstration-opencode-2026-10-24.md`** — a dated
 document beside the other evidence in `docs/`, in Markdown, so a reviewer can
 read the run without running anything. It contains, in this order:
 
@@ -452,6 +455,9 @@ read the run without running anything. It contains, in this order:
    run was made on, the date of the run, and whether the run used a free model
    or a credentialed one.
 
+The run used a **free model**, with no provider credential: OpenCode answered
+every turn without one, and the transcript says so.
+
 The acceptance commands, run on the delivered revision:
 
 ```
@@ -471,22 +477,32 @@ passes against the built client.
 Stated plainly, because the baseline asks for a floor and a floor is not a
 parity claim.
 
-- **OpenCode asks; the adapter declines.** The runtime has a permission model
+- **OpenCode asks; the request crosses.** The runtime has a permission model
   — `opencode --auto` exists to auto-approve permissions that are not
   explicitly denied, which is only meaningful if the runtime asks when they
-  are. The product's ACP adapter answers every peer request with _"This
-  Personal OS adapter does not grant client-side capabilities."_ **The
-  supported alternative** is the product's own approval: the request becomes
-  an approval in the room's waiting list, the owner decides there, and the
-  decision is sent back — the worker already carries `resume.decision` and
-  `resume.externalSessionId` for a turn suspended on one.
+  are. The product's ACP adapter turns the runtime's own `session/request_permission`
+  into the product's approval, the owner decides it in the room's waiting list,
+  and the decision answers the runtime in the turn that resumes. Measured: the
+  runtime's edit request reached the waiting list in the runtime's own words,
+  the owner approved it, and the file the runtime was asked to create was
+  created.
 - **The ACP route sends text only.** The adapter's prompt is a single
   `type: 'text'` block. OpenCode's capabilities include images; the
-  attachment does not cross until the content parts do.
+  attachment does not cross until the content parts do. Measured: the attached
+  file is in the owner's message and in the resource store, and the runtime
+  never saw it.
+- **The ACP route carries no tool activity.** The runtime's `tool_call` updates
+  are not turned into the product's tool events, so the room's activity
+  timeline is empty on this route. The Codex route shows the same work.
+- **The ACP route cannot be steered.** The runtime does not advertise
+  `acceptsSteering`, so a follow-up is queued for the next turn and the panel
+  says `steering unavailable` rather than offering a control that cannot work.
 - **The ACP route can continue a session, and the capability is the
   runtime's.** `persistentSessions` is read from the runtime's own
   `loadSession` capability, and `session/load` is how a turn resumes. This is
-  a capability OpenCode has and Codex's command line route does not.
+  a capability OpenCode has and Codex's command line route does not. Measured:
+  every turn of the demonstration ran in one session,
+  `ses_e92909d78ffezuUkeNi4kVovbD`.
 - **The command line route is not the demonstration.** `opencode run` exists
   and can emit JSON (`--format json`), but `docs/adapters.md` names ACP for
   client integration, and the ACP route is the one that carries the lifecycle.
@@ -495,6 +511,22 @@ parity claim.
   demonstration runs against a free model with no provider credential. A
   credentialed model is a separate observation, and the transcript says which
   one it saw.
+
+## What the demonstration found
+
+Two defects, both fixed and landed before the transcript was written. They are
+recorded here because a spec that finds nothing is a spec that was not looking.
+
+- **The load response carries no session id** (PR #35, `8babc92`). The
+  protocol's load response does not have to carry one, and OpenCode 1.19.4
+  answers with its configuration options and nothing else. The adapter
+  insisted on one, and every turn after the first failed.
+- **The request was published before the row named the session** (PR #36,
+  `1a55b08`). The decision to continue a turn reads the session from the
+  execution row; the worker wrote that row when the turn ended, and the owner
+  answers as soon as the request is on screen. The answer arrived first, and
+  the turn closed with _"the agent cannot re-enter a session"_ — on a runtime
+  that keeps sessions perfectly well.
 
 ## Not in scope
 

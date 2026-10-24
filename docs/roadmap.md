@@ -50,22 +50,33 @@ the three callers, session references and restart reconciliation have landed —
 ([SPEC-R0-2](spec/r0-2-authorised-dispatch.md)) is deferred** by the owner's
 direction, so that slice has not been done and R0 is not closed.
 
-**R1 is partly landed and partly not.** The chat surface, the activity trace, the
-stop control, steering and the attachment upload are in. The chat is proved end
-to end in a browser: the suite runs the worker, the owner's message reaches it,
-the adapter runs, and the answer lands in the room as the agent's own message —
-but the adapter the browser proves is the built-in `echo` one, which is a product
-adapter and not a runtime.
+**R1's acceptance is met, and one slice of it is still open.** The chat
+surface, the activity trace, the stop control, steering and the attachment
+upload are in. The chat is proved end to end in a browser: the suite runs the
+worker, the owner's message reaches it, the adapter runs, and the answer lands
+in the room as the agent's own message — and now against installed runtimes
+rather than only against the built-in `echo` one, which is a product adapter
+and not a runtime.
 
 **Three runtimes have answered a turn through the product's own adapters** —
 Codex on 2026-10-24, OpenCode over ACP, and Hermes over ACP — and the preset
-catalogue carries the evidence each claim rests on. **The R1 acceptance
-demonstration has been made for Codex**: the owner completed real work in the
-web chat against Codex 0.163.0 over its App Server, and the transcript is
-[the demonstration](demonstration-codex-2026-10-24.md) —
-[SPEC-R1-1](spec/r1-1-codex-demonstration.md). **What is still open is
-[SPEC-R1-2](spec/r1-2-opencode-demonstration.md)**: the same demonstration
-against OpenCode over ACP.
+catalogue carries the evidence each claim rests on. **Both R1 acceptance
+demonstrations have been made.** The owner completed real work in the web chat
+against Codex 0.163.0 over its App Server — [the
+demonstration](demonstration-codex-2026-10-24.md),
+[SPEC-R1-1](spec/r1-1-codex-demonstration.md) — and then the same work against
+OpenCode 1.19.4 over ACP, where the runtime's own permission request reached
+the owner and the owner's decision answered it — [the
+demonstration](demonstration-opencode-2026-10-24.md),
+[SPEC-R1-2](spec/r1-2-opencode-demonstration.md).
+
+**What the second demonstration cost.** It found two defects, and both are
+fixed and landed: the ACP adapter insisted on a session id that the protocol's
+load response does not have to carry (PR #35), and the approval was published
+before the execution row named the session the decision continues in (PR #36).
+It also named the limits the route really has: the ACP route carries the
+agent's text and the runtime's permission requests, and no tool activity, no
+attachments and no steering.
 
 **R2 has three demonstrated runtimes and two templates.** The presets are starting
 points for the five named runtimes. Pi and OpenClaw are not installed here, and
@@ -125,22 +136,22 @@ spec, its own branch and its own review. Merging a parked branch wholesale
 would bring its old base, its old decisions and its untested code with it.
 Read the branch for what it proves, then write the slice that needs it.
 
-| Branch                                                    | What it holds                                                            | Where it stands                                                                |
-| --------------------------------------------------------- | ------------------------------------------------------------------------ | ------------------------------------------------------------------------------ |
-| `feature/r1-1-codex-app-server`                           | The Codex App Server route and the gate that covers it                   | Live: [SPEC-R1-1](spec/r1-1-codex-demonstration.md) is open                    |
-| `feature/r1-2-acp-permissions`                            | A runtime's permission request reaching the owner                        | Live: [SPEC-R1-2](spec/r1-2-opencode-demonstration.md), open as a pull request |
-| `docs/adr-0012-slice-a`                                   | ADR 0012's first slice: the queue, the records and the priorities        | Live                                                                           |
-| `chore/mcp-parity-named-spec`                             | The spec that will pair the broken windows                               | Live                                                                           |
-| `wi/077-agent-adapter-domain`                             | The queue-based capability probe the R0 follow-up above ports from       | Preserved source; named in this document                                       |
-| `wi/159-server-setup-cost`                                | The test setup cost work: a migrated image per suite, one batch per tree | Preserved source; the review measured it                                       |
-| `wi/146-editor-probe-client`                              | WI-146's editor probes                                                   | Preserved source                                                               |
-| `wi/136-a-type-cannot-be-named-without-an-implementation` | An unfinished merge the review kept                                      | Preserved source                                                               |
-| `wi/133-dependency-audit-once`                            | The audit job's second pass, and its untracked resolver                  | Preserved source                                                               |
-| `wi/038-borrow-rule-gate`                                 | A gate that checks every declared licence against the record             | Parked work; no spec yet                                                       |
-| `wi/072-queue-index`                                      | The queue index                                                          | Parked work; no spec yet                                                       |
-| `wi/132-panel-waiting-shape`                              | A published change to the waiting shape                                  | Parked work; a contract change, so it needs a spec                             |
-| `wi/092-bundle-budget-timeout`                            | The bundle budget's own timeout                                          | Parked work; no spec yet                                                       |
-| `wi/161-chat-class-surface`                               | The chat surface refactor: bubbles, message actions, a scrolling column  | Landed: the refactor reached `main` as #31, corrected on the way in            |
+| Branch                                                    | What it holds                                                            | Where it stands                                                            |
+| --------------------------------------------------------- | ------------------------------------------------------------------------ | -------------------------------------------------------------------------- |
+| `feature/r1-1-codex-app-server`                           | The Codex App Server route and the gate that covers it                   | Landed: PR #33; [SPEC-R1-1](spec/r1-1-codex-demonstration.md) delivered    |
+| `feature/r1-2-acp-permissions`                            | A runtime's permission request reaching the owner                        | Landed: PR #24; [SPEC-R1-2](spec/r1-2-opencode-demonstration.md) delivered |
+| `docs/adr-0012-slice-a`                                   | ADR 0012's first slice: the queue, the records and the priorities        | Live                                                                       |
+| `chore/mcp-parity-named-spec`                             | The spec that will pair the broken windows                               | Live                                                                       |
+| `wi/077-agent-adapter-domain`                             | The queue-based capability probe the R0 follow-up above ports from       | Preserved source; named in this document                                   |
+| `wi/159-server-setup-cost`                                | The test setup cost work: a migrated image per suite, one batch per tree | Preserved source; the review measured it                                   |
+| `wi/146-editor-probe-client`                              | WI-146's editor probes                                                   | Preserved source                                                           |
+| `wi/136-a-type-cannot-be-named-without-an-implementation` | An unfinished merge the review kept                                      | Preserved source                                                           |
+| `wi/133-dependency-audit-once`                            | The audit job's second pass, and its untracked resolver                  | Preserved source                                                           |
+| `wi/038-borrow-rule-gate`                                 | A gate that checks every declared licence against the record             | Parked work; no spec yet                                                   |
+| `wi/072-queue-index`                                      | The queue index                                                          | Parked work; no spec yet                                                   |
+| `wi/132-panel-waiting-shape`                              | A published change to the waiting shape                                  | Parked work; a contract change, so it needs a spec                         |
+| `wi/092-bundle-budget-timeout`                            | The bundle budget's own timeout                                          | Parked work; no spec yet                                                   |
+| `wi/161-chat-class-surface`                               | The chat surface refactor: bubbles, message actions, a scrolling column  | Landed: the refactor reached `main` as #31, corrected on the way in        |
 
 One of them has since landed. `wi/161-chat-class-surface` held the chat
 surface refactor, preserved as a draft pull request. The refactor was then
