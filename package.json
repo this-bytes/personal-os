@@ -44,6 +44,7 @@
     "verify:standards": "tsx scripts/verify-standards.ts",
     "verify:session-references": "tsx scripts/verify-session-references.ts",
     "verify:restart-reconciliation": "tsx scripts/verify-restart-reconciliation.ts",
+    "verify:acp-permissions": "tsx scripts/verify-acp-permissions.ts",
     "verify:codex-app-server": "tsx scripts/verify-codex-app-server.ts",
     "verify:codex-runtime": "tsx scripts/verify-codex-app-server.ts --runtime",
     "gates": "tsx scripts/verify-gates.ts",

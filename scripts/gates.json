@@ -49,6 +49,12 @@
       "about": "every owner-facing route is paired with a registered MCP tool, listed with a reason and the spec that will pair it, or exempt with a reason"
     },
     {
+      "name": "acp-permissions",
+      "command": "npx",
+      "args": ["tsx", "scripts/verify-acp-permissions.ts"],
+      "about": "a runtime's own permission request reaches the owner, the owner's decision answers the runtime, and the capability row says what the route really carries"
+    },
+    {
       "name": "standards",
       "command": "npm",
       "args": ["run", "verify:standards"],

@@ -265,6 +265,31 @@ export interface AgentTurnInput {
   executionId: string;
   signal?: AbortSignal;
   /**
+   * The owner's decision on the request this turn's predecessor made.
+   *
+   * A turn that asked the owner for a decision was suspended, not finished,
+   * and the decision is the next input of the turn that continues it. It is
+   * structured, because a runtime that asks for permission again has to be
+   * answered with the owner's answer, and prose is not an answer a protocol
+   * can carry.
+   *
+   * **It is present only on a turn that continues one that asked.** A turn
+   * without it is a turn that has no decision to give, and an adapter that
+   * has none asks the owner again rather than guessing.
+   */
+  approval?: {
+    /** Whether the owner approved the operation. */
+    approved: boolean;
+    /**
+     * The approval the decision was made on.
+     *
+     * It names the request the decision was about, so a runtime that asks
+     * about something else is asked about again instead of being answered
+     * with an answer the owner never gave it.
+     */
+    approvalId: string;
+  };
+  /**
    * The owner's messages that arrive while this turn is running.
    *
    * A steer is delivered into the turn that is running, and this channel is

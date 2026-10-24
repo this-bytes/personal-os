@@ -9,6 +9,13 @@
  * The file is named by FAKE_ACP_SESSIONS. The agent writes its own process
  * id to FAKE_ACP_PID_FILE when a test asks for it, and FAKE_ACP_PROMPT_DELAY_MS
  * holds the prompt open, so a test can watch a turn that is still running.
+ *
+ * **FAKE_ACP_PERMISSION makes it ask the client for permission**, the way a
+ * runtime does before it does something it needs the owner to agree to. The
+ * request is a real one: the agent waits for the client's answer, and the
+ * answer it got is written to the store. FAKE_ACP_PERMISSION_COMMAND says
+ * which operation is being asked about, so a test can ask about a different
+ * one the second time.
  */
 import { createInterface } from 'node:readline';
 import { readFileSync, writeFileSync } from 'node:fs';
@@ -27,9 +34,15 @@ if (pidFile) {
 function readStore() {
   try {
     const raw = JSON.parse(readFileSync(storePath, 'utf8'));
-    return { sessions: raw.sessions ?? [], loaded: raw.loaded ?? [], opened: raw.opened ?? [] };
+    return {
+      sessions: raw.sessions ?? [],
+      loaded: raw.loaded ?? [],
+      opened: raw.opened ?? [],
+      prompts: raw.prompts ?? [],
+      answers: raw.answers ?? [],
+    };
   } catch {
-    return { sessions: [], loaded: [], opened: [] };
+    return { sessions: [], loaded: [], opened: [], prompts: [], answers: [] };
   }
 }
 
@@ -38,6 +51,51 @@ function writeStore(store) {
 }
 
 const input = createInterface({ input: process.stdin });
+
+/** The requests this agent makes of the client, and the answers it got. */
+let nextRequestId = 1;
+const awaiting = new Map();
+
+function ask(method, params) {
+  const id = nextRequestId++;
+  process.stdout.write(`${JSON.stringify({ jsonrpc: '2.0', id, method, params })}\n`);
+  return new Promise((resolve) => {
+    awaiting.set(id, resolve);
+  });
+}
+
+/** Ask the client for permission, and record the answer it gave. */
+async function askPermission(sessionId) {
+  const toolCallId = process.env.FAKE_ACP_PERMISSION_TOOL_CALL_ID ?? 'call_1';
+  const title = process.env.FAKE_ACP_PERMISSION_TITLE ?? 'bash';
+  const command = process.env.FAKE_ACP_PERMISSION_COMMAND ?? 'rm -rf build';
+
+  const answer = await ask('session/request_permission', {
+    sessionId,
+    toolCall: {
+      toolCallId,
+      title,
+      kind: 'execute',
+      status: 'pending',
+      rawInput: { command },
+    },
+    options: [
+      { optionId: 'once', kind: 'allow_once', name: 'Allow once' },
+      { optionId: 'always', kind: 'allow_always', name: 'Always allow' },
+      { optionId: 'reject', kind: 'reject_once', name: 'Reject' },
+    ],
+  });
+
+  const store = readStore();
+  store.answers.push({
+    toolCallId,
+    title,
+    command,
+    outcome: answer.result?.outcome ?? null,
+    error: answer.error ?? null,
+  });
+  writeStore(store);
+}
 
 input.on('line', (line) => {
   const text = line.trim();
@@ -50,6 +108,16 @@ input.on('line', (line) => {
     return;
   }
   if (message.id === undefined) return;
+
+  // A response to a request this agent made of the client.
+  if (message.method === undefined) {
+    const settle = awaiting.get(message.id);
+    if (settle) {
+      awaiting.delete(message.id);
+      settle(message);
+    }
+    return;
+  }
 
   const reply = (result) => {
     process.stdout.write(`${JSON.stringify({ jsonrpc: '2.0', id: message.id, result })}\n`);
@@ -103,6 +171,16 @@ input.on('line', (line) => {
       return;
     }
     case 'session/prompt': {
+      const store = readStore();
+      store.prompts.push({ sessionId: message.params?.sessionId, blocks: message.params?.prompt });
+      writeStore(store);
+
+      if (process.env.FAKE_ACP_PERMISSION === '1') {
+        // The runtime asks before it acts, and waits for the answer.
+        void askPermission(message.params?.sessionId).then(() => reply({ stopReason: 'end_turn' }));
+        return;
+      }
+
       const delayMs = Number(process.env.FAKE_ACP_PROMPT_DELAY_MS ?? '0');
       if (delayMs > 0) {
         setTimeout(() => reply({ stopReason: 'end_turn' }), delayMs);

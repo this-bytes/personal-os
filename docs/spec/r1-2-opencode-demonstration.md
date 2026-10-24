@@ -232,82 +232,71 @@ spec does not repeat its work:
 
 ### The gap this spec closes
 
-**The ACP adapter refuses the runtime's permission requests, while the
-product's capability row says it supports them.**
+**The ACP adapter refused the runtime's permission requests, while the
+product's capability row said it supported them.**
 
-`packages/agent-adapters/src/acp.ts`:
+That was the state before the adapter slice this spec depends on. The code now
+answers the runtime's request with the product's approval, and the capability
+row says what the route really carries. What is left is the demonstration: the
+owner driving a real OpenCode runtime through the room, and recording what
+happens.
 
-```ts
-// Peer-initiated requests (file access, permissions) are declined: this
-// adapter advertises no filesystem or terminal capability.
-const offRequest = client.onRequest(() => {
-  throw new Error('This Personal OS adapter does not grant client-side capabilities.');
-});
-```
+**What the code does now.** `packages/agent-adapters/src/acp.ts` handles
+`session/request_permission`, the method a runtime uses to ask the client for
+permission:
 
-Every request the runtime makes of the client is answered with an error.
-OpenCode's permission request is exactly such a request, so it never reaches
-the owner. And `session/request_permission` appears **nowhere** in the
-repository:
+- The request becomes the product's approval: the same `approval.requested`
+  event, the same row, the same decision path. There is no second approval
+  path.
+- **The request does not survive the suspension.** The turn that asked is
+  suspended and the agent is released with it, so the runtime is asked again in
+  the turn the owner's decision resumes — and the answer it gets then is the
+  owner's answer.
+- The decision reaches the adapter structured, as `AgentTurnInput.approval` in
+  `packages/contracts/src/agent.ts`: whether the owner approved, and which
+  approval they decided. A runtime that asks about something else is asked
+  about again rather than answered with an answer the owner never gave.
 
-```
-Select-String -Path <repo> -Pattern 'request_permission'
-```
+**The capability row tells the truth now.** `approvals` is true because the
+route raises an approval. `artifacts` is false because the route surfaces
+none: the protocol's streamed updates carry the agent's text and its tool
+calls, and the adapter turns neither into a resource. The same two values come
+back from the adapter's handshake and from the preset in
+`packages/contracts/src/adapter-presets.ts`.
 
-```
-No matches found
-```
+**What is proved where.** `scripts/verify-acp-permissions.ts` drives the built
+adapter against an agent that speaks the protocol and checks all of it: that
+the request reaches the owner, that the owner's decision answers the runtime,
+that a request the decision was not made on is asked about again, and that the
+capability row matches what the adapter does. It runs in the fast lane of CI.
 
-The product's approvals are raised from the MCP tool path
-(`apps/server/src/modules/mcp/server.ts`), when an agent calls a tool that
-needs the owner's decision — not from a runtime's own question. So there is
-no path from OpenCode's permission request to the owner, and the acceptance
-item below cannot be met on this route as it stands.
-
-The preset's own persona already expects the opposite. The `opencode-acp`
-preset tells the agent it leads the room with to _"surface the runtime's own
-permission and question requests to the owner rather than deciding them
-yourself"_ — and the adapter the preset configures answers every one of
-those requests with an error. The template, the capability row and the
-implementation disagree with each other, and the implementation is the one
-that runs.
-
-Worse, the capability row over-claims. `packages/contracts/src/adapter-presets.ts`:
-
-```ts
-  acp: {
-    chat: true,
-    streaming: true,
-    persistentSessions: true,
-    backgroundTasks: true,
-    cancel: true,
-    approvals: true,
-    artifacts: true,
-  },
-```
-
-and `acp.ts` returns the same `approvals: true` and `artifacts: true` from
-its handshake. The panel therefore tells the owner that OpenCode supports
-approvals and artifacts, and the adapter declines both. `docs/adapters.md` is
-plain about this: _"An unknown capability is never advertised as supported."_
+**It has not been demonstrated against an installed OpenCode runtime yet.**
+That is what this spec is for.
 
 ### What the demonstration must add
+
+The code carries these; the demonstration shows them against a real runtime.
 
 - **A permission request the owner can answer.** The adapter answers the
   runtime's permission request with the product's approval, the owner decides
   in the room's waiting list, and the decision goes back to the runtime. The
-  worker already carries the machinery for a turn suspended on an approval:
-  `resume.decision` and `resume.externalSessionId` in
+  worker carries the machinery for a turn suspended on an approval:
+  `resume.decision`, `resume.approved` and `resume.approvalId` in
   `apps/worker/src/executor.ts`, and `POST /api/approvals/:id/decide` in the
-  API.
-- **The capability row stops over-claiming.** Either the adapter surfaces
-  permissions and artifacts, or the row says it does not. A row that claims a
-  capability the adapter refuses is a failing gate, not a documentation
-  nit.
+  API. **What the demonstration adds is the observation**: the runtime asks,
+  the request appears in the room, the owner decides, and the runtime is
+  answered.
+- **The capability row stops over-claiming.** `approvals` is true because the
+  route raises an approval, and `artifacts` is false because the route
+  surfaces none. A row that claims a capability the adapter refuses is a
+  failing gate, not a documentation nit, and
+  `scripts/verify-acp-permissions.ts` is that gate.
 - **An attachment the runtime can read.** The adapter sends one text block
-  today. OpenCode's own capabilities include images; the demonstration needs
-  the content parts to cross, or the record has to say that OpenCode's chat
-  baseline excludes them.
+  today. OpenCode's own capabilities include images. **The content parts do
+  not cross**, and the record says so: `docs/adapters.md` states that the ACP
+  route sends text only, and the gate checks that the code and the record
+  agree. What the demonstration adds is the observation that the runtime
+  receives the text and no attachment — the baseline the route really has.
 
 ## Procedure
 
