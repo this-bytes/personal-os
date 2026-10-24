@@ -548,11 +548,13 @@ const RAW_PRESETS = [
     evidence: {
       runtime: 'Codex',
       version: '0.163.0',
-      demonstratedOn: '2026-10-23',
+      demonstratedOn: '2026-10-24',
       observed:
-        'Codex answered a turn through this repository’s adapter: a thread and a turn started, the ' +
-        'agent message and the command it ran came back as events, and the turn reported itself ' +
-        'completed.',
+        'Codex 0.163.0 answered a turn through this repository’s adapter on the command line ' +
+        'route (`codex exec --json`): the agent message and the command it ran came back as ' +
+        'events, and the turn reported itself completed. The route is one process per turn: it ' +
+        'keeps no session between turns and cannot ask the owner for permission. The App Server ' +
+        'template does both.',
     },
   },
   {

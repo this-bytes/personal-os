@@ -58,13 +58,14 @@ but the adapter the browser proves is the built-in `echo` one, which is a produc
 adapter and not a runtime.
 
 **Three runtimes have answered a turn through the product's own adapters** —
-Codex on 2026-10-23, OpenCode over ACP, and Hermes over ACP — and the preset
-catalogue carries the evidence each claim rests on. **What is still open is the
-R1 acceptance demonstration itself**: the owner completing real work in the web
-chat against those runtimes, which is
-[SPEC-R1-1](spec/r1-1-codex-demonstration.md) and
-[SPEC-R1-2](spec/r1-2-opencode-demonstration.md). An adapter-level answer is not
-the R1 demonstration.
+Codex on 2026-10-24, OpenCode over ACP, and Hermes over ACP — and the preset
+catalogue carries the evidence each claim rests on. **The R1 acceptance
+demonstration has been made for Codex**: the owner completed real work in the
+web chat against Codex 0.163.0 over its App Server, and the transcript is
+[the demonstration](demonstration-codex-2026-10-24.md) —
+[SPEC-R1-1](spec/r1-1-codex-demonstration.md). **What is still open is
+[SPEC-R1-2](spec/r1-2-opencode-demonstration.md)**: the same demonstration
+against OpenCode over ACP.
 
 **R2 has three demonstrated runtimes and two templates.** The presets are starting
 points for the five named runtimes. Pi and OpenClaw are not installed here, and
