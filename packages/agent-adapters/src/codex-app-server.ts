@@ -365,6 +365,18 @@ export class CodexAppServerAdapter implements AgentAdapter {
   private threadId: string | null = null;
   /** The turn that is running, which a steer is addressed to. */
   private turnId: string | null = null;
+  /**
+   * Whether this turn's prompt has been sent.
+   *
+   * **A turn's work is what arrives after the prompt.** A thread that is
+   * resumed is the runtime's own history, and a runtime that hands that
+   * history back would put the thread's earlier answers and tool calls into
+   * the turn that resumed it. The installed App Server 0.163.0 does not: the
+   * resume sends nothing, and the second turn's answer is its own. The rule is
+   * the route's anyway, because a promise that holds only on the version that
+   * happens to keep it is not a promise.
+   */
+  private promptSent = false;
   /** What became of the turn, for the status the worker reads. */
   private turnStatus: AgentExecutionStatus['status'] | null = null;
   /** The assistant's text so far. */
@@ -479,6 +491,10 @@ export class CodexAppServerAdapter implements AgentAdapter {
     const queue = new EventQueue();
     this.queue = queue;
     this.finalText = '';
+    // This turn's work begins with its prompt. What the runtime said while the
+    // thread was being opened is the thread's history, not this turn's work.
+    this.promptSent = false;
+    this.turnId = null;
 
     const detachNotification = client.onNotification((method, params) => {
       this.handleNotification(method, params, executionId, queue);
@@ -529,6 +545,10 @@ export class CodexAppServerAdapter implements AgentAdapter {
 
       let turnId: string;
       try {
+        // From here the runtime's notifications are this turn's work. A thread
+        // that is resumed may hand its own history back, and that history is
+        // not what this turn did.
+        this.promptSent = true;
         const started = await client.request(
           'turn/start',
           {
@@ -754,21 +774,31 @@ export class CodexAppServerAdapter implements AgentAdapter {
     executionId: string,
     queue: EventQueue,
   ): void {
+    // A turn's work is what arrives after the prompt, and it is the work of
+    // the turn this execution started. What arrived before is the thread's
+    // history; what names another turn is that other turn's work.
+    if (!this.promptSent) return;
+
+    const notification = readNotification(params);
+    if (typeof notification.turnId === 'string' && notification.turnId !== this.turnId) {
+      return;
+    }
+
     if (method === 'turn/started') {
-      const turnId = readNotification(params).turn?.id;
+      const turnId = notification.turn?.id;
       if (turnId) this.turnId = turnId;
       return;
     }
 
     if (method === 'item/agentMessage/delta') {
-      const text = readNotification(params).delta ?? '';
+      const text = notification.delta ?? '';
       if (text.length === 0) return;
       this.finalText += text;
       queue.push({ type: 'message.delta', executionId, text });
       return;
     }
 
-    for (const event of mapAppServerNotification(method, readNotification(params), {
+    for (const event of mapAppServerNotification(method, notification, {
       executionId,
       finalText: this.finalText,
     })) {

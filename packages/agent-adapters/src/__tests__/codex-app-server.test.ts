@@ -101,6 +101,68 @@ function delay(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
+/** The events of one turn. */
+async function collect(
+  adapter: CodexAppServerAdapter,
+  executionId: string,
+  externalSessionId?: string,
+): Promise<AgentEvent[]> {
+  const events: AgentEvent[] = [];
+  for await (const event of adapter.send({
+    conversationId: 'cnv_1',
+    message: 'Do the thing',
+    context: '',
+    executionId,
+    ...(externalSessionId !== undefined ? { externalSessionId } : {}),
+  })) {
+    events.push(event);
+  }
+  return events;
+}
+
+/**
+ * One turn, on its own adapter, the way the worker runs it.
+ *
+ * The worker builds a fresh adapter for every turn, so the session is
+ * restored through the runtime rather than remembered by an instance. A test
+ * that reused one adapter would skip the restore — the adapter is already in
+ * the thread — and would prove nothing about the turn that follows.
+ *
+ * `restoreFirst` is the worker's own path: the session is restored before the
+ * turn is asked for. Without it the turn restores the session itself, and the
+ * restore happens inside the turn — where the runtime's replay of the thread
+ * reaches the turn's own handler.
+ */
+async function runATurn(
+  env: Record<string, string>,
+  options: { externalSessionId?: string; restoreFirst?: boolean } = {},
+): Promise<{ events: AgentEvent[]; threadId: string | null }> {
+  const adapter = createAdapter(env);
+  await adapter.connect(connection);
+  if (options.restoreFirst && options.externalSessionId) {
+    await adapter.resumeSession(connection, options.externalSessionId);
+  }
+  const events = await collect(adapter, 'exe_1', options.externalSessionId);
+  const threadId = (await adapter.getStatus('exe_1')).externalRef ?? null;
+  await adapter.close?.();
+  return { events, threadId };
+}
+
+/** What a turn answered. */
+function answerOf(events: AgentEvent[]): string {
+  const completed = events.find((event) => event.type === 'message.completed');
+  return completed?.type === 'message.completed' ? (completed.text ?? '') : '';
+}
+
+/** The calls the room was told about. */
+function startedOf(events: AgentEvent[]): AgentEvent[] {
+  return events.filter((event) => event.type === 'tool.started');
+}
+
+function completedOf(events: AgentEvent[]): AgentEvent[] {
+  return events.filter((event) => event.type === 'tool.completed');
+}
+
 beforeEach(() => {
   storePath = path.join(fs.mkdtempSync(path.join(os.tmpdir(), 'pos-appserver-')), 'store.json');
   fs.writeFileSync(
@@ -197,9 +259,11 @@ describe('the App Server adapter', () => {
       events.some((event) => event.type === 'tool.completed' && event.toolName === 'command'),
     ).toBe(true);
     const delta = events.find((event) => event.type === 'message.delta');
-    expect(delta?.type === 'message.delta' ? delta.text : '').toBe('APP-SERVER-OK');
+    expect(delta?.type === 'message.delta' ? delta.text : '').toBe('APP-SERVER-OK turn 1');
     const completed = events.find((event) => event.type === 'message.completed');
-    expect(completed?.type === 'message.completed' ? completed.text : '').toBe('APP-SERVER-OK');
+    expect(completed?.type === 'message.completed' ? completed.text : '').toBe(
+      'APP-SERVER-OK turn 1',
+    );
     expect(
       events.some((event) => event.type === 'execution.status' && event.status === 'completed'),
     ).toBe(true);
@@ -247,6 +311,55 @@ describe('the App Server adapter', () => {
     expect(store().turns.map((entry) => entry.threadId)).toEqual([threadId, threadId]);
 
     await second.close?.();
+  });
+
+  it('answers with its own words when the runtime hydrates the thread with the turn', async () => {
+    // The installed App Server 0.163.0 replays nothing when a thread is
+    // resumed, and the second turn's answer is its own. A runtime that hydrates
+    // a thread's history with the turn that follows — the App Server
+    // deprecated full-history hydration for paginated threads, so a runtime
+    // that hydrates a long thread may hand it back — is the case the route has
+    // to hold against, and the fixture plays it here.
+    const env = { FAKE_APP_SERVER_REPLAY: 'turn' };
+    const first = await runATurn(env);
+    const second = await runATurn(env, { externalSessionId: first.threadId ?? undefined });
+
+    expect(answerOf(first.events)).toBe('APP-SERVER-OK turn 1');
+    // The second turn answered with its own words. The thread's earlier answer
+    // is not this turn's work.
+    expect(answerOf(second.events)).toBe('APP-SERVER-OK turn 2');
+  });
+
+  it('answers with its own words when the runtime replays the session while it loads it', async () => {
+    // A runtime that replays a session's history sends that history while the
+    // session is being loaded, before it answers the load, and the history
+    // does not name a turn. Then the turn id cannot tell the replay from the
+    // turn's own work, and the boundary that can is the prompt: what arrived
+    // before the prompt was written is the thread's history.
+    //
+    // The turn restores the session itself here, so the replay reaches the
+    // turn's own handler rather than arriving with nobody listening.
+    const env = { FAKE_APP_SERVER_REPLAY: 'resume' };
+    const first = await runATurn(env);
+    const second = await runATurn(env, { externalSessionId: first.threadId ?? undefined });
+
+    expect(answerOf(second.events)).toBe('APP-SERVER-OK turn 2');
+  });
+
+  it('shows only the calls it made when the runtime hands the thread back', async () => {
+    // The worker's own path: the session is restored before the turn is asked
+    // for, and the runtime hands the thread's history back in both shapes.
+    const env = { FAKE_APP_SERVER_REPLAY: 'both' };
+    const first = await runATurn(env);
+    const second = await runATurn(env, {
+      externalSessionId: first.threadId ?? undefined,
+      restoreFirst: true,
+    });
+
+    // The turn made one call, and the room was told about one call. A row for
+    // work the thread did a turn ago would be a row that is not this turn's.
+    expect(startedOf(second.events)).toHaveLength(1);
+    expect(completedOf(second.events)).toHaveLength(1);
   });
 
   it('puts the runtime back into a session it was given', async () => {
