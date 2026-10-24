@@ -302,6 +302,17 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
 
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci --ignore-scripts --no-audit --no-fund
+
       # The gate drives the built adapter, so the packages it calls have to be
       # built first. It talks to the repository's own double of an agent that
       # speaks the protocol, so it needs no account and spends no tokens.
