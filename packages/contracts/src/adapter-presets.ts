@@ -594,13 +594,13 @@ const RAW_PRESETS = [
     ],
     verified: true,
     evidence: {
-      runtime: 'OpenAI Codex App Server',
+      runtime: 'Codex',
       version: '0.163.0',
       demonstratedOn: '2026-10-24',
       observed:
-        'Codex answered through this repository’s adapter over the App Server: the handshake ' +
-        'answered, a thread and a turn started, and the assistant’s text came back as the turn’s ' +
-        'answer.',
+        'Codex 0.163.0 answered through this repository’s adapter over its App Server: the ' +
+        'handshake answered, a turn produced the assistant’s text, and a second turn resumed the ' +
+        'same thread and answered again.',
     },
   },
   {
