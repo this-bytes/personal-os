@@ -8,13 +8,13 @@ before marking a row verified. Upstream main can change independently of this re
 All five runtimes are approved targets. Codex/OpenCode prove R1; Pi/Hermes/OpenClaw
 follow in R2. Provider-specific code stays behind the shared adapter contract.
 
-| Runtime  | Candidate supported interface                                                                | What implementation must verify                                                                                                                                                                                     | Personal OS delivery status                                                                                                                                                                                                                                                                                                                        |
-| -------- | -------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Codex    | Native App Server, or a maintained ACP bridge where it preserves the required behavior.      | Bidirectional thread/turn lifecycle, session continuation, streamed items, permissions/input, interruption, auth and exact transport/version. Prefer the native surface when a bridge loses necessary capabilities. | Target; no named native integration demonstrated by this recovery.                                                                                                                                                                                                                                                                                 |
-| OpenCode | ACP for client integration; native HTTP server/OpenAPI and SSE for remotely hosted sessions. | Sessions/messages, event correlation, permissions, abort, reconnect/log recovery and authenticated remote access.                                                                                                   | **ACP surface demonstrated against OpenCode 1.19.4 on 2026-10-24**: the handshake answered, a turn streamed back through the adapter, the runtime's own permission request reached the owner and the owner's decision answered it, and every later turn continued the same session. The native HTTP server still needs implementation and testing. |
-| Pi       | Native long-lived JSONL RPC subprocess; SDK only if lifecycle/isolation remains appropriate. | Prompt handling versus settled execution, steering/follow-up queues, abort, persistent session selection and extension UI requests. Approval behavior depends on the runtime/extensions.                            | Target; generic CLI output parsing is insufficient proof.                                                                                                                                                                                                                                                                                          |
-| Hermes   | ACP or its programmatic gateway; native HTTP run API is a remote candidate.                  | Durable run ids, streamed events, permission resolution, steer/stop, session continuity, authentication and supported version.                                                                                      | **ACP surface demonstrated against Hermes 0.21.0 on 2026-10-23**: the handshake answered, and one turn completed with the runtime's own answer, through the product's own adapter. The HTTP run API still needs implementation and testing.                                                                                                        |
-| OpenClaw | Gateway WebSocket protocol, or supported ACP bridge.                                         | Gateway handshake/auth/scopes, sessions, events, approvals, cancellation and remote reconciliation. HTTP tool invocation alone is not the full lifecycle.                                                           | Target; do not claim generic HTTP feature parity.                                                                                                                                                                                                                                                                                                  |
+| Runtime  | Candidate supported interface                                                                | What implementation must verify                                                                                                                                                                                     | Personal OS delivery status                                                                                                                                                                                                                                                                                                                                             |
+| -------- | -------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Codex    | Native App Server, or a maintained ACP bridge where it preserves the required behavior.      | Bidirectional thread/turn lifecycle, session continuation, streamed items, permissions/input, interruption, auth and exact transport/version. Prefer the native surface when a bridge loses necessary capabilities. | Target; no named native integration demonstrated by this recovery.                                                                                                                                                                                                                                                                                                      |
+| OpenCode | ACP for client integration; native HTTP server/OpenAPI and SSE for remotely hosted sessions. | Sessions/messages, event correlation, permissions, abort, reconnect/log recovery and authenticated remote access.                                                                                                   | **ACP surface demonstrated against OpenCode 1.19.4 on 2026-10-24**: the handshake answered, a turn streamed back through the adapter, the runtime's own permission request reached the owner and the owner's decision answered it, and every later turn continued the same session. The native HTTP server still needs implementation and testing.                      |
+| Pi       | Native long-lived JSONL RPC subprocess; SDK only if lifecycle/isolation remains appropriate. | Prompt handling versus settled execution, steering/follow-up queues, abort, persistent session selection and extension UI requests. Approval behavior depends on the runtime/extensions.                            | **The Pi route is implemented**: the product speaks Pi's own RPC protocol — the streaming text, the tools it ran, the end of the turn, the session the next turn continues, a steer that arrives while Pi works, and a picture that crosses as bytes. It is proved against the repository's own double of Pi; the demonstration against an installed Pi is outstanding. |
+| Hermes   | ACP or its programmatic gateway; native HTTP run API is a remote candidate.                  | Durable run ids, streamed events, permission resolution, steer/stop, session continuity, authentication and supported version.                                                                                      | **ACP surface demonstrated against Hermes 0.21.0 on 2026-10-23**: the handshake answered, and one turn completed with the runtime's own answer, through the product's own adapter. The HTTP run API still needs implementation and testing.                                                                                                                             |
+| OpenClaw | Gateway WebSocket protocol, or supported ACP bridge.                                         | Gateway handshake/auth/scopes, sessions, events, approvals, cancellation and remote reconciliation. HTTP tool invocation alone is not the full lifecycle.                                                           | Target; do not claim generic HTTP feature parity.                                                                                                                                                                                                                                                                                                                       |
 
 **What the Hermes demonstration does and does not cover.** It covers the
 handshake — the runtime's own capabilities, including that it can restore a
@@ -40,17 +40,18 @@ keeping no session, so nothing claims a continuity that does not exist.
 against.** A row whose runtime version changes is a row whose claim has to be
 checked again, and the date says when it last was.
 
-| Adapter type       | Runtime it speaks to           | Session continuity                                                                                                                           | After a restart                           | Verified against                                       |
-| ------------------ | ------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------- | ------------------------------------------------------ |
-| `acp`              | Any ACP agent                  | resumable — the ACP session id names the session and `session/load` puts the agent back into it                                              | no — an uncertain run waits for the owner | Hermes 0.21.0, 2026-10-23; OpenCode 1.19.4, 2026-10-24 |
-| `codex`            | The Codex CLI                  | fresh unless the connection is not ephemeral — Codex then keeps its session on disk, and the App Server transport is what re-enters it       | no — an uncertain run waits for the owner | codex-cli 0.163.0, 2026-10-23                          |
-| `codex-app-server` | The Codex App Server           | resumable unless the connection is ephemeral — the App Server's thread id names the session, and `thread/resume` puts the agent back into it | no — an uncertain run waits for the owner | codex-app-server 0.163.0, 2026-10-24                   |
-| `mcp`              | An MCP server                  | fresh — an MCP session belongs to the connection, not to the conversation's turn                                                             | no — an uncertain run waits for the owner | MCP SDK 1.32.1, 2026-10-23                             |
-| `cli`              | A command-line agent           | fresh — the process ends with the turn, and the next turn is a new session-less process                                                      | no — an uncertain run waits for the owner | agent-adapters 0.1.0, 2026-10-23                       |
-| `http`             | A gateway over HTTP            | fresh — the request carries the turn and the gateway is not asked to remember the session                                                    | no — an uncertain run waits for the owner | agent-adapters 0.1.0, 2026-10-23                       |
-| `a2a`              | An agent-to-agent orchestrator | fresh — the orchestrator's task id names a task, and a task is not claimed as a session                                                      | no — an uncertain run waits for the owner | agent-adapters 0.1.0, 2026-10-23                       |
-| `model`            | A model API                    | fresh — a model call has no session                                                                                                          | no — an uncertain run waits for the owner | agent-adapters 0.1.0, 2026-10-23                       |
-| `echo`             | The built-in local test agent  | fresh unless the agent is asked to ask — a turn that asked keeps the session it asked in, so the answer can be its next input                | no — an uncertain run waits for the owner | agent-adapters 0.1.0, 2026-10-23                       |
+| Adapter type       | Runtime it speaks to           | Session continuity                                                                                                                           | After a restart                           | Verified against                                                                |
+| ------------------ | ------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------- | ------------------------------------------------------------------------------- |
+| `acp`              | Any ACP agent                  | resumable — the ACP session id names the session and `session/load` puts the agent back into it                                              | no — an uncertain run waits for the owner | Hermes 0.21.0, 2026-10-23; OpenCode 1.19.4, 2026-10-24                          |
+| `codex`            | The Codex CLI                  | fresh unless the connection is not ephemeral — Codex then keeps its session on disk, and the App Server transport is what re-enters it       | no — an uncertain run waits for the owner | codex-cli 0.163.0, 2026-10-23                                                   |
+| `codex-app-server` | The Codex App Server           | resumable unless the connection is ephemeral — the App Server's thread id names the session, and `thread/resume` puts the agent back into it | no — an uncertain run waits for the owner | codex-app-server 0.163.0, 2026-10-24                                            |
+| `pi`               | Pi, as its own RPC session     | resumable unless the connection is ephemeral — Pi's session is the file it keeps, and `switch_session` puts the agent back into it           | no — an uncertain run waits for the owner | Pi protocol 1.4.0 (published), 2026-10-25; the installed runtime is outstanding |
+| `mcp`              | An MCP server                  | fresh — an MCP session belongs to the connection, not to the conversation's turn                                                             | no — an uncertain run waits for the owner | MCP SDK 1.32.1, 2026-10-23                                                      |
+| `cli`              | A command-line agent           | fresh — the process ends with the turn, and the next turn is a new session-less process                                                      | no — an uncertain run waits for the owner | agent-adapters 0.1.0, 2026-10-23                                                |
+| `http`             | A gateway over HTTP            | fresh — the request carries the turn and the gateway is not asked to remember the session                                                    | no — an uncertain run waits for the owner | agent-adapters 0.1.0, 2026-10-23                                                |
+| `a2a`              | An agent-to-agent orchestrator | fresh — the orchestrator's task id names a task, and a task is not claimed as a session                                                      | no — an uncertain run waits for the owner | agent-adapters 0.1.0, 2026-10-23                                                |
+| `model`            | A model API                    | fresh — a model call has no session                                                                                                          | no — an uncertain run waits for the owner | agent-adapters 0.1.0, 2026-10-23                                                |
+| `echo`             | The built-in local test agent  | fresh unless the agent is asked to ask — a turn that asked keeps the session it asked in, so the answer can be its next input                | no — an uncertain run waits for the owner | agent-adapters 0.1.0, 2026-10-23                                                |
 
 **The column says what the adapter reports.** A row names the answer the
 adapter gives for a connection as it is configured, and a row that says
@@ -187,6 +188,70 @@ against the repository’s own App Server double, in both shapes a replay takes.
 approval, and the session continuing in the same thread — and by
 `scripts/verify-two-turns.ts` for the turn’s own work, against a runtime that
 hands the thread’s history back.
+
+### What the Pi route carries
+
+**Pi is not the command line route.** The generic `cli` adapter starts a
+process and writes the prompt to it. Pi’s own protocol carries more than a
+prompt — the streaming text, the tools it ran, whether it has settled, the
+session it is in, and a steer that arrives while it works — so Pi has its own
+route, written against its own protocol: the JSONL records it writes to
+standard input and reads from standard output. The protocol is published, and
+the pinned version this route is written against is **1.4.0**.
+
+**The protocol’s own rules are the route’s rules.** Pi frames its records as
+strict JSONL: one object per line, split on LF only, because a record may hold
+the Unicode line and paragraph separators that a generic line reader would
+treat as a boundary. The route reads them that way, and the double in
+`packages/agent-adapters/src/__tests__/fixtures/fake-pi.mjs` does too — a
+double that framed records differently would be proving a protocol Pi does not
+speak.
+
+**What the route carries.**
+
+| Pi’s own record                    | The product’s event                        |
+| ---------------------------------- | ------------------------------------------ |
+| `message_update` with a text delta | the answer, as it streams                  |
+| `message_end` with the assistant   | the finished answer, from Pi’s own message |
+| `tool_execution_start`             | a call the runtime made                    |
+| `tool_execution_end`               | that call, finished                        |
+| `agent_settled`                    | the end of the turn                        |
+| the `prompt` command               | the turn’s question                        |
+| the `prompt` response, handled     | the end of the turn, with no run           |
+| the `steer` command                | the owner’s message, while Pi is working   |
+| the `abort` command                | the owner’s stop                           |
+| `get_state` and `switch_session`   | the session, and the next turn’s session   |
+
+**A picture crosses as bytes.** Pi’s prompt takes images, and its image is the
+same shape the ACP route already sends: `{type: 'image', data, mimeType}`. A
+file the owner attached has no shape of its own in Pi — a prompt is a message,
+and a message is text — so the file’s content goes in the message, and the
+route says so.
+
+**A prompt Pi handled itself ends the turn at once.** Pi answers a prompt with
+a record that says whether the prompt was accepted, queued or handled, and a
+prompt it _handled_ starts no run — so there is no `agent_settled` to wait for,
+and a turn that waited for one would never end. The disposition is in the
+answer to the command, not among the session’s events, and the route reads it
+there.
+
+**The session is the file Pi keeps.** Pi’s session is a file, and
+`switch_session` takes the path, so the path is what the execution publishes as
+its session reference — the way the App Server’s thread id is. The next turn in
+the same conversation resumes that session through the runtime, so the runtime
+keeps its own memory of the conversation.
+
+**What the route does not carry, plainly.** Pi’s extension questions — the
+`extension_ui_request` records an extension sends when it needs the user — are
+not carried on this route, so the capability row says the route cannot ask the
+owner for permission. Pi’s compaction and retry records are not carried either:
+the room shows the work, and a retry is the runtime’s own business.
+
+`scripts/verify-pi-route.ts` proves the route against the repository’s own
+double of Pi: the answer, the tools, the end of the turn, the session the next
+turn continues, a steer that arrives while Pi works, and a picture that crosses
+as bytes. **The demonstration against an installed Pi is outstanding** — Pi is
+not installed in this repository, and a double is not a runtime.
 
 ## Common capability record
 

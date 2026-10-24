@@ -129,9 +129,18 @@ second answer about the second question —
 survived the turn as well: the second question carried no history, and the
 runtime answered from the thread it kept.
 
-**R2 has three demonstrated runtimes and two templates.** The presets are starting
-points for the five named runtimes. Pi and OpenClaw are not installed here, and
-an installed runtime is not yet a demonstrated one.
+**R2 has three demonstrated runtimes, and Pi now has a route of its own.** The
+presets are starting points for the five named runtimes. Pi and OpenClaw are not
+installed here, and an installed runtime is not yet a demonstrated one. **Pi is
+no longer reached through the generic command line route.** Its own protocol
+carries more than a prompt — the streaming text, the tools it ran, whether it
+has settled, the session it is in, and a steer that arrives while it works — so
+the product now speaks that protocol: the route, the preset the owner starts Pi
+from, the capability row that says what the route really carries, and the gate
+that proves it against the repository's own double of Pi,
+[SPEC-R2-1](spec/r2-1-pi-route.md). What is outstanding is the demonstration
+against an installed Pi, and the preset says so in its own words rather than
+claiming a demonstration it does not have.
 
 **The fifth slice closed the one item the rich-chat checklist still had open.**
 The checklist names _files/images_, and the file half was delivered with the
