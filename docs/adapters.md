@@ -107,9 +107,13 @@ has an `image` block that takes bytes, and the mapping for it is its own work.
 agent that speaks the protocol, and by the demonstration against the installed
 runtime, `docs/demonstration-opencode-2026-10-24.md`, where the runtime's own
 edit request reached the waiting list, the owner approved it, and the operation
-happened. The attachment path is proved by
+happened. The attachment path is proved three times: by
 `scripts/verify-content-parts.ts`, which drives the built adapter against an
-agent that speaks the protocol and checks the prompt the runtime received.
+agent that speaks the protocol and checks the prompt the runtime received; by
+`docs/demonstration-codex-2026-10-24.md`, which recorded the gap before it was
+closed; and by `docs/demonstration-content-parts-2026-10-24.md`, where the
+owner attached a file to the installed OpenCode and the agent answered with
+the file's exact content.
 
 ### What the Codex App Server route carries
 

@@ -1,7 +1,11 @@
 # SPEC-R1-3 — A message's parts reach the runtime
 
-**State:** open · **Owner:** implementing agent, one session · **Verifier:** independent reviewer
-**Depends on:** SPEC-R1-1, SPEC-R1-2 (the demonstrations named the gap) · **Blocks:** nothing yet
+**State:** delivered · **Owner:** implementing agent, one session · **Verifier:**
+independent reviewer
+**Depends on:** SPEC-R1-1, SPEC-R1-2 (the demonstrations named the gap) · **Blocks:**
+nothing yet
+**Evidence:** [the demonstration](../demonstration-content-parts-2026-10-24.md),
+[the gate](../../scripts/verify-content-parts.ts)
 
 ## Outcome
 
@@ -190,12 +194,14 @@ product is reported as a failure rather than thrown as a crash.
 ## Acceptance
 
 1. The owner attaches a file in a room whose agent can carry attachments, and
-   the agent reads the file's content and answers from it.
+   the agent reads the file's content and answers from it. — **met**, against
+   the installed OpenCode 1.19.4; see the demonstration below.
 2. The composer refuses the file in a room whose agents cannot carry
-   attachments, and the refusal names the reason.
-3. A route with no `acceptsAttachments` receives the text and nothing else.
+   attachments, and the refusal names the reason. — **met**, in the same run.
+3. A route with no `acceptsAttachments` receives the text and nothing else. —
+   **met**, by the gate and by the worker's own test.
 4. `npm run verify:content-parts` passes, the contracts' tests pass, and the
-   browser suite passes.
+   browser suite passes. — **met**.
 
 ## Not in scope
 
@@ -226,7 +232,9 @@ product is reported as a failure rather than thrown as a crash.
 | `packages/contracts/src/adapter-presets.ts`               | The ACP and App Server rows carry `acceptsAttachments: true`.                                                                                                              |
 | `apps/web/src/components/Composer.tsx`                    | The composer refuses a file the room cannot carry, and says why.                                                                                                           |
 | `apps/web/src/pages/ConversationDetail.tsx`               | The room's own answer: which of its agents can carry an attachment.                                                                                                        |
+| `apps/web/src/components/chat/TurnCapabilityPanel.tsx`    | The panel says it: _takes attachments: yes_.                                                                                                                               |
 | `scripts/verify-content-parts.ts`                         | The gate, in the fast lane.                                                                                                                                                |
+| `docs/demonstration-content-parts-2026-10-24.md`          | The transcript: the file reaches the installed runtime, and the panel refuses it where it cannot.                                                                          |
 
 ### The commands that were run, and what they said
 
@@ -248,24 +256,25 @@ The route carries the file, in each protocol's own shape.
 The package suites, on the slice's tree:
 
 ```
-agent-adapters   81 passed
+agent-adapters   82 passed
 contracts        48 passed
-worker          121 passed
+worker          123 passed
 web             215 passed
 ```
 
 ### The tests that fail without the implementation
 
 This was **measured, not assumed**. The implementation was reverted — the
-source files stashed, the packages rebuilt, the tests and the gate left in
-place — and each check was run against the tree without it.
+tracked files checked out at their state before this slice, the new worker
+module moved out of the way, the packages rebuilt — and each check was run
+against the tree without it.
 
-| Check                                                             | What it said without the implementation                                                                                                                                                        |
-| ----------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `packages/agent-adapters/src/__tests__/acp-content-parts.test.ts` | 4 tests failed: `TypeError: acpPrompt is not a function`, `expected undefined to be defined` (no resource block), `expected undefined to be true` (the route does not say it can carry a file) |
-| `apps/worker/src/__tests__/content-parts.test.ts`                 | 3 tests failed: `expected undefined to deeply equal [ { type: 'text', … }, … ]` — the turn carries no parts; `Target cannot be null or undefined`; `expected undefined to be defined`          |
-| `apps/web/src/components/__tests__/ComposerAttachments.test.tsx`  | 1 test failed: `expect(element).toBeDisabled()` — _Received element is not disabled_ — the upload control is offered for a room that cannot carry a file                                       |
-| `scripts/verify-content-parts.ts`                                 | failed with every reason named (below)                                                                                                                                                         |
+| Check                                                             | What it said without the implementation                                                                                                                                                                                                                                                        |
+| ----------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `packages/agent-adapters/src/__tests__/acp-content-parts.test.ts` | **5 tests failed**: `TypeError: acpPrompt is not a function` (×3), `expected undefined to be defined` (the runtime received no resource block), `expected undefined to be true` (the route does not say it can carry a file)                                                                   |
+| `apps/worker/src/__tests__/content-parts.test.ts`                 | **5 tests failed**: `expected undefined to deeply equal [ { type: 'file', …(4) } ]` — the turn carries no parts; `expected 'The agent: What does the attached fil…' to contain 'notes.txt'` — the context does not name the file the route could not carry; `expected undefined to be defined` |
+| `apps/web/src/components/__tests__/ComposerAttachments.test.tsx`  | **1 test failed**: `expect(element).toBeDisabled()` — _Received element is not disabled_ — the upload control is offered for a room that cannot carry a file                                                                                                                                   |
+| `scripts/verify-content-parts.ts`                                 | failed, with every reason named (below)                                                                                                                                                                                                                                                        |
 
 The gate's own report without the implementation:
 
@@ -287,17 +296,44 @@ The gate failed:
 
 **The gate was made better by this.** The first run of the experiment crashed
 with a `TypeError` instead of reporting, and it printed an "ok" line beside a
-check that had failed. Both were fixed, and the second run is the one above.
+check that had failed. Both were fixed, and the run above is the fixed one.
+
+### The demonstration
+
+The gate proves the product's half of it. The runtime's half — that OpenCode
+turns the resource block into a part the model reads — was measured against
+the installed runtime.
+
+`docs/demonstration-content-parts-2026-10-24.md` is the transcript. The owner
+attached a file in the web chat and asked the agent what it said. The agent
+answered:
+
+> The attached file says: MARKER-9F3C2A7B is the passphrase of the file.
+
+The marker was in the attached file and nowhere else. **The file crossed the
+boundary and the runtime read it.**
+
+The same run showed the refusal: in a room whose agent reports no
+`acceptsAttachments`, the composer's upload control was disabled and the
+reason was on screen — _"Echo cannot take an attachment on this route."_ — and
+the capability panel in the first room read _"takes attachments: yes"_.
+
+This is the contrast with the two earlier demonstrations, which measured the
+same gap and could not deliver it:
+
+| Document                                         | What the agent answered                                          |
+| ------------------------------------------------ | ---------------------------------------------------------------- |
+| `docs/demonstration-codex-2026-10-24.md`         | _"I don't see an attached file."_                                |
+| `docs/demonstration-opencode-2026-10-24.md`      | _"I'll read proof.txt."_ — the file in its own working directory |
+| `docs/demonstration-content-parts-2026-10-24.md` | the file's exact content, from the file the owner attached       |
 
 ### What is not covered
 
-- **A real runtime has not been shown an attachment.** The gate drives the
-  built adapter against an agent that speaks the protocol, which proves the
-  product's half of it. The runtime's half — that OpenCode turns the resource
-  block into a part the model reads — is what the runtime's own code says it
-  does, and what a demonstration would show.
 - **Images and binary files.** The part carries text.
 - **A room with one agent that can and one that cannot.** The composer allows
   the attachment and the agent that cannot carry it says so in its context.
 - **The file on the runtime's disk.** The content is carried in the prompt; it
   is not written into the runtime's working directory.
+- **The Codex App Server route against a real runtime.** The gate drives that
+  route's built adapter and checks the prompt it builds; the runtime's half of
+  that route was not demonstrated.
