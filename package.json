@@ -51,6 +51,7 @@
     "verify:content-images": "tsx scripts/verify-content-images.ts",
     "verify:acp-tool-activity": "tsx scripts/verify-acp-tool-activity.ts",
     "verify:two-turns": "tsx scripts/verify-two-turns.ts",
+    "verify:pi-route": "tsx scripts/verify-pi-route.ts",
     "gates": "tsx scripts/verify-gates.ts",
     "verify:stack": "tsx scripts/verify-stack.ts",
     "work:item": "tsx scripts/work-item.ts",

@@ -134,37 +134,47 @@ preset that carried a credential would leak it.
 
 ## The runtime mapping
 
-| Runtime  | Adapter type | The surface the preset uses         | The alternative it names                        |
-| -------- | ------------ | ----------------------------------- | ----------------------------------------------- |
-| Codex    | `cli`        | the command line                    | the native App Server and ACP surfaces          |
-| OpenCode | `acp`        | an ACP-compatible session           | the native HTTP server and its SSE event stream |
-| Pi       | `cli`        | the long-lived JSONL RPC subprocess | —                                               |
-| Hermes   | `http`       | the HTTP run API                    | ACP and the programmatic gateway                |
-| OpenClaw | `http`       | the HTTP gateway surface            | the gateway WebSocket and the ACP bridge        |
+| Runtime  | Adapter type | The surface the preset uses | The alternative it names                        |
+| -------- | ------------ | --------------------------- | ----------------------------------------------- |
+| Codex    | `cli`        | the command line            | the native App Server and ACP surfaces          |
+| OpenCode | `acp`        | an ACP-compatible session   | the native HTTP server and its SSE event stream |
+| Pi       | `pi`         | Pi's own JSONL RPC session  | the command line, which carries less            |
+| Hermes   | `http`       | the HTTP run API            | ACP and the programmatic gateway                |
+| OpenClaw | `http`       | the HTTP gateway surface    | the gateway WebSocket and the ACP bridge        |
 
 Each preset picks **one** surface and names the alternative in its copy, so
 the owner chooses the surface rather than having one hidden from them.
 
-## The catalogue — thirteen presets
+Pi has two surfaces and two presets, because they are not the same route. The
+`cli` preset writes a prompt to a process and reads its output as text; the
+`pi` preset speaks Pi's own protocol, so the streaming text, the tools it ran,
+whether it has settled, the session it is in and a steer that arrives while it
+works all reach the room. The `cli` preset names that route as its
+alternative, and the `pi` preset names the command line as its alternative.
+
+## The catalogue — fifteen presets
 
 One preset per adapter type, plus one per approved runtime, plus the Hermes
-ACP template that WI-153 added.
+ACP template that WI-153 added and the two routes that report their work as
+events rather than as text.
 
-| id                 | Type    | Name                         | What the template gives the owner                                                                                | The leader persona    |
-| ------------------ | ------- | ---------------------------- | ---------------------------------------------------------------------------------------------------------------- | --------------------- |
-| `cli-command-line` | `cli`   | Command line agent           | the command, the prompt mode, a 600s timeout, and the notes that the prompt goes in on stdin                     | Command line lead     |
-| `acp-session`      | `acp`   | ACP session agent            | the command, a 900s timeout, and the note that the session carries across a conversation                         | Protocol session lead |
-| `a2a-remote-agent` | `a2a`   | Remote agent (A2A)           | the agent card path, the message path, a 600s timeout, and that it needs a bearer token                          | Remote agent delegate |
-| `http-gateway`     | `http`  | Gateway / HTTP API           | the path, the body template, the path to the reply in the response, and that it needs a token                    | Gateway lead          |
-| `model-api`        | `model` | Model API (no harness)       | the endpoint, the model name, the temperature and the token limit                                                | Model lead            |
-| `echo-local`       | `echo`  | Built-in echo (local test)   | the reply text and the delay, and nothing to install                                                             | Echo tester           |
-| `mcp-tool-server`  | `mcp`   | MCP server                   | the command, the protocol version, the tool name and the argument template                                       | Tool-backed lead      |
-| `codex-cli`        | `cli`   | Codex (command line)         | `codex exec` on stdin, a 900s timeout, and that Codex also has an App Server and ACP surfaces                    | Codex lead            |
-| `opencode-acp`     | `acp`   | OpenCode (ACP session)       | the `opencode` command, a 900s timeout, and that OpenCode also publishes an HTTP/SSE server                      | OpenCode lead         |
-| `pi-cli`           | `cli`   | Pi (command line subprocess) | the `pi` command on stdin, and that Pi's own JSONL RPC lifecycle is not implemented here                         | Pi lead               |
-| `hermes-http`      | `http`  | Hermes (HTTP run API)        | the gateway URL, the run path, the body template, and that a run record is not the reply text                    | Hermes lead           |
-| `hermes-acp`       | `acp`   | Hermes (ACP session)         | the `hermes` command in ACP mode, and that Hermes also publishes an HTTP run API and a gateway                   | Hermes lead           |
-| `openclaw-http`    | `http`  | OpenClaw (HTTP gateway)      | the gateway URL, the path, the body template, and that the WebSocket control plane and the ACP bridge also exist | OpenClaw lead         |
+| id                 | Type               | Name                         | What the template gives the owner                                                                                | The leader persona    |
+| ------------------ | ------------------ | ---------------------------- | ---------------------------------------------------------------------------------------------------------------- | --------------------- |
+| `cli-command-line` | `cli`              | Command line agent           | the command, the prompt mode, a 600s timeout, and the notes that the prompt goes in on stdin                     | Command line lead     |
+| `acp-session`      | `acp`              | ACP session agent            | the command, a 900s timeout, and the note that the session carries across a conversation                         | Protocol session lead |
+| `a2a-remote-agent` | `a2a`              | Remote agent (A2A)           | the agent card path, the message path, a 600s timeout, and that it needs a bearer token                          | Remote agent delegate |
+| `http-gateway`     | `http`             | Gateway / HTTP API           | the path, the body template, the path to the reply in the response, and that it needs a token                    | Gateway lead          |
+| `model-api`        | `model`            | Model API (no harness)       | the endpoint, the model name, the temperature and the token limit                                                | Model lead            |
+| `echo-local`       | `echo`             | Built-in echo (local test)   | the reply text and the delay, and nothing to install                                                             | Echo tester           |
+| `mcp-tool-server`  | `mcp`              | MCP server                   | the command, the protocol version, the tool name and the argument template                                       | Tool-backed lead      |
+| `codex-cli`        | `cli`              | Codex (command line)         | `codex exec` on stdin, a 900s timeout, and that Codex also has an App Server and ACP surfaces                    | Codex lead            |
+| `codex-app-server` | `codex-app-server` | Codex (App Server)           | the `codex` command, a 900s timeout, and that the App Server reports threads, turns and approval requests        | Codex lead            |
+| `opencode-acp`     | `acp`              | OpenCode (ACP session)       | the `opencode` command, a 900s timeout, and that OpenCode also publishes an HTTP/SSE server                      | OpenCode lead         |
+| `pi-cli`           | `cli`              | Pi (command line subprocess) | the `pi` command on stdin, and that Pi's own JSONL RPC route carries more                                        | Pi lead               |
+| `pi-rpc`           | `pi`               | Pi (RPC session)             | the `pi` command in RPC mode, a 900s timeout, and that the route carries Pi's own tools, session and steer       | Pi lead               |
+| `hermes-http`      | `http`             | Hermes (HTTP run API)        | the gateway URL, the run path, the body template, and that a run record is not the reply text                    | Hermes lead           |
+| `hermes-acp`       | `acp`              | Hermes (ACP session)         | the `hermes` command in ACP mode, and that Hermes also publishes an HTTP run API and a gateway                   | Hermes lead           |
+| `openclaw-http`    | `http`             | OpenClaw (HTTP gateway)      | the gateway URL, the path, the body template, and that the WebSocket control plane and the ACP bridge also exist | OpenClaw lead         |
 
 Every preset carries a leader persona with **both** halves: a role on one line,
 and standing instructions that make sense for that adapter type. The

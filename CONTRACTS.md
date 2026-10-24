@@ -135,7 +135,7 @@ timeout. The owner sees an `unknown` item as **"check this"**, never as **"fix
 this"**.
 
 **A second `unknown`, on a connection.** `AgentConnectionStatus` carries
-`unknown` too (`packages/contracts/src/agent.ts:159-165`), and it means something
+`unknown` too (`packages/contracts/src/agent.ts:174-181`), and it means something
 else: a connection whose state was never checked, which is how a new connection
 starts. This `unknown` is about an outcome that cannot be confirmed; that one
 is about a state that was never looked at. They are different things that
@@ -150,7 +150,7 @@ transition into and out of `unknown` is written to the audit trail.
 This entry is the contract for **WI-008**, and the code implements it — as of
 `9ad4f98`. `messageStatusSchema` carries `'unknown'` at
 `packages/contracts/src/conversation.ts:106`, `executionStatusSchema` at
-`packages/contracts/src/agent.ts:206`, and `taskStatusSchema` at
+`packages/contracts/src/agent.ts:208`, and `taskStatusSchema` at
 `packages/contracts/src/factory.ts:25`.
 
 **Migration.** Nothing is reclassified. Rows recorded as `failed` before this
@@ -320,6 +320,7 @@ agents without changes to conversation storage or the factory task model.
 | `echo`             | Built-in deterministic agent, for local use and tests.                                                   |
 | `codex`            | OpenAI Codex, which reports its work as an event stream.                                                 |
 | `codex-app-server` | OpenAI Codex over its App Server — a JSON-RPC service with threads, turns, steers and approval requests. |
+| `pi`               | Pi, over its own JSONL RPC subprocess — prompts, steers, settled runs and the session Pi keeps.          |
 
 ACP provides a session-oriented interface and capability negotiation. A2A supports
 task-oriented communication between independent agents, including discovery,
@@ -427,6 +428,66 @@ unaffected. The adapter configuration for this type carries `command`, `args`,
 `cwd`, `env`, `sandbox`, `approvalPolicy`, `ephemeral`, `model`, `threadSource`
 and `timeoutSeconds`, and every one of them but `command` has a default. A
 connection recorded before this change keeps the adapter type it had.
+
+### The Pi adapter
+
+**Pi is not a command-line agent that prints text.** Pi runs as a long-lived
+subprocess that speaks its own protocol: commands go in on standard input and
+responses and session events come out on standard output, one JSON object per
+line. The `cli` adapter writes the prompt to a process and reads its output as
+text, so it would put protocol records in the room and lose the tools, the
+settled state and the session. Pi therefore has its own adapter, and the mapping
+lives in `packages/agent-adapters/src/pi.ts`.
+
+**The protocol is pinned.** The route is written against Pi **1.4.0**, and the
+records it reads are the ones that version publishes. A route written against a
+guess is a route written against nothing.
+
+**The framing is strict JSONL, split on LF only.** Pi's own documentation is
+emphatic about it, and it is right: a record may hold the Unicode line and
+paragraph separators that a generic line reader would treat as a boundary.
+
+**The end of the turn is `agent_settled`.** A successful `prompt` response means
+the prompt was accepted, queued or handled — it does not mean the work is done.
+The turn ends when Pi settles, and a prompt Pi handled itself ends the turn at
+once, because no run started and no `agent_settled` will come. That disposition
+is in the answer to the command rather than among the session's events, so it is
+read from the response the command was given.
+
+**The session is the file Pi keeps, and the path is the execution's external
+reference.** A turn that continues a conversation resumes the session through
+`switch_session`. The adapter reports `persistentSessions` only when the
+connection is not ephemeral.
+
+**A steer is Pi's own `steer` command.** The owner's message that arrives while
+Pi is working is forwarded to the run that is going, so the connection reports
+`acceptsSteering` only when Pi takes input while a turn runs.
+
+**A picture crosses as bytes.** Pi's prompt takes images, in the same shape the
+ACP route already sends.
+
+**The arguments that make Pi a session are the route's own.** A connection that
+names its own `--mode` or `--no-session` is refused, rather than silently
+starting a different surface than the one the route was written for.
+
+**The credential stays in Pi.** The configuration carries no secret: Pi's
+provider credential and model are Pi's own business, and the panel holds
+neither.
+
+**Migration.** The adapter type enum grows by one member and nothing is
+reclassified. A client that switches exhaustively on the adapter type must now
+render `pi`; a connection that is not a Pi agent is unaffected. The adapter
+configuration for this type carries `command`, `args`, `cwd`, `env`,
+`provider`, `model`, `ephemeral` and `timeoutSeconds`, and every one of them but
+`command` has a default. A connection recorded before this change keeps the
+adapter type it had.
+
+This entry is the contract for **WI-169**, and the code implements it. The route
+is `packages/agent-adapters/src/pi.ts`, the configuration is
+`packages/contracts/src/adapter-config.ts`, the preset the owner starts Pi from
+is `pi-rpc`, and the gate that proves the route is
+`scripts/verify-pi-route.ts`. What the route does not carry — Pi's extension
+questions, its compaction and its retries — is named there too.
 
 ### The MCP adapter
 
@@ -778,8 +839,8 @@ system, and it never replaces or duplicates the external runtime's own harness o
 instruction file.
 
 This entry is the contract for **WI-006**, and the code implements it — as of
-`70d042c`. `personaSchema` is at `packages/contracts/src/agent.ts:42`,
-`resolvePersona` at `:93`, the connection's base persona at `:115-116`, and the
+`70d042c`. `personaSchema` is at `packages/contracts/src/agent.ts:44`,
+`resolvePersona` at `:95`, the connection's base persona at `:117-118`, and the
 participant's override at `packages/contracts/src/conversation.ts:38`.
 
 **Migration.** Nothing is reclassified and nothing is rewritten. Both fields are
@@ -2561,7 +2622,7 @@ interface ArtifactEvidence {
 **What the agent did** is `toolCalls`: the tool calls of that execution and how
 each ended. The calls are the execution's `tool.started` events and the
 `tool.completed` events that answer them
-(`packages/contracts/src/agent.ts:241-246`, `:247-252`). A call that answered has
+(`packages/contracts/src/agent.ts:243-248`, `:249-254`). A call that answered has
 `outcome: 'completed'` and a `completedAt`; a call that did not has
 `outcome: 'unfinished'` and a `completedAt` of `null`. The events name the tool
 and not the call, so a call is answered by the next completion for that tool.
@@ -2569,7 +2630,7 @@ and not the call, so a call is answered by the next completion for that tool.
 do not say why a call did not finish, and this entry does not claim a reason.
 
 **What it produced** is `artifacts`: the execution's `artifact.created` events
-(`packages/contracts/src/agent.ts:247-252`), each with the title it was given and
+(`packages/contracts/src/agent.ts:262-267`), each with the title it was given and
 the resource it made, when it was given either.
 
 **What it cost** is `spendUnits` and `status`. `status` is the execution's own

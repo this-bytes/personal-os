@@ -104,6 +104,17 @@ export interface FormState {
   codexAppServerEphemeral: boolean;
   /** When the App Server may ask the owner for permission. */
   codexApprovalPolicy: 'untrusted' | 'on-request' | 'never';
+  /** The provider Pi asks for, in Pi's own `provider/model` form. */
+  piProvider: string;
+  /** The model Pi asks for. */
+  piModel: string;
+  /**
+   * Whether Pi keeps its session on disk after the turn.
+   *
+   * A kept session is a session the next turn resumes, so this is the same
+   * question the App Server's own row asks — asked of the file Pi keeps.
+   */
+  piEphemeral: boolean;
 }
 
 const EMPTY: FormState = {
@@ -152,6 +163,9 @@ const EMPTY: FormState = {
   codexSkipGitRepoCheck: true,
   codexAppServerEphemeral: false,
   codexApprovalPolicy: 'on-request',
+  piProvider: '',
+  piModel: '',
+  piEphemeral: false,
 };
 
 /** One entry per line. */
@@ -281,6 +295,19 @@ export function buildAdapterConfig(type: AdapterType, form: FormState): Record<s
         approvalPolicy: form.codexApprovalPolicy,
         ephemeral: form.codexAppServerEphemeral,
         ...(form.codexModel.trim() ? { model: form.codexModel.trim() } : {}),
+        timeoutSeconds: toNumber(form.timeoutSeconds, 900),
+      };
+    case 'pi':
+      return {
+        command: form.command.trim(),
+        args: parseLines(form.args),
+        ...(form.cwd.trim() ? { cwd: form.cwd.trim() } : {}),
+        env: parseKeyValues(form.env),
+        ...(form.piProvider.trim() ? { provider: form.piProvider.trim() } : {}),
+        ...(form.piModel.trim() ? { model: form.piModel.trim() } : {}),
+        // The session is kept unless the owner says otherwise, because a kept
+        // session is what the next turn resumes.
+        ephemeral: form.piEphemeral,
         timeoutSeconds: toNumber(form.timeoutSeconds, 900),
       };
     case 'echo':
@@ -430,6 +457,17 @@ export function formValuesFromPreset(preset: AdapterPreset): Partial<FormState> 
         timeoutSeconds: String(count('timeoutSeconds', 900)),
       };
     }
+    case 'pi':
+      return {
+        command: text('command', 'pi'),
+        args: list('args').join('\n'),
+        cwd: text('cwd'),
+        env: keyValues('env').join('\n'),
+        piProvider: text('provider'),
+        piModel: text('model'),
+        piEphemeral: config['ephemeral'] === true,
+        timeoutSeconds: String(count('timeoutSeconds', 900)),
+      };
     case 'echo':
     default:
       return {
@@ -568,7 +606,8 @@ export function AgentConnectionForm({
         form.adapterType === 'cli' ||
         form.adapterType === 'acp' ||
         form.adapterType === 'codex' ||
-        form.adapterType === 'codex-app-server'
+        form.adapterType === 'codex-app-server' ||
+        form.adapterType === 'pi'
       ) {
         if (!form.command.trim()) {
           setLocalError('A command is required for this adapter.');
@@ -1172,6 +1211,116 @@ export function AgentConnectionForm({
                       <span className="mt-0.5 block text-[11px] text-slate-500">
                         A kept session lets the next turn go back into the same thread. Turned on,
                         the thread is thrown away when the turn ends, and the conversation starts
+                        afresh every time.
+                      </span>
+                    </span>
+                  </label>
+                </div>
+              ) : null}
+
+              {form.adapterType === 'pi' ? (
+                <div className="space-y-4">
+                  <div className="grid gap-4 sm:grid-cols-2">
+                    <Field
+                      label="Command"
+                      htmlFor="pi-command"
+                      hint="The Pi executable. Pi is started from it and speaks its own protocol."
+                    >
+                      <Input
+                        id="pi-command"
+                        value={form.command}
+                        onChange={(event) => set('command', event.target.value)}
+                        placeholder="pi"
+                      />
+                    </Field>
+                    <Field
+                      label="Arguments"
+                      htmlFor="pi-args"
+                      hint="One argument per line, before Pi's own --mode."
+                    >
+                      <Input
+                        id="pi-args"
+                        value={form.args}
+                        onChange={(event) => set('args', event.target.value)}
+                        placeholder="(none)"
+                      />
+                    </Field>
+                  </div>
+                  <div className="grid gap-4 sm:grid-cols-2">
+                    <Field
+                      label="Working directory"
+                      htmlFor="pi-cwd"
+                      hint="Where Pi works. Empty means the server's own directory."
+                    >
+                      <Input
+                        id="pi-cwd"
+                        value={form.cwd}
+                        onChange={(event) => set('cwd', event.target.value)}
+                        placeholder="(optional)"
+                      />
+                    </Field>
+                    <Field
+                      label="Timeout (seconds)"
+                      htmlFor="pi-timeout"
+                      hint="How long one turn may take before it is given up on."
+                    >
+                      <Input
+                        id="pi-timeout"
+                        value={form.timeoutSeconds}
+                        onChange={(event) => set('timeoutSeconds', event.target.value)}
+                      />
+                    </Field>
+                  </div>
+                  <div className="grid gap-4 sm:grid-cols-2">
+                    <Field
+                      label="Provider"
+                      htmlFor="pi-provider"
+                      hint="Which provider Pi asks, in Pi's own provider/model form. Empty lets Pi choose."
+                    >
+                      <Input
+                        id="pi-provider"
+                        value={form.piProvider}
+                        onChange={(event) => set('piProvider', event.target.value)}
+                        placeholder="(optional)"
+                      />
+                    </Field>
+                    <Field
+                      label="Model"
+                      htmlFor="pi-model"
+                      hint="Which model Pi asks for. Empty lets Pi choose."
+                    >
+                      <Input
+                        id="pi-model"
+                        value={form.piModel}
+                        onChange={(event) => set('piModel', event.target.value)}
+                        placeholder="(optional)"
+                      />
+                    </Field>
+                  </div>
+                  <Field
+                    label="Environment"
+                    htmlFor="pi-env"
+                    hint="KEY=VALUE, one per line. Pi signs in with its own account, so no credential belongs here."
+                  >
+                    <Textarea
+                      id="pi-env"
+                      className="min-h-[60px] font-mono text-xs"
+                      value={form.env}
+                      onChange={(event) => set('env', event.target.value)}
+                    />
+                  </Field>
+                  <label className="flex items-start gap-2 text-xs text-slate-300">
+                    <input
+                      type="checkbox"
+                      className="mt-0.5 accent-indigo-500"
+                      checked={form.piEphemeral}
+                      onChange={(event) => set('piEphemeral', event.target.checked)}
+                    />
+                    <span>
+                      Keep no session on disk
+                      <span className="mt-0.5 block text-[11px] text-slate-500">
+                        A kept session lets the next turn go back into the same session. Turned on,
+                        Pi's session is thrown away when the turn ends, and the conversation starts
                         afresh every time.
                       </span>
                     </span>

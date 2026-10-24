@@ -133,6 +133,18 @@ describe('the runtime presets', () => {
     expect(codex?.description).toContain('App Server');
   });
 
+  it('gives Pi two surfaces, and has each name the other', () => {
+    const piCli = getAdapterPreset('pi-cli');
+    const piRpc = getAdapterPreset('pi-rpc');
+
+    // Pi's own protocol carries more than a prompt, so it has a route of its
+    // own — and the command line route stays, as the fallback it is.
+    expect(piCli?.adapterType).toBe('cli');
+    expect(piCli?.description).toContain('RPC session');
+    expect(piRpc?.adapterType).toBe('pi');
+    expect(piRpc?.description).toContain('command line');
+  });
+
   it('carries the surface an installed runtime publishes', () => {
     // Hermes publishes ACP as well as a gateway, and an owner with the
     // command on PATH should not have to remember the command line.

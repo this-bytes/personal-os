@@ -995,6 +995,61 @@
           "value": "content: z\\.array\\(contentPartSchema\\)"
         }
       ]
+    },
+    {
+      "id": "the-pi-route-wi-169",
+      "section": "The Pi adapter",
+      "note": "This entry is the contract for WI-169, and the code implements it",
+      "claim": "implemented",
+      "item": "WI-169",
+      "why": "WI-169's Pi route: the adapter type the contract publishes, the route that speaks Pi's own protocol, the preset the owner starts Pi from, and the capability row that says what the route really carries.",
+      "expect": [
+        {
+          "kind": "present-pattern",
+          "path": "packages/contracts/src/agent.ts",
+          "value": "'pi',"
+        },
+        {
+          "kind": "present-pattern",
+          "path": "packages/contracts/src/adapter-config.ts",
+          "value": "export const piAdapterConfigSchema"
+        },
+        {
+          "kind": "present-pattern",
+          "path": "packages/contracts/src/adapter-presets.ts",
+          "value": "id: 'pi-rpc'"
+        },
+        {
+          "kind": "present-pattern",
+          "path": "packages/agent-adapters/src/pi.ts",
+          "value": "export class PiAdapter"
+        },
+        {
+          "kind": "present-pattern",
+          "path": "packages/agent-adapters/src/pi.ts",
+          "value": "export function mapPiEvent"
+        },
+        {
+          "kind": "present-text",
+          "path": "packages/agent-adapters/src/pi.ts",
+          "value": "switch_session"
+        },
+        {
+          "kind": "present-text",
+          "path": "packages/agent-adapters/src/pi.ts",
+          "value": "agent_settled"
+        },
+        {
+          "kind": "present-pattern",
+          "path": "packages/agent-adapters/src/index.ts",
+          "value": "pi: createPiAdapter"
+        },
+        {
+          "kind": "present-pattern",
+          "path": "scripts/verify-pi-route.ts",
+          "value": "The gate for Pi's route."
+        }
+      ]
     }
   ]
 }

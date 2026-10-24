@@ -114,7 +114,18 @@ describe('the preset catalogue route', () => {
     const types = new Set(all.map((preset) => preset.adapterType));
 
     expect(types).toEqual(
-      new Set(['cli', 'acp', 'a2a', 'http', 'model', 'echo', 'mcp', 'codex', 'codex-app-server']),
+      new Set([
+        'cli',
+        'acp',
+        'a2a',
+        'http',
+        'model',
+        'echo',
+        'mcp',
+        'codex',
+        'codex-app-server',
+        'pi',
+      ]),
     );
   });
 

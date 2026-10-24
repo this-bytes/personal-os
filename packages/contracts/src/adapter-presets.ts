@@ -281,6 +281,24 @@ const CAPABILITIES = {
     // A picture has an item of its own, and the route carries the bytes in it.
     acceptsImages: true,
   },
+  pi: {
+    chat: true,
+    streaming: true,
+    persistentSessions: true,
+    backgroundTasks: true,
+    cancel: true,
+    // Pi's extension questions are not carried on this route, so the row says
+    // the route cannot ask the owner for permission.
+    approvals: false,
+    artifacts: false,
+    // Pi takes a steer while it is working: `steer` is one of its own commands.
+    acceptsSteering: true,
+    // A file the owner attached is carried as text, because Pi's prompt is a
+    // message and a message is text.
+    acceptsAttachments: true,
+    // A picture has a shape of its own, and the route carries the bytes in it.
+    acceptsImages: true,
+  },
 } as const;
 
 /**
@@ -665,10 +683,11 @@ const RAW_PRESETS = [
     runtime: 'Pi',
     name: 'Pi (command line subprocess)',
     description:
-      'Pi as a native long-lived JSONL RPC subprocess. Pi’s own protocol carries more than a ' +
-      'prompt — steering, settled execution, session selection — and none of that is implemented ' +
-      'here: this template starts the process and writes the prompt to it. This integration has ' +
-      'not been demonstrated in this repository.',
+      'Pi as a command line subprocess: the `pi` command is started, the prompt is written to it, and ' +
+      'its output is read as text. Pi’s own JSONL RPC protocol carries more than a prompt — the ' +
+      'streaming text, the tools it ran, whether it has settled, the session it is in, and a steer ' +
+      'that arrives while it works — and the “Pi (RPC session)” template speaks that protocol ' +
+      'instead. This integration has not been demonstrated in this repository.',
     config: {
       adapterType: 'cli',
       command: 'pi',
@@ -687,6 +706,39 @@ const RAW_PRESETS = [
     requires: [
       'An installed `pi` binary on PATH.',
       'The session or project directory Pi should work in.',
+    ],
+    verified: false,
+  },
+  {
+    id: 'pi-rpc',
+    adapterType: 'pi',
+    runtime: 'Pi',
+    name: 'Pi (RPC session)',
+    description:
+      'Pi as its own long-lived JSONL RPC session. Pi’s protocol carries more than a prompt — the ' +
+      'streaming text, the tools it ran, whether it has settled, the session it is in, and a steer ' +
+      'that arrives while it works — so this route speaks that protocol instead of writing a prompt ' +
+      'to a process. The command line template (`pi-cli`) is the other route, and it carries less. ' +
+      'This integration has not been demonstrated in this repository.',
+    config: {
+      adapterType: 'pi',
+      command: 'pi',
+      args: [],
+      ephemeral: false,
+      timeoutSeconds: 900,
+    },
+    persona: {
+      role: 'Pi lead',
+      instructions:
+        'You lead this room with Pi over its own RPC session. Keep the session alive across turns so ' +
+        'the work continues where it left off, and let Pi’s own tool activity be shown rather than ' +
+        'describing it from memory. Never call a turn finished while Pi is still working.',
+    },
+    capabilities: CAPABILITIES.pi,
+    requires: [
+      'An installed `pi` binary on PATH that can be started in RPC mode.',
+      'The directory Pi should work in.',
+      'A provider and a model, if Pi is to be asked for ones other than its own default — the credential stays in Pi rather than in this panel.',
     ],
     verified: false,
   },

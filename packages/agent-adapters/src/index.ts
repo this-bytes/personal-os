@@ -9,6 +9,7 @@ import { createEchoAdapter } from './echo.js';
 import { createHttpAdapter } from './http.js';
 import { createMcpAdapter } from './mcp.js';
 import { createModelAdapter } from './model.js';
+import { createPiAdapter } from './pi.js';
 import type { AdapterFactories } from './types.js';
 
 export * from './types.js';
@@ -32,6 +33,15 @@ export { EchoAdapter, createEchoAdapter } from './echo.js';
 export { HttpAdapter, createHttpAdapter } from './http.js';
 export { McpAdapter, createMcpAdapter } from './mcp.js';
 export { ModelAdapter, createModelAdapter } from './model.js';
+export {
+  PiAdapter,
+  PiRpcClient,
+  createPiAdapter,
+  mapPiEvent,
+  buildPiPrompt,
+  piArgs,
+  textOf,
+} from './pi.js';
 
 /**
  * The registry populated with every built-in adapter. New adapter types are
@@ -48,6 +58,7 @@ export function createDefaultRegistry(): AdapterRegistry {
     mcp: createMcpAdapter,
     codex: createCodexAdapter,
     'codex-app-server': createCodexAppServerAdapter,
+    pi: createPiAdapter,
   };
   return new AdapterRegistry(factories);
 }
