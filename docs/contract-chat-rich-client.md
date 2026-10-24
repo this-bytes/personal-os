@@ -1,9 +1,9 @@
 # The chat surface — contract notes
 
 WI-141 gives the conversation surface a first-class chat client: Markdown,
-tool activity, previews and run controls. These are the notes the integration
-owner needs to fold into `CONTRACTS.md`; `CONTRACTS.md` itself was not
-touched by this item.
+tool activity, previews and run controls. These were the notes the integration
+owner needed to fold into `CONTRACTS.md`; that integration has since been
+done, and `CONTRACTS.md` carries the chat surface.
 
 ## The contracts that were added
 
