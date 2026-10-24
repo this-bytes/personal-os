@@ -5,6 +5,7 @@ import {
   routingModeSchema,
   botRoleSchema,
   messageDeliverySchema,
+  contentPartSchema,
 } from '@personal-os/contracts';
 import { audit, parseBody, parseQuery, requireAuth } from './helpers.js';
 
@@ -46,15 +47,16 @@ const participantPatchSchema = z.object({
 });
 
 const postMessageSchema = z.object({
-  content: z
-    .array(
-      z.union([
-        z.object({ type: z.literal('text'), text: z.string() }),
-        z.object({ type: z.literal('artifact'), resourceId: z.string() }),
-        z.object({ type: z.literal('file'), resourceId: z.string() }),
-      ]),
-    )
-    .min(1),
+  /**
+   * The message's parts, as the contract publishes them.
+   *
+   * **The contract's shape, not a copy of it.** A local subset of the union
+   * drifts: the contract grew an attachment and an image, and the route kept
+   * the three shapes it knew, so a message the panel could compose was
+   * refused by the route with `validation_failed` and the owner was told
+   * nothing about why.
+   */
+  content: z.array(contentPartSchema).min(1),
   replyToId: z.string().optional(),
   targetParticipantIds: z.array(z.string()).optional(),
   /**
