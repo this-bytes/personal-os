@@ -157,6 +157,7 @@ Read the branch for what it proves, then write the slice that needs it.
 | --------------------------------------------------------- | ------------------------------------------------------------------------ | -------------------------------------------------------------------------- |
 | `feature/r1-1-codex-app-server`                           | The Codex App Server route and the gate that covers it                   | Landed: PR #33; [SPEC-R1-1](spec/r1-1-codex-demonstration.md) delivered    |
 | `feature/r1-2-acp-permissions`                            | A runtime's permission request reaching the owner                        | Landed: PR #24; [SPEC-R1-2](spec/r1-2-opencode-demonstration.md) delivered |
+| `wi/165-content-parts`                                    | A file the owner attaches reaching the runtime                           | Landed: PR #38; [SPEC-R1-3](spec/r1-3-content-parts.md) delivered          |
 | `docs/adr-0012-slice-a`                                   | ADR 0012's first slice: the queue, the records and the priorities        | Live                                                                       |
 | `chore/mcp-parity-named-spec`                             | The spec that will pair the broken windows                               | Live                                                                       |
 | `wi/077-agent-adapter-domain`                             | The queue-based capability probe the R0 follow-up above ports from       | Preserved source; named in this document                                   |
