@@ -2116,7 +2116,7 @@ supports, and the capability to do it is already modelled and negotiated.
 
 This entry is the contract for **WI-007**, and the code implements it — as of
 `5f019b9`. `resumeSession` is implemented at
-`packages/agent-adapters/src/acp.ts:379` and called at
+`packages/agent-adapters/src/acp.ts:635` and called at
 `apps/worker/src/executor.ts:430`, and the gate is the capability and the session
 id together: `canResume = capabilities?.persistentSessions === true &&
 Boolean(execution.externalRef)`.

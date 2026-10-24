@@ -48,6 +48,7 @@
     "verify:codex-app-server": "tsx scripts/verify-codex-app-server.ts",
     "verify:codex-runtime": "tsx scripts/verify-codex-app-server.ts --runtime",
     "verify:content-parts": "tsx scripts/verify-content-parts.ts",
+    "verify:acp-tool-activity": "tsx scripts/verify-acp-tool-activity.ts",
     "gates": "tsx scripts/verify-gates.ts",
     "verify:stack": "tsx scripts/verify-stack.ts",
     "work:item": "tsx scripts/work-item.ts",

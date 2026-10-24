@@ -297,6 +297,37 @@ jobs:
       - name: A file the owner attaches reaches the runtime
         run: npm run verify:content-parts
 
+  acp-tool-activity:
+    name: A runtime's tool activity reaches the room
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci --ignore-scripts --no-audit --no-fund
+
+      # The gate drives the built adapter, so the packages it calls have to be
+      # built first. It talks to the repository's own double of an agent that
+      # speaks the protocol, so it needs no account and spends no tokens.
+      - name: Build the packages the gate drives
+        run: npm run build:contracts && npm run build:adapters
+
+      # The gate checks that the runtime's own tool calls reach the room as the
+      # product's tool events, that a call is one row however much the runtime
+      # streamed, and that the matrix agrees with the code.
+      #
+      # **The gate runs in this pipeline on purpose.** A gate that only runs on
+      # the machine that wrote it is not a gate, it is a habit.
+      - name: A runtime's tool activity reaches the room
+        run: npm run verify:acp-tool-activity
+
   standards:
     name: The constitution is honoured
     runs-on: ubuntu-latest

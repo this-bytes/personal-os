@@ -101,6 +101,12 @@
       "command": "npx",
       "args": ["tsx", "scripts/verify-content-parts.ts"],
       "about": "a file the owner attaches reaches the runtime, in each protocol's own shape, and a route that cannot carry one says so"
+    },
+    {
+      "name": "acp-tool-activity",
+      "command": "npx",
+      "args": ["tsx", "scripts/verify-acp-tool-activity.ts"],
+      "about": "a runtime's tool calls reach the room as the product's tool events, a call is one row, and the matrix agrees with the code"
     }
   ]
 }
