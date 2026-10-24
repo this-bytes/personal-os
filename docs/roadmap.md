@@ -139,7 +139,16 @@ Read the branch for what it proves, then write the slice that needs it.
 | `wi/072-queue-index`                                      | The queue index                                                          | Parked work; no spec yet                                                       |
 | `wi/132-panel-waiting-shape`                              | A published change to the waiting shape                                  | Parked work; a contract change, so it needs a spec                             |
 | `wi/092-bundle-budget-timeout`                            | The bundle budget's own timeout                                          | Parked work; no spec yet                                                       |
-| `wi/161-chat-class-surface`                               | The chat surface refactor: bubbles, message actions, a scrolling column  | Parked work; open as a draft pull request                                      |
+| `wi/161-chat-class-surface`                               | The chat surface refactor: bubbles, message actions, a scrolling column  | Landed: the refactor reached `main` as #31, corrected on the way in            |
+
+One of them has since landed. `wi/161-chat-class-surface` held the chat
+surface refactor, preserved as a draft pull request. The refactor was then
+ported onto `main` as its own slice and landed as #31, with the fixes the
+branch lacked: the turn is an `<article>` again, the server's account of a
+turn shows under the owner's own words, the four dropped browser tests are
+back, and the community dependency is pinned and its licence recorded. The
+branch keeps the commit it was written as. It is a source, not a proposal:
+nothing further should be taken from it without a spec.
 
 The branches that carry only a record - `wi/042`, `wi/062`,
 `wi/077-author-shape-house-form`, `wi/103`, `wi/106` and `wi/119` - hold the
