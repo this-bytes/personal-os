@@ -185,7 +185,7 @@ describe('the preset picker', () => {
     // one, which version and when.
     expect(screen.getByText('demonstrated here')).toBeInTheDocument();
     expect(screen.getByText(/OpenCode 1\.19\.4/)).toBeInTheDocument();
-    expect(screen.getByText(/2026-10-23/)).toBeInTheDocument();
+    expect(screen.getByText(/2026-10-24/)).toBeInTheDocument();
   });
 
   it('names what the owner still has to supply', () => {

@@ -644,10 +644,9 @@ const RAW_PRESETS = [
       version: '1.19.4',
       demonstratedOn: '2026-10-24',
       observed:
-        'OpenCode 1.19.4 answered through this repository’s ACP adapter over a real session: the ' +
-        'handshake answered, a turn produced the agent’s text, the runtime’s own permission request ' +
-        'reached the owner and the owner’s decision answered it, and every later turn continued the ' +
-        'same session.',
+        'Answered through this repository’s ACP adapter over a real session: the handshake answered, ' +
+        'a turn produced the agent’s text, the runtime’s own permission request reached the owner and ' +
+        'the owner’s decision answered it, and every later turn continued the same session.',
     },
   },
   {
