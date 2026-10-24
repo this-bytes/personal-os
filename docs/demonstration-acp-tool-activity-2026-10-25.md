@@ -13,6 +13,11 @@ It settles one thing: **the room shows what the agent is doing.** The agent
 read a file with its own tools, and the room's execution trace carries the
 call — the tool's name, the file it was called with, and what it got back.
 
+And it settles a second: **a turn's work is the turn's own.** The runtime
+replays a session when it is loaded, and the product loads the session to
+continue it; the measurement below says where that replay lands, and the
+route's rule keeps it out of the turn that resumed it.
+
 ## Where the run happened
 
 On a **separate instance**, not the owner's own. Its own port (4395, for both
@@ -81,6 +86,43 @@ A tool call is announced and then updated, all under one `toolCallId`:
 before it says what the call is for, and the arguments arrive with the next
 update. A route that announced the call on the announcement would show a row
 with an empty input — and the room would not know which file the agent read.
+
+## The session's replay
+
+**Loading a session replays it, and the replay is not the turn's work.** The
+protocol's `session/load` is how a client restores its view of a session, and
+the runtime sends the session's messages as `session/update` notifications: the
+owner's words, the agent's answers, and the tool calls the session made.
+
+The product continues a session across the turns of a conversation, so the
+replay reaches the route on every turn after the first. A probe drove the
+installed runtime through a load and recorded where every notification landed:
+
+```
+the load answered: {"configOptions":[{"id":"model","name":"Model", ...
+the notifications that arrived before the load's own answer: 10
+the notifications that arrived after it: 11
+```
+
+The ten that arrived first are the replay:
+
+```
+during-load  user_message_chunk   "Read notes.txt with your tools, then reply with exactly: FIRST-TURN-OK"
+during-load  tool_call             call_6dd25c9fc9664c15a39edab2
+during-load  tool_call_update      call_6dd25c9fc9664c15a39edab2
+during-load  agent_message_chunk   "FIRST-TURN-OK"
+```
+
+and the second prompt carried only the new words:
+
+```
+turn-2       agent_message_chunk   "SECOND-TURN-OK"
+```
+
+**So the boundary is exact: the replay lands while the load is in flight, and a
+second prompt carries only what was just asked.** The route reads the runtime's
+updates only once the turn's prompt has been sent, so the session's history
+stays out of the turn that resumed it.
 
 ## The owner's run
 
@@ -170,17 +212,66 @@ file, a moment later than the call began, and the room can show what it knows.
 answered the call with an empty input too, so the gate checks the thing the
 runtime does rather than the thing the route hoped for.
 
+**The reply repeated the session's earlier text, and the cause was the same
+replay.** The transcript of the first run carried this as a limit:
+
+> **The reply repeats the session's earlier text.** Each turn's answer begins
+> with the answers of the turns before it, because the runtime replays the
+> session's messages when it is prompted.
+
+The room showed one long bubble holding the whole session so far. The
+measurement above says why, and it says something the first reading did not:
+the runtime does **not** replay when it is _prompted_ — it replays when the
+session is _loaded_, and the product loads the session to continue it. So the
+replay is the load's, not the turn's.
+
+**The fix is in the route, and it is the same fix for both symptoms.** A turn's
+work is what arrives after the prompt: the route reads the runtime's updates
+only once the turn's prompt has been sent. The repeated answer and the
+replayed tool call were the same defect — the session's history shown as the
+turn's work — and one rule closes both.
+
+The gate proves it against the built product, and it was measured both ways.
+With the guard taken out of the adapter and the package rebuilt, the gate said:
+
+```
+The gate failed:
+  - the turn that continued the session answered "THE-ANSWER-1THE-ANSWER-2", and the session's earlier answer is not this turn's work.
+  - the turn made one call and the room was told about 2 of them, so the session's earlier calls were shown as this turn's work.
+  - the turn finished one call and the room was told about 2 of them, so the session's earlier calls were shown as this turn's work.
+```
+
+With the guard in, the same gate says the turn answers with its own words and
+shows the calls it made.
+
 ## The limits
 
 What this run does **not** show, stated plainly:
 
-- **The reply repeats the session's earlier text.** Each turn's answer begins
-  with the answers of the turns before it, because the runtime replays the
-  session's messages when it is prompted. This run's answer shows it: the
-  agent's text and the file's content arrived in one bubble. It is the
-  runtime's behaviour, faithfully carried, and it is not what a room should
-  show. It is a separate defect, with a separate reason, and it is not fixed
-  here.
+- **The room, with two turns in one session, was not re-run.** The first run of
+  this demonstration showed the tool activity, and that part stands. The second
+  turn — the one that shows the session's history kept out of the turn — was
+  not run against the runtime, because the runtime stopped being able to
+  answer. At 01:01 the installed OpenCode's own log says:
+
+  ```
+  level=ERROR message="stream error" providerID=opencode modelID=big-pickle
+    error.error="AI_APICallError: Free usage limit reached. Subscribe to OpenCode Go to keep going: https://opencode.ai/go"
+  ```
+
+  Every prompt after that failed the same way, including a direct
+  `opencode run "reply with exactly: OK"` and a probe that does not touch the
+  product's code at all. The runtime's free allowance is spent; that is an
+  account condition, not a defect in the route. What is proved about the room
+  is proved by the gate, which drives the **built** product against an agent
+  that speaks the protocol, and what is proved about the runtime is proved by
+  the measurement above. The room itself, with two turns in one session, is
+  still to be run when the runtime can answer.
+
+- **A runtime that fails without saying so leaves the turn waiting.** The
+  failing run above shows it: the runtime logged the error and never answered
+  the prompt, so the turn stayed `running` until the adapter's timeout. The
+  route reports what the runtime says, and the runtime said nothing.
 - **Steering.** The runtime does not advertise it, and the panel says
   `takes input mid-turn: no` rather than offering a control that cannot work.
 - **Artifacts.** The route makes no resource of anything it carries, and the
@@ -217,6 +308,8 @@ The gate for a runtime's tool activity on the ACP route.
   ok   the end of the call reaches the room
   ok   a call is one row
   ok   a call that failed is a finished call
+  ok   the turn answers with its own words
+  ok   the turn shows the calls it made
   ok   the matrix agrees with the code
 
 The room shows what the agent did.
@@ -226,6 +319,8 @@ The room shows what the agent did.
 
 - `npm run verify:acp-tool-activity` — the gate, on any machine, with no
   runtime and no account.
+- `npm test -w @personal-os/agent-adapters -- acp-session-replay` — the route's
+  own tests for the replay, against the protocol's double.
 - `npm test -w @personal-os/agent-adapters -- acp-tool-activity` — the route's
   own tests, against the protocol's double.
 

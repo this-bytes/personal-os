@@ -104,6 +104,13 @@ after its start. The tool's name is the product's word for the action — a
 command is a `command` on this route too — and a kind that is not an action at
 all, like a thought, is not an action the room is shown.
 
+**A turn's work is the turn's own.** A session that is loaded is replayed: the
+runtime sends the session's earlier messages, answers and calls, so a client can
+restore its view of it. The route reads the runtime's updates only once the
+turn's prompt has been sent, so the session's history stays out of the turn
+that resumed it — the room's answer is the answer to what was just asked, and
+the timeline is a record of this turn.
+
 **The ACP route sends the message's parts.** The protocol's prompt is a list of
 content blocks, and a file the owner attached is one of them: a `resource`
 block, whose `uri` names the file and whose text is the file's content. The

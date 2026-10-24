@@ -91,8 +91,7 @@ runtime** — [the demonstration](demonstration-content-parts-2026-10-24.md),
 [SPEC-R1-3](spec/r1-3-content-parts.md) — and a room whose agent cannot carry
 a file refuses the attachment rather than taking it and dropping it.
 
-**What the ACP route still cannot do.** It carries no steering, and it still
-carries the session's earlier text back to the runtime on each prompt.
+**What the ACP route still cannot do.** It carries no steering.
 
 **The fourth slice closed the second gap the second demonstration measured.**
 The room's activity timeline was empty on the ACP route: the adapter read one
@@ -103,6 +102,16 @@ adapter, because the contract already had the events and the room already
 drew them. **The room now shows the work** — the tool's name, the file it was
 called with, and what it got back — [the demonstration](demonstration-acp-tool-activity-2026-10-25.md),
 [SPEC-R1-4](spec/r1-4-acp-tool-activity.md).
+
+**And the demonstration found the reason the reply repeated itself.** The
+runtime replays a session when it is _loaded_, and the product loads the
+session to continue it, so the session's earlier answers and calls arrived as
+the turn's own work: the owner read one long bubble holding the whole session,
+and the timeline carried a row for a call the runtime made a turn ago. One
+rule closes both — _a turn's work is what arrives after the prompt_ — and the
+measurement behind it says the boundary is exact. The room itself, with two
+turns in one session, is still to be demonstrated: the installed runtime's
+free allowance was spent before the second turn could be asked.
 
 **R2 has three demonstrated runtimes and two templates.** The presets are starting
 points for the five named runtimes. Pi and OpenClaw are not installed here, and

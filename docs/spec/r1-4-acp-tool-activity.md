@@ -1,6 +1,9 @@
 # SPEC-R1-4 — The ACP route carries the runtime's tool activity
 
-**State:** delivered · **Owner:** implementing agent, one session · **Verifier:**
+**State:** delivered, with one piece of evidence outstanding — the room itself,
+with two turns in one session, is still to be demonstrated, because the
+installed runtime's free allowance was spent before the second turn could be
+asked · **Owner:** implementing agent, one session · **Verifier:**
 independent reviewer
 **Depends on:** SPEC-R1-2 (the demonstration measured the gap) · **Blocks:**
 nothing yet
@@ -164,6 +167,43 @@ tool call — `tool.completed` is the end of a call, and the status says how it
 ended. A call that failed is not an `execution.error`: the turn carried on,
 and the failure belongs to the tool.
 
+## The turn's work is the turn's own
+
+**A session that is loaded is replayed.** The protocol's `session/load` is how a
+client restores its view of a session, and the runtime sends the session's
+messages as `session/update` notifications: the owner's words, the agent's
+answers, and the tool calls the session made. That history arrives while the
+load is still in flight — before the load's own answer.
+
+The product continues a session: a turn that is the next one in a conversation
+continues the session the conversation is in, when the runtime said it keeps
+sessions (`apps/worker/src/executor.ts`). So the replay reaches the route on
+every turn after the first, and a route that treated every update as the turn's
+work put the session's history into the turn that resumed it:
+
+- the owner's room showed the earlier answer again, so the answer was the
+  session's whole transcript so far rather than the turn's answer;
+- the activity timeline showed a row for a call the runtime made a turn ago, so
+  the trace was not a record of this turn.
+
+**The rule: a turn's work is what arrives after the prompt.** The route reads
+the runtime's updates only once the turn's prompt has been sent. The boundary
+is exact, and it was measured rather than assumed — a probe drove the installed
+runtime through a load and recorded where every notification landed:
+
+| What the runtime sent                                                        | When it arrived                                   |
+| ---------------------------------------------------------------------------- | ------------------------------------------------- |
+| `user_message_chunk`, `tool_call`, `tool_call_update`, `agent_message_chunk` | **during the load**, before the load's own answer |
+| `available_commands_update`                                                  | after the load's answer                           |
+| `agent_message_chunk` — the new words only                                   | during the second prompt                          |
+
+The replay is the load's; the second prompt carries only the new words. So the
+updates that arrive before the prompt is written belong to the load, and the
+ones that arrive after it belong to this turn.
+
+The contract does not change. This is the adapter deciding what a turn's events
+are, and it is the same decision the Codex route already makes.
+
 ## The gate
 
 `npm run verify:acp-tool-activity` drives the **built** adapter against an
@@ -175,6 +215,10 @@ agent that speaks the protocol and checks the events the turn produced:
 3. The updates in between do not become events: a call is one row, not one
    row per line of output.
 4. A call that fails is a finished call, not a failed turn.
+5. A turn that continues a session answers with its own words: the session's
+   earlier answer is not this turn's work.
+6. A turn that continues a session shows the calls it made: the session's
+   earlier calls are not this turn's work either.
 
 The gate runs in the CI fast lane, because a gate that only runs on the
 machine that wrote it is a habit. It says which check failed: the "ok" line is
@@ -188,21 +232,28 @@ printed only when the check added no failure.
 2. A call is one row, however much output the runtime streamed for it. — **met**,
    by the gate and by the route's own tests.
 3. A call that failed shows as a finished call with its failure in it. — **met**.
-4. `npm run verify:acp-tool-activity` passes, the adapter's tests pass, and
+4. A turn that continues a session shows only its own work: its own answer and
+   its own calls. — **met** by the gate, which drives the built product; the
+   room itself is still to be run, because the installed runtime's free
+   allowance was spent before the second turn could be asked. See the
+   demonstration's limits.
+5. `npm run verify:acp-tool-activity` passes, the adapter's tests pass, and
    the whole suite passes. — **met**.
-5. The demonstration against the installed runtime shows the timeline. — **met**.
+6. The demonstration against the installed runtime shows the timeline. — **met**.
 
 ## Evidence
 
 ### What landed
 
-| What                                                                | What it does                                                                                    |
-| ------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------- |
-| `packages/agent-adapters/src/acp.ts`                                | The route reads the runtime's tool notifications and turns them into the product's tool events. |
-| `packages/agent-adapters/src/__tests__/acp-tool-activity.test.ts`   | The mapping, and the turn that carries it.                                                      |
-| `packages/agent-adapters/src/__tests__/fixtures/fake-acp-agent.mjs` | The double now uses a tool, with the sequence the installed runtime sends.                      |
-| `scripts/verify-acp-tool-activity.ts`                               | The gate, in the fast lane.                                                                     |
-| `docs/demonstration-acp-tool-activity-2026-10-25.md`                | The transcript: the room shows the agent's read.                                                |
+| What                                                                | What it does                                                                                         |
+| ------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------- |
+| `packages/agent-adapters/src/acp.ts`                                | The route reads the runtime's tool notifications and turns them into the product's tool events.      |
+| `packages/agent-adapters/src/acp.ts` (the turn's work)              | The route reads the runtime's updates only once the turn's prompt has been sent.                     |
+| `packages/agent-adapters/src/__tests__/acp-tool-activity.test.ts`   | The mapping, and the turn that carries it.                                                           |
+| `packages/agent-adapters/src/__tests__/acp-session-replay.test.ts`  | The replay, measured on the transport, and the turn that keeps only its own work.                    |
+| `packages/agent-adapters/src/__tests__/fixtures/fake-acp-agent.mjs` | The double now uses a tool, with the sequence the installed runtime sends, and it replays a session. |
+| `scripts/verify-acp-tool-activity.ts`                               | The gate, in the fast lane.                                                                          |
+| `docs/demonstration-acp-tool-activity-2026-10-25.md`                | The transcript: the room shows the agent's read, and the second turn shows only its own work.        |
 
 ### The tests that fail without the implementation
 
@@ -231,6 +282,36 @@ The gate failed:
   - a tool call that failed did not reach the room as a tool.completed.
 ```
 
+### The tests that fail without the turn's work
+
+**Also measured, not asserted.** The guard that keeps the load's replay out of
+the turn — `if (!promptSent) return;` — was taken out of the adapter, the
+package was rebuilt, and the tests and the gate were left in place:
+
+| Check                                                              | What it said without the guard                                                                                                        |
+| ------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------- |
+| `packages/agent-adapters/src/__tests__/acp-session-replay.test.ts` | **3 of the 6 tests failed**: the turn answered `THE-ANSWER-1THE-ANSWER-2`, and the room was told about 2 calls where the turn made 1. |
+| `scripts/verify-acp-tool-activity.ts`                              | failed, with every reason named (below)                                                                                               |
+
+```
+The gate for a runtime's tool activity on the ACP route.
+  ok   the build the gate exercises is the build of this tree
+  ok   a tool call reaches the room
+  ok   the call is shown with the arguments the runtime gave
+  ok   the end of the call reaches the room
+  ok   a call is one row
+  ok   a call that failed is a finished call
+
+The gate failed:
+  - the turn that continued the session answered "THE-ANSWER-1THE-ANSWER-2", and the session's earlier answer is not this turn's work.
+  - the turn made one call and the room was told about 2 of them, so the session's earlier calls were shown as this turn's work.
+  - the turn finished one call and the room was told about 2 of them, so the session's earlier calls were shown as this turn's work.
+```
+
+The first test in that file proves the replay happens at all, on the transport
+and without the adapter, so the ones after it are not passing because nothing
+was replayed.
+
 ### The demonstration
 
 The gate proves the product's half. The runtime's half was measured against
@@ -256,6 +337,26 @@ OUTPUT
 
 `docs/demonstration-acp-tool-activity-2026-10-25.md` is the transcript.
 
+### The measurement the rule rests on
+
+The rule — _a turn's work is what arrives after the prompt_ — is worth nothing
+unless the runtime behaves the way the rule assumes. A probe drove the installed
+runtime through a load and recorded where every notification landed:
+
+| What the runtime sent                                   | When it arrived                                   |
+| ------------------------------------------------------- | ------------------------------------------------- |
+| the owner's words, the earlier call, the earlier answer | **during the load**, before the load's own answer |
+| the new words                                           | during the second prompt                          |
+
+The replay lands while the load is in flight, and a second prompt carries only
+what was just asked. So the boundary is not a guess: the updates that arrive
+before the prompt is written belong to the load, and the ones that arrive after
+it belong to this turn.
+
+The room itself, with two turns in one session, is still to be run: the
+installed runtime's free allowance was spent before the second turn could be
+asked, and the transcript says so with the runtime's own log line.
+
 ### What the demonstration found
 
 **The first run showed the row with an empty input.** The route had announced
@@ -270,10 +371,10 @@ the route hoped for.
 
 - **Steering.** The runtime does not advertise it, and the panel says so
   rather than offering a control that cannot work.
-- **The reply that repeats the session's earlier text.** The runtime replays
-  the session's messages when it is prompted, and the room shows one long
-  bubble holding the whole session so far. That is a separate defect, with a
-  separate reason, and it is not fixed here.
 - **The other ACP routes' tool names.** Hermes and the other ACP runtimes
   report their own kinds; the mapping is by kind, so a runtime that names a
   kind the protocol has not named carries that kind as its name.
+- **A runtime that replays after the prompt.** The rule this slice settled is
+  the one the installed runtime follows: the replay lands while the load is in
+  flight. A runtime that replayed _after_ the prompt had been sent would put
+  its history into the turn, and nothing in the protocol says it may not.
