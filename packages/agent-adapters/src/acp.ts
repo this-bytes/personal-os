@@ -358,6 +358,24 @@ export class AcpAdapter implements AgentAdapter {
      * may announce a call before it says what the call is for.
      */
     const calls = new Map<string, { call: AcpToolCall; announced: boolean }>();
+    /**
+     * Whether the turn's prompt has been sent.
+     *
+     * **A turn's work is what arrives after the prompt.** Loading a session
+     * replays it: the runtime sends the session's messages — the owner's
+     * words, the agent's answers, and the tool calls it made — as the updates
+     * a client needs to restore its view of the session. That history is not
+     * this turn's work, and a route that reported it would put the session's
+     * earlier answers and tool calls into the turn that resumed it.
+     *
+     * The boundary is exact, and it was measured rather than assumed. The
+     * installed runtime (OpenCode 1.19.4) replays the session *while the load
+     * is still in flight* — the replay arrives before the load's own answer —
+     * and a second prompt carries only the new words, not the history again.
+     * So the updates that arrive before the prompt is written belong to the
+     * load, and the ones that arrive after it belong to this turn.
+     */
+    let promptSent = false;
     // Held in an object so the type stays `Error | null` after the
     // callbacks that assign it have run.
     const outcome: { failure: Error | null } = { failure: null };
@@ -381,6 +399,8 @@ export class AcpAdapter implements AgentAdapter {
 
     const offNotification = client.onNotification((method, params) => {
       if (method !== 'session/update') return;
+      // The session's history, replayed by the load, is not this turn's work.
+      if (!promptSent) return;
       const update = getByPath(params, 'update');
       const kind = getByPath(update, 'sessionUpdate');
 
@@ -511,6 +531,10 @@ export class AcpAdapter implements AgentAdapter {
         ? await this.loadSession(client, input.externalSessionId)
         : await this.newSession(client);
       this.sessions.set(executionId, sessionId);
+
+      // From here the runtime's updates are this turn's work. What the load
+      // replayed was the session's history.
+      promptSent = true;
 
       const promptPromise = client.request(
         'session/prompt',

@@ -19,6 +19,13 @@
  *
  * **FAKE_ACP_LOAD_WITHOUT_ID makes it answer session/load without a session
  * id**, the way OpenCode 1.19.4 does.
+ *
+ * **A load replays the session**, the way OpenCode 1.19.4 does: the runtime
+ * sends the session's messages — the owner's words, the agent's answers and
+ * the tool calls it made — while the load is still in flight, so the replay
+ * lands before the load's own answer. A client that treats every update as
+ * the turn's work puts the session's earlier answers and tool calls into the
+ * turn that resumed it.
  */
 import { createInterface } from 'node:readline';
 import { readFileSync, writeFileSync } from 'node:fs';
@@ -52,9 +59,19 @@ function readStore() {
       opened: raw.opened ?? [],
       prompts: raw.prompts ?? [],
       answers: raw.answers ?? [],
+      replies: raw.replies ?? [],
+      toolCalls: raw.toolCalls ?? [],
     };
   } catch {
-    return { sessions: [], loaded: [], opened: [], prompts: [], answers: [] };
+    return {
+      sessions: [],
+      loaded: [],
+      opened: [],
+      prompts: [],
+      answers: [],
+      replies: [],
+      toolCalls: [],
+    };
   }
 }
 
@@ -124,7 +141,11 @@ function notify(sessionId, update) {
  * route that answers every update show one row per line of output.
  */
 function useATool(sessionId) {
-  const toolCallId = process.env.FAKE_ACP_TOOL_CALL_ID ?? 'call_1';
+  const store = readStore();
+  // Every call has its own id: a session that is loaded replays the calls it
+  // made, and a route that cannot tell a replayed call from the turn's own
+  // would show the session's history as the turn's work.
+  const toolCallId = process.env.FAKE_ACP_TOOL_CALL_ID ?? `call_${store.toolCalls.length + 1}`;
   const kind = process.env.FAKE_ACP_TOOL_KIND ?? 'read';
   const title = process.env.FAKE_ACP_TOOL_TITLE ?? 'read';
   const command = process.env.FAKE_ACP_TOOL_COMMAND ?? 'Get-ChildItem';
@@ -132,6 +153,7 @@ function useATool(sessionId) {
   const said = process.env.FAKE_ACP_TOOL_OUTPUT ?? 'The file says: PROBE-MARKER-41C.';
   const status = process.env.FAKE_ACP_TOOL_STATUS ?? 'completed';
   const rawInput = kind === 'execute' ? { command, cwd: '.' } : { filePath };
+  const silent = process.env.FAKE_ACP_TOOL_SILENT === '1';
 
   notify(sessionId, {
     sessionUpdate: 'tool_call',
@@ -147,7 +169,22 @@ function useATool(sessionId) {
     rawInput: {},
   });
 
-  if (process.env.FAKE_ACP_TOOL_SILENT === '1') {
+  // The call is recorded whatever becomes of it, so that a load can replay
+  // it: the replay is the session's history, and the history is what the
+  // session did.
+  const record = readStore();
+  record.toolCalls.push({
+    sessionId,
+    toolCallId,
+    title,
+    kind,
+    status: silent ? 'pending' : status,
+    rawInput,
+    output: said,
+  });
+  writeStore(record);
+
+  if (silent) {
     // A call the runtime never says more about: it started and never ended.
     return;
   }
@@ -182,6 +219,64 @@ function useATool(sessionId) {
     content: [{ type: 'content', content: { type: 'text', text: said } }],
     rawOutput: { output: said },
   });
+}
+
+/**
+ * Replay the session, the way a runtime replays it when it is loaded.
+ *
+ * A load is how a client restores its view of a session: the runtime sends
+ * the session's messages — the owner's words, the agent's answers and the
+ * tool calls it made — as the updates the client needs. OpenCode 1.19.4 does
+ * exactly this, and it does it while the load is still in flight, so the
+ * replay lands before the load's own answer.
+ *
+ * A route that treats every update as the turn's work puts the session's
+ * earlier answers and tool calls into the turn that resumed it.
+ */
+function replayTheSession(sessionId) {
+  const store = readStore();
+
+  for (const prompt of store.prompts) {
+    if (prompt.sessionId !== sessionId) continue;
+    for (const block of prompt.blocks ?? []) {
+      if (block?.type !== 'text' || typeof block.text !== 'string') continue;
+      notify(sessionId, {
+        sessionUpdate: 'user_message_chunk',
+        content: { type: 'text', text: block.text },
+      });
+    }
+  }
+
+  for (const call of store.toolCalls) {
+    if (call.sessionId !== sessionId) continue;
+    notify(sessionId, {
+      sessionUpdate: 'tool_call',
+      toolCallId: call.toolCallId,
+      title: call.title,
+      kind: call.kind,
+      status: 'pending',
+      locations: [],
+      rawInput: call.rawInput,
+    });
+    if (call.status === 'pending') continue;
+    notify(sessionId, {
+      sessionUpdate: 'tool_call_update',
+      toolCallId: call.toolCallId,
+      status: call.status,
+      content: [{ type: 'content', content: { type: 'text', text: call.output } }],
+      rawOutput: { output: call.output },
+    });
+  }
+
+  for (const reply of store.replies) {
+    if (reply.sessionId !== sessionId) continue;
+    for (const text of reply.said ?? []) {
+      notify(sessionId, {
+        sessionUpdate: 'agent_message_chunk',
+        content: { type: 'text', text },
+      });
+    }
+  }
 }
 
 input.on('line', (line) => {
@@ -254,6 +349,13 @@ input.on('line', (line) => {
       }
       store.loaded.push(sessionId);
       writeStore(store);
+      // A load replays the session. The runtime sends the session's messages —
+      // the owner's words, the agent's answers and the tool calls it made —
+      // as the updates a client needs to restore its view of the session.
+      // OpenCode 1.19.4 does, and a route that reported the replay would put
+      // the session's earlier answers and tool calls into the turn that
+      // resumed it.
+      replayTheSession(sessionId);
       // FAKE_ACP_LOAD_WITHOUT_ID makes the agent answer the way OpenCode
       // 1.19.4 does: with its configuration options and no session id, because
       // the session the client asked to load is the session it has.
@@ -269,22 +371,36 @@ input.on('line', (line) => {
       store.prompts.push({ sessionId: message.params?.sessionId, blocks: message.params?.prompt });
       writeStore(store);
 
+      // Which turn of the session this is. A session that is loaded replays
+      // its earlier answers, so an answer that says which turn it belongs to
+      // is an answer a test can tell from the history.
+      const turn = store.prompts.length;
+
       if (process.env.FAKE_ACP_PERMISSION === '1') {
         // The runtime asks before it acts, and waits for the answer.
         void askPermission(message.params?.sessionId).then(() => reply({ stopReason: 'end_turn' }));
         return;
       }
 
+      // FAKE_ACP_ANSWER says what the agent answers, so a test can tell the
+      // turn's own answer from the session's earlier ones.
+      const answer =
+        process.env.FAKE_ACP_ANSWER ??
+        `THE-ANSWER-${turn}${process.env.FAKE_ACP_TOOL_CALL === '1' ? ' The file says: PROBE-MARKER-41C.' : ''}`;
+
       if (process.env.FAKE_ACP_TOOL_CALL === '1') {
         // The runtime uses a tool, and then answers.
         useATool(message.params?.sessionId);
-        notify(message.params?.sessionId, {
-          sessionUpdate: 'agent_message_chunk',
-          content: { type: 'text', text: 'The file says: PROBE-MARKER-41C.' },
-        });
-        reply({ stopReason: 'end_turn' });
-        return;
       }
+
+      notify(message.params?.sessionId, {
+        sessionUpdate: 'agent_message_chunk',
+        content: { type: 'text', text: answer },
+      });
+
+      const store2 = readStore();
+      store2.replies.push({ sessionId: message.params?.sessionId, said: [answer] });
+      writeStore(store2);
 
       const delayMs = Number(process.env.FAKE_ACP_PROMPT_DELAY_MS ?? '0');
       if (delayMs > 0) {

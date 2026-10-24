@@ -30,6 +30,15 @@
  * 6. **The matrix agrees with the code.** The route's table in `docs/adapters.md`
  *    says the route carries the runtime's tool activity, in as many words.
  *
+ * 7. **The turn answers with its own words.** A session that is loaded is
+ *    replayed — the runtime sends the session's earlier messages, answers and
+ *    calls — and the history is not the turn's work. A room that showed it
+ *    would answer the owner with the turn's answer twice.
+ *
+ * 8. **The turn shows the calls it made.** The same replay carries the calls
+ *    the session made a turn ago, and a room that showed them would have a
+ *    row for work that is not this turn's.
+ *
  * Run it with `npx tsx scripts/verify-acp-tool-activity.ts`.
  */
 import { spawnSync } from 'node:child_process';
@@ -244,17 +253,30 @@ async function createAdapter(
   });
 }
 
-async function runTurn(adapter: GateAdapter): Promise<AgentEvent[]> {
+async function runTurn(adapter: GateAdapter, externalSessionId?: string): Promise<AgentEvent[]> {
   const events: AgentEvent[] = [];
   for await (const event of adapter.send({
     conversationId: 'cnv_1',
     message: 'What does the file say?',
     context: '',
     executionId: 'exe_1',
+    ...(externalSessionId !== undefined ? { externalSessionId } : {}),
   })) {
     events.push(event);
   }
   return events;
+}
+
+/** The session the fake agent made, which a later turn continues. */
+function sessionIdOf(): string {
+  const store = JSON.parse(readFileSync(storePath, 'utf8')) as { sessions: string[] };
+  return store.sessions[0]!;
+}
+
+/** What the turn answered. */
+function answerOf(events: AgentEvent[]): string {
+  const completed = events.find((event) => event.type === 'message.completed');
+  return completed?.type === 'message.completed' ? (completed.text ?? '') : '';
 }
 
 function startedOf(events: AgentEvent[]): Extract<AgentEvent, { type: 'tool.started' }>[] {
@@ -412,6 +434,65 @@ async function checkAFailedCallIsAFinishedCall(): Promise<void> {
 }
 
 /**
+ * The turn answers with its own words.
+ *
+ * A session that is loaded is replayed: the runtime sends the session's
+ * earlier messages, the earlier answers and the calls the session made. That
+ * history is not the turn's work, and a room that showed it would answer the
+ * owner with the turn's answer twice — once as the past and once as now.
+ */
+async function checkTheTurnAnswersWithItsOwnWords(): Promise<void> {
+  freshStore();
+  const load = await loadTheBuiltProduct();
+  const adapter = await createAdapter(load);
+
+  await runTurn(adapter);
+  // The turn continues in the session it was in, so the session is loaded
+  // and replayed before the prompt is sent.
+  const events = await runTurn(adapter, sessionIdOf());
+
+  const answer = answerOf(events);
+  if (answer !== 'THE-ANSWER-2') {
+    fail(
+      `the turn that continued the session answered ${JSON.stringify(
+        answer,
+      )}, and the session's earlier answer is not this turn's work.`,
+    );
+  }
+}
+
+/**
+ * The turn shows the calls it made.
+ *
+ * The same replay carries the calls the session made a turn ago. A room that
+ * showed them would have a row for work that is not this turn's, and the
+ * owner would read the timeline as a record of this turn.
+ */
+async function checkTheTurnShowsItsOwnCalls(): Promise<void> {
+  freshStore();
+  const load = await loadTheBuiltProduct();
+  const adapter = await createAdapter(load, { FAKE_ACP_TOOL_CALL: '1' });
+
+  await runTurn(adapter);
+  const events = await runTurn(adapter, sessionIdOf());
+
+  if (startedOf(events).length !== 1) {
+    fail(
+      `the turn made one call and the room was told about ${
+        startedOf(events).length
+      } of them, so the session's earlier calls were shown as this turn's work.`,
+    );
+  }
+  if (completedOf(events).length !== 1) {
+    fail(
+      `the turn finished one call and the room was told about ${
+        completedOf(events).length
+      } of them, so the session's earlier calls were shown as this turn's work.`,
+    );
+  }
+}
+
+/**
  * The matrix agrees with the code.
  *
  * The route's table says the route carries the runtime's tool activity, and it
@@ -467,6 +548,8 @@ async function main(): Promise<void> {
   await check('the end of the call reaches the room', checkTheEndReachesTheRoom);
   await check('a call is one row', checkOneCallIsOneRow);
   await check('a call that failed is a finished call', checkAFailedCallIsAFinishedCall);
+  await check('the turn answers with its own words', checkTheTurnAnswersWithItsOwnWords);
+  await check('the turn shows the calls it made', checkTheTurnShowsItsOwnCalls);
   await check('the matrix agrees with the code', checkTheMatrixAgreesWithTheCode);
 
   if (failures.length > 0) {
