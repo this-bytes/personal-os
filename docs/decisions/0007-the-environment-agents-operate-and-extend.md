@@ -14,5 +14,5 @@ building autonomous teams and the product factory.
 The earlier map-first layout and fixed-role development process created competing
 priorities and handoffs without demonstrating useful work. They are retired. The
 full prior record remains in Git at 507708b. Current requirements are in PRODUCT.md
-and [the recovery decisions](../recovery.md); implementation follows
-[the roadmap](../roadmap.md).
+and [the recovery decisions](0018-the-chat-first-recovery-decisions.md);
+implementation follows [the roadmap](../roadmap.md).

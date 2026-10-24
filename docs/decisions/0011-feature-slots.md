@@ -22,7 +22,8 @@ applied to the running instance, with new work slotting in without touching
 what is already there.
 
 Two things were also already decided and were not to be re-litigated. There is
-**no plugin marketplace** (PRODUCT.md §12, `docs/recovery.md`): the product is
+**no plugin marketplace** (PRODUCT.md §12,
+[ADR 0018](0018-the-chat-first-recovery-decisions.md)): the product is
 self-hosted and first-party. And a feature is not a runtime loader for
 third-party code either: that would be an extension surface nobody here
 controls.
@@ -80,7 +81,9 @@ contract is a change to this document, made deliberately.
   conflict on that one file; the client's cannot, because the client globs.
 - A feature is not a plugin: it cannot be installed from outside the
   repository, and the manifest does not describe a lifecycle, a version range
-  or a dependency. If that is ever wanted, it is a different decision.
+  or a dependency. A **plugin** — a runtime extension with a lifecycle and its
+  own storage — is a different thing and is decided in
+  [ADR 0016](0016-plugins-are-isolated-runtime-extensions.md).
 - The domain map is unchanged. A feature is an adapter over the services, at
   the same layer as the API routes: it reads the services' public interfaces,
   it reaches into no module's tables, and it adds no module and no table of

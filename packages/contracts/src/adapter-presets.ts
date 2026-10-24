@@ -530,7 +530,7 @@ const RAW_PRESETS = [
     ],
     verified: true,
     evidence: {
-      runtime: 'OpenAI Codex CLI',
+      runtime: 'Codex',
       version: '0.163.0',
       demonstratedOn: '2026-10-23',
       observed:

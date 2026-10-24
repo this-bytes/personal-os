@@ -49,6 +49,12 @@
       "about": "every owner-facing route is paired with a registered MCP tool, listed with a reason and the spec that will pair it, or exempt with a reason"
     },
     {
+      "name": "standards",
+      "command": "npm",
+      "args": ["run", "verify:standards"],
+      "about": "every non-negotiable in the constitution names a check that exists and that CI runs, every pillar reaches the roadmap, and the promoted invariants hold"
+    },
+    {
       "name": "smoke",
       "command": "npx",
       "args": ["tsx", "scripts/smoke.ts"],
