@@ -119,6 +119,12 @@
       "command": "npx",
       "args": ["tsx", "scripts/verify-two-turns.ts"],
       "about": "a turn's work is the work of the turn it started: the second turn answers with its own words, shows only its own calls, and continues the same thread"
+    },
+    {
+      "name": "pi-route",
+      "command": "npx",
+      "args": ["tsx", "scripts/verify-pi-route.ts"],
+      "about": "Pi's own protocol reaches the room: the turn carries the answer, the tools and the end of the turn, the session continues, and a steer arrives while Pi works"
     }
   ]
 }
