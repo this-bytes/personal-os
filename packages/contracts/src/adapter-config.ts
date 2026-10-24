@@ -232,6 +232,50 @@ export const codexAppServerAdapterConfigSchema = z.object({
 });
 export type CodexAppServerAdapterConfig = z.infer<typeof codexAppServerAdapterConfigSchema>;
 
+/**
+ * Pi, as its own RPC session.
+ *
+ * Pi speaks a JSONL protocol over standard input and output: commands go in,
+ * responses and session events come out, and the events carry more than the
+ * answer — the streaming text, the tools it ran, whether it has settled, and
+ * the session it is in. So Pi has its own adapter rather than the generic CLI
+ * one, which starts a process and writes the prompt to it.
+ *
+ * **The credential stays in Pi.** Pi signs in with its own account and keeps
+ * that sign-in in its own home directory, so this configuration carries no
+ * secret and no reference to one.
+ */
+export const piAdapterConfigSchema = z.object({
+  /** The Pi executable. */
+  command: z.string().min(1).default('pi'),
+  /**
+   * Extra arguments, placed before `--mode rpc`.
+   *
+   * The arguments that make Pi a session are the adapter's own, so a
+   * configuration that names its own `--mode` is refused rather than silently
+   * starting the wrong surface.
+   */
+  args: z.array(z.string()).default([]),
+  /** The directory Pi works in. */
+  cwd: z.string().optional(),
+  /** Additional environment variables for the supervised process. */
+  env: z.record(z.string()).default({}),
+  /** The provider to ask for, in Pi's own `provider/model` form. */
+  provider: z.string().optional(),
+  /** The model to ask for. */
+  model: z.string().optional(),
+  /**
+   * Whether Pi keeps its session on disk after the turn.
+   *
+   * A session that is kept is a session the next turn can resume, which is
+   * what makes the conversation one conversation rather than a series of
+   * prompts.
+   */
+  ephemeral: z.boolean().default(false),
+  timeoutSeconds: z.number().int().min(1).max(86_400).default(900),
+});
+export type PiAdapterConfig = z.infer<typeof piAdapterConfigSchema>;
+
 export const adapterConfigSchema = z.discriminatedUnion('adapterType', [
   cliAdapterConfigSchema.extend({ adapterType: z.literal('cli') }),
   acpAdapterConfigSchema.extend({ adapterType: z.literal('acp') }),
@@ -242,6 +286,7 @@ export const adapterConfigSchema = z.discriminatedUnion('adapterType', [
   mcpAdapterConfigSchema.extend({ adapterType: z.literal('mcp') }),
   codexAdapterConfigSchema.extend({ adapterType: z.literal('codex') }),
   codexAppServerAdapterConfigSchema.extend({ adapterType: z.literal('codex-app-server') }),
+  piAdapterConfigSchema.extend({ adapterType: z.literal('pi') }),
 ]);
 export type AdapterConfig = z.infer<typeof adapterConfigSchema>;
 

@@ -281,6 +281,24 @@ const CAPABILITIES = {
     // A picture has an item of its own, and the route carries the bytes in it.
     acceptsImages: true,
   },
+  pi: {
+    chat: true,
+    streaming: true,
+    persistentSessions: true,
+    backgroundTasks: true,
+    cancel: true,
+    // Pi's extension questions are not carried on this route, so the row says
+    // the route cannot ask the owner for permission.
+    approvals: false,
+    artifacts: false,
+    // Pi takes a steer while it is working: `steer` is one of its own commands.
+    acceptsSteering: true,
+    // A file the owner attached is carried as text, because Pi's prompt is a
+    // message and a message is text.
+    acceptsAttachments: true,
+    // A picture has a shape of its own, and the route carries the bytes in it.
+    acceptsImages: true,
+  },
 } as const;
 
 /**
@@ -687,6 +705,38 @@ const RAW_PRESETS = [
     requires: [
       'An installed `pi` binary on PATH.',
       'The session or project directory Pi should work in.',
+    ],
+    verified: false,
+  },
+  {
+    id: 'pi-rpc',
+    adapterType: 'pi',
+    runtime: 'Pi',
+    name: 'Pi (RPC session)',
+    description:
+      'Pi as its own long-lived JSONL RPC session. Pi’s protocol carries more than a prompt — the ' +
+      'streaming text, the tools it ran, whether it has settled, the session it is in, and a steer ' +
+      'that arrives while it works — so this route speaks that protocol instead of writing a prompt ' +
+      'to a process. This integration has not been demonstrated in this repository.',
+    config: {
+      adapterType: 'pi',
+      command: 'pi',
+      args: [],
+      ephemeral: false,
+      timeoutSeconds: 900,
+    },
+    persona: {
+      role: 'Pi lead',
+      instructions:
+        'You lead this room with Pi over its own RPC session. Keep the session alive across turns so ' +
+        'the work continues where it left off, and let Pi’s own tool activity be shown rather than ' +
+        'describing it from memory. Never call a turn finished while Pi is still working.',
+    },
+    capabilities: CAPABILITIES.pi,
+    requires: [
+      'An installed `pi` binary on PATH that can be started in RPC mode.',
+      'The directory Pi should work in.',
+      'A provider and a model configured in Pi itself — the credential stays in Pi rather than in this panel.',
     ],
     verified: false,
   },

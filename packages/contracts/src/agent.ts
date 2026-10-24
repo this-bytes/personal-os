@@ -17,6 +17,7 @@ export const adapterTypeSchema = z.enum([
   'mcp',
   'codex',
   'codex-app-server',
+  'pi',
 ]);
 export type AdapterType = z.infer<typeof adapterTypeSchema>;
 
@@ -30,6 +31,7 @@ export const adapterTypeLabels: Record<AdapterType, string> = {
   mcp: 'MCP server',
   codex: 'Codex CLI agent',
   'codex-app-server': 'Codex App Server',
+  pi: 'Pi RPC session agent',
 };
 
 /**
