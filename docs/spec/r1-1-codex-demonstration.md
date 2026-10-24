@@ -442,7 +442,7 @@ A demonstration transcript, committed with the slice, that names:
 - the output that was produced,
 - the limits that remained.
 
-It is committed at **`docs/demonstration-codex-2026-10-23.md`** — a dated
+It is committed at **`docs/demonstration-codex-2026-10-24.md`** — a dated
 document beside the other evidence in `docs/`, in Markdown, so a reviewer can
 read the run without running anything. It contains, in this order:
 
@@ -502,6 +502,17 @@ parity claim.
 - **The command line route cannot steer.** There is no steer operation in
   `codex exec`. The product's `steer` delivery reaches an adapter that
   accepts it, and this one does not.
+- **The App Server route carries no attachment either, and the demonstration
+  found it.** The composer uploaded the file, the resource was created and the
+  owner's message carried the file part to the server — but the adapter does
+  not map that part into the App Server's turn input, so the runtime never
+  saw it and the agent said so plainly: _"I don't see an attached file."_
+  **The supported alternative** is the file's path in the workspace the
+  connection points at; the agent read it that way. The route's capability row
+  says `artifacts: false` and claims nothing else, so nothing in the panel
+  promised a delivery the route did not make. The gap between what the
+  composer offers and what the route delivers is a defect, and it is fixed by
+  its own slice.
 - **Codex 0.163.0 has no `acp` entry point.** The ACP route OpenCode uses is
   not available to Codex. No bridge is assumed, and the App Server is the
   route.
