@@ -16,6 +16,9 @@
  * answer it got is written to the store. FAKE_ACP_PERMISSION_COMMAND says
  * which operation is being asked about, so a test can ask about a different
  * one the second time.
+ *
+ * **FAKE_ACP_LOAD_WITHOUT_ID makes it answer session/load without a session
+ * id**, the way OpenCode 1.19.4 does.
  */
 import { createInterface } from 'node:readline';
 import { readFileSync, writeFileSync } from 'node:fs';
@@ -167,6 +170,13 @@ input.on('line', (line) => {
       }
       store.loaded.push(sessionId);
       writeStore(store);
+      // FAKE_ACP_LOAD_WITHOUT_ID makes the agent answer the way OpenCode
+      // 1.19.4 does: with its configuration options and no session id, because
+      // the session the client asked to load is the session it has.
+      if (process.env.FAKE_ACP_LOAD_WITHOUT_ID === '1') {
+        reply({ modes: {} });
+        return;
+      }
       reply({ sessionId, modes: {} });
       return;
     }

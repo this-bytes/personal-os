@@ -178,4 +178,39 @@ describe('the ACP adapter', () => {
     // It was the same session, not a new one.
     expect(store().sessions).toHaveLength(1);
   });
+
+  it('keeps the session it was asked to load when the runtime answers without an id', async () => {
+    // OpenCode 1.19.4 answers session/load with its configuration options and
+    // no session id: the session the client asked to load is the session it
+    // has. An adapter that insists on an id fails every turn after the first,
+    // and the failure reads as a runtime that cannot keep a session at all.
+    const adapter = createAdapter({ FAKE_ACP_LOAD_WITHOUT_ID: '1' });
+
+    for await (const event of adapter.send({
+      conversationId: 'cnv_1',
+      message: 'Do the thing',
+      context: '',
+      executionId: 'exe_1',
+    })) {
+      void event;
+    }
+
+    const sessionId = store().sessions[0]!;
+
+    for await (const event of adapter.send({
+      conversationId: 'cnv_1',
+      message: 'And now the next thing.',
+      context: '',
+      executionId: 'exe_2',
+      externalSessionId: sessionId,
+    })) {
+      void event;
+    }
+
+    const status = await adapter.getStatus('exe_2');
+    expect(status.externalRef).toBe(sessionId);
+    expect(store().loaded).toContain(sessionId);
+    // It was the same session, not a new one.
+    expect(store().sessions).toHaveLength(1);
+  });
 });

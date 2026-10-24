@@ -415,7 +415,12 @@ export class AcpAdapter implements AgentAdapter {
       },
       30_000,
     )) as AcpSession;
-    const sessionId = session?.sessionId;
+    // The response does not have to carry a session id, and OpenCode 1.19.4
+    // does not: it answers with its configuration options and no id. The
+    // session the client asked to load is the session it has, so the id it
+    // asked with is the id that is kept. A runtime that answers with one has
+    // renamed or forked the session, and that id is the one to use.
+    const sessionId = session?.sessionId ?? externalSessionId;
     if (!sessionId) {
       throw new Error('ACP agent did not return a session id when loading the session.');
     }
