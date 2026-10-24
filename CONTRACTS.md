@@ -813,10 +813,16 @@ runtime: the server tests drive it, and the browser suite runs the whole chain
 — server, queue, worker, adapter, event log, stream — against it. **The Hermes
 ACP template has been run against the installed Hermes 0.21.0**: the handshake
 answered, and a turn completed with the runtime's own answer, both through
-this product's adapter. **The Codex template has been run against Codex CLI
-0.163.0, and the OpenCode template against OpenCode 1.19.4**, each through
-this product's own adapter and each completing a turn with the runtime's own
-answer. The two remaining approved runtimes — Pi and OpenClaw — are still
+this product's adapter. **The Codex templates have been run against Codex CLI
+0.163.0 and the Codex App Server 0.163.0, and the OpenCode template against
+OpenCode 1.19.4**, each through this product's own adapter. **Two of those
+runs are the R1 acceptance demonstrations**: the owner completed real work in
+the web chat against Codex over its App Server and against OpenCode over ACP,
+and the transcripts are
+[docs/demonstration-codex-2026-10-24.md](docs/demonstration-codex-2026-10-24.md)
+and
+[docs/demonstration-opencode-2026-10-24.md](docs/demonstration-opencode-2026-10-24.md).
+The two remaining approved runtimes — Pi and OpenClaw — are still
 candidates: they are not installed here, and their presets carry
 `verified: false`.
 

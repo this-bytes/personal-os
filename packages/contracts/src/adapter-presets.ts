@@ -642,10 +642,11 @@ const RAW_PRESETS = [
     evidence: {
       runtime: 'OpenCode',
       version: '1.19.4',
-      demonstratedOn: '2026-10-23',
+      demonstratedOn: '2026-10-24',
       observed:
-        'OpenCode answered a turn through this repository’s ACP adapter: the session was opened, ' +
-        'the agent’s own message came back over the protocol, and the turn completed.',
+        'Answered through this repository’s ACP adapter over a real session: the handshake answered, ' +
+        'a turn produced the agent’s text, the runtime’s own permission request reached the owner and ' +
+        'the owner’s decision answered it, and every later turn continued the same session.',
     },
   },
   {

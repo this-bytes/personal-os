@@ -1,6 +1,6 @@
 # SPEC-R1-1 — The owner completes real work against a real, installed Codex runtime
 
-**State:** open · **Owner:** implementing agent, with the owner driving the demonstration · **Verifier:** independent reviewer against this spec and the roadmap's release criteria
+**State:** delivered on 2026-10-24, at `69bd908` — the transcript is `docs/demonstration-codex-2026-10-24.md` · **Owner:** implementing agent, with the owner driving the demonstration · **Verifier:** independent reviewer against this spec and the roadmap's release criteria
 **Depends on:** SPEC-R0-1, SPEC-R0-3, SPEC-R0-4 · **Adapter:** `packages/agent-adapters/src/codex.ts`
 
 ## Outcome
