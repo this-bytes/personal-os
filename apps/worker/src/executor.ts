@@ -51,6 +51,7 @@ import {
   type Runtime,
 } from '@personal-os/server/runtime';
 import { createSteerChannel, feedSteers, recordLateSteers } from './steer.js';
+import { attachmentNote, resolveTurnParts } from './content-parts.js';
 import {
   actionRefusal,
   createTurnExecution,
@@ -467,13 +468,29 @@ async function executeChatTurn(context: ExecutorContext, job: QueueJob): Promise
         });
       }
 
+      // The parts the turn carries: the parent's text, and the files the owner
+      // attached — resolved here, because an adapter is given a reference it
+      // cannot follow.
+      const { parts: turnParts, leftOut: filesLeftOut } = resolveTurnParts(
+        db,
+        (parent?.content as ContentPart[] | undefined) ?? [],
+        { carryAttachments: owner.acceptsAttachments },
+      );
+      const note = attachmentNote(filesLeftOut);
+
       const turn: AgentTurnInput = {
         conversationId: payload.conversationId,
         message: turnMessage,
-        context: frameWithPersona(frameWithAgentMemory(contextText, memoryBrief), persona.persona),
+        context: [
+          frameWithPersona(frameWithAgentMemory(contextText, memoryBrief), persona.persona),
+          note,
+        ]
+          .filter(Boolean)
+          .join('\n\n'),
         executionId: payload.executionId,
         signal,
         ...(externalSessionId ? { externalSessionId } : {}),
+        ...(turnParts.length > 0 ? { parts: turnParts } : {}),
         ...(owner.acceptsSteering ? { steer: steerChannel.messages } : {}),
         ...(approvalDecision ? { approval: approvalDecision } : {}),
       };

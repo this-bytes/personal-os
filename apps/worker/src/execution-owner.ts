@@ -24,6 +24,7 @@ import {
 import {
   newId,
   pinCapabilityView,
+  turnAcceptsAttachments,
   turnAcceptsSteering,
   type Runtime,
 } from '@personal-os/server/runtime';
@@ -67,6 +68,8 @@ export interface TurnOwner {
   readonly capabilityView: TurnCapabilityView | null;
   /** Whether the turn can take input while it runs. */
   readonly acceptsSteering: boolean;
+  /** Whether the turn can carry the message's parts, and not only its text. */
+  readonly acceptsAttachments: boolean;
   /** Run the turn to its end and record its outcome on the execution row. */
   run(request: TurnRequest): Promise<TurnOutcome>;
 }
@@ -268,6 +271,10 @@ export async function openTurn(
       connectionWorkspaceId: row.workspaceId,
       capabilityView,
       acceptsSteering: turnAcceptsSteering(db, {
+        agentConnectionId: request.agentConnectionId,
+        capabilityView,
+      }),
+      acceptsAttachments: turnAcceptsAttachments(db, {
         agentConnectionId: request.agentConnectionId,
         capabilityView,
       }),

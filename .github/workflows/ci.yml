@@ -266,6 +266,37 @@ jobs:
       - name: The route carries a thread, a turn, a steer and an approval
         run: npm run verify:codex-app-server
 
+  content-parts:
+    name: A message's parts reach the runtime
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci --ignore-scripts --no-audit --no-fund
+
+      # The gate drives the built adapters, so the packages it calls have to be
+      # built first. It talks to the repository's own double of an agent that
+      # speaks the protocol, so it needs no account and spends no tokens.
+      - name: Build the packages the gate drives
+        run: npm run build:contracts && npm run build:adapters
+
+      # The gate checks that a file the owner attaches reaches the runtime, in
+      # each protocol's own shape, and that a route which cannot carry one
+      # says so instead of taking the file and dropping it.
+      #
+      # **The gate runs in this pipeline on purpose.** A gate that only runs on
+      # the machine that wrote it is not a gate, it is a habit.
+      - name: A file the owner attaches reaches the runtime
+        run: npm run verify:content-parts
+
   standards:
     name: The constitution is honoured
     runs-on: ubuntu-latest

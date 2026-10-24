@@ -75,3 +75,31 @@ export function turnAcceptsSteering(
     .get();
   return (row?.capabilities as AgentCapabilities | null | undefined)?.acceptsSteering === true;
 }
+
+/**
+ * Whether a turn can carry the message's parts.
+ *
+ * The same rule as steering, for the same reason: a turn runs against the
+ * capability set it was admitted with, so the turn's own view is the answer
+ * when it has one, and a connection answers for a turn recorded before the
+ * view was captured.
+ *
+ * **Absent means absent.** A connection that does not report the capability is
+ * an agent that takes text, and a file the owner attaches stays in the room.
+ */
+export function turnAcceptsAttachments(
+  db: Database,
+  turn: { agentConnectionId: string | null; capabilityView: TurnCapabilityView | null },
+): boolean {
+  const pinned = turn.capabilityView?.capabilities;
+  if (pinned) return pinned.acceptsAttachments === true;
+  if (turn.capabilityView) return false;
+  if (!turn.agentConnectionId) return false;
+
+  const row = db
+    .select({ capabilities: agentConnections.capabilities })
+    .from(agentConnections)
+    .where(eq(agentConnections.id, turn.agentConnectionId))
+    .get();
+  return (row?.capabilities as AgentCapabilities | null | undefined)?.acceptsAttachments === true;
+}

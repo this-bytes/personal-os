@@ -198,6 +198,9 @@ const CAPABILITIES = {
     // carry the agent's text and its tool calls, and the adapter turns
     // neither into a resource.
     artifacts: false,
+    // The protocol's prompt is a list of content blocks, and a file the owner
+    // attached is one of them.
+    acceptsAttachments: true,
   },
   a2a: {
     chat: true,
@@ -270,6 +273,9 @@ const CAPABILITIES = {
     artifacts: false,
     // The App Server takes input while a turn runs.
     acceptsSteering: true,
+    // A file the owner attached is carried as text, because the protocol has
+    // no item for a file with its content.
+    acceptsAttachments: true,
   },
 } as const;
 

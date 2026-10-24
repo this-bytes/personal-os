@@ -18,6 +18,47 @@ const PROTOCOL_VERSION = 1;
 /** The method a runtime asks the client for permission with. */
 const PERMISSION_METHOD = 'session/request_permission';
 
+/**
+ * The prompt, in the protocol's own blocks.
+ *
+ * The protocol's prompt is a list of content blocks, and a file the owner
+ * attached is a `resource` block: the runtime turns it into a part the model
+ * reads — `[<uri>] | <text>` — which is what "the agent sees the file" means
+ * on this route.
+ *
+ * The uri is a name and not a path: a path would be a path on the runtime's
+ * machine, and this file is not on it.
+ *
+ * The owner's words are in one text block, with the room's context. They are
+ * not carried twice: the turn's message is the words, and the parts are what
+ * the words do not carry.
+ */
+export function acpPrompt(input: AgentTurnInput): AcpContentBlock[] {
+  const blocks: AcpContentBlock[] = [];
+  const text = `${input.message}\n\n--- context ---\n${input.context}`.trim();
+  if (text.length > 0) blocks.push({ type: 'text', text });
+
+  for (const part of input.parts ?? []) {
+    blocks.push({
+      type: 'resource',
+      resource: {
+        uri: `personal-os://attachment/${encodeURIComponent(part.filename)}`,
+        mimeType: part.mimeType,
+        text: part.text,
+      },
+    });
+  }
+
+  return blocks;
+}
+
+/** One block of the protocol's prompt. */
+interface AcpContentBlock {
+  type: 'text' | 'resource';
+  text?: string;
+  resource?: { uri: string; mimeType?: string; text: string };
+}
+
 interface AcpSession {
   sessionId: string;
 }
@@ -129,6 +170,9 @@ export class AcpAdapter implements AgentAdapter {
         // carry the agent's text and its tool calls, and the adapter turns
         // neither into a resource.
         artifacts: false,
+        // The protocol's prompt is a list of content blocks, and a file the
+        // owner attached is one of them.
+        acceptsAttachments: true,
       };
     } catch (error) {
       this.lifecycle.markFailed(error instanceof Error ? error.message : String(error));
@@ -241,12 +285,7 @@ export class AcpAdapter implements AgentAdapter {
         'session/prompt',
         {
           sessionId,
-          prompt: [
-            {
-              type: 'text',
-              text: `${input.message}\n\n--- context ---\n${input.context}`.trim(),
-            },
-          ],
+          prompt: acpPrompt(input),
         },
         this.config.timeoutSeconds * 1000,
       );

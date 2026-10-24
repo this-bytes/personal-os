@@ -201,6 +201,38 @@ export function ConversationDetail(): React.JSX.Element {
     return map;
   }, [agents.data]);
 
+  /**
+   * Whether the room's agents can carry an attachment.
+   *
+   * A room where no agent can take one refuses the file, and names the agents
+   * that cannot: a file the owner attaches and the runtime never sees is a
+   * file the owner believes was read.
+   */
+  const attachmentState = useMemo(() => {
+    const inRoom = (conversation.data?.participants ?? [])
+      .filter(
+        (participant): participant is Participant & { agentConnectionId: string } =>
+          participant.type === 'agent' && typeof participant.agentConnectionId === 'string',
+      )
+      .map((participant) => agentById.get(participant.agentConnectionId))
+      .filter((agent): agent is AgentConnectionDetail => Boolean(agent));
+
+    if (inRoom.length === 0) {
+      return {
+        available: false,
+        reason: 'There is no agent in this room to carry an attachment.',
+      };
+    }
+    const cannot = inRoom.filter((agent) => agent.capabilities?.acceptsAttachments !== true);
+    if (cannot.length === inRoom.length) {
+      return {
+        available: false,
+        reason: `${cannot.map((agent) => agent.name).join(', ')} cannot take an attachment on this route.`,
+      };
+    }
+    return { available: true, reason: null };
+  }, [conversation.data?.participants, agentById]);
+
   // The prompts an empty room offers. They are the room's own — one of them
   // names a participant — so they are derived from the participants rather
   // than written down once.
@@ -553,6 +585,7 @@ export function ConversationDetail(): React.JSX.Element {
               disabled={current.paused || postMessage.isPending}
               delivery={delivery}
               steer={operationState(turn.data?.run, 'steer')}
+              attachments={attachmentState}
               attachable={resources.data ?? []}
               routingMode={current.routingMode}
               depth={conversationDepth}

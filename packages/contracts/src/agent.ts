@@ -134,6 +134,15 @@ export const agentCapabilitiesSchema = z.object({
    * agent that cannot be steered.
    */
   acceptsSteering: z.boolean().optional(),
+  /**
+   * Whether the agent takes the message's parts, and not only its text.
+   *
+   * A connection that does not report it cannot be sent an attachment: the
+   * owner's file stays in the room and the panel says the route cannot carry
+   * it. Absent means absent, on the same terms as `acceptsSteering` — a
+   * connection written before this existed is an agent that takes text.
+   */
+  acceptsAttachments: z.boolean().optional(),
 });
 export type AgentCapabilities = z.infer<typeof agentCapabilitiesSchema>;
 
@@ -256,12 +265,49 @@ export const agentEventSchema = z.discriminatedUnion('type', [
 export type AgentEvent = z.infer<typeof agentEventSchema>;
 export type AgentEventType = AgentEvent['type'];
 
+/**
+ * One part of a message that the message's text does not carry.
+ *
+ * The text crossed in `message` before this existed, and it crosses still. What
+ * did not cross was a file the owner attached: the worker resolves it and the
+ * content is in the turn, because an adapter is given a reference it cannot
+ * follow.
+ *
+ * The union has one kind today. A second kind joins it without breaking
+ * anything, and a kind the route cannot carry is left out — absent means
+ * absent.
+ */
+export const agentTurnPartSchema = z.discriminatedUnion('type', [
+  z.object({
+    type: z.literal('file'),
+    /** The resource the file is, in the product's own name for it. */
+    resourceId: z.string(),
+    /** The name the owner gave it. */
+    filename: z.string(),
+    mimeType: z.string(),
+    /** The file's content, as text. */
+    text: z.string(),
+  }),
+]);
+export type AgentTurnPart = z.infer<typeof agentTurnPartSchema>;
+
 /** Input handed to an adapter for one agent turn. */
 export interface AgentTurnInput {
   conversationId: string;
   externalSessionId?: string;
   message: string;
   context: string;
+  /**
+   * The message's parts that its text does not carry, for a runtime that can
+   * take more than text.
+   *
+   * The content is in the part, not a reference to it: an adapter is given a
+   * resource id it cannot follow. A part the runtime cannot take is left out,
+   * and what is left is what the turn carries. The parts are present only on a
+   * turn whose connection reports `acceptsAttachments`; a connection that does
+   * not report it is sent the text and nothing else.
+   */
+  parts?: AgentTurnPart[];
   executionId: string;
   signal?: AbortSignal;
   /**
