@@ -957,7 +957,7 @@
       "note": "This entry is the contract for WI-167, and the code implements it",
       "claim": "implemented",
       "item": "WI-167",
-      "why": "WI-167's picture: the part that carries the bytes, the capability that says the route can take them, the resolver that decides what a picture is, and each route's own shape for one.",
+      "why": "WI-167's picture: the part that carries the bytes, the capability that says the route can take them, the resolver that decides what a picture is, the route's own shape for a message that carries one, and each route's own shape for the picture itself.",
       "expect": [
         {
           "kind": "present-pattern",
@@ -988,6 +988,11 @@
           "kind": "present-text",
           "path": "apps/web/src/lib/chat.ts",
           "value": "type: 'image'"
+        },
+        {
+          "kind": "present-pattern",
+          "path": "apps/server/src/api/conversations.ts",
+          "value": "content: z\\.array\\(contentPartSchema\\)"
         }
       ]
     }

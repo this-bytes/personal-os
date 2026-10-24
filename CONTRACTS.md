@@ -3284,12 +3284,13 @@ is `apps/web/src/components/chat/`. The slice's own record is
 [docs/contract-chat-rich-client.md](docs/contract-chat-rich-client.md).
 
 **The picture that the owner attaches** is a part of the same contract. This
-entry is the contract for **WI-167**, and the code implements it — the part is
-`packages/contracts/src/agent.ts`, the resolver is
+entry is the contract for **WI-167**, and the code implements it — as of
+`58b5205`. The part is `packages/contracts/src/agent.ts`, the resolver is
 `apps/worker/src/content-parts.ts`, the ACP route's block is
 `packages/agent-adapters/src/acp.ts`, the App Server route's item is
-`packages/agent-adapters/src/codex-app-server.ts`, and the surface is
-`apps/web/src/components/Composer.tsx`. The slice's own record is
+`packages/agent-adapters/src/codex-app-server.ts`, the route's own shape for a
+message that carries one is `apps/server/src/api/conversations.ts`, and the
+surface is `apps/web/src/components/Composer.tsx`. The slice's own record is
 [docs/spec/r1-5-content-images.md](docs/spec/r1-5-content-images.md).
 
 **A prompt the owner presses is a message.** An empty room offers a row of

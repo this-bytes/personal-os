@@ -23,7 +23,7 @@ carry.
 | [SPEC-R1-2 — OpenCode demonstration](r1-2-opencode-demonstration.md)                       | delivered | SPEC-R0-1, SPEC-R0-3, SPEC-R0-4 | The owner completes real work against a real, installed OpenCode runtime.                  |
 | [SPEC-R1-3 — A message's parts reach the runtime](r1-3-content-parts.md)                   | delivered | SPEC-R1-1, SPEC-R1-2            | A file the owner attaches reaches the runtime, as that runtime's protocol takes it.        |
 | [SPEC-R1-4 — The ACP route carries the runtime's tool activity](r1-4-acp-tool-activity.md) | delivered | SPEC-R1-2                       | The room's timeline shows the files the agent read and the commands it ran.                |
-| [SPEC-R1-5 — A picture the owner attaches reaches the runtime](r1-5-content-images.md) | in progress | SPEC-R1-3                       | A picture the owner attached reaches the runtime, in each protocol's own shape.            |
+| [SPEC-R1-5 — A picture the owner attaches reaches the runtime](r1-5-content-images.md)     | delivered | SPEC-R1-3                       | A picture the owner attached reaches the runtime, in each protocol's own shape.            |
 
 Two sequences live in the queue, and they answer different questions. **The S
 sequence is parity**: what can the owner do that an agent cannot, driven by

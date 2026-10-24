@@ -10,7 +10,7 @@ import { messageRequest } from '../chat';
  */
 
 describe('the message the composer sends', () => {
-  it('carries the owner\'s words', () => {
+  it("carries the owner's words", () => {
     const request = messageRequest('What does it say?', {
       delivery: 'queue',
       attachments: [],
@@ -22,9 +22,7 @@ describe('the message the composer sends', () => {
   it('carries a file as a reference to its resource', () => {
     const request = messageRequest('Read it', {
       delivery: 'queue',
-      attachments: [
-        { resourceId: 'res_1', displayName: 'notes.txt', mimeType: 'text/plain' },
-      ],
+      attachments: [{ resourceId: 'res_1', displayName: 'notes.txt', mimeType: 'text/plain' }],
     });
 
     expect(request.content).toEqual([
@@ -36,9 +34,7 @@ describe('the message the composer sends', () => {
   it('carries a picture as a picture, and not as a file', () => {
     const request = messageRequest('What does it say?', {
       delivery: 'queue',
-      attachments: [
-        { resourceId: 'res_1', displayName: 'marker.png', mimeType: 'image/png' },
-      ],
+      attachments: [{ resourceId: 'res_1', displayName: 'marker.png', mimeType: 'image/png' }],
     });
 
     // The panel draws an image part as the picture, and the bytes are read

@@ -308,9 +308,7 @@ export function Composer({
    * refusal is decided by what the owner picked, and said when they pick it.
    */
   const nothingCanBeCarried =
-    attachmentsState !== undefined &&
-    !attachmentsState.available &&
-    !attachmentsState.pictures;
+    attachmentsState !== undefined && !attachmentsState.available && !attachmentsState.pictures;
 
   return (
     <div className="relative">

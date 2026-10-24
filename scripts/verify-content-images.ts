@@ -240,7 +240,9 @@ async function loadTheBuiltProduct(): Promise<TheBuiltProduct> {
   const missing: string[] = [];
   for (const name of ['AcpAdapter', 'buildTurnInput']) {
     if (typeof built[name] !== 'function') {
-      missing.push(`the built adapter does not export ${name}, so the route cannot carry a picture.`);
+      missing.push(
+        `the built adapter does not export ${name}, so the route cannot carry a picture.`,
+      );
     }
   }
   for (const name of ['parseAdapterConfig', 'listAdapterPresetsFor']) {
@@ -332,7 +334,7 @@ async function check(name: string, run: () => Promise<void> | void): Promise<voi
 }
 
 async function main(): Promise<void> {
-  console.log("The gate for a picture the owner attaches reaching the runtime.");
+  console.log('The gate for a picture the owner attaches reaching the runtime.');
 
   check('the build the gate exercises is the build of this tree', () => {
     checkTheBuildIsCurrent();
@@ -363,9 +365,7 @@ async function main(): Promise<void> {
       return;
     }
     if (image.data !== BYTES) {
-      fail(
-        `the image block did not carry the picture's bytes: ${JSON.stringify(image.data)}`,
-      );
+      fail(`the image block did not carry the picture's bytes: ${JSON.stringify(image.data)}`);
     }
     if (image.mimeType !== 'image/png') {
       fail(`the image block did not carry the picture's type: ${image.mimeType}`);

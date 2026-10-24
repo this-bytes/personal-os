@@ -131,8 +131,8 @@ describe('the content parts a message may carry', () => {
     for (const part of ONE_OF_EACH) {
       expect(contentPartSchema.safeParse(part).success).toBe(true);
     }
-    expect(
-      contentPartSchema.safeParse({ type: 'video', resourceId: 'res_video' }).success,
-    ).toBe(false);
+    expect(contentPartSchema.safeParse({ type: 'video', resourceId: 'res_video' }).success).toBe(
+      false,
+    );
   });
 });

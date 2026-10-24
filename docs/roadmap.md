@@ -132,6 +132,13 @@ either way. **The picture now reaches the runtime** —
 [the demonstration](demonstration-content-images-2026-10-25.md),
 [SPEC-R1-5](spec/r1-5-content-images.md) — and the room shows the picture.
 
+**And the demonstration found the route validating against a stale copy of the
+contract.** The panel composed a message the route refused with
+`validation_failed`, and the owner was told nothing about why: the route kept
+its own three-part union of content parts while the contract had grown an
+attachment and an image. The route now uses the contract's own shape, and a
+test says so for every part the contract publishes.
+
 **R3 has a team room.** A coordinator dispatches to a worker, the worker runs, the
 result returns, and the handoff is visible. See
 [ADR 0011](decisions/0011-feature-slots.md) and the slice's own record for what

@@ -37,9 +37,7 @@ const EVERYTHING = {
 
 describe('the composer and attachments', () => {
   it('refuses the file when the room cannot carry one, and says why', () => {
-    render(
-      <Composer participants={[]} onSend={vi.fn()} attachments={NOTHING} />,
-    );
+    render(<Composer participants={[]} onSend={vi.fn()} attachments={NOTHING} />);
 
     expect(screen.getByLabelText('Upload a file')).toBeDisabled();
     expect(screen.getByLabelText('Attach a resource')).toBeDisabled();
@@ -50,9 +48,7 @@ describe('the composer and attachments', () => {
   });
 
   it('offers the file when the room can carry one', () => {
-    render(
-      <Composer participants={[]} onSend={vi.fn()} attachments={EVERYTHING} />,
-    );
+    render(<Composer participants={[]} onSend={vi.fn()} attachments={EVERYTHING} />);
 
     expect(screen.getByLabelText('Upload a file')).toBeEnabled();
     expect(screen.getByLabelText('Attach a resource')).toBeEnabled();
@@ -63,7 +59,11 @@ describe('the composer and attachments', () => {
       <Composer
         participants={[]}
         onSend={vi.fn()}
-        attachments={{ ...EVERYTHING, pictures: false, pictureReason: 'OpenCode cannot take a picture on this route.' }}
+        attachments={{
+          ...EVERYTHING,
+          pictures: false,
+          pictureReason: 'OpenCode cannot take a picture on this route.',
+        }}
       />,
     );
 
@@ -71,12 +71,12 @@ describe('the composer and attachments', () => {
     expect(screen.getByLabelText('Upload a file')).toBeEnabled();
 
     const file = new File([new Uint8Array([1, 2, 3])], 'marker.png', { type: 'image/png' });
-    fireEvent.change(screen.getByLabelText('Choose a file to upload'), { target: { files: [file] } });
+    fireEvent.change(screen.getByLabelText('Choose a file to upload'), {
+      target: { files: [file] },
+    });
 
     // The picture is refused, and the reason is the server's own.
-    expect(
-      screen.getByText('OpenCode cannot take a picture on this route.'),
-    ).toBeInTheDocument();
+    expect(screen.getByText('OpenCode cannot take a picture on this route.')).toBeInTheDocument();
   });
 
   it('offers the upload when the room can carry a picture but not a file', () => {

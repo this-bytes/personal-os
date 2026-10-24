@@ -1,6 +1,6 @@
 # SPEC-R1-5 — A picture the owner attaches reaches the runtime
 
-**State:** in progress · **Owner:** implementing agent, one session · **Verifier:**
+**State:** delivered · **Owner:** implementing agent, one session · **Verifier:**
 independent reviewer
 **Depends on:** SPEC-R1-3 (the part carries text; the bytes are this slice's
 work) · **Blocks:** nothing yet
@@ -20,7 +20,7 @@ a picture, not as a row that says a file's name.
 ## Why this is a spec and not a patch
 
 The gap is in the **boundary**, and it was left there on purpose. SPEC-R1-3
-carried a file's *content as text*, and said so in its own words:
+carried a file's _content as text_, and said so in its own words:
 
 > **Images and binary files.** The part carries text. Carrying bytes is each
 > protocol's own shape, and the App Server's own shape — a path — would hand
@@ -53,10 +53,10 @@ three are the product's own:
 of the protocol's image shapes, with one picture — a PNG that says
 `IMAGE-MARKER-4F2` — and asked the runtime to read it:
 
-| Shape the route could send                                | What the runtime answered          |
-| -------------------------------------------------------- | ---------------------------------- |
-| `{type:'image', url:'data:image/png;base64,…'}`          | `IMAGE-MARKER-4F2`                |
-| `{type:'localImage', path:'…/marker.png'}`                | `IMAGE-MARKER-4F2`                |
+| Shape the route could send                      | What the runtime answered |
+| ----------------------------------------------- | ------------------------- |
+| `{type:'image', url:'data:image/png;base64,…'}` | `IMAGE-MARKER-4F2`        |
+| `{type:'localImage', path:'…/marker.png'}`      | `IMAGE-MARKER-4F2`        |
 
 Both work. The choice between them is therefore not about what the runtime
 accepts, and the product's own rule decides it:
@@ -123,16 +123,16 @@ given a resource id it cannot follow, and a path it cannot open.
 
 **Absent means absent** is the whole rule, and it is why this is a capability
 and not a lookup: a route that cannot take a picture must be able to say so,
-and the turn that could not carry one has to be able to say *why*.
+and the turn that could not carry one has to be able to say _why_.
 
 ### Each adapter maps a picture into its own protocol
 
 **ACP.** The protocol's prompt is a list of content blocks, and one of them
 takes bytes:
 
-| Block                                | What the runtime makes of it |
-| ------------------------------------ | --------------------------- |
-| `{type:'image', mimeType, data}`     | an image part, base64      |
+| Block                            | What the runtime makes of it |
+| -------------------------------- | ---------------------------- |
+| `{type:'image', mimeType, data}` | an image part, base64        |
 
 So the ACP route sends the picture as the protocol's own image block: its
 `mimeType` is the picture's, and its `data` is the bytes.
@@ -157,11 +157,11 @@ text, as it is today.
 
 The reasons a part was left out become three, and each is the true one:
 
-| Reason                              | When                                                                   |
-| ----------------------------------- | ---------------------------------------------------------------------- |
-| `the route cannot carry attachments`| the connection reports no `acceptsAttachments`                         |
-| `the route cannot carry pictures`   | the connection reports no `acceptsImages`                              |
-| `the file is not text`              | the bytes are neither text nor a picture                               |
+| Reason                               | When                                           |
+| ------------------------------------ | ---------------------------------------------- |
+| `the route cannot carry attachments` | the connection reports no `acceptsAttachments` |
+| `the route cannot carry pictures`    | the connection reports no `acceptsImages`      |
+| `the file is not text`               | the bytes are neither text nor a picture       |
 
 A turn that could not carry a picture says so in its context, so an agent is
 never left answering as if it had seen a picture it never saw.
@@ -230,16 +230,72 @@ It fails when any of these is untrue:
 
 ### What landed
 
-_(filled in when the slice lands)_
+| What                                                   | What it does                                                                              |
+| ------------------------------------------------------ | ----------------------------------------------------------------------------------------- |
+| `packages/contracts/src/agent.ts`                      | The turn part gains an `image` kind, and the capabilities gain `acceptsImages`.           |
+| `packages/contracts/src/adapter-presets.ts`            | The templates say which of their routes can carry a picture.                              |
+| `apps/worker/src/content-parts.ts`                     | The resolver reads a picture's bytes, and names the true reason when it cannot carry one. |
+| `packages/agent-adapters/src/acp.ts`                   | The ACP route sends the protocol's own `image` block.                                     |
+| `packages/agent-adapters/src/codex-app-server.ts`      | The App Server route sends the bytes as an image by url.                                  |
+| `apps/server/src/api/conversations.ts`                 | The route validates a message against the contract's content parts, not a copy of them.   |
+| `apps/web/src/lib/chat.ts`                             | The message carries a picture as a picture, and the room draws it.                        |
+| `apps/web/src/components/Composer.tsx`                 | The composer refuses a picture the room cannot carry, and says why.                       |
+| `apps/web/src/components/chat/TurnCapabilityPanel.tsx` | The panel says whether the route takes pictures.                                          |
+| `scripts/verify-content-images.ts`                     | The gate, in the fast lane.                                                               |
+| `docs/demonstration-content-images-2026-10-25.md`      | The transcript: the room shows the picture, and the agent reads it.                       |
 
 ### The commands that were run, and what they said
 
-_(filled in when the slice lands)_
+```
+npm run verify:content-images
+  ok   the build the gate exercises is the build of this tree
+  ok   the picture reached the runtime as the protocol's own image block
+  ok   the App Server route carried the picture as an image by url
+  ok   the capability rows say the truth about pictures
+  ok   a route that says nothing is a route that takes text
+
+npm test -w @personal-os/agent-adapters      113 passed
+npm test -w @personal-os/worker              128 passed
+npm test -w @personal-os/web                 222 passed
+npm test -w @personal-os/server              837 passed
+npm run gates                                19 gates, every one passed
+```
 
 ### The tests that fail without the implementation
 
-_(filled in when the slice lands)_
+**Measured, not asserted.** The picture's carrying was taken out of the three
+places that carry it — the ACP route, the App Server route and the resolver —
+and the tests and the gate were left in place:
+
+| What                                                                 | What it said without the carrying                                     |
+| -------------------------------------------------------------------- | --------------------------------------------------------------------- |
+| `packages/agent-adapters/src/__tests__/acp-content-images.test.ts`   | **3 of 6 failed** — the route did not send the protocol's image block |
+| `packages/agent-adapters/src/__tests__/codex-content-images.test.ts` | **2 of 4 failed** — the route did not carry the picture               |
+| `apps/worker/src/__tests__/content-parts.test.ts`                    | **3 of 10 failed** — no picture reached the turn                      |
+| `apps/server/src/__tests__/content-parts.test.ts`                    | **2 of 4 failed** — the route refused the message                     |
+| `scripts/verify-content-images.ts`                                   | failed, with every reason named (below)                               |
+
+```
+The gate for a picture the owner attaches reaching the runtime.
+  ok   the build the gate exercises is the build of this tree
+  ok   the capability rows say the truth about pictures
+  ok   a route that says nothing is a route that takes text
+
+The gate failed:
+  - the ACP route did not send the picture as the protocol's image block.
+  - the App Server route did not carry the picture.
+```
 
 ### The demonstration
 
-_(filled in when the slice lands)_
+`docs/demonstration-content-images-2026-10-25.md` is the transcript. The
+installed Codex 0.163.0 read the picture and answered with the marker that was
+in it, the room showed the picture, and the panel said `takes pictures: yes`.
+
+**The demonstration found a second defect, and it is fixed here.** The route
+validated a message against its own three-part union of content parts instead
+of the contract's, so a message the panel had composed was refused with
+`validation_failed` and the owner was told nothing about why. The contract had
+grown an attachment and an image and the route's copy had not; the route now
+takes the contract's shape, and a test says so for every part the contract
+publishes.

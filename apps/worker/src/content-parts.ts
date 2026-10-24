@@ -78,8 +78,7 @@ export function resolveTurnParts(
       continue;
     }
 
-    const mimeType =
-      part.type === 'file' ? file.mimeType : (part.mimeType ?? file.mimeType);
+    const mimeType = part.type === 'file' ? file.mimeType : (part.mimeType ?? file.mimeType);
 
     // A picture is a picture by what it says it is. The part knows its kind,
     // and the resource's own row knows it too, and either is enough.

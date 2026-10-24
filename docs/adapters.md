@@ -83,14 +83,14 @@ The ACP route is the one this repository has exercised against an installed
 runtime, so what it carries is written down here rather than left to the
 capability row alone.
 
-| Capability          | The ACP route | What that means                                                                                                                                                                          |
-| ------------------- | ------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Permission requests | supported     | The runtime's own `session/request_permission` reaches the owner as the product's approval, and the owner's decision answers the runtime.                                                |
-| Tool activity       | supported     | The runtime's own `tool_call` and `tool_call_update` notifications become the product's tool events, so the room's timeline shows the files the agent read and the commands it ran.      |
-| Artifacts           | not supported | The route makes no resource of anything it carries.                                                                                                                                      |
-| Input files         | supported     | A file the owner attached is sent as the protocol's own `resource` block, with the content in it.                                                                                        |
-| Input images        | supported     | A picture the owner attached is sent as the protocol's own `image` block, with the bytes in it.                                                                                         |
-| Steering            | not supported | The runtime does not advertise `acceptsSteering`, so a follow-up is queued for the next turn and the panel says so.                                                                      |
+| Capability          | The ACP route | What that means                                                                                                                                                                     |
+| ------------------- | ------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Permission requests | supported     | The runtime's own `session/request_permission` reaches the owner as the product's approval, and the owner's decision answers the runtime.                                           |
+| Tool activity       | supported     | The runtime's own `tool_call` and `tool_call_update` notifications become the product's tool events, so the room's timeline shows the files the agent read and the commands it ran. |
+| Artifacts           | not supported | The route makes no resource of anything it carries.                                                                                                                                 |
+| Input files         | supported     | A file the owner attached is sent as the protocol's own `resource` block, with the content in it.                                                                                   |
+| Input images        | supported     | A picture the owner attached is sent as the protocol's own `image` block, with the bytes in it.                                                                                     |
+| Steering            | not supported | The runtime does not advertise `acceptsSteering`, so a follow-up is queued for the next turn and the panel says so.                                                                 |
 
 **The ACP route carries the runtime's tool activity.** The protocol reports what
 the agent is doing as `session/update` notifications — a `tool_call` that
