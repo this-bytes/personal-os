@@ -3,8 +3,10 @@
 **The environment one person's agents operate and extend.**
 
 **Current build direction:** rich chat across independent agent harnesses, then
-autonomous teams and the product factory. See the [recovery decisions](docs/recovery.md)
-and [delivery sequence](docs/roadmap.md). These are approved targets, not a claim
+autonomous teams and the product factory. See the
+[recovery decisions](docs/decisions/0018-the-chat-first-recovery-decisions.md),
+the [architecture](ARCHITECTURE.md) and the
+[delivery sequence](docs/roadmap.md). These are approved targets, not a claim
 that the features already work.
 
 Personal OS is a single, self-hosted instance that gives you one place to talk to

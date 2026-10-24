@@ -255,6 +255,22 @@ const CAPABILITIES = {
     approvals: false,
     artifacts: false,
   },
+  'codex-app-server': {
+    chat: true,
+    streaming: true,
+    persistentSessions: true,
+    backgroundTasks: false,
+    cancel: true,
+    // The App Server asks the owner for permission, and the adapter surfaces
+    // the request. A connection configured with `approvalPolicy: 'never'` is
+    // asked nothing, and the probe reports that it cannot ask.
+    approvals: true,
+    // A file Codex changed is a file on disk, not a resource the product
+    // holds, so there is no artifact to point at yet.
+    artifacts: false,
+    // The App Server takes input while a turn runs.
+    acceptsSteering: true,
+  },
 } as const;
 
 /**
@@ -508,8 +524,8 @@ const RAW_PRESETS = [
       'a message, a command it ran, a file it changed — and the panel reads that stream, so the ' +
       'commands Codex ran appear in the trace beside its answer. The credential stays in Codex: it ' +
       'signs in with its own account, and nothing is stored here. Codex also has a native App ' +
-      'Server and ACP surfaces — this template is the command line route. This integration has ' +
-      'been demonstrated in this repository.',
+      'Server — the `codex-app-server` template is that route. This template is the command line ' +
+      'route. This integration has been demonstrated in this repository.',
     config: {
       adapterType: 'codex',
       command: 'codex',
@@ -535,13 +551,63 @@ const RAW_PRESETS = [
     ],
     verified: true,
     evidence: {
-      runtime: 'OpenAI Codex CLI',
+      runtime: 'Codex',
       version: '0.163.0',
-      demonstratedOn: '2026-10-23',
+      demonstratedOn: '2026-10-24',
       observed:
-        'Codex answered a turn through this repository’s adapter: a thread and a turn started, the ' +
-        'agent message and the command it ran came back as events, and the turn reported itself ' +
-        'completed.',
+        'Codex 0.163.0 answered a turn through this repository’s adapter on the command line ' +
+        'route (`codex exec --json`): the agent message and the command it ran came back as ' +
+        'events, and the turn reported itself completed. The route is one process per turn: it ' +
+        'keeps no session between turns and cannot ask the owner for permission. The App Server ' +
+        'template does both.',
+    },
+  },
+  {
+    id: 'codex-app-server',
+    adapterType: 'codex-app-server',
+    runtime: 'Codex',
+    name: 'Codex (App Server)',
+    description:
+      'OpenAI Codex over its App Server — a JSON-RPC service Codex exposes on standard input and ' +
+      'output. It is the richer surface: the conversation keeps one thread, the owner can steer a ' +
+      'turn while it runs, and Codex can ask the owner for permission before it acts. The ' +
+      'credential stays in Codex: it signs in with its own account, and nothing is stored here. ' +
+      'The command line template (`codex-cli`) is the other route, and it is a turn at a time. ' +
+      'This integration has been demonstrated in this repository.',
+    config: {
+      adapterType: 'codex-app-server',
+      command: 'codex',
+      args: [],
+      sandbox: 'read-only',
+      approvalPolicy: 'on-request',
+      ephemeral: false,
+      threadSource: 'personalOs',
+      timeoutSeconds: 900,
+    },
+    persona: {
+      role: 'Codex lead',
+      instructions:
+        'You lead this room with Codex over its App Server. The thread you are in is the room’s ' +
+        'memory, so use it: read what came before, and keep your answer to what was asked. When ' +
+        'you need to run a command or change a file, ask the owner first and wait for the ' +
+        'decision. If the surface does not do what this template says it does, say so plainly ' +
+        'instead of working around it.',
+    },
+    capabilities: CAPABILITIES['codex-app-server'],
+    requires: [
+      'An installed `codex` binary on PATH.',
+      'A Codex account signed in on that machine — run `codex login` there. The panel never holds the credential.',
+      'The project directory Codex should work in.',
+    ],
+    verified: true,
+    evidence: {
+      runtime: 'Codex',
+      version: '0.163.0',
+      demonstratedOn: '2026-10-24',
+      observed:
+        'Codex 0.163.0 answered through this repository’s adapter over its App Server: the ' +
+        'handshake answered, a turn produced the assistant’s text, and a second turn resumed the ' +
+        'same thread and answered again.',
     },
   },
   {

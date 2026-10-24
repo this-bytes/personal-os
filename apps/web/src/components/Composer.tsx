@@ -313,46 +313,46 @@ export function Composer({
         </div>
       ) : null}
 
-      {attachments.length > 0 ? (
-        <ul className="mb-2 flex flex-wrap gap-1.5">
-          {attachments.map((attachment) => (
-            <li
-              key={attachment.resourceId}
-              className="inline-flex items-center gap-1.5 rounded border border-slate-800 bg-slate-950/60 px-2 py-1 text-[11px] text-slate-300"
-            >
-              <Paperclip className="h-3 w-3 text-slate-500" />
-              <span className="max-w-[16rem] truncate">{attachment.displayName}</span>
-              <button
-                type="button"
-                aria-label={`Remove ${attachment.displayName}`}
-                onClick={() =>
-                  setAttachments((current) =>
-                    current.filter((item) => item.resourceId !== attachment.resourceId),
-                  )
-                }
-                className="text-slate-500 hover:text-slate-200"
+      <div className="rounded-xl border border-slate-700 bg-slate-900/70 shadow-xs transition-colors focus-within:border-slate-600">
+        {attachments.length > 0 ? (
+          <ul className="flex flex-wrap gap-1.5 px-2 pt-2">
+            {attachments.map((attachment) => (
+              <li
+                key={attachment.resourceId}
+                className="inline-flex items-center gap-1.5 rounded border border-slate-800 bg-slate-950/60 px-2 py-1 text-[11px] text-slate-300"
               >
-                <X className="h-3 w-3" />
-              </button>
-            </li>
-          ))}
-        </ul>
-      ) : null}
+                <Paperclip className="h-3 w-3 text-slate-500" />
+                <span className="max-w-[16rem] truncate">{attachment.displayName}</span>
+                <button
+                  type="button"
+                  aria-label={`Remove ${attachment.displayName}`}
+                  onClick={() =>
+                    setAttachments((current) =>
+                      current.filter((item) => item.resourceId !== attachment.resourceId),
+                    )
+                  }
+                  className="text-slate-500 hover:text-slate-200"
+                >
+                  <X className="h-3 w-3" />
+                </button>
+              </li>
+            ))}
+          </ul>
+        ) : null}
 
-      {upload ? (
-        <p
-          className={cn(
-            'mb-2 text-[11px]',
-            upload.state === 'failed' ? 'text-red-300' : 'text-slate-500',
-          )}
-        >
-          {upload.state === 'uploading' ? `Uploading ${upload.name}…` : null}
-          {upload.state === 'uploaded' ? `Uploaded ${upload.name}.` : null}
-          {upload.state === 'failed' ? upload.message : null}
-        </p>
-      ) : null}
+        {upload ? (
+          <p
+            className={cn(
+              'px-2 pt-2 text-[11px]',
+              upload.state === 'failed' ? 'text-red-300' : 'text-slate-500',
+            )}
+          >
+            {upload.state === 'uploading' ? `Uploading ${upload.name}…` : null}
+            {upload.state === 'uploaded' ? `Uploaded ${upload.name}.` : null}
+            {upload.state === 'failed' ? upload.message : null}
+          </p>
+        ) : null}
 
-      <div className="flex items-end gap-2">
         <Textarea
           ref={textareaRef}
           value={text}
@@ -364,53 +364,60 @@ export function Composer({
           onKeyUp={(event) => setCaret(event.currentTarget.selectionStart ?? 0)}
           onClick={(event) => setCaret(event.currentTarget.selectionStart ?? 0)}
           onKeyDown={handleKeyDown}
-          className="min-h-[72px] resize-y"
+          className="min-h-[72px] resize-y rounded-none border-0 bg-transparent shadow-none focus-visible:ring-0 focus-visible:outline-hidden"
         />
-        <Button
-          variant="primary"
-          onClick={() => void submit()}
-          disabled={
-            disabled ||
-            busy ||
-            steerBlocked ||
-            (text.trim().length === 0 && attachments.length === 0)
-          }
-          aria-label={delivery === 'steer' ? 'Send into the running turn' : 'Send message'}
-          title={steerBlocked ? (steer?.reason ?? 'This message cannot be steered.') : undefined}
-        >
-          <Send className="h-4 w-4" />
-          <span className="hidden sm:inline">{delivery === 'steer' ? 'Steer' : 'Send'}</span>
-        </Button>
-        <Button
-          variant="outline"
-          onClick={() => setPickerOpen((open) => !open)}
-          aria-label="Attach a resource"
-          title="Attach a resource that already exists"
-          disabled={disabled}
-        >
-          <Paperclip className="h-4 w-4" />
-        </Button>
-        <input
-          ref={fileInputRef}
-          type="file"
-          className="hidden"
-          aria-label="Choose a file to upload"
-          onChange={(event) => {
-            const file = event.target.files?.[0];
-            // The input is cleared, so the same file can be chosen again.
-            event.target.value = '';
-            if (file) void handleFile(file);
-          }}
-        />
-        <Button
-          variant="outline"
-          onClick={() => fileInputRef.current?.click()}
-          aria-label="Upload a file"
-          title="Upload a file from this machine"
-          disabled={disabled || !activeWorkspaceId || upload?.state === 'uploading'}
-        >
-          <Upload className="h-4 w-4" />
-        </Button>
+
+        <div className="flex items-center justify-between gap-2 px-2 pb-2">
+          <div className="flex items-center gap-0.5">
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => setPickerOpen((open) => !open)}
+              aria-label="Attach a resource"
+              title="Attach a resource that already exists"
+              disabled={disabled}
+            >
+              <Paperclip className="h-4 w-4" />
+            </Button>
+            <input
+              ref={fileInputRef}
+              type="file"
+              className="hidden"
+              aria-label="Choose a file to upload"
+              onChange={(event) => {
+                const file = event.target.files?.[0];
+                // The input is cleared, so the same file can be chosen again.
+                event.target.value = '';
+                if (file) void handleFile(file);
+              }}
+            />
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => fileInputRef.current?.click()}
+              aria-label="Upload a file"
+              title="Upload a file from this machine"
+              disabled={disabled || !activeWorkspaceId || upload?.state === 'uploading'}
+            >
+              <Upload className="h-4 w-4" />
+            </Button>
+          </div>
+          <Button
+            variant="primary"
+            onClick={() => void submit()}
+            disabled={
+              disabled ||
+              busy ||
+              steerBlocked ||
+              (text.trim().length === 0 && attachments.length === 0)
+            }
+            aria-label={delivery === 'steer' ? 'Send into the running turn' : 'Send message'}
+            title={steerBlocked ? (steer?.reason ?? 'This message cannot be steered.') : undefined}
+          >
+            <Send className="h-4 w-4" />
+            <span className="hidden sm:inline">{delivery === 'steer' ? 'Steer' : 'Send'}</span>
+          </Button>
+        </div>
       </div>
 
       <div className="mt-1.5 flex flex-wrap items-center gap-2 text-[10px] text-slate-600">

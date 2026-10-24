@@ -237,6 +237,66 @@ jobs:
       - name: A runtime's permission request reaches the owner
         run: npx tsx scripts/verify-acp-permissions.ts
 
+  codex-app-server:
+    name: The Codex App Server route
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci --ignore-scripts --no-audit --no-fund
+
+      # The gate drives the adapter itself, so the packages it is built from
+      # have to be built. The check is against the repository's own App Server
+      # double, so it needs no account and spends no tokens: it runs on every
+      # push, on every machine.
+      #
+      # **The gate runs in this pipeline on purpose.** A gate that only runs on
+      # the machine that wrote it is not a gate, it is a habit.
+      - name: Build the packages the gate drives
+        run: npm run build:deps
+
+      - name: The route carries a thread, a turn, a steer and an approval
+        run: npm run verify:codex-app-server
+
+  standards:
+    name: The constitution is honoured
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      # The install skips the scripts, because the gate loads no native module:
+      # it reads the constitution, the roadmap and the glossary, and it imports
+      # two source modules rather than their build output.
+      - name: Install dependencies
+        run: npm ci --ignore-scripts --no-audit --no-fund
+
+      # Every non-negotiable in the constitution names the check that proves it.
+      # The gate reads ARCHITECTURE.md and fails when a rule names a check that
+      # does not exist, when an enforced rule's check is not reachable from CI,
+      # when a rule marked prose only names a check anyway, when a pillar is
+      # missing from the roadmap, when the pillar map names a domain the domain
+      # map does not publish, or when one of the promoted invariants is broken.
+      #
+      # **The gate runs in this pipeline on purpose.** A gate that only runs on
+      # the machine that wrote it is not a gate, it is a habit — the same
+      # lesson the parity gate above already paid for.
+      - name: The constitution is honoured
+        run: npm run verify:standards
   workflow-lint:
     name: Lint the workflows
     runs-on: ubuntu-latest
@@ -392,6 +452,35 @@ jobs:
       # the machine that wrote it is not a gate, it is a habit.
       - name: The worker that dies is reconciled
         run: npx tsx scripts/verify-restart-reconciliation.ts
+
+  codex-runtime:
+    name: The installed Codex answers
+    if: github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci --ignore-scripts --no-audit --no-fund
+
+      - name: Build the packages the gate drives
+        run: npm run build:deps
+
+      # The check that drives the installed runtime, through the product's own
+      # adapter. **It is skipped — loudly, with the reason printed — where the
+      # runtime is not installed, or where it is installed but not signed in**,
+      # because a check that needs the owner's credential is not a check that
+      # can fail on somebody else's machine. On a machine with Codex on PATH
+      # and signed in, it proves the handshake and a turn.
+      - name: The installed runtime answers
+        run: npm run verify:codex-runtime
 
   source-stack:
     name: Source hosting and restart

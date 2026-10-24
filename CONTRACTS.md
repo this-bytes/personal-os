@@ -95,7 +95,7 @@ server's own sentence about how the message ended** — a message that did not f
 says why, in the server's words
 (`packages/contracts/src/conversation.ts:151`), and the client shows it as it is
 given rather than rewording it
-(`apps/web/src/components/ChatMessageList.tsx:136`). **`delivery` says how the
+(`apps/web/src/components/chat/MessageDetail.tsx:22`). **`delivery` says how the
 message was sent** — a steer went into the turn that was running, and a queue
 message waits for the next one. Absent means `queue`: a message written before
 this existed is a queued message, exactly as it was.
@@ -204,7 +204,7 @@ execution carry it when the execution is settled
 (`apps/server/src/modules/executions/service.ts:351-354`, and
 `apps/server/src/modules/approvals/resume.ts:202-206` for the turn that is closed
 rather than continued). **A client shows it as it is given**
-(`apps/web/src/components/ChatMessageList.tsx:136`): the account of what happened
+(`apps/web/src/components/chat/MessageDetail.tsx:22`): the account of what happened
 is the server's, and rewording it in the client would be the client telling the
 owner something the server knows better. **A client written before this route existed
 reads a reply that carries no `detail`, and that is not an error** — the sentence is
@@ -309,16 +309,17 @@ agents without changes to conversation storage or the factory task model.
 
 ### Adapter categories
 
-| Adapter | Intended use                                                             |
-| ------- | ------------------------------------------------------------------------ |
-| `cli`   | Local command-line agents.                                               |
-| `acp`   | Interactive agents exposing ACP-compatible sessions.                     |
-| `a2a`   | Independently operating agents supporting interoperable task delegation. |
-| `http`  | Hermes, OpenClaw and other framework-specific gateways.                  |
-| `model` | Direct model sessions without a full external agent harness.             |
-| `mcp`   | Agents that are an MCP server.                                           |
-| `echo`  | Built-in deterministic agent, for local use and tests.                   |
-| `codex` | OpenAI Codex, which reports its work as an event stream.                 |
+| Adapter            | Intended use                                                                                             |
+| ------------------ | -------------------------------------------------------------------------------------------------------- |
+| `cli`              | Local command-line agents.                                                                               |
+| `acp`              | Interactive agents exposing ACP-compatible sessions.                                                     |
+| `a2a`              | Independently operating agents supporting interoperable task delegation.                                 |
+| `http`             | Hermes, OpenClaw and other framework-specific gateways.                                                  |
+| `model`            | Direct model sessions without a full external agent harness.                                             |
+| `mcp`              | Agents that are an MCP server.                                                                           |
+| `echo`             | Built-in deterministic agent, for local use and tests.                                                   |
+| `codex`            | OpenAI Codex, which reports its work as an event stream.                                                 |
+| `codex-app-server` | OpenAI Codex over its App Server — a JSON-RPC service with threads, turns, steers and approval requests. |
 
 ACP provides a session-oriented interface and capability negotiation. A2A supports
 task-oriented communication between independent agents, including discovery,
@@ -378,9 +379,54 @@ argument that contains a space stays one argument. This is why `codex`,
 by `npm install -g`.
 
 **The rule is the same for every adapter.** The CLI adapter, the Codex adapter,
-the ACP adapter and the MCP adapter's stdio transport all start their process
-through one helper, so a runtime that starts one way starts the same way for
-all of them, and a fix to one is a fix to all of them.
+the App Server adapter, the ACP adapter and the MCP adapter's stdio transport
+all start their process through one helper, so a runtime that starts one way
+starts the same way for all of them, and a fix to one is a fix to all of them.
+
+### The Codex App Server adapter
+
+**The App Server is a different protocol from the command line route.** Codex
+exposes a JSON-RPC service over standard input and output with threads, turns,
+steers and approval requests of its own, so it has its own adapter, and the
+mapping lives in `packages/agent-adapters/src/codex-app-server.ts`.
+
+**The protocol is pinned.** The schema the adapter is written against is
+committed at `docs/protocols/codex-app-server/<version>/`, beside a record that
+names the runtime, the command that produced the schema, and the fact that what
+is committed is a subset of the generated bundle rather than the whole of it.
+A route written against a protocol nobody pinned is a route that can change
+under it.
+
+**The session is a thread, and the thread id is the execution's external
+reference.** A turn that continues a conversation resumes the thread through
+`thread/resume`; a turn that starts one calls `thread/start`. The adapter
+reports `persistentSessions` only when Codex is allowed to keep the thread on
+disk, so a connection configured as ephemeral says it keeps no session.
+
+**The runtime's approval request becomes the product's own approval request.**
+It becomes an `approval.requested` event, which the worker turns into the
+approval the owner decides in the panel — the machinery that already exists,
+not a second path. The answer sent back to the runtime is a refusal, because
+the turn is suspended the moment the owner is asked and the turn's process ends
+with it; the owner's decision returns as the next turn in the same thread,
+where the request is in the thread's history.
+
+**A steer is the runtime's own `turn/steer`**, addressed to the turn that is
+running, so the connection reports `acceptsSteering` only when the runtime
+takes input while a turn runs.
+
+**The credential stays in Codex.** Codex signs in with its own account and keeps
+that sign-in in its own home directory. The supervised process inherits the
+owner's home directory and nothing else, and the configuration carries no
+secret: there is no credential field for this adapter type.
+
+**Migration.** The adapter type enum grows by one member and nothing is
+reclassified. A client that switches exhaustively on the adapter type must now
+render `codex-app-server`; a connection that is not an App Server agent is
+unaffected. The adapter configuration for this type carries `command`, `args`,
+`cwd`, `env`, `sandbox`, `approvalPolicy`, `ephemeral`, `model`, `threadSource`
+and `timeoutSeconds`, and every one of them but `command` has a default. A
+connection recorded before this change keeps the adapter type it had.
 
 ### The MCP adapter
 
@@ -719,8 +765,8 @@ system, and it never replaces or duplicates the external runtime's own harness o
 instruction file.
 
 This entry is the contract for **WI-006**, and the code implements it — as of
-`70d042c`. `personaSchema` is at `packages/contracts/src/agent.ts:40`,
-`resolvePersona` at `:91`, the connection's base persona at `:113-114`, and the
+`70d042c`. `personaSchema` is at `packages/contracts/src/agent.ts:42`,
+`resolvePersona` at `:93`, the connection's base persona at `:115-116`, and the
 participant's override at `packages/contracts/src/conversation.ts:38`.
 
 **Migration.** Nothing is reclassified and nothing is rewritten. Both fields are
@@ -3137,7 +3183,7 @@ empty, and it is gone once the transcript is not.
 This entry is the contract for the prompts an empty room offers, and the code
 implements it — as of `0f53acb`. The row is `packages/ui/src/suggestion.tsx:47`,
 the prompts are `apps/web/src/lib/suggestions.ts:22`, and the surface that
-shows them is `apps/web/src/pages/ConversationDetail.tsx:540`.
+shows them is `apps/web/src/pages/ConversationDetail.tsx:539`.
 
 ### The attachment upload
 

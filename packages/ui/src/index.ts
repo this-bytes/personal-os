@@ -12,5 +12,8 @@ export * from './collapsible.js';
 export * from './code-block.js';
 export * from './suggestion.js';
 export * from './trace.js';
+export * from './message.js';
+export * from './bubble.js';
+export * from './message-scroller.js';
 export * from './primitives.js';
 export * from './forge.js';
