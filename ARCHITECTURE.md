@@ -86,7 +86,7 @@ Nineteen rules. Ten were already gates; nine are checks this document adds.
 | 16  | Every pillar here appears in the roadmap, and every stage names a pillar       | `verify:standards`                                     | Enforced        |
 | 17  | No new infrastructure without a demonstrated requirement                       | `review`                                               | Prose only      |
 | 18  | A migration that drops user data needs an explicit migration plan              | `review`                                               | Prose only      |
-| 19  | Specs and ADRs are the only first-class project documents                      | `review`                                               | Prose only      |
+| 19  | Every work item is a spec and every decision is an ADR                         | `review`                                               | Prose only      |
 
 Three of these carry a known exception, and each is named rather than hidden:
 
