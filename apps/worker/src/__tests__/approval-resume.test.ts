@@ -102,10 +102,41 @@ class ApprovingAdapter implements AgentAdapter {
   }
 }
 
+/**
+ * The events service, watching one thing: what the execution row said at the
+ * moment the request was published.
+ *
+ * The owner answers as soon as the request is on screen, so the row has to
+ * name the session before the request goes out — not after the turn ends.
+ */
+class WatchingEvents extends EventsService {
+  /** What the execution row named, each time a request was published. */
+  readonly atRequest: Array<string | null> = [];
+
+  constructor(
+    db: ConstructorParameters<typeof EventsService>[0],
+    private readonly read: () => string | null,
+  ) {
+    super(db);
+  }
+
+  override publish(
+    event: Parameters<EventsService['publish']>[0],
+    context: Parameters<EventsService['publish']>[1] = {},
+  ): ReturnType<EventsService['publish']> {
+    const inner = (event as { event?: { type?: string } }).event;
+    if (event.type === 'execution.event' && inner?.type === 'approval.requested') {
+      this.atRequest.push(this.read());
+    }
+    return super.publish(event, context);
+  }
+}
+
 let handle: DatabaseHandle;
 let runtime: Runtime;
 let context: ExecutorContext;
 let adapter: ApprovingAdapter;
+let events: WatchingEvents;
 
 const NOW = '2026-01-01T00:00:00.000Z';
 
@@ -228,6 +259,11 @@ beforeEach(() => {
 
   adapter = new ApprovingAdapter('sess_1');
 
+  events = new WatchingEvents(handle.db, () => {
+    const row = handle.db.select().from(executions).where(eq(executions.id, 'exe_1')).get();
+    return row?.externalRef ?? null;
+  });
+
   runtime = {
     config,
     db: handle.db,
@@ -235,7 +271,7 @@ beforeEach(() => {
     registry: {
       create: () => adapter,
     } as unknown as Runtime['registry'],
-    events: new EventsService(handle.db),
+    events,
     queue: new Queue(handle.db),
     audit: createAuditService(handle.db),
     resolveSecret: async () =>
@@ -350,6 +386,27 @@ describe('a turn that is waiting for a decision', () => {
     const text = content.map((part) => part.text ?? '').join('');
     expect(text).toContain('May I delete the production database?');
     expect(text).toContain('And the work is done.');
+  });
+
+  it('names the session before the owner is asked to decide', async () => {
+    // The decision continues the turn in the session the turn is in, and the
+    // decision reads that session from the execution row. The owner answers
+    // the moment the request appears, so a row that names the session after
+    // the turn ends is a row the decision has already missed: the turn is
+    // closed instead of continued, and the operation is never performed.
+    await executeJob(
+      context,
+      job({
+        conversationId: 'cnv_1',
+        parentMessageId: 'msg_parent',
+        agentConnectionId: 'agt_1',
+        executionId: 'exe_1',
+        correlationId: 'cor_1',
+        depth: 1,
+      }),
+    );
+
+    expect(events.atRequest).toEqual(['sess_1']);
   });
 
   it('gives the adapter the decision, so a runtime can be answered with it', async () => {
