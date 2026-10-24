@@ -85,6 +85,13 @@ registry, the same worker, the same conversation storage and the same factory
 task model. A new adapter type is addable without changing any of them, and
 this one changed none of them.
 
+**The owner configures it.** The connection form has a Pi row: the command, the
+arguments, the working directory, the environment, the timeout, the provider
+and the model, and the row that says whether Pi keeps its session. The preset
+fills them and every field stays editable afterwards. A route the owner cannot
+configure is a route the owner cannot run, and a capability without an
+agent-operable surface is not exposed.
+
 **The mapping is a pure function.** `mapPiEvent` turns one of Pi's records into
 the product's events, so the mapping can be tested without a runtime — a mapping
 that could only be tested by running Pi would be a mapping nobody would test.

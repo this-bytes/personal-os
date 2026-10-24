@@ -235,6 +235,13 @@ and a turn that waited for one would never end. The disposition is in the
 answer to the command, not among the session’s events, and the route reads it
 there.
 
+**The owner configures the route from the connection form.** The command, the
+arguments, the working directory, the environment, the timeout, the provider
+and the model are all the owner’s to set, and the row that says whether Pi
+keeps its session is the same question the App Server’s own row asks. The
+preset fills them, and every field stays editable afterwards. A route the owner
+cannot configure is a route the owner cannot run.
+
 **The session is the file Pi keeps.** Pi’s session is a file, and
 `switch_session` takes the path, so the path is what the execution publishes as
 its session reference — the way the App Server’s thread id is. The next turn in

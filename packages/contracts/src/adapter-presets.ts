@@ -683,10 +683,11 @@ const RAW_PRESETS = [
     runtime: 'Pi',
     name: 'Pi (command line subprocess)',
     description:
-      'Pi as a native long-lived JSONL RPC subprocess. Pi’s own protocol carries more than a ' +
-      'prompt — steering, settled execution, session selection — and none of that is implemented ' +
-      'here: this template starts the process and writes the prompt to it. This integration has ' +
-      'not been demonstrated in this repository.',
+      'Pi as a command line subprocess: the `pi` command is started, the prompt is written to it, and ' +
+      'its output is read as text. Pi’s own JSONL RPC protocol carries more than a prompt — the ' +
+      'streaming text, the tools it ran, whether it has settled, the session it is in, and a steer ' +
+      'that arrives while it works — and the “Pi (RPC session)” template speaks that protocol ' +
+      'instead. This integration has not been demonstrated in this repository.',
     config: {
       adapterType: 'cli',
       command: 'pi',
@@ -717,7 +718,8 @@ const RAW_PRESETS = [
       'Pi as its own long-lived JSONL RPC session. Pi’s protocol carries more than a prompt — the ' +
       'streaming text, the tools it ran, whether it has settled, the session it is in, and a steer ' +
       'that arrives while it works — so this route speaks that protocol instead of writing a prompt ' +
-      'to a process. This integration has not been demonstrated in this repository.',
+      'to a process. The command line template (`pi-cli`) is the other route, and it carries less. ' +
+      'This integration has not been demonstrated in this repository.',
     config: {
       adapterType: 'pi',
       command: 'pi',
@@ -736,7 +738,7 @@ const RAW_PRESETS = [
     requires: [
       'An installed `pi` binary on PATH that can be started in RPC mode.',
       'The directory Pi should work in.',
-      'A provider and a model configured in Pi itself — the credential stays in Pi rather than in this panel.',
+      'A provider and a model, if Pi is to be asked for ones other than its own default — the credential stays in Pi rather than in this panel.',
     ],
     verified: false,
   },

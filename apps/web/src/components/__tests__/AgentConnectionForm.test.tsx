@@ -134,6 +134,39 @@ describe('the preset picker', () => {
     });
   });
 
+  it('fills the Pi template with the command and the session it keeps', () => {
+    renderForm();
+
+    // Pi is a route of its own: it speaks its own protocol, so it is not the
+    // command line route with a different name.
+    chooseType('pi');
+    chooseTemplate('pi-rpc');
+
+    expect(screen.getByLabelText('Command')).toHaveValue('pi');
+    expect(screen.getByLabelText('Provider')).toHaveValue('');
+    expect(screen.getByLabelText('Model')).toHaveValue('');
+  });
+
+  it('sends the Pi configuration with the connection', () => {
+    const { onSubmit } = renderForm();
+
+    fireEvent.change(screen.getByLabelText('Name'), { target: { value: 'Pi' } });
+    chooseType('pi');
+    chooseTemplate('pi-rpc');
+    fireEvent.click(screen.getByRole('button', { name: 'Create connection' }));
+
+    expect(onSubmit).toHaveBeenCalledTimes(1);
+    const input = onSubmit.mock.calls[0]![0];
+    expect(input.presetId).toBe('pi-rpc');
+    expect(input.adapterType).toBe('pi');
+    expect(input.config).toMatchObject({
+      command: 'pi',
+      args: [],
+      // The session is kept, so the next turn goes back into it.
+      ephemeral: false,
+    });
+  });
+
   it('leaves every field editable after the template is applied', () => {
     renderForm();
 
