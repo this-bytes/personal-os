@@ -30,6 +30,7 @@ import { AgentOrb } from './chat/AgentOrb';
 import { MessageActions } from './chat/MessageActions';
 import { MessageBadges } from './chat/MessageBadges';
 import { MessageBody } from './chat/MessageBody';
+import { MessageDetail } from './chat/MessageDetail';
 
 export interface StreamingEntry {
   executionId: string;
@@ -166,6 +167,7 @@ export function ChatMessageList({
                             hueOf={hueOf}
                           />
                         ) : null}
+                        <MessageDetail detail={message.detail} />
                         <MessageFooter>
                           <MessageActions text={plainTextOf(message.content)} />
                         </MessageFooter>
@@ -213,12 +215,7 @@ export function ChatMessageList({
                         mentions={mentions}
                         hueOf={hueOf}
                       />
-                      {message.detail ? (
-                        // The server's account of how this message ended. It is shown
-                        // as it is given: the client does not reword what the server
-                        // said happened.
-                        <p className="text-[11px] leading-snug text-slate-500">{message.detail}</p>
-                      ) : null}
+                      <MessageDetail detail={message.detail} />
                       <MessageFooter>
                         <MessageActions text={plainTextOf(message.content)} />
                       </MessageFooter>
