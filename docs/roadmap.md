@@ -91,9 +91,18 @@ runtime** — [the demonstration](demonstration-content-parts-2026-10-24.md),
 [SPEC-R1-3](spec/r1-3-content-parts.md) — and a room whose agent cannot carry
 a file refuses the attachment rather than taking it and dropping it.
 
-**What the ACP route still cannot do.** It carries no tool activity and no
-steering, and it still carries the session's earlier text back to the runtime
-on each prompt.
+**What the ACP route still cannot do.** It carries no steering, and it still
+carries the session's earlier text back to the runtime on each prompt.
+
+**The fourth slice closed the second gap the second demonstration measured.**
+The room's activity timeline was empty on the ACP route: the adapter read one
+kind of the runtime's `session/update` notifications and dropped the rest, so
+the protocol's `tool_call` updates — how every ACP agent says "I am reading
+this file" — never became the product's tool events. The fix was in the
+adapter, because the contract already had the events and the room already
+drew them. **The room now shows the work** — the tool's name, the file it was
+called with, and what it got back — [the demonstration](demonstration-acp-tool-activity-2026-10-25.md),
+[SPEC-R1-4](spec/r1-4-acp-tool-activity.md).
 
 **R2 has three demonstrated runtimes and two templates.** The presets are starting
 points for the five named runtimes. Pi and OpenClaw are not installed here, and
