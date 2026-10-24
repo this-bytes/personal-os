@@ -95,7 +95,7 @@ server's own sentence about how the message ended** — a message that did not f
 says why, in the server's words
 (`packages/contracts/src/conversation.ts:151`), and the client shows it as it is
 given rather than rewording it
-(`apps/web/src/components/ChatMessageList.tsx:136`). **`delivery` says how the
+(`apps/web/src/components/chat/MessageDetail.tsx:22`). **`delivery` says how the
 message was sent** — a steer went into the turn that was running, and a queue
 message waits for the next one. Absent means `queue`: a message written before
 this existed is a queued message, exactly as it was.
@@ -204,7 +204,7 @@ execution carry it when the execution is settled
 (`apps/server/src/modules/executions/service.ts:351-354`, and
 `apps/server/src/modules/approvals/resume.ts:197-201` for the turn that is closed
 rather than continued). **A client shows it as it is given**
-(`apps/web/src/components/ChatMessageList.tsx:136`): the account of what happened
+(`apps/web/src/components/chat/MessageDetail.tsx:22`): the account of what happened
 is the server's, and rewording it in the client would be the client telling the
 owner something the server knows better. **A client written before this route existed
 reads a reply that carries no `detail`, and that is not an error** — the sentence is
@@ -3102,7 +3102,7 @@ empty, and it is gone once the transcript is not.
 This entry is the contract for the prompts an empty room offers, and the code
 implements it — as of `0f53acb`. The row is `packages/ui/src/suggestion.tsx:47`,
 the prompts are `apps/web/src/lib/suggestions.ts:22`, and the surface that
-shows them is `apps/web/src/pages/ConversationDetail.tsx:540`.
+shows them is `apps/web/src/pages/ConversationDetail.tsx:539`.
 
 ### The attachment upload
 

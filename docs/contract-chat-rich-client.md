@@ -105,6 +105,21 @@ reloads still knows that the stop was asked for.
 The conversation surface is now the Forge prototype's room: a dense transcript
 with an execution-trace gutter beside it.
 
+- **The transcript.** The owner's own words sit in a bubble on their side, and
+  an agent's reply is prose on the page — the border and the panel that used
+  to put a box around every paragraph an agent wrote are gone, so a
+  conversation reads as a conversation rather than as a log. A reply carries
+  its actions, and the only action is copying its words: every other thing
+  that can be done to a turn changes the state of the product, and the product
+  says so in its own words rather than through an icon in the corner of a
+  message. The column that holds the conversation is the one that scrolls, and
+  it follows the output while the reader is at the bottom and lets go the
+  moment they scroll away.
+- **The server's account of a turn.** A turn's `detail` is shown as it is
+  given, under the owner's own words as well as under an agent's. The client
+  does not reword what the server said happened, because a reader who is told
+  a turn was refused has to be able to trust that the refusal is the server's
+  and not the panel's opinion of it.
 - **Markdown.** An agent's words are drawn as Markdown — headings, lists,
   tables, and code blocks with a copy button and a language label. The
   security line is in `apps/web/src/components/chat/markdownBlocks.ts`: raw
@@ -128,31 +143,19 @@ does. An agent's hue is an identity, taken from the same ring the map uses.
 
 ## What the integration owner has to change in `CONTRACTS.md`
 
-`CONTRACTS.md` was not touched by this item, and two of its claims are now
-stale because of it. Both are mechanical:
+Nothing. The integration has been done, and `CONTRACTS.md` carries the chat
+surface already:
 
-1. **The HTTP surface table** gains two rows:
+- `GET /api/executions/:id` and `POST /api/executions/:id/stop` are in the
+  HTTP surface table, with what the stop actually did.
+- The mutating-route count is 42, and every mutating route writes an audit
+  entry at the route level.
+- The server's own sentence about how a message ended is published as
+  `detail`, and the client is told to show it as it is given rather than
+  rewording it.
 
-   | Method | Path                       | Purpose                                                                                                             |
-   | ------ | -------------------------- | ------------------------------------------------------------------------------------------------------------------- |
-   | `GET`  | `/api/executions/:id`      | The turn: its status, its capability view, its delegation tree, its committed revision, and the activity behind it. |
-   | `POST` | `/api/executions/:id/stop` | Ask a turn to stop, and answer with what the request actually did.                                                  |
-
-2. **The measures route's counts.** The entry publishes "Of the 37 mutating
-   routes in `apps/server/src/api/`, 34 write an audit entry at the route
-   level". The stop route makes those **38** and **35**. Nothing else moves:
-   the stop route writes its audit entry at the route level, so the claim
-   that no mutating route writes none still holds, and the set of routes
-   that write no audit entry is still empty.
-
-Until that edit lands, `apps/server/src/__tests__/published-shapes.test.ts`
-fails on the count — the test that holds the contract's claims about the
-code true, reading a number this item is not allowed to change. The
-`contractPointers` gate is green: the citations into
-`apps/server/src/api/executions.ts` and
-`apps/web/src/components/ChatMessageList.tsx` still point at the code they
-claim — the resolve route, the call that writes the execution, and the line
-that shows the server's own sentence about how a message ended.
+The `contractPointers` gate holds the citations into the code those claims
+name, and the `published-shapes` test holds the counts.
 
 ## The dependency
 
@@ -166,23 +169,34 @@ becomes markup — a paragraph carrying `<script>` is shown as the characters
 `<script>` — and a link's address is checked before it is put in an `href`,
 so a `javascript:` address degrades to plain text.
 
+`@shadcn/react@0.3.1` was added to `packages/ui`. It is MIT, it has no
+dependencies of its own, and it is recorded in
+`docs/dependency-licences.json` with the licence read from
+`node_modules/@shadcn/react/LICENSE.md`.
+
+It is used for **the message scroller only** — the engine that follows the
+output while the reader is at the bottom and lets go when they scroll away.
+The message, the bubble and the scroller's own parts are this repository's
+own, written against the composition shadcn/ui publishes and keeping its
+`data-slot` names exactly, so that a component written against upstream's
+markup keeps working here. The dependency is one package and no transitive
+trees, and it was taken because the scroll-following behaviour is the part
+worth not re-deriving.
+
 ## What is deliberately not done
 
-- **Steering does not work yet.** The contract publishes `delivery: 'steer' |
-'queue'` on `POST /api/conversations/:id/messages`, and the panel offers
-  "steer now" beside "queue for the next turn" — but the route does not act on
-  `delivery` yet, and a turn captures no capability view. The run control
-  therefore reports steering as unavailable, with the reason, and the panel
-  refuses to send a steer rather than quietly turning it into a queue. When
-  WI-055 lands, the route has to honour `delivery` and the run control has to
-  read the turn's captured view rather than the live connection.
-- **The capability view and the delegation tree are absent.** The route
-  reports both as `null` — absent rather than empty — because an empty view
-  would say the agent had no tools, which is a different claim.
-- **A running turn can only be asked to stop.** The worker holds the live
-  adapter session and the API server never runs an agent, so there is no
-  channel from a route to a running turn. The stop route says so in its
-  detail.
+- **A steer reaches only a turn that captured a steering capability.** The
+  run control reads the turn's captured view rather than the connection's live
+  one, so a turn admitted without steering says why it cannot be steered
+  instead of offering a steer that would go nowhere. A steer that cannot be
+  delivered is a queued message, and the reason it could not be delivered
+  rides back with the result — a steer that quietly became a queue is a lie
+  the owner did not agree to.
+- **A stop is a request, and the runtime may finish the turn it is in.** The
+  worker holds the live adapter session and the API server never runs an
+  agent, so the stop route asks the worker rather than reaching the runtime
+  itself. The panel says what the server said would happen, in the server's
+  words.
 - **Attachments are by reference.** The resource API has no upload path, so
   the composer attaches a resource that already exists and the panel resolves
   its title from the resource API. The route's own content union accepts the

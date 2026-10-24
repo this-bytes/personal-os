@@ -35,15 +35,15 @@ const LOOSE = 'the lines of that file that identify the licence';
 
 /** The counts the record holds. */
 const COUNTS = {
-  entries: 530,
-  thirdParty: 524,
+  entries: 531,
+  thirdParty: 525,
   firstParty: 6,
-  licenceFile: 385,
+  licenceFile: 386,
   packageJsonField: 17,
   publishedIdentifier: 122,
   distinctLicences: 11,
-  lockfileNonRoot: 536,
-  lockfileInstalled: 530,
+  lockfileNonRoot: 537,
+  lockfileInstalled: 531,
 };
 
 /**
@@ -52,7 +52,7 @@ const COUNTS = {
  * The count is asserted by the test, so a check that quietly stops running
  * fails the suite instead of passing it.
  */
-export const CHECK_COUNT = 23;
+export const CHECK_COUNT = 24;
 
 /** Where an entry's licence was read from. */
 interface Source {
@@ -166,6 +166,17 @@ export function checkRecord(
       evidence,
     ),
     'reads.evidence no longer names the six workspaces as carrying no source',
+  );
+  // The coverage sentence says how many packages the record covers. It went
+  // stale when packages were added without it, so it is read here rather than
+  // trusted: a record that says it covers 495 packages while holding 530 is
+  // a record that cannot be relied on to say what it covers.
+  const coverage = typeof reads.coverage === 'string' ? reads.coverage : '';
+  check(
+    'reads.coverage names the number of packages the record holds',
+    coverage.includes(`one entry for each of ${COUNTS.entries} packages`) &&
+      coverage.includes(`the ${COUNTS.thirdParty} third-party packages`),
+    `reads.coverage reads ${coverage.slice(0, 80)}`,
   );
 
   // Two — what PRODUCT.md says about the record.
@@ -472,6 +483,18 @@ describe('the licence record', () => {
 
     const ids = result.findings.map((finding) => finding.id);
     expect(ids).toContain('the three evidence shapes keep their counts');
+  });
+
+  it('catches the coverage sentence drifting away from the record', () => {
+    const source = files();
+    const record = JSON.parse(source.record) as LicenceRecord;
+    record.reads!.coverage =
+      'This record has one entry for each of 495 packages: the 489 third-party packages in the lockfile, whether or not they are installed here, and this repository’s own six workspaces.';
+
+    const result = checkRecord(JSON.stringify(record), source.product, source.lockfile);
+
+    const ids = result.findings.map((finding) => finding.id);
+    expect(ids).toContain('reads.coverage names the number of packages the record holds');
   });
 
   it('writes nothing into the repository', () => {
