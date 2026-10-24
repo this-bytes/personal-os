@@ -3,6 +3,7 @@ import { AtSign, Paperclip, Send, Upload, X } from 'lucide-react';
 import { Button, Textarea, cn } from '@personal-os/ui';
 import type { MessageDelivery, Participant, Resource, RoutingMode } from '@personal-os/contracts';
 import { errorMessage, readFileAsBase64, uploadResourceFile } from '../lib/api';
+import { isAPicture } from '../lib/chat';
 import { useWorkspace } from '../state/workspace';
 
 interface MentionQuery {
@@ -50,13 +51,25 @@ interface ComposerProps {
   /** Whether the runtime can take the message into the running turn. */
   steer?: { available: boolean; reason: string | null };
   /**
-   * Whether the room's agents can carry an attachment.
+   * Whether the room's agents can carry what the owner attaches.
    *
    * A room with no agent that can take one refuses the file, and says which
    * agent cannot take it. A file the owner attaches and the runtime never
    * sees is a file the owner believes was read.
+   *
+   * A picture is a separate verdict, because a route that takes a file's words
+   * is not thereby a route that takes a picture's bytes.
    */
-  attachments?: { available: boolean; reason: string | null };
+  attachments?: {
+    /** Whether the room can carry a file's content. */
+    available: boolean;
+    /** Why not, when it cannot. */
+    reason: string | null;
+    /** Whether the room can carry a picture. */
+    pictures: boolean;
+    /** Why not, when it cannot. */
+    pictureReason: string | null;
+  };
   /** The resources the owner may attach. */
   attachable?: Resource[];
   /** The conversation's routing mode, for the bar under the composer. */
@@ -75,6 +88,38 @@ function mentionAt(text: string, caret: number): MentionQuery | null {
   if (!match) return null;
   const token = match[0];
   return { start: caret - token.length, query: match[1] ?? '' };
+}
+
+/**
+ * Why the room cannot carry this thing, when it cannot.
+ *
+ * A file's content and a picture's bytes travel on two capabilities, so the
+ * refusal is decided by what the thing is. The reason is the server's own:
+ * the room's agents are what decide, and the panel says which agent cannot.
+ */
+function refusalFor(
+  state: ComposerProps['attachments'],
+  mimeType: string | undefined,
+): string | null {
+  if (!state) return null;
+  if (isAPicture(mimeType)) {
+    if (state.pictures) return null;
+    return state.pictureReason ?? 'This room cannot carry a picture.';
+  }
+  if (state.available) return null;
+  return state.reason ?? 'This room cannot carry an attachment.';
+}
+
+/**
+ * The content type of a resource the owner may attach, when it is a file.
+ *
+ * The resource's own row knows what its bytes are; the resource's type is the
+ * product's word for it, and for an uploaded file that word is "document".
+ */
+function mimeTypeOf(resource: Resource): string | undefined {
+  const data = resource.data as { kind?: unknown; mimeType?: unknown } | undefined;
+  if (data?.kind !== 'file') return undefined;
+  return typeof data.mimeType === 'string' ? data.mimeType : undefined;
 }
 
 /**
@@ -166,8 +211,18 @@ export function Composer({
    * The file is read in the browser, sent as base64, and the resource the
    * server answers with is attached exactly as a resource the owner picked
    * from the workspace would be.
+   *
+   * **A thing the room cannot carry is refused before it is uploaded.** A
+   * picture the runtime never sees is a picture the owner believes was shown,
+   * and the room's agents are what decide. The refusal is said in the
+   * server's own words.
    */
   const handleFile = async (file: File): Promise<void> => {
+    const refusal = refusalFor(attachmentsState, file.type);
+    if (refusal) {
+      setUpload({ name: file.name, state: 'failed', message: refusal });
+      return;
+    }
     setUpload({ name: file.name, state: 'uploading' });
     try {
       const contentBase64 = await readFileAsBase64(file);
@@ -246,6 +301,14 @@ export function Composer({
 
   const dropdownOpen = mention !== null && candidates.length > 0;
   const steerBlocked = delivery === 'steer' && steer !== undefined && !steer.available;
+  /**
+   * Whether the room can carry nothing at all.
+   *
+   * A room that can take a file but not a picture still offers the upload: the
+   * refusal is decided by what the owner picked, and said when they pick it.
+   */
+  const nothingCanBeCarried =
+    attachmentsState !== undefined && !attachmentsState.available && !attachmentsState.pictures;
 
   return (
     <div className="relative">
@@ -303,7 +366,7 @@ export function Composer({
                               {
                                 resourceId: resource.id,
                                 displayName: resource.title,
-                                mimeType: resource.type,
+                                mimeType: mimeTypeOf(resource) ?? resource.type,
                               },
                             ],
                       );
@@ -384,11 +447,11 @@ export function Composer({
               onClick={() => setPickerOpen((open) => !open)}
               aria-label="Attach a resource"
               title={
-                attachmentsState?.available === false
-                  ? (attachmentsState.reason ?? 'This room cannot carry an attachment.')
+                nothingCanBeCarried
+                  ? (attachmentsState?.reason ?? 'This room cannot carry an attachment.')
                   : 'Attach a resource that already exists'
               }
-              disabled={disabled || attachmentsState?.available === false}
+              disabled={disabled || nothingCanBeCarried}
             >
               <Paperclip className="h-4 w-4" />
             </Button>
@@ -410,15 +473,15 @@ export function Composer({
               onClick={() => fileInputRef.current?.click()}
               aria-label="Upload a file"
               title={
-                attachmentsState?.available === false
-                  ? (attachmentsState.reason ?? 'This room cannot carry an attachment.')
+                nothingCanBeCarried
+                  ? (attachmentsState?.reason ?? 'This room cannot carry an attachment.')
                   : 'Upload a file from this machine'
               }
               disabled={
                 disabled ||
                 !activeWorkspaceId ||
                 upload?.state === 'uploading' ||
-                attachmentsState?.available === false
+                nothingCanBeCarried
               }
             >
               <Upload className="h-4 w-4" />
@@ -450,7 +513,7 @@ export function Composer({
         ) : null}
         <span className="font-mono">depth {depth}</span>
         {maxTurns !== undefined ? <span className="font-mono">max {maxTurns} turns</span> : null}
-        {attachmentsState?.available === false && attachmentsState.reason ? (
+        {nothingCanBeCarried && attachmentsState?.reason ? (
           <span className="text-slate-500">{attachmentsState.reason}</span>
         ) : null}
         <span>Enter sends · Shift+Enter adds a line · type @ to address a participant</span>

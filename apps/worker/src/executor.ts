@@ -468,13 +468,16 @@ async function executeChatTurn(context: ExecutorContext, job: QueueJob): Promise
         });
       }
 
-      // The parts the turn carries: the parent's text, and the files the owner
-      // attached — resolved here, because an adapter is given a reference it
-      // cannot follow.
+      // The parts the turn carries: the parent's text, and the files and
+      // pictures the owner attached — resolved here, because an adapter is
+      // given a reference it cannot follow.
       const { parts: turnParts, leftOut: filesLeftOut } = resolveTurnParts(
         db,
         (parent?.content as ContentPart[] | undefined) ?? [],
-        { carryAttachments: owner.acceptsAttachments },
+        {
+          carryAttachments: owner.acceptsAttachments,
+          carryImages: owner.acceptsImages,
+        },
       );
       const note = attachmentNote(filesLeftOut);
 

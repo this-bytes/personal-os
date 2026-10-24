@@ -103,6 +103,12 @@
       "about": "a file the owner attaches reaches the runtime, in each protocol's own shape, and a route that cannot carry one says so"
     },
     {
+      "name": "content-images",
+      "command": "npx",
+      "args": ["tsx", "scripts/verify-content-images.ts"],
+      "about": "a picture the owner attaches reaches the runtime, in each protocol's own shape, and a route that cannot carry one says so"
+    },
+    {
       "name": "acp-tool-activity",
       "command": "npx",
       "args": ["tsx", "scripts/verify-acp-tool-activity.ts"],

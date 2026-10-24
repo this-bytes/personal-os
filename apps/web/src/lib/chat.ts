@@ -11,6 +11,7 @@ import type {
   TurnView,
 } from '@personal-os/contracts';
 import type { TraceStatus } from '@personal-os/ui';
+import { resourceContentUrl } from './api';
 
 /**
  * The request the composer sends.
@@ -22,20 +23,44 @@ import type { TraceStatus } from '@personal-os/ui';
  * An attachment is a reference to a resource. A file the owner chooses is
  * uploaded first and becomes a resource, and the message points at that
  * resource rather than carrying the bytes.
+ *
+ * **A picture is a picture in the transcript.** The panel draws an image part
+ * as the picture, and the bytes are read from the resource; a row that says a
+ * file's name is what a picture is not.
  */
 export function messageRequest(
   text: string,
   options: {
     delivery: MessageDelivery;
-    attachments: Array<{ resourceId: string }>;
+    attachments: Array<{ resourceId: string; displayName?: string; mimeType?: string }>;
   },
 ): { content: Array<Record<string, unknown>>; delivery: MessageDelivery } {
   const content: Array<Record<string, unknown>> = [];
   if (text.length > 0) content.push({ type: 'text', text });
   for (const attachment of options.attachments) {
+    if (isAPicture(attachment.mimeType)) {
+      content.push({
+        type: 'image',
+        resourceId: attachment.resourceId,
+        displayName: attachment.displayName ?? attachment.resourceId,
+        mimeType: attachment.mimeType,
+        url: resourceContentUrl(attachment.resourceId),
+      });
+      continue;
+    }
     content.push({ type: 'file', resourceId: attachment.resourceId });
   }
   return { content, delivery: options.delivery };
+}
+
+/**
+ * Whether a thing is a picture.
+ *
+ * The content type says so, and the content type is the thing's own claim
+ * about itself.
+ */
+export function isAPicture(mimeType: string | undefined | null): boolean {
+  return typeof mimeType === 'string' && mimeType.toLowerCase().startsWith('image/');
 }
 
 /**

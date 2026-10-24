@@ -201,6 +201,8 @@ const CAPABILITIES = {
     // The protocol's prompt is a list of content blocks, and a file the owner
     // attached is one of them.
     acceptsAttachments: true,
+    // And a picture is one of them too, with the bytes in it.
+    acceptsImages: true,
   },
   a2a: {
     chat: true,
@@ -276,6 +278,8 @@ const CAPABILITIES = {
     // A file the owner attached is carried as text, because the protocol has
     // no item for a file with its content.
     acceptsAttachments: true,
+    // A picture has an item of its own, and the route carries the bytes in it.
+    acceptsImages: true,
   },
 } as const;
 

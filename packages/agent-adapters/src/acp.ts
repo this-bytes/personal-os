@@ -26,6 +26,10 @@ const PERMISSION_METHOD = 'session/request_permission';
  * reads — `[<uri>] | <text>` — which is what "the agent sees the file" means
  * on this route.
  *
+ * A picture is a different block: the protocol takes an `image` block, with
+ * the bytes in it, and the runtime makes an image part of it. The bytes travel;
+ * nothing points at a file on a disk the runtime may not have.
+ *
  * The uri is a name and not a path: a path would be a path on the runtime's
  * machine, and this file is not on it.
  *
@@ -39,6 +43,10 @@ export function acpPrompt(input: AgentTurnInput): AcpContentBlock[] {
   if (text.length > 0) blocks.push({ type: 'text', text });
 
   for (const part of input.parts ?? []) {
+    if (part.type === 'image') {
+      blocks.push({ type: 'image', mimeType: part.mimeType, data: part.data });
+      continue;
+    }
     blocks.push({
       type: 'resource',
       resource: {
@@ -54,8 +62,11 @@ export function acpPrompt(input: AgentTurnInput): AcpContentBlock[] {
 
 /** One block of the protocol's prompt. */
 interface AcpContentBlock {
-  type: 'text' | 'resource';
+  type: 'text' | 'resource' | 'image';
   text?: string;
+  mimeType?: string;
+  /** The picture's bytes, as base64. */
+  data?: string;
   resource?: { uri: string; mimeType?: string; text: string };
 }
 
@@ -323,6 +334,9 @@ export class AcpAdapter implements AgentAdapter {
         // The protocol's prompt is a list of content blocks, and a file the
         // owner attached is one of them.
         acceptsAttachments: true,
+        // And so is a picture: the protocol's prompt takes an image block,
+        // with the bytes in it.
+        acceptsImages: true,
       };
     } catch (error) {
       this.lifecycle.markFailed(error instanceof Error ? error.message : String(error));
