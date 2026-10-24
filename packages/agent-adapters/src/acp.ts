@@ -59,6 +59,156 @@ interface AcpContentBlock {
   resource?: { uri: string; mimeType?: string; text: string };
 }
 
+/**
+ * The tool a protocol tool call stands for, in the product's vocabulary.
+ *
+ * The protocol names a call by its `kind` — `read`, `edit`, `execute` — and the
+ * product names the same actions on its other route (`command`, `file_change`),
+ * so the two routes say the same thing in the same room.
+ */
+const ACP_TOOL_NAMES: Record<string, string> = {
+  execute: 'command',
+  edit: 'file_change',
+  read: 'read',
+  delete: 'file_delete',
+  move: 'file_move',
+  search: 'search',
+  fetch: 'fetch',
+};
+
+/**
+ * The kinds that are the runtime talking about itself.
+ *
+ * A thought and a mode change are not actions the owner asked for and cannot
+ * follow, and the product has no word for either: the same rule the Codex
+ * route follows — an item the product has no word for is not invented into one.
+ */
+const ACP_KINDS_THAT_ARE_NOT_ACTIONS = new Set(['think', 'switch_mode']);
+
+/** A tool call, as the protocol reported it and as the product names it. */
+export interface AcpToolCall {
+  /** The call's id, as the runtime named it. */
+  id: string;
+  /** The name the trace row carries. */
+  name: string;
+  /** What the tool was asked to do. */
+  input?: unknown;
+  /** What the tool said. */
+  output?: string;
+  /** The runtime's own output, when it sent one. */
+  raw?: unknown;
+  /** The status the runtime reported. */
+  status: string;
+  /** Whether the call has finished. */
+  finished: boolean;
+}
+
+/**
+ * The tool call a `session/update` notification describes.
+ *
+ * A call is announced and then updated, and the updates do not all say the
+ * same things: the runtime sends the kind with the first update and drops it
+ * from the later ones, so a call is read together with what the turn already
+ * knows about it.
+ *
+ * **A call that the runtime has not finished is not finished.** The runtime
+ * repeats `in_progress` with more of the output each time it streams, and only
+ * `completed` and `failed` end a call. A route that answered every update
+ * would show one row per line of output.
+ */
+export function acpToolCall(update: unknown, known?: AcpToolCall): AcpToolCall | null {
+  const kind = getByPath(update, 'sessionUpdate');
+  if (kind !== 'tool_call' && kind !== 'tool_call_update') return null;
+
+  const id = getByPath(update, 'toolCallId');
+  if (typeof id !== 'string' || id.length === 0) return null;
+
+  const reported = getByPath(update, 'kind');
+  const name = acpToolName(reported) ?? known?.name ?? null;
+  // A kind that is not an action is not an action, and a call the turn has not
+  // seen cannot be named.
+  if (name === null) return null;
+
+  const status = getByPath(update, 'status');
+  const rawInput = getByPath(update, 'rawInput');
+  const rawOutput = getByPath(update, 'rawOutput');
+  const said = acpToolSaid(update);
+
+  return {
+    id,
+    name,
+    status: typeof status === 'string' ? status : (known?.status ?? 'pending'),
+    // The runtime announces a call before it has filled the arguments in, so
+    // an empty input never replaces one that says something.
+    input: hasInput(rawInput) ? rawInput : known?.input,
+    output: said ?? known?.output,
+    raw: rawOutput !== undefined ? rawOutput : known?.raw,
+    finished: status === 'completed' || status === 'failed',
+  };
+}
+
+/**
+ * Whether the runtime has said what the call was for.
+ *
+ * An empty object is not an answer: OpenCode announces a call with an empty
+ * input and fills it in with the next update.
+ */
+function hasInput(input: unknown): boolean {
+  if (input === undefined || input === null) return false;
+  if (typeof input === 'object' && !Array.isArray(input)) {
+    return Object.keys(input as Record<string, unknown>).length > 0;
+  }
+  return true;
+}
+
+/**
+ * The name the trace row carries for a kind.
+ *
+ * A kind the protocol has not named is carried under the name the runtime
+ * gave it: a tool that ran is a fact, and the room should show it.
+ */
+function acpToolName(kind: unknown): string | null {
+  if (typeof kind !== 'string' || kind.length === 0) return null;
+  if (ACP_KINDS_THAT_ARE_NOT_ACTIONS.has(kind)) return null;
+  return ACP_TOOL_NAMES[kind] ?? kind;
+}
+
+/**
+ * What the tool said.
+ *
+ * The protocol's content blocks carry the tool's answer as text, and the
+ * runtime's own `rawOutput` carries the same thing in its own shape. Both are
+ * kept: the text is what the owner reads, and the raw output is what the
+ * runtime reported.
+ */
+function acpToolSaid(update: unknown): string | undefined {
+  const content = getByPath(update, 'content');
+  if (!Array.isArray(content)) return undefined;
+
+  const parts: string[] = [];
+  for (const block of content) {
+    const text = getByPath(block, 'content.text');
+    if (typeof text === 'string' && text.length > 0) parts.push(text);
+  }
+  return parts.length > 0 ? parts.join('') : undefined;
+}
+
+/**
+ * The output a finished call carries.
+ *
+ * The product has no failure event for a tool call: a call that failed is a
+ * call that finished, and the status says how it ended. The turn carried on,
+ * so the failure belongs to the tool and not to the turn.
+ */
+export function acpToolOutput(call: AcpToolCall): Record<string, unknown> | undefined {
+  if (call.output === undefined && call.raw === undefined) return undefined;
+  return {
+    status: call.status,
+    ...(call.output !== undefined ? { output: call.output } : {}),
+    ...(call.raw !== undefined ? { raw: call.raw } : {}),
+  };
+}
+
 interface AcpSession {
   sessionId: string;
 }
@@ -188,8 +338,26 @@ export class AcpAdapter implements AgentAdapter {
     const { executionId } = input;
     const client = this.spawn();
     this.client = client;
-    const deltas: string[] = [];
     let finalText = '';
+    /**
+     * The events the runtime has produced, in the order it produced them.
+     *
+     * One queue, so that a tool call and the text around it keep the order
+     * the runtime gave them: the room's timeline is a record of what happened,
+     * not a reconstruction of it.
+     */
+    const pending: Array<
+      Extract<AgentEvent, { type: 'message.delta' | 'tool.started' | 'tool.completed' }>
+    > = [];
+    /**
+     * The tool calls this turn has seen, keyed by the runtime's own id.
+     *
+     * The runtime names a call's kind with the first update and drops it from
+     * the later ones, so a call is read together with what the turn already
+     * knows about it. A call is also *announced* separately, because a runtime
+     * may announce a call before it says what the call is for.
+     */
+    const calls = new Map<string, { call: AcpToolCall; announced: boolean }>();
     // Held in an object so the type stays `Error | null` after the
     // callbacks that assign it have run.
     const outcome: { failure: Error | null } = { failure: null };
@@ -215,10 +383,73 @@ export class AcpAdapter implements AgentAdapter {
       if (method !== 'session/update') return;
       const update = getByPath(params, 'update');
       const kind = getByPath(update, 'sessionUpdate');
-      if (kind !== 'agent_message_chunk') return;
-      const text = getByPath(update, 'content.text');
-      if (typeof text === 'string' && text.length > 0) deltas.push(text);
+
+      if (kind === 'agent_message_chunk') {
+        const text = getByPath(update, 'content.text');
+        if (typeof text === 'string' && text.length > 0) {
+          finalText += text;
+          pending.push({ type: 'message.delta', executionId, text });
+        }
+        return;
+      }
+
+      if (kind !== 'tool_call' && kind !== 'tool_call_update') return;
+
+      const id = getByPath(update, 'toolCallId');
+      if (typeof id !== 'string') return;
+
+      const known = calls.get(id);
+      const call = acpToolCall(update, known?.call);
+      if (!call) return;
+      const entry = known ?? { call, announced: false };
+      entry.call = call;
+      calls.set(id, entry);
+
+      // A call is announced when the runtime has said enough about it to be
+      // worth a row: what it is, and what it was called with when the runtime
+      // has said that. OpenCode announces a call with an empty input and
+      // fills it in with the next update, and a row announced on the empty
+      // one says nothing about what was read.
+      if (!entry.announced && (hasInput(call.input) || call.finished)) {
+        announce(entry);
+      }
+
+      // Only the end of a call is news after the start. The updates in between
+      // are the same call saying more about itself.
+      if (call.finished) {
+        const output = acpToolOutput(call);
+        pending.push({
+          type: 'tool.completed',
+          executionId,
+          toolName: call.name,
+          ...(output !== undefined ? { output } : {}),
+        });
+      }
     });
+
+    /** Announce a call to the room. */
+    function announce(entry: { call: AcpToolCall; announced: boolean }): void {
+      entry.announced = true;
+      pending.push({
+        type: 'tool.started',
+        executionId,
+        toolName: entry.call.name,
+        ...(entry.call.input !== undefined ? { input: entry.call.input } : {}),
+      });
+    }
+
+    /**
+     * Announce the calls the runtime never said enough about.
+     *
+     * A call that started and never finished is still a call: the room shows
+     * it as one, and the product's own vocabulary has an outcome for it —
+     * unfinished.
+     */
+    function announceTheCallsTheRuntimeLeftOpen(): void {
+      for (const entry of calls.values()) {
+        if (!entry.announced) announce(entry);
+      }
+    }
 
     const offRequest = client.onRequest((method, params) => {
       if (method !== PERMISSION_METHOD) {
@@ -308,26 +539,27 @@ export class AcpAdapter implements AgentAdapter {
       while (!settled) {
         const asked = approvals.shift();
         if (asked) {
+          // A call the runtime never said enough about is still a call, and the
+          // turn that is suspended is the last chance to say so.
+          announceTheCallsTheRuntimeLeftOpen();
           yield asked;
           // The turn is suspended on the owner's decision, and the runtime's
           // request does not survive it: the agent is released below. The
           // runtime is asked again when the decision resumes the turn.
           return;
         }
-        if (deltas.length > 0) {
-          const text = deltas.join('');
-          deltas.length = 0;
-          finalText += text;
-          yield { type: 'message.delta', executionId, text };
+        while (pending.length > 0) {
+          const event = pending.shift();
+          if (event) yield event;
         }
         await Promise.race([promptPromise.catch(() => undefined), delay(50)]);
       }
 
-      if (deltas.length > 0) {
-        const text = deltas.join('');
-        deltas.length = 0;
-        finalText += text;
-        yield { type: 'message.delta', executionId, text };
+      announceTheCallsTheRuntimeLeftOpen();
+
+      while (pending.length > 0) {
+        const event = pending.shift();
+        if (event) yield event;
       }
 
       await promptPromise.catch(() => undefined);

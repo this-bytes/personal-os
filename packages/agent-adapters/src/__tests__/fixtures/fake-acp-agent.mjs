@@ -23,6 +23,15 @@
 import { createInterface } from 'node:readline';
 import { readFileSync, writeFileSync } from 'node:fs';
 
+/**
+ * **FAKE_ACP_TOOL_CALL makes it use a tool**, the way a runtime does when it
+ * reads a file or runs a command: it announces the call, updates it while the
+ * work runs, and finishes it. The sequence is the one the installed runtime
+ * sends — a `tool_call` and then `tool_call_update`s under the same
+ * `toolCallId` — because a route that answers every update shows one row per
+ * line of output, and only the real sequence proves that it does not.
+ */
+
 const storePath = process.env.FAKE_ACP_SESSIONS ?? '';
 
 const pidFile = process.env.FAKE_ACP_PID_FILE;
@@ -98,6 +107,81 @@ async function askPermission(sessionId) {
     error: answer.error ?? null,
   });
   writeStore(store);
+}
+
+/** Tell the client what the agent is doing. */
+function notify(sessionId, update) {
+  process.stdout.write(
+    `${JSON.stringify({ jsonrpc: '2.0', method: 'session/update', params: { sessionId, update } })}\n`,
+  );
+}
+
+/**
+ * Use a tool, the way a runtime does.
+ *
+ * The call is announced, updated while the work runs, and finished — and the
+ * updates in between repeat the output as it streams, which is what makes a
+ * route that answers every update show one row per line of output.
+ */
+function useATool(sessionId) {
+  const toolCallId = process.env.FAKE_ACP_TOOL_CALL_ID ?? 'call_1';
+  const kind = process.env.FAKE_ACP_TOOL_KIND ?? 'read';
+  const title = process.env.FAKE_ACP_TOOL_TITLE ?? 'read';
+  const command = process.env.FAKE_ACP_TOOL_COMMAND ?? 'Get-ChildItem';
+  const filePath = process.env.FAKE_ACP_TOOL_FILE_PATH ?? 'notes.txt';
+  const said = process.env.FAKE_ACP_TOOL_OUTPUT ?? 'The file says: PROBE-MARKER-41C.';
+  const status = process.env.FAKE_ACP_TOOL_STATUS ?? 'completed';
+  const rawInput = kind === 'execute' ? { command, cwd: '.' } : { filePath };
+
+  notify(sessionId, {
+    sessionUpdate: 'tool_call',
+    toolCallId,
+    title,
+    kind,
+    status: 'pending',
+    locations: [],
+    // The runtime announces the call before it has filled the arguments in.
+    // OpenCode 1.19.4 sends an empty input here and the real one with the
+    // next update, and a route that reads the announcement alone shows a row
+    // that says nothing about what was read.
+    rawInput: {},
+  });
+
+  if (process.env.FAKE_ACP_TOOL_SILENT === '1') {
+    // A call the runtime never says more about: it started and never ended.
+    return;
+  }
+
+  notify(sessionId, {
+    sessionUpdate: 'tool_call_update',
+    toolCallId,
+    status: 'in_progress',
+    kind,
+    title,
+    locations: [{ path: filePath }],
+    rawInput,
+    content: [{ type: 'content', content: { type: 'text', text: said.slice(0, 10) } }],
+  });
+
+  notify(sessionId, {
+    sessionUpdate: 'tool_call_update',
+    toolCallId,
+    status: 'in_progress',
+    kind,
+    title,
+    locations: [{ path: filePath }],
+    rawInput,
+    content: [{ type: 'content', content: { type: 'text', text: said } }],
+  });
+
+  notify(sessionId, {
+    sessionUpdate: 'tool_call_update',
+    toolCallId,
+    status,
+    title,
+    content: [{ type: 'content', content: { type: 'text', text: said } }],
+    rawOutput: { output: said },
+  });
 }
 
 input.on('line', (line) => {
@@ -188,6 +272,17 @@ input.on('line', (line) => {
       if (process.env.FAKE_ACP_PERMISSION === '1') {
         // The runtime asks before it acts, and waits for the answer.
         void askPermission(message.params?.sessionId).then(() => reply({ stopReason: 'end_turn' }));
+        return;
+      }
+
+      if (process.env.FAKE_ACP_TOOL_CALL === '1') {
+        // The runtime uses a tool, and then answers.
+        useATool(message.params?.sessionId);
+        notify(message.params?.sessionId, {
+          sessionUpdate: 'agent_message_chunk',
+          content: { type: 'text', text: 'The file says: PROBE-MARKER-41C.' },
+        });
+        reply({ stopReason: 'end_turn' });
         return;
       }
 

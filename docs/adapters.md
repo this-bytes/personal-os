@@ -86,11 +86,23 @@ capability row alone.
 | Capability          | The ACP route | What that means                                                                                                                                                                          |
 | ------------------- | ------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Permission requests | supported     | The runtime's own `session/request_permission` reaches the owner as the product's approval, and the owner's decision answers the runtime.                                                |
-| Tool activity       | not supported | The route carries the agent's text and the runtime's permission requests, and nothing else: the runtime's `tool_call` updates are not turned into the product's tool events.             |
+| Tool activity       | supported     | The runtime's own `tool_call` and `tool_call_update` notifications become the product's tool events, so the room's timeline shows the files the agent read and the commands it ran.      |
 | Artifacts           | not supported | The route makes no resource of anything it carries.                                                                                                                                      |
 | Input files         | supported     | A file the owner attached is sent as the protocol's own `resource` block, with the content in it.                                                                                        |
 | Input images        | not supported | The part carries the file's content as text, so a file whose bytes are not text cannot be carried. The protocol has an `image` block that takes bytes, and that mapping is its own work. |
 | Steering            | not supported | The runtime does not advertise `acceptsSteering`, so a follow-up is queued for the next turn and the panel says so.                                                                      |
+
+**The ACP route carries the runtime's tool activity.** The protocol reports what
+the agent is doing as `session/update` notifications — a `tool_call` that
+announces the call, and `tool_call_update`s that carry it to its end — and the
+route turns them into the product's tool events. The room's timeline shows the
+files the agent read and the commands it ran, while the turn runs.
+
+A call is one row, however much the runtime streamed for it: the updates in
+between are the same call saying more about itself, and only its end is news
+after its start. The tool's name is the product's word for the action — a
+command is a `command` on this route too — and a kind that is not an action at
+all, like a thought, is not an action the room is shown.
 
 **The ACP route sends the message's parts.** The protocol's prompt is a list of
 content blocks, and a file the owner attached is one of them: a `resource`
@@ -113,7 +125,11 @@ agent that speaks the protocol and checks the prompt the runtime received; by
 `docs/demonstration-codex-2026-10-24.md`, which recorded the gap before it was
 closed; and by `docs/demonstration-content-parts-2026-10-24.md`, where the
 owner attached a file to the installed OpenCode and the agent answered with
-the file's exact content.
+the file's exact content. The tool activity path is proved twice: by
+`scripts/verify-acp-tool-activity.ts`, which drives the built adapter against
+an agent that speaks the protocol and checks the events the turn produced, and
+by `docs/demonstration-acp-tool-activity-2026-10-25.md`, where the installed
+OpenCode's own tool calls showed up in the room's timeline.
 
 ### What the Codex App Server route carries
 
