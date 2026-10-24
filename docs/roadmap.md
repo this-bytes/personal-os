@@ -110,8 +110,24 @@ the turn's own work: the owner read one long bubble holding the whole session,
 and the timeline carried a row for a call the runtime made a turn ago. One
 rule closes both — _a turn's work is what arrives after the prompt_ — and the
 measurement behind it says the boundary is exact. The room itself, with two
-turns in one session, is still to be demonstrated: the installed runtime's
-free allowance was spent before the second turn could be asked.
+turns in one session, is still to be demonstrated on the ACP route: the
+installed runtime's free allowance was spent before the second turn could be
+asked.
+
+**The sixth slice settled that rule on the other route, and showed the room
+holding two turns.** The rule had been settled on the ACP route, where the
+runtime replays the session it loads; the App Server route had no such rule
+and was right by accident, because the installed App Server 0.163.0 replays
+nothing when a thread is resumed. It does not have to be an accident: the route
+now reads the runtime's notifications only after the prompt, and only those
+that name the turn it started, and the gate proves it against a runtime that
+hands the thread's history back. **The room holds two turns in one session** —
+the owner's two questions, the runtime's two answers, one thread, and the
+second answer about the second question —
+[the demonstration](demonstration-two-turns-2026-10-25.md),
+[SPEC-R1-6](spec/r1-6-two-turns-one-session.md). The runtime's own memory
+survived the turn as well: the second question carried no history, and the
+runtime answered from the thread it kept.
 
 **R2 has three demonstrated runtimes and two templates.** The presets are starting
 points for the five named runtimes. Pi and OpenClaw are not installed here, and
@@ -172,7 +188,12 @@ and preserved-work locations are recorded in
 - **R1/R2: persist native sessions and expose advanced capabilities coherently.**
   `AgentAdapterExtras` names native capabilities, but the common execution path does
   not project them into the product. Ordinary follow-ups are not proven to restore
-  native context.
+  native context. — **Half of this is now closed by
+  [SPEC-R1-6](spec/r1-6-two-turns-one-session.md):** an ordinary follow-up does
+  restore the runtime's native context, measured against the installed App Server
+  0.163.0 (the second turn answered with the word the first turn gave it, with no
+  history in the prompt) and proved by the gate and by the room's own two turns.
+  What is still open is the other half: the extras are named and not projected.
 - **Platform: prove execution isolation and recovery outside the agent's authority.**
   CLI `cwd` and sanitized environment do not confine filesystem access. Define the
   project execution binding and least privilege, and test backup/restore including
