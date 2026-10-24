@@ -112,6 +112,42 @@ and preserved-work locations are recorded in
   Apply the current FACTORY.md through the plugin's supported settings or management
   API, retaining existing identities, memory and chats. Never edit live state.json.
 
+## The parked branches
+
+Work was done on branches that were never merged. It is parked, not lost:
+every branch below is pushed to the remote, so nothing here is held on one
+machine or in one worktree.
+
+**A parked branch is a source, not a proposal.** The unit of work is a spec,
+and a slice that takes something from one of these branches opens its own
+spec, its own branch and its own review. Merging a parked branch wholesale
+would bring its old base, its old decisions and its untested code with it.
+Read the branch for what it proves, then write the slice that needs it.
+
+| Branch                                                    | What it holds                                                            | Where it stands                                                                |
+| --------------------------------------------------------- | ------------------------------------------------------------------------ | ------------------------------------------------------------------------------ |
+| `feature/r1-1-codex-app-server`                           | The Codex App Server route and the gate that covers it                   | Live: [SPEC-R1-1](spec/r1-1-codex-demonstration.md) is open                    |
+| `feature/r1-2-acp-permissions`                            | A runtime's permission request reaching the owner                        | Live: [SPEC-R1-2](spec/r1-2-opencode-demonstration.md), open as a pull request |
+| `docs/adr-0012-slice-a`                                   | ADR 0012's first slice: the queue, the records and the priorities        | Live                                                                           |
+| `chore/mcp-parity-named-spec`                             | The spec that will pair the broken windows                               | Live                                                                           |
+| `wi/077-agent-adapter-domain`                             | The queue-based capability probe the R0 follow-up above ports from       | Preserved source; named in this document                                       |
+| `wi/159-server-setup-cost`                                | The test setup cost work: a migrated image per suite, one batch per tree | Preserved source; the review measured it                                       |
+| `wi/146-editor-probe-client`                              | WI-146's editor probes                                                   | Preserved source                                                               |
+| `wi/136-a-type-cannot-be-named-without-an-implementation` | An unfinished merge the review kept                                      | Preserved source                                                               |
+| `wi/133-dependency-audit-once`                            | The audit job's second pass, and its untracked resolver                  | Preserved source                                                               |
+| `wi/038-borrow-rule-gate`                                 | A gate that checks every declared licence against the record             | Parked work; no spec yet                                                       |
+| `wi/072-queue-index`                                      | The queue index                                                          | Parked work; no spec yet                                                       |
+| `wi/132-panel-waiting-shape`                              | A published change to the waiting shape                                  | Parked work; a contract change, so it needs a spec                             |
+| `wi/092-bundle-budget-timeout`                            | The bundle budget's own timeout                                          | Parked work; no spec yet                                                       |
+| `wi/161-chat-class-surface`                               | The chat surface refactor: bubbles, message actions, a scrolling column  | Parked work; open as a draft pull request                                      |
+
+The branches that only hold records - `wi/042`, `wi/044`, `wi/062`,
+`wi/077-author-shape-house-form`, `wi/088`, `wi/103`, `wi/106`,
+`wi/117-branch-pileup-verdict` and `wi/119` - carry no code that `main` does
+not already have. Their content is either in `main` or is a narrative of work
+that has since been done; they are kept because the evidence they hold is
+still cited.
+
 ## Existing backlog and scope control
 
 Historical work-item narratives are available in Git at 507708b. Compact evidence
