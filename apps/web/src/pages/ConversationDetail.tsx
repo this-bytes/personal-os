@@ -447,29 +447,27 @@ export function ConversationDetail(): React.JSX.Element {
       <div className="grid min-h-0 flex-1 gap-3 lg:grid-cols-[minmax(0,1fr)_20rem]">
         <Card className="flex min-h-0 flex-col">
           <CardContent className="flex min-h-0 flex-1 flex-col gap-3 p-3">
-            <div className="min-h-0 flex-1 overflow-y-auto pr-1">
+            <div className="relative flex min-h-0 flex-1 flex-col">
               {messages.isError ? (
                 <ErrorState
                   title="The transcript could not be loaded"
                   message={errorMessage(messages.error)}
                   onRetry={() => void messages.refetch()}
                 />
-              ) : null}
-
-              {(messages.data ?? []).length === 0 && !messages.isError ? (
+              ) : (messages.data ?? []).length === 0 && streaming.length === 0 ? (
                 <EmptyState
                   title="No messages yet"
                   message="Send a message below. Use @Name to address a specific agent, or switch the routing mode so every participant is in scope."
                 />
-              ) : null}
-
-              <ChatMessageList
-                messages={messages.data ?? []}
-                participants={current.participants}
-                agents={agents.data ?? []}
-                streaming={streaming}
-                resources={resourceIndex}
-              />
+              ) : (
+                <ChatMessageList
+                  messages={messages.data ?? []}
+                  participants={current.participants}
+                  agents={agents.data ?? []}
+                  streaming={streaming}
+                  resources={resourceIndex}
+                />
+              )}
             </div>
 
             {routingNotice ? (
