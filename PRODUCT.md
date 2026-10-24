@@ -2,11 +2,11 @@
 
 **Personal OS is an environment that one person's agents operate and extend.**
 
-The owner-approved [chat-first recovery](docs/recovery.md) dated 2026-10-22 defines
-the current direction. This document describes requirements. The
-[implementation status](docs/recovery.md#current-evidence-and-limits) distinguishes
-working foundations from missing behavior; a requirement here is not a delivery
-claim.
+The owner-approved [chat-first recovery](docs/decisions/0018-the-chat-first-recovery-decisions.md)
+dated 2026-10-22 defines the current direction, and
+[ARCHITECTURE.md](ARCHITECTURE.md) says how the system is built to serve it.
+This document describes requirements. A requirement here is not a delivery claim:
+the [roadmap](docs/roadmap.md) and the [specs](docs/spec/) say what exists.
 
 ## 1. The owner's role
 
@@ -31,8 +31,8 @@ reference and observed outcomes without copying its internal scheduler. A missin
 status is unknown, not an invented success.
 
 The agents building Personal OS operate out of band using the repository, CI and
-existing coding tools. Building, releasing and recovering the product work with the
-instance stopped. The in-product factory is not their prerequisite.
+existing coding tools. Building, releasing and recovering the product work with
+the instance stopped. The in-product factory is not their prerequisite.
 
 ## 3. Rich conversations
 
@@ -163,6 +163,13 @@ colors retain distinct meanings. The earlier map-first layout is superseded.
 Follow [the roadmap](docs/roadmap.md): execution foundations, rich chat with Codex
 and OpenCode, all five runtimes, team coordination, then the factory. Each stage
 needs a working user demonstration and meaningful tests.
+
+**Plugins extend the product without becoming a marketplace.** A plugin is a
+first-party extension that lives in this repository, is reviewed like the rest of
+it, and extends functionality through the first-class API and the event engine
+while staying isolated enough to be enabled and removed. It is not a distribution
+channel and not a surface for third-party code. The decision is
+[ADR 0016](docs/decisions/0016-plugins-are-isolated-runtime-extensions.md).
 
 This recovery does not add a general workflow engine, an inference engine,
 distributed task infrastructure, a plugin marketplace, native mobile/desktop

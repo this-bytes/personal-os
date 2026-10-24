@@ -65,7 +65,8 @@ owner's authority over who may call as that connection. The clause now names
 that category, and the coverage table's own header says the same.
 
 **The owner's precedence decides this, not the lead's preference.** The
-[chat-first recovery](../recovery.md) is owner-approved direction, and
+[chat-first recovery](0018-the-chat-first-recovery-decisions.md) is
+owner-approved direction, and
 question 14 of it reads: _"Prove rich chat with Codex and OpenCode, support
 all five targets, then deliver autonomous teams and the factory."_ A tool that
 widens a grant, or that mints a token for another connection, is the

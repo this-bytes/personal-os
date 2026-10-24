@@ -24,7 +24,9 @@ factory. Before implementing anything, read:
 ## Current direction
 
 The owner approved the chat-first recovery on 2026-10-22.
-[docs/recovery.md](docs/recovery.md) records the decisions and precedence.
+[ADR 0018](docs/decisions/0018-the-chat-first-recovery-decisions.md) records the
+decisions and precedence, and [ARCHITECTURE.md](ARCHITECTURE.md) is the
+constitution: the direction, the non-negotiables and the pillars.
 Build Personal OS using the repository and existing coding tools independently of
 the running product. Deliver rich chat across harnesses before expanding autonomous
 teams or the product factory. Implementer-owned tests and independent review are
