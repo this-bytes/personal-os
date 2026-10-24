@@ -21,6 +21,7 @@ carry.
 | [SPEC-R0-4 — restart reconciliation](r0-4-restart-reconciliation.md)                  | delivered | SPEC-R0-1, SPEC-R0-3            | A surviving run is reconnected and the rest are named uncertain.                           |
 | [SPEC-R1-1 — Codex demonstration](r1-1-codex-demonstration.md)                        | delivered | SPEC-R0-1, SPEC-R0-3, SPEC-R0-4 | The owner completes real work against a real, installed Codex runtime.                     |
 | [SPEC-R1-2 — OpenCode demonstration](r1-2-opencode-demonstration.md)                  | delivered | SPEC-R0-1, SPEC-R0-3, SPEC-R0-4 | The owner completes real work against a real, installed OpenCode runtime.                  |
+| [SPEC-R1-3 — A message's parts reach the runtime](r1-3-content-parts.md)              | delivered | SPEC-R1-1, SPEC-R1-2            | A file the owner attaches reaches the runtime, as that runtime's protocol takes it.        |
 
 Two sequences live in the queue, and they answer different questions. **The S
 sequence is parity**: what can the owner do that an agent cannot, driven by

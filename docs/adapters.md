@@ -83,27 +83,51 @@ The ACP route is the one this repository has exercised against an installed
 runtime, so what it carries is written down here rather than left to the
 capability row alone.
 
-| Capability             | The ACP route | What that means                                                                                                                                                              |
-| ---------------------- | ------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Permission requests    | supported     | The runtime's own `session/request_permission` reaches the owner as the product's approval, and the owner's decision answers the runtime.                                    |
-| Tool activity          | not supported | The route carries the agent's text and the runtime's permission requests, and nothing else: the runtime's `tool_call` updates are not turned into the product's tool events. |
-| Artifacts              | not supported | The route makes no resource of anything it carries.                                                                                                                          |
-| Input files and images | not supported | **The ACP route sends text only.**                                                                                                                                           |
-| Steering               | not supported | The runtime does not advertise `acceptsSteering`, so a follow-up is queued for the next turn and the panel says so.                                                          |
+| Capability          | The ACP route | What that means                                                                                                                                                                          |
+| ------------------- | ------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Permission requests | supported     | The runtime's own `session/request_permission` reaches the owner as the product's approval, and the owner's decision answers the runtime.                                                |
+| Tool activity       | not supported | The route carries the agent's text and the runtime's permission requests, and nothing else: the runtime's `tool_call` updates are not turned into the product's tool events.             |
+| Artifacts           | not supported | The route makes no resource of anything it carries.                                                                                                                                      |
+| Input files         | supported     | A file the owner attached is sent as the protocol's own `resource` block, with the content in it.                                                                                        |
+| Input images        | not supported | The part carries the file's content as text, so a file whose bytes are not text cannot be carried. The protocol has an `image` block that takes bytes, and that mapping is its own work. |
+| Steering            | not supported | The runtime does not advertise `acceptsSteering`, so a follow-up is queued for the next turn and the panel says so.                                                                      |
 
-**The ACP route sends text only.** The adapter's prompt is a single
-`type: 'text'` block. A message in the product carries an attachment as a
-reference to a resource, and the boundary an adapter is given carries text: a
-runtime that can read images reads them once the turn carries content parts,
-and not before. OpenCode's own capabilities include images, so the limit is
-the product's and not the runtime's.
+**The ACP route sends the message's parts.** The protocol's prompt is a list of
+content blocks, and a file the owner attached is one of them: a `resource`
+block, whose `uri` names the file and whose text is the file's content. The
+runtime turns that into a part the model reads — `[<uri>] | <text>` — which is
+what "the agent sees the file" means on this route.
+
+**Images are not carried yet.** The part carries the file's content as text, so
+a file whose bytes are not text cannot be carried on this route. The protocol
+has an `image` block that takes bytes, and the mapping for it is its own work.
 
 **What is proved where.** The permission path is proved twice: by
 `scripts/verify-acp-permissions.ts`, which drives the built adapter against an
 agent that speaks the protocol, and by the demonstration against the installed
 runtime, `docs/demonstration-opencode-2026-10-24.md`, where the runtime's own
 edit request reached the waiting list, the owner approved it, and the operation
-happened.
+happened. The attachment path is proved three times: by
+`scripts/verify-content-parts.ts`, which drives the built adapter against an
+agent that speaks the protocol and checks the prompt the runtime received; by
+`docs/demonstration-codex-2026-10-24.md`, which recorded the gap before it was
+closed; and by `docs/demonstration-content-parts-2026-10-24.md`, where the
+owner attached a file to the installed OpenCode and the agent answered with
+the file's exact content.
+
+### What the Codex App Server route carries
+
+The App Server's pinned protocol takes a text item, an image by url or by file
+id, a local image by path, an audio by url and a local audio by path. **It has
+no item for "a file with its content"**, so a file the owner attached goes in a
+text item that names the file and carries its content. That is the honest
+mapping: the route says it carries the content, and the content is what the
+runtime receives.
+
+The route carries a steer — the runtime's own `turn/steer`, addressed to the
+turn that is running — and it asks the owner for permission, which the adapter
+surfaces as the product's approval. `scripts/verify-codex-app-server.ts` proves
+that against the repository's own App Server double.
 
 ## Common capability record
 

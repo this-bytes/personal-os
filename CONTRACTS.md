@@ -135,7 +135,7 @@ timeout. The owner sees an `unknown` item as **"check this"**, never as **"fix
 this"**.
 
 **A second `unknown`, on a connection.** `AgentConnectionStatus` carries
-`unknown` too (`packages/contracts/src/agent.ts:148-154`), and it means something
+`unknown` too (`packages/contracts/src/agent.ts:159-165`), and it means something
 else: a connection whose state was never checked, which is how a new connection
 starts. This `unknown` is about an outcome that cannot be confirmed; that one
 is about a state that was never looked at. They are different things that
@@ -150,7 +150,7 @@ transition into and out of `unknown` is written to the audit trail.
 This entry is the contract for **WI-008**, and the code implements it — as of
 `9ad4f98`. `messageStatusSchema` carries `'unknown'` at
 `packages/contracts/src/conversation.ts:106`, `executionStatusSchema` at
-`packages/contracts/src/agent.ts:182`, and `taskStatusSchema` at
+`packages/contracts/src/agent.ts:193`, and `taskStatusSchema` at
 `packages/contracts/src/factory.ts:25`.
 
 **Migration.** Nothing is reclassified. Rows recorded as `failed` before this
@@ -604,6 +604,12 @@ interface AgentCapabilities {
    * [Contract 7](#contract-7--the-interaction-model).
    */
   acceptsSteering?: boolean;
+  /**
+   * Whether the agent takes the message's parts, and not only its text. A
+   * connection that does not report it cannot be sent an attachment; see
+   * [Contract 7](#contract-7--the-interaction-model).
+   */
+  acceptsAttachments?: boolean;
 }
 
 interface AgentAdapter {
@@ -614,6 +620,7 @@ interface AgentAdapter {
     externalSessionId?: string;
     message: string;
     context: string;
+    parts?: AgentTurnPart[];
     executionId: string;
   }): AsyncIterable<AgentEvent>;
 
@@ -1969,9 +1976,9 @@ be told apart from the stored default. See
 
 **The limits, the allowed actions and the approvals are enforced.** The worker holds
 a turn to the effective policy: the chain's turn count
-(`apps/worker/src/executor.ts:1244`) and its spend
-(`apps/worker/src/executor.ts:1251`), and the workspace's spend for the day
-(`apps/worker/src/executor.ts:1258`), before the turn starts; the policy's duration
+(`apps/worker/src/executor.ts:1261`) and its spend
+(`apps/worker/src/executor.ts:1268`), and the workspace's spend for the day
+(`apps/worker/src/executor.ts:1275`), before the turn starts; the policy's duration
 limit caps the turn while it runs, and every action the agent announces is checked
 against what the policy allows. The MCP surface refuses an action the policy does not
 allow, and one the policy wants the owner to approve until the owner has decided. A
@@ -1980,8 +1987,8 @@ truncated.
 
 **A daily cap is a cap on the workspace.** The workspace's spend for the day is the
 sum of the spend units on the executions of that workspace since 00:00 UTC
-(`apps/worker/src/executor.ts:1281-1291`,
-`apps/worker/src/executor.ts:1285-1290`), and it is the same day for every workspace —
+(`apps/worker/src/executor.ts:1298-1308`,
+`apps/worker/src/executor.ts:1302-1307`), and it is the same day for every workspace —
 the system stores ISO timestamps everywhere and has no per-workspace timezone. A daily
 cap of zero is no cap, as it is for the chain's spend limit. The cap applies across
 the workspace's conversations and goals, and not per chain, which is the whole
@@ -1993,7 +2000,7 @@ one spend unit — the measure the product already has
 (`apps/server/src/modules/conversations/routing.ts:332`). **The cost is recorded
 against the execution when the turn ends**: the worker writes one unit for an
 agent turn and none for a turn that never reached the agent
-(`apps/worker/src/execution-owner.ts:714`).
+(`apps/worker/src/execution-owner.ts:721`).
 **The row is created with no spend units**, because the cost is not known until
 the turn has run (`apps/server/src/modules/conversations/dispatch.ts:216`,
 `apps/server/src/modules/factory/service.ts:482`), and the column defaults to zero
@@ -2109,7 +2116,7 @@ supports, and the capability to do it is already modelled and negotiated.
 
 This entry is the contract for **WI-007**, and the code implements it — as of
 `5f019b9`. `resumeSession` is implemented at
-`packages/agent-adapters/src/acp.ts:340` and called at
+`packages/agent-adapters/src/acp.ts:379` and called at
 `apps/worker/src/executor.ts:430`, and the gate is the capability and the session
 id together: `canResume = capabilities?.persistentSessions === true &&
 Boolean(execution.externalRef)`.
@@ -2151,7 +2158,7 @@ not.**
 failure. It is the same word the unknown outcome uses
 ([The unknown outcome](#the-unknown-outcome)), and it is in this vocabulary because
 the product produces it: the worker writes it when a turn's outcome cannot be
-confirmed (`apps/worker/src/execution-owner.ts:742`), and the conversation dispatch writes it
+confirmed (`apps/worker/src/execution-owner.ts:749`), and the conversation dispatch writes it
 when a turn stops for the same reason
 (`apps/server/src/modules/conversations/dispatch.ts:315`). **A vocabulary without
 `unknown` would leave the unknown outcome unrepresentable in the trail**, and the
@@ -2548,7 +2555,7 @@ interface ArtifactEvidence {
 **What the agent did** is `toolCalls`: the tool calls of that execution and how
 each ended. The calls are the execution's `tool.started` events and the
 `tool.completed` events that answer them
-(`packages/contracts/src/agent.ts:217-222`, `:223-228`). A call that answered has
+(`packages/contracts/src/agent.ts:228-233`, `:234-239`). A call that answered has
 `outcome: 'completed'` and a `completedAt`; a call that did not has
 `outcome: 'unfinished'` and a `completedAt` of `null`. The events name the tool
 and not the call, so a call is answered by the next completion for that tool.
@@ -2556,7 +2563,7 @@ and not the call, so a call is answered by the next completion for that tool.
 do not say why a call did not finish, and this entry does not claim a reason.
 
 **What it produced** is `artifacts`: the execution's `artifact.created` events
-(`packages/contracts/src/agent.ts:236-241`), each with the title it was given and
+(`packages/contracts/src/agent.ts:247-252`), each with the title it was given and
 the resource it made, when it was given either.
 
 **What it cost** is `spendUnits` and `status`. `status` is the execution's own
@@ -3083,6 +3090,41 @@ interface AgentTurnInput {
 }
 ```
 
+**An attachment is carried in the turn, and a route that cannot carry one says
+so.** A message the owner sent carries its parts, and the turn carries them for
+the agents that can take them.
+
+```ts
+interface AgentCapabilities {
+  // ...
+  acceptsSteering?: boolean;
+  acceptsAttachments?: boolean;
+}
+
+interface AgentTurnInput {
+  // ...
+  parts?: AgentTurnPart[];
+}
+```
+
+The part carries the **content**, not a reference to it: an adapter is given a
+resource id it cannot follow, and the boundary is the product's own. The worker
+resolves the file when it builds the turn.
+
+**The owner's words are not carried twice.** The turn's `message` is the words,
+and the parts are what the words do not carry.
+
+**Absent means absent.** A connection that does not report `acceptsAttachments`
+is an agent that takes text. The composer refuses the file in a room where no
+agent can take it, and names the agents that cannot; a turn that could not carry
+a file says so in its context, so an agent is never left answering as if it had
+read a file it never saw.
+
+Each adapter maps a part into **its own protocol's shape**: the ACP route sends
+the protocol's `resource` block, and the Codex App Server route — whose pinned
+protocol has no item for a file with its content — sends the content as a text
+item that names the file.
+
 **A steer targets one agent.** A message with `delivery: 'steer'` is delivered
 to the running turn's agent alone. It does not wake other participants, and it
 does not count as a new turn for the duplicate check. This extends
@@ -3165,7 +3207,9 @@ reports `acceptsSteering`: a steer for a connection that cannot take input
 mid-turn is a queued message, and the panel says so in the server's words. A
 file the owner attaches is uploaded, and the message carries a reference to the
 resource the upload created; the composer also offers the resources that
-already exist, and a message may carry both. The trace shows the events the log
+already exist, and a message may carry both. The file reaches the agent only
+on a route that reports `acceptsAttachments`, and the composer refuses it in a
+room where no agent can take it. The trace shows the events the log
 holds; it is not a complete account of what an adapter did inside its own
 runtime.
 
@@ -3189,7 +3233,7 @@ empty, and it is gone once the transcript is not.
 This entry is the contract for the prompts an empty room offers, and the code
 implements it — as of `0f53acb`. The row is `packages/ui/src/suggestion.tsx:47`,
 the prompts are `apps/web/src/lib/suggestions.ts:22`, and the surface that
-shows them is `apps/web/src/pages/ConversationDetail.tsx:539`.
+shows them is `apps/web/src/pages/ConversationDetail.tsx:571`.
 
 ### The attachment upload
 
@@ -3980,8 +4024,8 @@ connection that was granted one of them leaves `execution.outcome.resolved`,
 `task.accepted`, `resource.published` or `resource.executed` behind with
 `actorType: 'agent'`. The other writer of the trail
 that is not an owner HTTP route is
-the worker — its `unknown` record (`apps/worker/src/execution-owner.ts:735-744`) and the
-policy refusals it writes (`apps/worker/src/execution-owner.ts:765-782`). So every audited
+the worker — its `unknown` record (`apps/worker/src/execution-owner.ts:742-751`) and the
+policy refusals it writes (`apps/worker/src/execution-owner.ts:772-789`). So every audited
 operation is an owner operation, except the worker's own entries, which carry
 `actorType: 'agent'`. **The second measure does not count the work an agent does
 through MCP**: an agent can create and update resources all day and the
@@ -3996,9 +4040,9 @@ but the route helper hardcodes `success`
 (`apps/server/src/modules/audit/service.ts:79`). The two values a writer does
 produce come from the worker: the `unknown` of
 [The unknown outcome](#the-unknown-outcome)
-(`apps/worker/src/execution-owner.ts:742`), and the `failure` it writes when the
+(`apps/worker/src/execution-owner.ts:749`), and the `failure` it writes when the
 autonomy policy refuses a turn or an action
-(`apps/worker/src/execution-owner.ts:782`). **An operation that failed at the route is
+(`apps/worker/src/execution-owner.ts:789`). **An operation that failed at the route is
 counted here as an operation that completed.**
 
 **The route exists.** It answers with the shape above, member for member: the

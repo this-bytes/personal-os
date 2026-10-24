@@ -456,6 +456,9 @@ export class CodexAppServerAdapter implements AgentAdapter {
       artifacts: false,
       // The App Server takes input while a turn runs.
       acceptsSteering: true,
+      // A file the owner attached is carried as text, because the protocol
+      // has no item for a file with its content.
+      acceptsAttachments: true,
     };
   }
 
@@ -527,7 +530,7 @@ export class CodexAppServerAdapter implements AgentAdapter {
           'turn/start',
           {
             threadId,
-            input: [{ type: 'text', text: buildPrompt(input) }],
+            input: buildTurnInput(input),
             ...(this.config.cwd ? { cwd: this.config.cwd } : {}),
           },
           this.config.timeoutSeconds * 1000,
@@ -824,6 +827,32 @@ export function createCodexAppServerAdapter(
 /** The prompt the runtime is asked, as the owner's message and the room's context. */
 function buildPrompt(input: AgentTurnInput): string {
   return `${input.message}\n\n${input.context}`.trim();
+}
+
+/**
+ * The turn's input, in the pinned protocol's own items.
+ *
+ * The protocol takes a text item, an image by url or by file id, a local image
+ * by path, an audio by url, and a local audio by path. **It has no item for "a
+ * file with its content",** so the content is carried as a text item that
+ * names the file. That is the honest mapping: the route says it carries the
+ * content, and the content is what the runtime receives.
+ *
+ * The owner's words are in the first item, with the room's context. They are
+ * not carried twice: the turn's message is the words, and the parts are what
+ * the words do not carry.
+ */
+export function buildTurnInput(input: AgentTurnInput): Array<Record<string, unknown>> {
+  const items: Array<Record<string, unknown>> = [{ type: 'text', text: buildPrompt(input) }];
+
+  for (const part of input.parts ?? []) {
+    items.push({
+      type: 'text',
+      text: `The owner attached "${part.filename}":\n\n${part.text}`,
+    });
+  }
+
+  return items;
 }
 
 /** The thread id a response names, when it names one. */

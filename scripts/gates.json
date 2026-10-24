@@ -95,6 +95,12 @@
       "command": "npx",
       "args": ["tsx", "scripts/verify-codex-app-server.ts"],
       "about": "the Codex App Server route carries a thread, a turn, a steer and an approval, the session continues in the same thread, and the capability row the preset publishes is the capability the adapter reports"
+    },
+    {
+      "name": "content-parts",
+      "command": "npx",
+      "args": ["tsx", "scripts/verify-content-parts.ts"],
+      "about": "a file the owner attaches reaches the runtime, in each protocol's own shape, and a route that cannot carry one says so"
     }
   ]
 }

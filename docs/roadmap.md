@@ -50,9 +50,9 @@ the three callers, session references and restart reconciliation have landed —
 ([SPEC-R0-2](spec/r0-2-authorised-dispatch.md)) is deferred** by the owner's
 direction, so that slice has not been done and R0 is not closed.
 
-**R1's acceptance is met, and one slice of it is still open.** The chat
-surface, the activity trace, the stop control, steering and the attachment
-upload are in. The chat is proved end to end in a browser: the suite runs the
+**R1's acceptance is met.** The chat surface, the activity trace, the stop
+control, steering and the attachment upload are in, and the attachment now
+reaches the runtime. The chat is proved end to end in a browser: the suite runs the
 worker, the owner's message reaches it, the adapter runs, and the answer lands
 in the room as the agent's own message — and now against installed runtimes
 rather than only against the built-in `echo` one, which is a product adapter
@@ -77,6 +77,23 @@ before the execution row named the session the decision continues in (PR #36).
 It also named the limits the route really has: the ACP route carries the
 agent's text and the runtime's permission requests, and no tool activity, no
 attachments and no steering.
+
+**The third slice closed the attachment gap that the second demonstration
+measured.** A file the owner attached never crossed the adapter boundary: the
+turn carried text, and the worker built that text from the message's text
+parts and dropped the rest. The OpenCode transcript recorded the agent
+reading a different file — the one in its own working directory — and the
+Codex transcript recorded _"I don't see an attached file."_ The fix was in the
+shared boundary and not in one adapter: the turn now carries the message's
+parts that its text does not carry, the worker resolves the file, and each
+adapter maps it into its own protocol's shape. **The file now reaches the
+runtime** — [the demonstration](demonstration-content-parts-2026-10-24.md),
+[SPEC-R1-3](spec/r1-3-content-parts.md) — and a room whose agent cannot carry
+a file refuses the attachment rather than taking it and dropping it.
+
+**What the ACP route still cannot do.** It carries no tool activity and no
+steering, and it still carries the session's earlier text back to the runtime
+on each prompt.
 
 **R2 has three demonstrated runtimes and two templates.** The presets are starting
 points for the five named runtimes. Pi and OpenClaw are not installed here, and
@@ -140,6 +157,7 @@ Read the branch for what it proves, then write the slice that needs it.
 | --------------------------------------------------------- | ------------------------------------------------------------------------ | -------------------------------------------------------------------------- |
 | `feature/r1-1-codex-app-server`                           | The Codex App Server route and the gate that covers it                   | Landed: PR #33; [SPEC-R1-1](spec/r1-1-codex-demonstration.md) delivered    |
 | `feature/r1-2-acp-permissions`                            | A runtime's permission request reaching the owner                        | Landed: PR #24; [SPEC-R1-2](spec/r1-2-opencode-demonstration.md) delivered |
+| `wi/165-content-parts`                                    | A file the owner attaches reaching the runtime                           | Landed: PR #38; [SPEC-R1-3](spec/r1-3-content-parts.md) delivered          |
 | `docs/adr-0012-slice-a`                                   | ADR 0012's first slice: the queue, the records and the priorities        | Live                                                                       |
 | `chore/mcp-parity-named-spec`                             | The spec that will pair the broken windows                               | Live                                                                       |
 | `wi/077-agent-adapter-domain`                             | The queue-based capability probe the R0 follow-up above ports from       | Preserved source; named in this document                                   |

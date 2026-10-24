@@ -49,6 +49,14 @@ interface ComposerProps {
   delivery?: MessageDelivery;
   /** Whether the runtime can take the message into the running turn. */
   steer?: { available: boolean; reason: string | null };
+  /**
+   * Whether the room's agents can carry an attachment.
+   *
+   * A room with no agent that can take one refuses the file, and says which
+   * agent cannot take it. A file the owner attaches and the runtime never
+   * sees is a file the owner believes was read.
+   */
+  attachments?: { available: boolean; reason: string | null };
   /** The resources the owner may attach. */
   attachable?: Resource[];
   /** The conversation's routing mode, for the bar under the composer. */
@@ -93,6 +101,7 @@ export function Composer({
   placeholder = 'Write a message. Use @Name to address an agent.',
   delivery = 'queue',
   steer,
+  attachments: attachmentsState,
   attachable = [],
   routingMode,
   depth = 0,
@@ -374,8 +383,12 @@ export function Composer({
               size="icon"
               onClick={() => setPickerOpen((open) => !open)}
               aria-label="Attach a resource"
-              title="Attach a resource that already exists"
-              disabled={disabled}
+              title={
+                attachmentsState?.available === false
+                  ? (attachmentsState.reason ?? 'This room cannot carry an attachment.')
+                  : 'Attach a resource that already exists'
+              }
+              disabled={disabled || attachmentsState?.available === false}
             >
               <Paperclip className="h-4 w-4" />
             </Button>
@@ -396,8 +409,17 @@ export function Composer({
               size="icon"
               onClick={() => fileInputRef.current?.click()}
               aria-label="Upload a file"
-              title="Upload a file from this machine"
-              disabled={disabled || !activeWorkspaceId || upload?.state === 'uploading'}
+              title={
+                attachmentsState?.available === false
+                  ? (attachmentsState.reason ?? 'This room cannot carry an attachment.')
+                  : 'Upload a file from this machine'
+              }
+              disabled={
+                disabled ||
+                !activeWorkspaceId ||
+                upload?.state === 'uploading' ||
+                attachmentsState?.available === false
+              }
             >
               <Upload className="h-4 w-4" />
             </Button>
@@ -428,6 +450,9 @@ export function Composer({
         ) : null}
         <span className="font-mono">depth {depth}</span>
         {maxTurns !== undefined ? <span className="font-mono">max {maxTurns} turns</span> : null}
+        {attachmentsState?.available === false && attachmentsState.reason ? (
+          <span className="text-slate-500">{attachmentsState.reason}</span>
+        ) : null}
         <span>Enter sends · Shift+Enter adds a line · type @ to address a participant</span>
       </div>
     </div>

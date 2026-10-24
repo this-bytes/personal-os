@@ -537,9 +537,15 @@ async function checkTheCapabilityRow(): Promise<void> {
 /**
  * The record and the code agree about what the route carries.
  *
- * The ACP route sends one text block. The matrix says so, in as many words,
- * so that an owner reading it knows an attachment does not reach the runtime
- * instead of finding out from the runtime.
+ * The ACP route sends the owner's words in one text block, and a file the owner
+ * attached as the protocol's own resource block. The matrix says so, in as many
+ * words, so that an owner reading it knows what reaches the runtime instead of
+ * finding out from the runtime.
+ *
+ * **The matrix must not still claim the route sends text only.** That sentence
+ * was true once, and it stopped being true when the route learned to carry a
+ * file; a matrix that still carries it sends the owner looking for a limit the
+ * route does not have.
  */
 async function checkTheRecordAgreesWithTheCode(): Promise<void> {
   freshStore();
@@ -551,14 +557,19 @@ async function checkTheRecordAgreesWithTheCode(): Promise<void> {
   const blocks = theStore().prompts[0]?.blocks ?? [];
   if (blocks.length !== 1 || blocks[0]?.type !== 'text') {
     fail(
-      `The ACP route does not send one text block: ${JSON.stringify(blocks)}. The matrix and the code have to agree about what the route carries.`,
+      `The ACP route does not send one text block for a turn with no file: ${JSON.stringify(blocks)}. The matrix and the code have to agree about what the route carries.`,
     );
   }
 
   const matrix = readFileSync(join(repoRoot(), 'docs', 'adapters.md'), 'utf8');
-  if (!matrix.includes('The ACP route sends text only')) {
+  if (!matrix.includes('The ACP route sends the message')) {
     fail(
-      'docs/adapters.md does not record that the ACP route sends text only, so the matrix does not say that an attachment does not reach the runtime.',
+      'docs/adapters.md does not record that the ACP route sends the message’s parts, so the matrix does not say that an attachment reaches the runtime.',
+    );
+  }
+  if (matrix.includes('The ACP route sends text only')) {
+    fail(
+      'docs/adapters.md still records that the ACP route sends text only, and the route carries a file the owner attached.',
     );
   }
 }
