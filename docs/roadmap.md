@@ -141,12 +141,24 @@ Read the branch for what it proves, then write the slice that needs it.
 | `wi/092-bundle-budget-timeout`                            | The bundle budget's own timeout                                          | Parked work; no spec yet                                                       |
 | `wi/161-chat-class-surface`                               | The chat surface refactor: bubbles, message actions, a scrolling column  | Parked work; open as a draft pull request                                      |
 
-The branches that only hold records - `wi/042`, `wi/044`, `wi/062`,
-`wi/077-author-shape-house-form`, `wi/088`, `wi/103`, `wi/106`,
-`wi/117-branch-pileup-verdict` and `wi/119` - carry no code that `main` does
-not already have. Their content is either in `main` or is a narrative of work
-that has since been done; they are kept because the evidence they hold is
-still cited.
+The branches that carry only a record - `wi/042`, `wi/062`,
+`wi/077-author-shape-house-form`, `wi/103`, `wi/106` and `wi/119` - hold the
+process record of a finished item, `.factory/work/WI-nnn.md`, which `main`
+does not carry, and prose edits to `PRODUCT.md` and `CONTRACTS.md`, which
+`main` does. Their prose has landed; their records have not, and they are
+kept because how a decision was reached is still worth reading.
+
+Three more hold something `main` does not have under any name:
+
+- `wi/044-vendored-sources` - `docs/vendored-sources.json`, the inventory of
+  source vendored into this repository's own tree. `main` carries
+  `docs/dependency-licences.json`, which is a different record: the licences
+  of the packages in the lockfile, not the code copied in beside it.
+- `wi/088-ledger-state-and-history` - the factory's process history, moved out
+  of `INTAKE.md` into `.factory/history.md`. `main` has replaced that
+  arrangement with one record per item under `.factory/work/`.
+- `wi/117-branch-pileup-verdict` - the same `INTAKE.md`, with a verdict on the
+  branch pileup.
 
 ## Existing backlog and scope control
 
