@@ -20,14 +20,22 @@ import { cn } from './lib/utils.js';
  * rather than a sentence, or that a turn may end in a way nobody confirmed.
  * `align` says which side of the row the content sits on, and the caller
  * decides which side that is.
+ *
+ * **It is an `article`, where upstream's is a `div`.** A turn in a transcript
+ * is a piece of content in its own right, and this repository's transcript
+ * said so with an `<article>` before the bubble layout arrived. Three browser
+ * tests in other specs find a turn by that element, and a screen reader
+ * announces it as a separate region of the transcript rather than as another
+ * div inside one. The composition and the `data-slot` names are upstream's
+ * exactly; the element is this repository's.
  */
 export function Message({
   className,
   align = 'start',
   ...props
-}: React.ComponentProps<'div'> & { align?: 'start' | 'end' }): React.JSX.Element {
+}: React.ComponentProps<'article'> & { align?: 'start' | 'end' }): React.JSX.Element {
   return (
-    <div
+    <article
       data-slot="message"
       data-align={align}
       className={cn(
