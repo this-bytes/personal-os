@@ -5,8 +5,8 @@
     "lockfileVersion": 3,
     "installedTree": "Every third-party package in the lockfile that is installed in this repository was read in place, from the package’s own licence file where it ships one, and from the `license` field of its own package.json where it does not.",
     "notInstalled": "Optional packages for other platforms are in the lockfile but are not installed here. Their identifier is the one the project publishes for that exact version, read from the registry’s copy of that package’s package.json.",
-    "evidence": "Each third-party entry records the file its licence was read from and the evidence that reading rests on, so a later reader can tell a licence read from a file from an identifier published in one: 385 entries carry the first identifying lines of the package’s own licence file, 17 the `license` field of its own package.json, and 122 the identifier the project publishes for that exact version. The six first-party workspaces are this repository’s own packages and carry no source.",
-    "coverage": "This record has one entry for each of 495 packages: the 489 third-party packages in the lockfile, whether or not they are installed here, and this repository’s own six workspaces. The lockfile has six more entries than this record has, because it lists each of those six workspaces twice — once at its source path and once as the link under node_modules/@personal-os — while this record lists each of them once, by the path it is installed under."
+    "evidence": "Each third-party entry records the file its licence was read from and the evidence that reading rests on, so a later reader can tell a licence read from a file from an identifier published in one: 386 entries carry the first identifying lines of the package’s own licence file, 17 the `license` field of its own package.json, and 122 the identifier the project publishes for that exact version. The six first-party workspaces are this repository’s own packages and carry no source.",
+    "coverage": "This record has one entry for each of 531 packages: the 525 third-party packages in the lockfile, whether or not they are installed here, and this repository's own 6 workspaces. The lockfile has 6 more entries than this record has, because it lists each of those 6 workspaces twice — once at its source path and once as the link under node_modules/@personal-os — while this record lists each of them once, by the path it is installed under."
   },
   "agpl": {
     "question": "Is anything this product depends on AGPL?",
@@ -29,7 +29,7 @@
     "familiesRead": [
       {
         "spdxId": "MIT",
-        "count": 458
+        "count": 459
       },
       {
         "spdxId": "MIT-0",
@@ -202,10 +202,10 @@
     ]
   },
   "summary": {
-    "lockfilePackageEntries": 536,
+    "lockfilePackageEntries": 537,
     "firstPartyWorkspaces": 6,
     "distinctLicences": 11,
-    "readFromLicenceFile": 385,
+    "readFromLicenceFile": 386,
     "readFromPackageJsonField": 17,
     "readFromPublishedIdentifier": 122
   },
@@ -2965,6 +2965,23 @@
         "readOn": "2026-10-21"
       },
       "readOn": "2026-10-21",
+      "licence": "MIT License",
+      "permits": "Grants anyone permission to use, copy, modify, merge, publish, distribute, sublicense and sell copies of the software, without restriction.",
+      "requires": "Requires the copyright notice and the permission notice to be included in all copies or substantial portions of the software.",
+      "forbids": "Forbids nothing further in the way of use: the grant is without restriction. It provides the software as-is, with no warranty of any kind, and accepts no liability."
+    },
+    {
+      "lockPath": "node_modules/@shadcn/react",
+      "name": "@shadcn/react",
+      "version": "0.3.1",
+      "spdxId": "MIT",
+      "source": {
+        "kind": "licence-file",
+        "file": "node_modules/@shadcn/react/LICENSE.md",
+        "evidence": "MIT License Copyright (c) 2023 shadcn",
+        "readOn": "2026-10-24"
+      },
+      "readOn": "2026-10-24",
       "licence": "MIT License",
       "permits": "Grants anyone permission to use, copy, modify, merge, publish, distribute, sublicense and sell copies of the software, without restriction.",
       "requires": "Requires the copyright notice and the permission notice to be included in all copies or substantial portions of the software.",
