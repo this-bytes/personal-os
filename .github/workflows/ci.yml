@@ -205,6 +205,35 @@ jobs:
       - name: The agent surface matches the owner's
         run: npm run verify:mcp-parity
 
+  codex-app-server:
+    name: The Codex App Server route
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci --ignore-scripts --no-audit --no-fund
+
+      # The gate drives the adapter itself, so the packages it is built from
+      # have to be built. The check is against the repository's own App Server
+      # double, so it needs no account and spends no tokens: it runs on every
+      # push, on every machine.
+      #
+      # **The gate runs in this pipeline on purpose.** A gate that only runs on
+      # the machine that wrote it is not a gate, it is a habit.
+      - name: Build the packages the gate drives
+        run: npm run build:deps
+
+      - name: The route carries a thread, a turn, a steer and an approval
+        run: npm run verify:codex-app-server
+
   standards:
     name: The constitution is honoured
     runs-on: ubuntu-latest
@@ -236,7 +265,6 @@ jobs:
       # lesson the parity gate above already paid for.
       - name: The constitution is honoured
         run: npm run verify:standards
-
   workflow-lint:
     name: Lint the workflows
     runs-on: ubuntu-latest
@@ -392,6 +420,35 @@ jobs:
       # the machine that wrote it is not a gate, it is a habit.
       - name: The worker that dies is reconciled
         run: npx tsx scripts/verify-restart-reconciliation.ts
+
+  codex-runtime:
+    name: The installed Codex answers
+    if: github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci --ignore-scripts --no-audit --no-fund
+
+      - name: Build the packages the gate drives
+        run: npm run build:deps
+
+      # The check that drives the installed runtime, through the product's own
+      # adapter. **It is skipped — loudly, with the reason printed — where the
+      # runtime is not installed, or where it is installed but not signed in**,
+      # because a check that needs the owner's credential is not a check that
+      # can fail on somebody else's machine. On a machine with Codex on PATH
+      # and signed in, it proves the handshake and a turn.
+      - name: The installed runtime answers
+        run: npm run verify:codex-runtime
 
   source-stack:
     name: Source hosting and restart

@@ -99,6 +99,41 @@ describe('the preset picker', () => {
     expect(screen.getByLabelText('Role')).toHaveValue('Codex lead');
   });
 
+  it('fills the App Server template with the command and the permission setting', () => {
+    renderForm();
+
+    // The App Server is a different route from the command line one: it has
+    // threads, turns and approval requests of its own.
+    chooseType('codex-app-server');
+    chooseTemplate('codex-app-server');
+
+    expect(screen.getByLabelText('Command')).toHaveValue('codex');
+    expect(screen.getByLabelText('Sandbox')).toHaveValue('read-only');
+    expect(screen.getByLabelText('Permission requests')).toHaveValue('on-request');
+    expect(screen.getByLabelText('Role')).toHaveValue('Codex lead');
+  });
+
+  it('sends the App Server configuration with the connection', () => {
+    const { onSubmit } = renderForm();
+
+    fireEvent.change(screen.getByLabelText('Name'), { target: { value: 'Codex' } });
+    chooseType('codex-app-server');
+    chooseTemplate('codex-app-server');
+    fireEvent.click(screen.getByRole('button', { name: 'Create connection' }));
+
+    expect(onSubmit).toHaveBeenCalledTimes(1);
+    const input = onSubmit.mock.calls[0]![0];
+    expect(input.presetId).toBe('codex-app-server');
+    expect(input.adapterType).toBe('codex-app-server');
+    expect(input.config).toMatchObject({
+      command: 'codex',
+      sandbox: 'read-only',
+      approvalPolicy: 'on-request',
+      // The thread is kept, so the next turn goes back into it.
+      ephemeral: false,
+    });
+  });
+
   it('leaves every field editable after the template is applied', () => {
     renderForm();
 
