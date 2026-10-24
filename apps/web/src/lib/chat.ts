@@ -1,6 +1,7 @@
 import type {
   ChatActivity,
   ChatActivityReadModel,
+  ContentPart,
   MessageDelivery,
   RunControl,
   RunControlOperation,
@@ -242,4 +243,18 @@ export function hueResolverFor(
     if (!participant?.agentConnectionId) return undefined;
     return hueOf(participant.agentConnectionId);
   };
+}
+
+/**
+ * The words of a turn, as plain text.
+ *
+ * Only the text parts are words. A file, an image and an artifact are not
+ * text, and putting a file name in the clipboard where the reader expected
+ * the sentence would be a small lie.
+ */
+export function plainTextOf(parts: ContentPart[]): string {
+  return parts
+    .filter((part): part is Extract<ContentPart, { type: 'text' }> => part.type === 'text')
+    .map((part) => part.text)
+    .join('\n\n');
 }
